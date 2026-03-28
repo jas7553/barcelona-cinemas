@@ -1,0 +1,30 @@
+{
+  "Verdi": {
+    "address": "Carrer de Verdi, 32",
+    "neighborhood": "Gràcia"
+  },
+  "VP": {
+    "address": "Carrer de Torrijos, 49",
+    "neighborhood": "Gràcia"
+  },
+  "Malda": {
+    "address": "Carrer del Pi, 5",
+    "neighborhood": "Gothic Quarter"
+  },
+  "FdC": {
+    "address": "Plaça de Salvador Seguí, 1-9",
+    "neighborhood": "El Raval"
+  },
+  "CinDigMar": {
+    "address": "Avinguda del Litoral, 2",
+    "neighborhood": "Poble-Nou"
+  },
+  "Glòries": {
+    "address": "Avinguda Diagonal, 208",
+    "neighborhood": "Poble-Nou"
+  },
+  "Aribau": {
+    "address": "Carrer d'Aribau, 8-10",
+    "neighborhood": "Eixample"
+  }
+}

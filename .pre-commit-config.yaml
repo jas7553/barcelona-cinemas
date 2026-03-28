@@ -1,0 +1,36 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.0
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+
+  - repo: local
+    hooks:
+      - id: cfn-lint
+        name: cfn-lint
+        entry: .venv/bin/cfn-lint template.yaml
+        language: system
+        files: ^template\.yaml$
+        pass_filenames: false
+
+      - id: mypy
+        name: mypy
+        entry: .venv/bin/mypy --config-file pyproject.toml
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: tsc
+        name: tsc
+        entry: npm run typecheck
+        language: system
+        types_or: [ts, tsx]
+        pass_filenames: false
+
+      - id: eslint
+        name: eslint
+        entry: npm run lint
+        language: system
+        types_or: [ts, tsx]
+        pass_filenames: false

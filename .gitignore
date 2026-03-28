@@ -1,0 +1,29 @@
+.env
+.claude/
+.idea/
+AGENTS.md
+CLAUDE.md
+.DS_Store
+cache/
+__pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Frontend build output
+node_modules/
+static/
+static/assets/
+static/index.html
+
+# AWS SAM
+.aws-sam/
+samconfig.toml
+
+# Lambda manual build artifacts (superseded by SAM)
+lambda.zip
+package/

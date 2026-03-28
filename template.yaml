@@ -1,0 +1,393 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Barcelona Movie Database — Flask API on Lambda + React SPA on CloudFront
+
+Parameters:
+
+  CacheTtlHours:
+    Type: Number
+    Default: 12
+    MinValue: 1
+    MaxValue: 168
+    Description: >
+      Hours before cached listings are marked stale for user-facing requests.
+      Must be kept in sync with ScheduleExpression so scheduled refreshes happen
+      before public data stays stale for too long.
+
+  ScheduleExpression:
+    Type: String
+    Default: "rate(12 hours)"
+    Description: >
+      EventBridge schedule for proactive cache warming. Must be kept in sync
+      with CacheTtlHours. Examples: "rate(6 hours)", "cron(0 6 * * ? *)".
+      If you change CacheTtlHours, change this too.
+
+  ApiOriginVerifyToken:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+    Description: >
+      Shared secret CloudFront sends to the API origin in X-Origin-Verify.
+      Use a long random value.
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures:
+      - arm64    # Graviton2: ~20% cheaper, faster cold start than x86_64.
+                 # All deps are pure Python so no cross-compilation needed.
+                 # If a C extension is added later, use: sam build --use-container
+    Timeout: 30
+    MemorySize: 512
+    # Environment variables are set on ApiFunction directly (not here) so that
+    # any future functions don't inherit app-specific config by accident.
+
+Resources:
+
+  # ── S3: cache bucket ──────────────────────────────────────────────────────
+
+  CacheBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled    # Protects against corrupt-write data loss
+      LifecycleConfiguration:
+        Rules:
+          - Id: RetainThreeVersions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NewerNoncurrentVersions: 3
+              NoncurrentDays: 7    # 7 days to notice and recover from a bad write
+
+  # ── S3: frontend bucket ───────────────────────────────────────────────────
+
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowCloudFrontOAC
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub >-
+                  arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}
+
+  # ── Lambda ────────────────────────────────────────────────────────────────
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.handler
+      CodeUri: ./
+      Description: Barcelona Movie Database — Flask API via Mangum + EventBridge refresh
+      ReservedConcurrentExecutions: 5    # Guards against runaway invocations / bill spikes
+      Environment:
+        Variables:
+          TMDB_SSM_PARAMETER: /barcelona-movie-db/tmdb-api-key
+          LISTINGS_FEED_SSM_PARAMETER: /barcelona-movie-db/listings-feed-url
+          CACHE_BACKEND: s3
+          S3_BUCKET: !Ref CacheBucket
+          S3_KEY: listings.json    # Explicit: must match the /listings.json key in IAM policy
+          # Lambda env vars are strings, so stringify the numeric parameter explicitly.
+          CACHE_TTL_HOURS: !Sub "${CacheTtlHours}"
+          ORIGIN_VERIFY_TOKEN: !Ref ApiOriginVerifyToken
+      Policies:
+        - Statement:
+            - Sid: CacheBucketReadWrite
+              Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+              Resource: !Sub "${CacheBucket.Arn}/listings.json"
+              # Least-privilege: DeleteObject and ListBucket are not needed
+            - Sid: SsmTmdbApiKey
+              Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/barcelona-movie-db/tmdb-api-key"
+            - Sid: SsmListingsFeedUrl
+              Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/barcelona-movie-db/listings-feed-url"
+            - Sid: KmsDecryptSsm
+              Effect: Allow
+              Action:
+                - kms:Decrypt
+              Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm"
+      Events:
+        HttpApi:
+          Type: HttpApi
+          Properties:
+            Path: /api/{proxy+}
+            Method: ANY
+        ScheduledRefresh:
+          Type: Schedule
+          Properties:
+            Schedule: !Ref ScheduleExpression
+            Description: "Proactive cache warming — keep in sync with CacheTtlHours"
+            Enabled: true
+
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Lambda errors detected for the API function
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ApiFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  RefreshFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Scheduled refresh failures detected
+      Namespace: BarcelonaMovieDatabase
+      MetricName: RefreshFailure
+      Dimensions:
+        - Name: Environment
+          Value: prod
+        - Name: Trigger
+          Value: schedule
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  CacheAgeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Cache age exceeded configured TTL
+      Namespace: BarcelonaMovieDatabase
+      MetricName: CacheAgeHours
+      Dimensions:
+        - Name: Environment
+          Value: prod
+      Statistic: Maximum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: !Ref CacheTtlHours
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  ListingsStaleResponseAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Stale listings responses are occurring repeatedly
+      Namespace: BarcelonaMovieDatabase
+      MetricName: ListingsStaleResponse
+      Dimensions:
+        - Name: Environment
+          Value: prod
+        - Name: Route
+          Value: /api/listings
+        - Name: Trigger
+          Value: http
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 3
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  # ── CloudFront cache policy: /api/listings (5-min TTL) ──────────────────
+
+  ListingsCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        Name: !Sub "${AWS::StackName}-listings-5m"
+        DefaultTTL: 300
+        MinTTL: 0
+        MaxTTL: 300
+        ParametersInCacheKeyAndForwardedToOrigin:
+          EnableAcceptEncodingGzip: true
+          EnableAcceptEncodingBrotli: true
+          CookiesConfig:
+            CookieBehavior: none
+          HeadersConfig:
+            HeaderBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+
+  # ── CloudFront response headers: browser hardening for SPA/API ───────────
+
+  SecurityHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub "${AWS::StackName}-security-headers"
+        Comment: "Security headers for React SPA and API responses (CSP: same-origin only)."
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: >-
+              default-src 'self';
+              base-uri 'self';
+              connect-src 'self';
+              font-src 'self';
+              form-action 'self';
+              frame-ancestors 'none';
+              img-src 'self' data: https:;
+              manifest-src 'self';
+              object-src 'none';
+              script-src 'self';
+              style-src 'self';
+              upgrade-insecure-requests
+            Override: true
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: strict-origin-when-cross-origin
+            Override: true
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 31536000
+            IncludeSubdomains: true
+            Preload: true
+            Override: true
+
+  # ── CloudFront OAC ────────────────────────────────────────────────────────
+
+  CloudFrontOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "${AWS::StackName}-oac"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # ── CloudFront distribution ───────────────────────────────────────────────
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub "${AWS::StackName} — SPA + API"
+        DefaultRootObject: index.html
+        HttpVersion: http2and3
+        PriceClass: PriceClass_100    # US/EU/CA only — appropriate for Barcelona audience
+
+        Origins:
+          - Id: FrontendS3
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ""    # Required by CFN schema even when using OAC
+            OriginAccessControlId: !GetAtt CloudFrontOAC.Id
+
+          - Id: ApiGateway
+            DomainName: !Sub "${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+            OriginCustomHeaders:
+              - HeaderName: X-Origin-Verify
+                HeaderValue: !Ref ApiOriginVerifyToken
+            CustomOriginConfig:
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols:
+                - TLSv1.2
+
+        # Default: serve the React SPA from S3 (cached)
+        DefaultCacheBehavior:
+          TargetOriginId: FrontendS3
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6    # AWS managed: CachingOptimized
+          ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+          AllowedMethods:
+            - GET
+            - HEAD
+
+        CacheBehaviors:
+          # Cache the public listings endpoint briefly at the edge.
+          - PathPattern: /api/listings
+            TargetOriginId: ApiGateway
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: !Ref ListingsCachePolicy
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader
+            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+            AllowedMethods:
+              - GET
+              - HEAD
+
+          # Forward the rest of /api/* without caching.
+          - PathPattern: /api/*
+            TargetOriginId: ApiGateway
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad         # CachingDisabled
+            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader
+            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - PATCH
+              - POST
+              - DELETE
+
+        # React Router deep links: S3 returns 403 for missing keys (bucket is private,
+        # not 404). CloudFront rewrites to 200 + index.html so React Router handles routing.
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponsePagePath: /index.html
+            ResponseCode: 200
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponsePagePath: /index.html
+            ResponseCode: 200
+            ErrorCachingMinTTL: 0
+
+Outputs:
+  AppUrl:
+    Description: Live app URL
+    Value: !Sub "https://${CloudFrontDistribution.DomainName}"
+
+  DistributionId:
+    Description: CloudFront distribution ID (for cache invalidations)
+    Value: !Ref CloudFrontDistribution
+
+  FrontendBucketName:
+    Description: S3 bucket for Vite build output (use with aws s3 sync)
+    Value: !Ref FrontendBucket
+
+  CacheBucketName:
+    Description: S3 bucket for listings.json
+    Value: !Ref CacheBucket

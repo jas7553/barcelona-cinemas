@@ -1,0 +1,26 @@
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["models", "cache", "pipeline", "enricher", "observability", "providers", "validation", "listings_config"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["app.py", "pipeline.py", "cache.py", "enricher.py", "observability.py", "models.py", "validation.py", "providers/", "listings_config.py", "tests/"]
+
+[[tool.mypy.overrides]]
+module = "flask"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "dotenv"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["tests.*", "test_cache", "test_enricher", "test_pipeline", "test_listings_provider", "test_listings_config"]
+disallow_untyped_defs = false

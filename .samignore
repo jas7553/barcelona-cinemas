@@ -1,0 +1,36 @@
+# Python virtual environment
+.venv/
+venv/
+
+# Test suite (not needed at runtime)
+tests/
+requirements-dev.txt
+
+# Development tooling
+.mypy_cache/
+__pycache__/
+*.pyc
+pyproject.toml
+eslint.config.js
+tsconfig*.json
+
+# Frontend source (Vite builds to static/, which is served from S3, not Lambda)
+src/
+index.html
+node_modules/
+
+# Static build output (served from S3 FrontendBucket, not Lambda)
+static/
+
+# Local file-backend cache data (Lambda uses S3 backend)
+cache/
+
+# SAM / git metadata
+.aws-sam/
+.git/
+.gitignore
+.samignore
+
+# Superseded manual Lambda build artifacts
+lambda.zip
+package/

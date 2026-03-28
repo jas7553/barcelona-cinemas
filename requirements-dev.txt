@@ -1,0 +1,7 @@
+pytest
+mypy
+ruff
+pre-commit
+cfn-lint
+types-requests
+types-beautifulsoup4
