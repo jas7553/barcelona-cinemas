@@ -187,6 +187,13 @@ Resources:
             Schedule: !Ref ScheduleExpression
             Description: "Proactive cache warming — keep in sync with CacheTtlHours"
             Enabled: true
+        WarmupPing:
+          Type: Schedule
+          Properties:
+            Schedule: "rate(5 minutes)"
+            Description: "Keep Lambda container warm between scheduled refreshes"
+            Input: '{"source": "warmup"}'
+            Enabled: true
 
   LambdaErrorAlarm:
     Type: AWS::CloudWatch::Alarm

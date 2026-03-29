@@ -271,6 +271,18 @@ def test_scheduled_refresh_failure_returns_200_without_error_details(
     assert '"event": "refresh_started"' in caplog.text
 
 
+def test_warmup_ping_returns_200_without_calling_pipeline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    called = []
+    monkeypatch.setattr(pipeline, "force_refresh", lambda: called.append("refresh"))
+
+    response = app.handler({"source": "warmup"}, context=None)
+
+    assert response == {"statusCode": 200}
+    assert called == []
+
+
 def test_debug_mode_is_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(app._LOCAL_DEBUG_ENV, raising=False)
     monkeypatch.delenv("AWS_LAMBDA_FUNCTION_NAME", raising=False)

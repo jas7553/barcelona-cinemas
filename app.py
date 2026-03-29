@@ -186,12 +186,18 @@ def handler(event: dict[str, Any], context: Any) -> Any:
     """
     Lambda entry point.
 
+    Warmup ping events have {"source": "warmup"} and are returned immediately
+    to keep the Lambda container alive without triggering any business logic.
+
     EventBridge scheduled events have {"source": "aws.events"} and are routed
     to pipeline.force_refresh() to proactively warm the S3 cache.
 
     All other events (HTTP API Gateway proxy format) are delegated to Mangum,
     which translates them into WSGI requests for Flask.
     """
+    if event.get("source") == "warmup":
+        logging.info("Warmup ping received")
+        return {"statusCode": 200}
     if event.get("source") == "aws.events":
         logging.info("EventBridge scheduled refresh triggered")
         refresh_id = observability.new_id("refresh")
