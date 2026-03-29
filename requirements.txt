@@ -1,6 +1,5 @@
 asgiref==3.11.1
 beautifulsoup4==4.14.3
-boto3==1.42.78
 flask==3.1.3
 mangum==0.21.0
 python-dotenv==1.2.2

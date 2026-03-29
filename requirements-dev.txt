@@ -5,3 +5,4 @@ pre-commit
 cfn-lint
 types-requests
 types-beautifulsoup4
+boto3
