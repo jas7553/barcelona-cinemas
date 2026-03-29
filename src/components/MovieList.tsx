@@ -3,6 +3,7 @@ import { useState } from "react";
 import { relativeTime } from "../utils";
 import EmptyState from "./EmptyState";
 import MovieRow from "./MovieRow";
+import TmdbAttribution from "./TmdbAttribution";
 
 interface Props {
   movies: TransformedMovie[];
@@ -94,6 +95,7 @@ export default function MovieList({
           )}
         </>
       )}
+      <TmdbAttribution />
     </>
   );
 }

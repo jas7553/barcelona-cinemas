@@ -68,6 +68,20 @@ describe("App", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
+  it("renders TMDb attribution once after listings load", async () => {
+    render(<App />);
+
+    const attribution = await screen.findByRole("region", { name: "TMDb attribution" });
+    expect(attribution).toBeInTheDocument();
+    expect(screen.getByText(/Poster images and movie metadata are provided by/i)).toBeInTheDocument();
+    expect(screen.getByText(/This website uses TMDB and the TMDB APIs/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("img", { name: "TMDb" })).toHaveLength(1);
+
+    const links = screen.getAllByRole("link", { name: /TMDb|Visit TMDb/i });
+    expect(links).toHaveLength(2);
+    expect(links[0]).toHaveAttribute("href", "https://www.themoviedb.org/");
+  });
+
   it("shows emphasized stale metadata when data is stale", async () => {
     vi.spyOn(api, "fetchListings").mockResolvedValue({
       ...LISTINGS,
@@ -77,5 +91,33 @@ describe("App", () => {
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent(/Listings last updated/)
     );
+  });
+
+  it("keeps TMDb attribution visible when no movies are returned", async () => {
+    vi.spyOn(api, "fetchListings").mockResolvedValue({
+      ...LISTINGS,
+      movies: [],
+    });
+
+    render(<App />);
+
+    await waitFor(() =>
+      expect(screen.getByText("No listings yet — check back soon.")).toBeInTheDocument()
+    );
+    expect(screen.getByRole("region", { name: "TMDb attribution" })).toBeInTheDocument();
+  });
+
+  it("keeps TMDb attribution visible when data is stale", async () => {
+    vi.spyOn(api, "fetchListings").mockResolvedValue({
+      ...LISTINGS,
+      stale: true,
+    });
+
+    render(<App />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(/Listings last updated/)
+    );
+    expect(screen.getByRole("region", { name: "TMDb attribution" })).toBeInTheDocument();
   });
 });

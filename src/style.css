@@ -390,6 +390,72 @@ main {
   color: rgba(216, 176, 104, 0.88);
 }
 
+/* ── TMDb attribution ───────────────────────────────────────────────────── */
+.tmdb-attribution {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(90, 156, 245, 0.18);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(90, 156, 245, 0.08), rgba(15, 17, 23, 0)),
+    var(--color-surf);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tmdb-attribution-logo-link {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 8px;
+}
+
+.tmdb-attribution-logo-link:focus-visible,
+.tmdb-attribution-link:focus-visible {
+  outline: 2px solid var(--color-blue);
+  outline-offset: 2px;
+}
+
+.tmdb-attribution-logo {
+  display: block;
+  width: auto;
+  height: 20px;
+}
+
+.tmdb-attribution-copy {
+  min-width: 0;
+}
+
+.tmdb-attribution-source,
+.tmdb-attribution-disclaimer {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.tmdb-attribution-source {
+  color: var(--color-sub);
+}
+
+.tmdb-attribution-disclaimer {
+  margin-top: 2px;
+  color: rgba(133, 138, 176, 0.82);
+}
+
+.tmdb-attribution-link {
+  color: #8fc9ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tmdb-attribution-link:hover,
+.tmdb-attribution-logo-link:hover {
+  opacity: 0.95;
+}
+
 /* ── Movie list ──────────────────────────────────────────────────────────── */
 .movie-list {
   display: flex;
@@ -839,4 +905,9 @@ main {
   }
 
   .time-chip { padding: 5px 9px; }
+
+  .tmdb-attribution {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
