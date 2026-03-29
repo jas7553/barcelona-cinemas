@@ -38,7 +38,7 @@ Globals:
                  # All deps are pure Python so no cross-compilation needed.
                  # If a C extension is added later, use: sam build --use-container
     Timeout: 30
-    MemorySize: 512
+    MemorySize: 256
     # Environment variables are set on ApiFunction directly (not here) so that
     # any future functions don't inherit app-specific config by accident.
 
