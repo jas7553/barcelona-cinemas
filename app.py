@@ -3,6 +3,7 @@ HTTP layer only. No business logic lives here.
 All orchestration is delegated to pipeline.py.
 """
 
+import hmac
 import logging
 import os
 from typing import Any
@@ -78,7 +79,7 @@ def require_trusted_origin_for_api() -> Any | None:
         return None
 
     provided_token = request.headers.get(_ORIGIN_AUTH_HEADER)
-    if provided_token == expected_token:
+    if hmac.compare_digest(provided_token or "", expected_token):
         return None
 
     logging.warning("Rejected API request without trusted origin header for path %s", request.path)
