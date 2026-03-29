@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 from collections.abc import Mapping
 from contextlib import suppress
 from datetime import date, datetime
@@ -12,6 +13,10 @@ from typing import Any
 from models import Listings, Movie, Showtime
 
 logger = logging.getLogger(__name__)
+
+_IMDB_ID_RE = re.compile(r"tt\d+")
+_TMDB_POSTER_PATH_RE = re.compile(r"/[^?#]+")
+_TMDB_POSTER_BASE_URL = "https://image.tmdb.org/t/p/w342"
 
 
 def normalize_listings(data: object, *, source: str) -> Listings | None:
@@ -61,8 +66,9 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     return Movie(
         title=title,
         tmdb_id=_as_optional_int(data.get("tmdb_id"), source=f"{source} tmdb_id"),
-        imdb_id=_as_optional_string(data.get("imdb_id"), source=f"{source} imdb_id"),
+        imdb_id=_as_optional_imdb_id(data.get("imdb_id"), source=f"{source} imdb_id"),
         year=_as_optional_positive_int(data.get("year"), source=f"{source} year"),
+        poster_url=_as_optional_string(data.get("poster_url"), source=f"{source} poster_url"),
         synopsis=_as_optional_string(data.get("synopsis"), source=f"{source} synopsis"),
         rating=_as_optional_rating(data.get("rating"), source=f"{source} rating"),
         runtime_mins=_as_optional_positive_int(data.get("runtime_mins"), source=f"{source} runtime_mins"),
@@ -144,13 +150,17 @@ def normalize_tmdb_payload(data: object, *, title: str) -> dict[str, Any] | None
     if genres is not None:
         normalized["genres"] = genres
 
+    poster_url = _as_tmdb_poster_url(data.get("poster_path"), title=title)
+    if poster_url is not None:
+        normalized["poster_url"] = poster_url
+
     # release_date is "YYYY-MM-DD"; extract the 4-digit year as int.
     release_date = data.get("release_date")
     if isinstance(release_date, str) and len(release_date) >= 4:
         with suppress(ValueError):
             normalized["year"] = int(release_date[:4])
 
-    imdb_id = _as_optional_string(data.get("imdb_id"), source=f"TMDb imdb_id for {title!r}")
+    imdb_id = _as_optional_imdb_id(data.get("imdb_id"), source=f"TMDb imdb_id for {title!r}")
     if imdb_id is not None:
         normalized["imdb_id"] = imdb_id
 
@@ -176,6 +186,26 @@ def _as_optional_string(value: object, *, source: str) -> str | None:
         stripped = value.strip()
         return stripped or None
     logger.warning("Discarded %s: expected string or null", source)
+    return None
+
+
+def _as_optional_imdb_id(value: object, *, source: str) -> str | None:
+    imdb_id = _as_optional_string(value, source=source)
+    if imdb_id is None:
+        return None
+    if _IMDB_ID_RE.fullmatch(imdb_id):
+        return imdb_id
+    logger.warning("Discarded %s: expected IMDb title id", source)
+    return None
+
+
+def _as_tmdb_poster_url(value: object, *, title: str) -> str | None:
+    poster_path = _as_optional_string(value, source=f"TMDb poster_path for {title!r}")
+    if poster_path is None:
+        return None
+    if _TMDB_POSTER_PATH_RE.fullmatch(poster_path):
+        return f"{_TMDB_POSTER_BASE_URL}{poster_path}"
+    logger.warning("Discarded TMDb poster_path for %r: expected image path", title)
     return None
 
 

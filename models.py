@@ -14,6 +14,7 @@ class Movie(TypedDict):
     tmdb_id: int | None
     imdb_id: str | None
     year: int | None
+    poster_url: str | None
     synopsis: str | None
     rating: float | None
     runtime_mins: int | None

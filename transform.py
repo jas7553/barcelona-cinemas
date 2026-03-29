@@ -13,6 +13,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from models import CinemaInfo, CinemaRegistry, Listings, Movie, Showtime
+from validation import normalize_movie
 
 logger = logging.getLogger(__name__)
 
@@ -82,8 +83,10 @@ def _transform_movie(
         return None
 
     tmdb_id: int | None = movie.get("tmdb_id")
-    imdb_id: str | None = movie.get("imdb_id")
+    normalized_movie = normalize_movie(movie, source="transform movie")
+    imdb_id: str | None = normalized_movie["imdb_id"] if normalized_movie is not None else None
     year: int | None = movie.get("year")
+    poster_url: str | None = movie.get("poster_url")
     synopsis: str | None = movie.get("synopsis")
     rating: float | None = movie.get("rating")
     runtime_mins: int | None = movie.get("runtime_mins")
@@ -107,6 +110,7 @@ def _transform_movie(
         "title": title,
         "year": year,
         "runtime_minutes": runtime_mins,
+        "poster_url": poster_url,
         "genres": genres,
         "rating": rating,
         "synopsis": synopsis or "",

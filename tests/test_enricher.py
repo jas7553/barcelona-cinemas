@@ -15,6 +15,7 @@ def _movie(title: str, showtimes: list[Showtime] | None = None, **kwargs: Any) -
         tmdb_id=kwargs.get("tmdb_id"),
         imdb_id=kwargs.get("imdb_id"),
         year=kwargs.get("year"),
+        poster_url=kwargs.get("poster_url"),
         synopsis=kwargs.get("synopsis"),
         rating=kwargs.get("rating"),
         runtime_mins=kwargs.get("runtime_mins"),
@@ -33,6 +34,8 @@ TMDB_SEARCH = {
 
 TMDB_DETAIL = {
     "id": 42,
+    "imdb_id": "tt15239678",
+    "poster_path": "/poster.jpg",
     "overview": "A hero's journey continues.",
     "vote_average": 8.5,
     "runtime": 166,
@@ -52,7 +55,8 @@ def mock_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_reuses_cached_metadata(mock_env):
     """Movie already in cache keeps its TMDb data; only showtimes are updated."""
-    cached = _movie("Dune: Part Two", tmdb_id=42, synopsis="Old synopsis", rating=8.5,
+    cached = _movie("Dune: Part Two", tmdb_id=42, imdb_id="tt15239678",
+                    poster_url="https://image.tmdb.org/t/p/w342/poster.jpg", synopsis="Old synopsis", rating=8.5,
                     showtimes=[_showtime("2026-03-27")])
     fresh = _movie("Dune: Part Two", showtimes=[_showtime("2026-03-28")])
 
@@ -62,6 +66,8 @@ def test_reuses_cached_metadata(mock_env):
     # Session.get should never be called — data came from cache
     MockSession.return_value.__enter__ = MagicMock()
     assert result[0]["synopsis"] == "Old synopsis"
+    assert result[0]["imdb_id"] == "tt15239678"
+    assert result[0]["poster_url"] == "https://image.tmdb.org/t/p/w342/poster.jpg"
     assert result[0]["showtimes"][0]["date"] == "2026-03-28"
     assert stats["tmdb_cache_hit_count"] == 1
     MockSession.return_value.get.assert_not_called()
@@ -83,6 +89,8 @@ def test_fetches_tmdb_for_new_title(mock_env):
         result, stats = enricher.enrich([movie], [])
 
     assert result[0]["tmdb_id"] == 42
+    assert result[0]["imdb_id"] == "tt15239678"
+    assert result[0]["poster_url"] == "https://image.tmdb.org/t/p/w342/poster.jpg"
     assert result[0]["synopsis"] == "A hero's journey continues."
     assert result[0]["rating"] == 8.5
     assert result[0]["runtime_mins"] == 166
@@ -150,6 +158,8 @@ def test_invalid_tmdb_fields_are_safely_discarded(mock_env):
     movie = _movie("Dune: Part Two", showtimes=[_showtime()])
     invalid_detail = {
         "id": 42,
+        "imdb_id": "not-an-imdb-id",
+        "poster_path": "not-a-poster-path",
         "overview": ["not", "a", "string"],
         "vote_average": "8.5",
         "runtime": -10,
@@ -168,6 +178,8 @@ def test_invalid_tmdb_fields_are_safely_discarded(mock_env):
         result, _ = enricher.enrich([movie], [])
 
     assert result[0]["tmdb_id"] == 42
+    assert result[0]["imdb_id"] is None
+    assert result[0]["poster_url"] is None
     assert result[0]["synopsis"] is None
     assert result[0]["rating"] is None
     assert result[0]["runtime_mins"] is None

@@ -94,6 +94,7 @@ def test_read_normalizes_cache_by_dropping_invalid_movies_and_showtimes(tmp_cach
                     {
                         "title": "Valid Film",
                         "tmdb_id": 42,
+                        "poster_url": "https://image.tmdb.org/t/p/w342/valid-film.jpg",
                         "synopsis": "A synopsis",
                         "rating": 8.1,
                         "runtime_mins": 120,
@@ -133,6 +134,7 @@ def test_read_normalizes_cache_by_dropping_invalid_movies_and_showtimes(tmp_cach
             "tmdb_id": 42,
             "imdb_id": None,
             "year": None,
+            "poster_url": "https://image.tmdb.org/t/p/w342/valid-film.jpg",
             "synopsis": "A synopsis",
             "rating": 8.1,
             "runtime_mins": 120,

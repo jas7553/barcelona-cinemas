@@ -156,6 +156,7 @@ class ListingsProvider:
                     tmdb_id=None,
                     imdb_id=None,
                     year=None,
+                    poster_url=None,
                     synopsis=None,
                     rating=None,
                     runtime_mins=None,

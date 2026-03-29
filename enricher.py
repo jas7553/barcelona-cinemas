@@ -131,6 +131,7 @@ def _lookup_and_merge(
             "tmdb_id":      tmdb_data.get("id"),
             "imdb_id":      tmdb_data.get("imdb_id") or None,
             "year":         tmdb_data.get("year") or None,
+            "poster_url":   tmdb_data.get("poster_url") or None,
             "synopsis":     tmdb_data.get("overview") or None,
             "rating":       tmdb_data.get("vote_average") or None,
             "runtime_mins": tmdb_data.get("runtime") or None,

@@ -56,6 +56,7 @@ def _movie(title: str = "Test Film", showtimes: list[Showtime] | None = None, **
         "tmdb_id": None,
         "imdb_id": None,
         "year": None,
+        "poster_url": None,
         "synopsis": None,
         "rating": None,
         "runtime_mins": None,
@@ -68,6 +69,7 @@ def _movie(title: str = "Test Film", showtimes: list[Showtime] | None = None, **
         tmdb_id=movie_data["tmdb_id"],
         imdb_id=movie_data["imdb_id"],
         year=movie_data["year"],
+        poster_url=movie_data["poster_url"],
         synopsis=movie_data["synopsis"],
         rating=movie_data["rating"],
         runtime_mins=movie_data["runtime_mins"],
@@ -183,6 +185,7 @@ def test_movie_fields_mapped_correctly():
         tmdb_id=693134,
         imdb_id="tt15239678",
         year=2024,
+        poster_url="https://image.tmdb.org/t/p/w342/dune.jpg",
         synopsis="Paul Atreides unites...",
         rating=8.1,
         runtime_mins=166,
@@ -193,6 +196,7 @@ def test_movie_fields_mapped_correctly():
     assert m["title"] == "Dune: Part Two"
     assert m["year"] == 2024
     assert m["runtime_minutes"] == 166
+    assert m["poster_url"] == "https://image.tmdb.org/t/p/w342/dune.jpg"
     assert m["rating"] == 8.1
     assert m["genres"] == ["Action", "Sci-Fi"]
     assert m["synopsis"] == "Paul Atreides unites..."
@@ -206,6 +210,12 @@ def test_imdb_link_constructed_from_imdb_id():
 
 def test_no_imdb_link_when_imdb_id_missing():
     movie = _movie(imdb_id=None)
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    assert result["movies"][0]["links"]["imdb"] is None
+
+
+def test_no_imdb_link_when_imdb_id_is_malformed():
+    movie = _movie(imdb_id="not-an-imdb-id")
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     assert result["movies"][0]["links"]["imdb"] is None
 

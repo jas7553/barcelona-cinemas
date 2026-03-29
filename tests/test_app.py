@@ -8,7 +8,7 @@ import pytest
 import app
 import cache
 import pipeline
-from models import Listings
+from models import Listings, Movie
 
 
 @pytest.fixture()
@@ -19,6 +19,21 @@ def client() -> Any:
 
 def _listings() -> Listings:
     return Listings(fetched_at="2026-03-28T12:00:00+00:00", stale=False, movies=[])
+
+
+def _movie(imdb_id: str | None) -> Movie:
+    return Movie(
+        title="Dune: Part Two",
+        tmdb_id=42,
+        imdb_id=imdb_id,
+        year=2024,
+        poster_url="https://image.tmdb.org/t/p/w342/dune.jpg",
+        synopsis="A hero's journey continues.",
+        rating=8.5,
+        runtime_mins=166,
+        genres=["Science Fiction"],
+        showtimes=[],
+    )
 
 
 def test_api_allows_local_requests_when_origin_token_unset(
@@ -64,6 +79,54 @@ def test_api_accepts_requests_with_matching_origin_header(
         "movies": [],
     }
     assert response.headers["X-Request-Id"].startswith("req-")
+
+
+def test_api_listings_includes_imdb_link_for_valid_movie(
+    client: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv(app._ORIGIN_AUTH_ENV, raising=False)
+    monkeypatch.setattr(
+        pipeline,
+        "get_listings",
+        lambda: Listings(
+            fetched_at="2026-03-28T12:00:00+00:00",
+            stale=False,
+            movies=[_movie("tt15239678")],
+        ),
+    )
+    monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
+
+    response = client.get("/api/listings")
+
+    assert response.status_code == 200
+    movie = response.get_json()["movies"][0]
+    assert movie["links"]["imdb"] == "https://www.imdb.com/title/tt15239678"
+    assert movie["poster_url"] == "https://image.tmdb.org/t/p/w342/dune.jpg"
+    assert movie["links"]["letterboxd"] is None
+    assert movie["links"]["filmaffinity"] is None
+
+
+def test_api_listings_includes_null_imdb_link_when_missing(
+    client: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv(app._ORIGIN_AUTH_ENV, raising=False)
+    monkeypatch.setattr(
+        pipeline,
+        "get_listings",
+        lambda: Listings(
+            fetched_at="2026-03-28T12:00:00+00:00",
+            stale=False,
+            movies=[_movie(None)],
+        ),
+    )
+    monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
+
+    response = client.get("/api/listings")
+
+    assert response.status_code == 200
+    movie = response.get_json()["movies"][0]
+    assert "links" in movie
+    assert movie["links"]["imdb"] is None
 
 
 def test_api_rejects_requests_with_wrong_origin_header(
