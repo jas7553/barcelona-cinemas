@@ -30,6 +30,25 @@ Parameters:
       Shared secret CloudFront sends to the API origin in X-Origin-Verify.
       Use a long random value.
 
+  CloudFrontDistributionId:
+    Type: String
+    Default: ""
+    Description: >
+      CloudFront distribution ID injected into Lambda for post-refresh invalidation.
+      Automatically populated by deploy.sh from stack Outputs on re-deploys.
+      Leave blank on first deploy.
+
+  CloudFrontDomainName:
+    Type: String
+    Default: ""
+    Description: >
+      CloudFront domain name (e.g. d1234abcdef.cloudfront.net) injected into Lambda
+      for post-refresh pre-warming. Automatically populated by deploy.sh from stack
+      Outputs on re-deploys. Leave blank on first deploy.
+
+Conditions:
+  HasCloudFrontDistributionId: !Not [!Equals [!Ref CloudFrontDistributionId, ""]]
+
 Globals:
   Function:
     Runtime: python3.12
@@ -110,6 +129,7 @@ Resources:
       Handler: app.handler
       CodeUri: ./
       Description: Barcelona Movie Database — Flask API via Mangum + EventBridge refresh
+      Timeout: 60    # Overrides global 30s; extra headroom for post-refresh CloudFront invalidation + pre-warm
       ReservedConcurrentExecutions: 5    # Guards against runaway invocations / bill spikes
       Environment:
         Variables:
@@ -121,6 +141,8 @@ Resources:
           # Lambda env vars are strings, so stringify the numeric parameter explicitly.
           CACHE_TTL_HOURS: !Sub "${CacheTtlHours}"
           ORIGIN_VERIFY_TOKEN: !Ref ApiOriginVerifyToken
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref CloudFrontDistributionId
+          CLOUDFRONT_URL: !Sub "https://${CloudFrontDomainName}"
       Policies:
         - Statement:
             - Sid: CacheBucketReadWrite
@@ -145,6 +167,14 @@ Resources:
               Action:
                 - kms:Decrypt
               Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm"
+            - Sid: CloudFrontInvalidate
+              Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !If
+                - HasCloudFrontDistributionId
+                - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistributionId}"
+                - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/*"
       Events:
         HttpApi:
           Type: HttpApi
@@ -234,10 +264,10 @@ Resources:
     Type: AWS::CloudFront::CachePolicy
     Properties:
       CachePolicyConfig:
-        Name: !Sub "${AWS::StackName}-listings-5m"
-        DefaultTTL: 300
+        Name: !Sub "${AWS::StackName}-listings-12h"
+        DefaultTTL: 43200
         MinTTL: 0
-        MaxTTL: 300
+        MaxTTL: 43200
         ParametersInCacheKeyAndForwardedToOrigin:
           EnableAcceptEncodingGzip: true
           EnableAcceptEncodingBrotli: true

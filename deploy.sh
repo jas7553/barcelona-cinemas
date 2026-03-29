@@ -34,10 +34,23 @@ echo "==> 2/5 SAM build (package Lambda + dependencies)"
 sam build
 
 echo "==> 3/5 SAM deploy"
+# Fetch distribution ID + domain from the existing stack so they can be injected
+# into Lambda env vars for post-refresh invalidation/pre-warming. Absent on first deploy.
+CF_DIST_ID=$(aws cloudformation describe-stacks --stack-name "$STACK" \
+  --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+  --output text 2>/dev/null || true)
+CF_DOMAIN=$(aws cloudformation describe-stacks --stack-name "$STACK" \
+  --query "Stacks[0].Outputs[?OutputKey=='AppUrl'].OutputValue" \
+  --output text 2>/dev/null | sed 's|https://||' || true)
+CF_PARAM_OVERRIDES=""
+[ -n "$CF_DIST_ID" ] && [ "$CF_DIST_ID" != "None" ] && CF_PARAM_OVERRIDES="CloudFrontDistributionId=$CF_DIST_ID"
+[ -n "$CF_DOMAIN" ] && [ "$CF_DOMAIN" != "None" ] && CF_PARAM_OVERRIDES="${CF_PARAM_OVERRIDES:+$CF_PARAM_OVERRIDES }CloudFrontDomainName=$CF_DOMAIN"
+
 if [ "$GUIDED" = "--guided" ]; then
   sam deploy --guided
 else
-  sam deploy
+  # shellcheck disable=SC2086  # CF_PARAM_OVERRIDES is intentionally word-split
+  sam deploy ${CF_PARAM_OVERRIDES:+--parameter-overrides $CF_PARAM_OVERRIDES}
 fi
 
 echo "==> 4/5 Sync static/ → S3 FrontendBucket"

@@ -395,6 +395,95 @@ def test_collect_movies_keeps_conflicting_imdb_ids_split_even_when_titles_normal
     assert imdb_ids == {"tt32897959", "tt0104181"}
 
 
+# ── _invalidate_cloudfront ────────────────────────────────────────────────────
+
+
+def test_invalidate_cloudfront_noop_when_env_var_absent(monkeypatch):
+    monkeypatch.delenv("CLOUDFRONT_DISTRIBUTION_ID", raising=False)
+    with patch.object(pipeline, "_cf") as mock_cf:
+        pipeline._invalidate_cloudfront()
+    mock_cf.assert_not_called()
+
+
+def test_invalidate_cloudfront_calls_create_invalidation(monkeypatch):
+    monkeypatch.setenv("CLOUDFRONT_DISTRIBUTION_ID", "EDFDVBD6EXAMPLE")
+    mock_client = MagicMock()
+    with patch.object(pipeline, "_cf", return_value=mock_client):
+        pipeline._invalidate_cloudfront()
+    mock_client.create_invalidation.assert_called_once()
+    args = mock_client.create_invalidation.call_args
+    assert args.kwargs["DistributionId"] == "EDFDVBD6EXAMPLE"
+    paths = args.kwargs["InvalidationBatch"]["Paths"]
+    assert paths["Quantity"] == 1
+    assert paths["Items"] == ["/api/listings"]
+
+
+def test_invalidate_cloudfront_swallows_exceptions(monkeypatch):
+    monkeypatch.setenv("CLOUDFRONT_DISTRIBUTION_ID", "EDFDVBD6EXAMPLE")
+    mock_client = MagicMock()
+    mock_client.create_invalidation.side_effect = RuntimeError("API error")
+    with patch.object(pipeline, "_cf", return_value=mock_client):
+        pipeline._invalidate_cloudfront()  # must not raise
+
+
+# ── _prewarm_cloudfront ───────────────────────────────────────────────────────
+
+
+def test_prewarm_cloudfront_noop_when_env_var_absent(monkeypatch):
+    monkeypatch.delenv("CLOUDFRONT_URL", raising=False)
+    with patch("urllib.request.urlopen") as mock_urlopen:
+        pipeline._prewarm_cloudfront()
+    mock_urlopen.assert_not_called()
+
+
+def test_prewarm_cloudfront_fetches_listings_url(monkeypatch):
+    monkeypatch.setenv("CLOUDFRONT_URL", "https://example.cloudfront.net")
+    mock_response = MagicMock()
+    mock_response.__enter__ = lambda s: s
+    mock_response.__exit__ = MagicMock(return_value=False)
+    mock_response.status = 200
+    with patch("urllib.request.urlopen", return_value=mock_response) as mock_urlopen:
+        pipeline._prewarm_cloudfront()
+    mock_urlopen.assert_called_once()
+    req = mock_urlopen.call_args.args[0]
+    assert req.full_url == "https://example.cloudfront.net/api/listings"
+
+
+def test_prewarm_cloudfront_swallows_exceptions(monkeypatch):
+    monkeypatch.setenv("CLOUDFRONT_URL", "https://example.cloudfront.net")
+    with patch("urllib.request.urlopen", side_effect=OSError("timeout")):
+        pipeline._prewarm_cloudfront()  # must not raise
+
+
+# ── force_refresh integration ─────────────────────────────────────────────────
+
+
+def test_force_refresh_calls_post_refresh_steps_on_success(tmp_cache):
+    fresh = _listings()
+    with (
+        patch.object(pipeline, "_refresh", return_value=fresh),
+        patch.object(pipeline, "_invalidate_cloudfront") as mock_invalidate,
+        patch.object(pipeline, "_prewarm_cloudfront") as mock_prewarm,
+    ):
+        pipeline.force_refresh()
+
+    mock_invalidate.assert_called_once()
+    mock_prewarm.assert_called_once()
+
+
+def test_force_refresh_skips_post_refresh_steps_on_failure(tmp_cache):
+    with (
+        patch.object(pipeline, "_refresh", side_effect=RuntimeError("scrape failed")),
+        patch.object(pipeline, "_invalidate_cloudfront") as mock_invalidate,
+        patch.object(pipeline, "_prewarm_cloudfront") as mock_prewarm,
+        pytest.raises(RuntimeError),
+    ):
+        pipeline.force_refresh()
+
+    mock_invalidate.assert_not_called()
+    mock_prewarm.assert_not_called()
+
+
 def test_collect_movies_returns_data_when_one_provider_fails():
     provider_one = MagicMock()
     provider_one.name = "provider_one"

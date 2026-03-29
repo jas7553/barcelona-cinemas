@@ -7,9 +7,11 @@ import json
 import logging
 import os
 import string
+import time
+import urllib.request
 from datetime import UTC, datetime
 from itertools import chain
-from typing import cast
+from typing import Any, cast
 
 import cache
 import enricher
@@ -22,6 +24,12 @@ logger = logging.getLogger(__name__)
 
 _CINEMAS_FILE = "cinemas.json"
 _CACHE_TTL_HOURS = int(os.environ.get("CACHE_TTL_HOURS", 12))
+
+
+def _cf() -> Any:
+    import boto3  # type: ignore[import-untyped]
+
+    return boto3.client("cloudfront")
 
 
 _cinemas_cache: CinemaRegistry | None = None
@@ -68,7 +76,53 @@ def force_refresh() -> Listings:
     emit_metric("RefreshDurationMs", duration_ms, unit="Milliseconds")
     emit_metric("CacheAgeHours", 0, unit="None")
     log_event("refresh_summary", trigger="schedule", duration_ms=duration_ms, success=True)
+    _invalidate_cloudfront()
+    _prewarm_cloudfront()
     return result
+
+
+def _invalidate_cloudfront() -> None:
+    """Create a CloudFront invalidation for /api/listings after a cache refresh.
+
+    No-ops silently in local dev (env var absent) and swallows all exceptions
+    so a CloudFront API failure never masks a successful refresh.
+    """
+    dist_id = os.environ.get("CLOUDFRONT_DISTRIBUTION_ID")
+    if not dist_id:
+        return
+    try:
+        _cf().create_invalidation(
+            DistributionId=dist_id,
+            InvalidationBatch={
+                "Paths": {"Quantity": 1, "Items": ["/api/listings"]},
+                "CallerReference": str(int(time.time())),
+            },
+        )
+        log_event("cloudfront_invalidation_created", distribution_id=dist_id)
+    except Exception:
+        logger.warning("CloudFront invalidation failed", exc_info=True)
+
+
+def _prewarm_cloudfront() -> None:
+    """Fetch /api/listings through CloudFront to repopulate the edge cache.
+
+    Called after invalidation. CloudFront injects X-Origin-Verify when
+    forwarding the cache-miss to the origin, so the auth check passes.
+    If invalidation hasn't propagated yet (~30s), CloudFront may serve the
+    previous cached response — acceptable; the next real user request will
+    miss and fetch fresh data.
+
+    No-ops silently in local dev (env var absent) and swallows all exceptions.
+    """
+    url = os.environ.get("CLOUDFRONT_URL")
+    if not url:
+        return
+    try:
+        req = urllib.request.Request(f"{url}/api/listings")
+        with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310
+            log_event("cloudfront_prewarm_complete", status=resp.status)
+    except Exception:
+        logger.warning("CloudFront pre-warm request failed", exc_info=True)
 
 
 def _refresh() -> Listings:
