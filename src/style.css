@@ -517,14 +517,13 @@ main {
   font-weight: 600;
   color: var(--color-sub);
   text-decoration: none;
-  transition: color 0.13s, border-color 0.13s, background 0.13s, transform 0.13s;
+  transition: color 0.13s, border-color 0.13s, background 0.13s;
 }
 
 .ext-link:hover {
   color: var(--color-text);
   border-color: rgba(245, 166, 35, 0.45);
   background: rgba(245, 166, 35, 0.12);
-  transform: translateY(-1px);
 }
 
 .ext-link-desktop {
