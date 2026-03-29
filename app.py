@@ -18,6 +18,7 @@ load_dotenv()
 import cache  # noqa: E402
 import observability  # noqa: E402
 import pipeline  # noqa: E402
+import transform  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
 
@@ -51,7 +52,7 @@ def listings() -> Any:
         g.listings_stale = payload.get("stale", False)
         g.listings_fallback_used = False
         g.listings_cache_age_hours = cache.age_hours(payload)
-        return jsonify(payload)
+        return jsonify(transform.to_api_response(payload, pipeline.load_cinemas()))
     except Exception:
         logging.exception("Failed to get listings")
         return _stale_or_error()
@@ -143,7 +144,7 @@ def _stale_or_error() -> Any:
         g.listings_stale = True
         g.listings_fallback_used = True
         g.listings_cache_age_hours = cache.age_hours(stale)
-        return jsonify(stale)
+        return jsonify(transform.to_api_response(stale, pipeline.load_cinemas()))
     g.listings_stale = False
     g.listings_fallback_used = False
     g.listings_cache_age_hours = None

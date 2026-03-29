@@ -1,4 +1,4 @@
-"""Tests for pipeline.py — cache TTL logic and provider fallback."""
+"""Tests for pipeline.py — cache TTL logic and collection error handling."""
 
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
@@ -70,62 +70,21 @@ def test_force_refresh_bypasses_ttl(tmp_cache, monkeypatch):
     monkeypatch.setattr(pipeline, "_CACHE_TTL_HOURS", 999)
 
     fresh = _listings()
-    stats = {
-        "provider": "TestProvider",
-        "movie_count": 0,
-        "showtime_count": 0,
-        "tmdb_enriched_count": 0,
-        "tmdb_cache_hit_count": 0,
-        "tmdb_failure_count": 0,
-    }
-    with patch.object(pipeline, "_refresh", return_value=(fresh, stats)) as mock_refresh:
+    with patch.object(pipeline, "_refresh", return_value=fresh) as mock_refresh:
         result = pipeline.force_refresh()
 
     mock_refresh.assert_called_once()
     assert result is fresh
 
 
-def test_collect_movies_falls_back_to_second_provider():
-    """If the first provider raises, the second one is used."""
-    failing = MagicMock()
-    failing.fetch.side_effect = RuntimeError("first provider down")
-    working = MagicMock()
-    working.fetch.return_value = []
-
-    with patch.object(pipeline, "get_providers", return_value=[failing, working]):
-        result, provider_name = pipeline._collect_movies({})
-
-    assert result == []
-    assert provider_name == type(working).__name__
-    working.fetch.assert_called_once()
-
-
-def test_collect_movies_raises_when_all_providers_fail():
-    """RuntimeError is raised when every provider fails."""
-    failing1 = MagicMock()
-    failing1.fetch.side_effect = RuntimeError("down")
-    failing2 = MagicMock()
-    failing2.fetch.side_effect = RuntimeError("also down")
-
+def test_collect_movies_raises_when_provider_fails():
+    """RuntimeError is raised when the provider fails."""
     with (
-        patch.object(pipeline, "get_providers", return_value=[failing1, failing2]),
-        pytest.raises(RuntimeError, match="All providers failed"),
+        patch.object(pipeline, "ListingsProvider") as mock_cls,
+        pytest.raises(RuntimeError, match="Provider failed"),
     ):
+        mock_cls.return_value.fetch.side_effect = RuntimeError("down")
         pipeline._collect_movies({})
-
-
-def test_collect_movies_treats_config_errors_as_provider_failures():
-    failing = MagicMock()
-    failing.fetch.side_effect = OSError("Neither LISTINGS_FEED_URL nor LISTINGS_FEED_SSM_PARAMETER is set")
-    working = MagicMock()
-    working.fetch.return_value = []
-
-    with patch.object(pipeline, "get_providers", return_value=[failing, working]):
-        result, provider_name = pipeline._collect_movies({})
-
-    assert result == []
-    assert provider_name == type(working).__name__
-    working.fetch.assert_called_once()
 
 
 def test_collect_movies_drops_invalid_movies_and_showtimes():
@@ -167,8 +126,8 @@ def test_collect_movies_drops_invalid_movies_and_showtimes():
         },
     ]
 
-    with patch.object(pipeline, "get_providers", return_value=[provider]):
-        result, _ = pipeline._collect_movies({})
+    with patch.object(pipeline, "ListingsProvider", return_value=provider):
+        result = pipeline._collect_movies({})
 
     assert len(result) == 1
     assert result[0]["title"] == "Valid Film"

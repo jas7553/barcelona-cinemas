@@ -1,95 +1,170 @@
-import { useEffect, useState } from "react";
-import type { BannerState, CinemaRegistry, Movie } from "./types";
-import { fetchCinemas, fetchListings } from "./api";
-import { fmtDate, relativeTime } from "./utils";
-import { Banner } from "./components/Banner";
-import { ChipNav } from "./components/ChipNav";
-import { MovieList } from "./components/MovieList";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchListings } from "./api";
+import type { AppState, Theater, TransformedMovie } from "./types";
+import { normalizeForSearch, transformResponse } from "./utils";
+import DateBar from "./components/DateBar";
+import FilterPanel from "./components/FilterPanel";
+import Header from "./components/Header";
+import MovieList from "./components/MovieList";
+import Sidebar from "./components/Sidebar";
 
-const LS_KEY = "bcn_cinema_neighborhood";
-const ERROR_BANNER: BannerState = {
-  type: "error",
-  message: "Couldn't load listings.",
+const INITIAL_STATE: AppState = {
+  selectedDate: "all",
+  selectedLang: "all",
+  selectedGenre: "all",
+  selectedTheater: "all",
+  searchQuery: "",
+  filterPanelOpen: false,
 };
 
-export function App() {
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [cinemas, setCinemas] = useState<CinemaRegistry>({});
-  const [activeNeighborhood, setActiveNeighborhood] = useState<string>(
-    localStorage.getItem(LS_KEY) ?? "All"
-  );
-  const [banner, setBanner] = useState<BannerState | null>(null);
+export default function App() {
+  const [movies, setMovies] = useState<TransformedMovie[]>([]);
+  const [theaters, setTheaters] = useState<Theater[]>([]);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [fetchedAt, setFetchedAt] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<AppState>(INITIAL_STATE);
 
-  function applyListings(data: {
-    stale?: boolean;
-    fetched_at?: string;
-    movies?: Movie[];
-    error?: string;
-  }) {
-    if (data.error) {
-      setBanner(ERROR_BANNER);
-      return;
-    }
-    if (data.stale && data.fetched_at) {
-      setBanner({
-        type: "stale",
-        message: `Showing cached listings from ${relativeTime(data.fetched_at)}.`,
-      });
-    } else {
-      setBanner(null);
-    }
-    setMovies(data.movies ?? []);
-    setFetchedAt(data.fetched_at ?? null);
-  }
-
-  useEffect(() => {
-    void Promise.all([
-      fetchCinemas()
-        .then(setCinemas)
-        .catch(() => undefined),
-      fetchListings()
-        .then(applyListings)
-        .catch(() => setBanner(ERROR_BANNER))
-        .finally(() => setLoading(false)),
-    ]);
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    fetchListings()
+      .then((data) => {
+        setMovies(transformResponse(data));
+        setTheaters(data.theaters);
+        setGeneratedAt(data.generated_at);
+        setStale(data.stale);
+      })
+      .catch(() => setError("fetch failed"))
+      .finally(() => setLoading(false));
   }, []);
 
-  const dates = movies.flatMap((m) => m.showtimes.map((s) => s.date)).sort();
-  const weekRange =
-    dates.length >= 2 ? `${fmtDate(dates[0])} – ${fmtDate(dates[dates.length - 1])}` : null;
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchListings()
+      .then((data) => {
+        if (cancelled) return;
+        setMovies(transformResponse(data));
+        setTheaters(data.theaters);
+        setGeneratedAt(data.generated_at);
+        setStale(data.stale);
+      })
+      .catch(() => {
+        if (!cancelled) setError("fetch failed");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const setFilter = useCallback((key: keyof AppState, value: string) => {
+    setFilters((f) => ({ ...f, [key]: value }));
+  }, []);
+
+  const toggleFilterPanel = useCallback(() => {
+    setFilters((f) => ({ ...f, filterPanelOpen: !f.filterPanelOpen }));
+  }, []);
+
+  const genres = useMemo(() => {
+    const set = new Set<string>();
+    for (const m of movies) for (const g of m.genres) set.add(g);
+    return [...set].sort();
+  }, [movies]);
+
+  const filteredMovies = useMemo(() => {
+    const q = normalizeForSearch(filters.searchQuery);
+    return movies.filter((m) => {
+      if (q && !normalizeForSearch(m.title).includes(q)) return false;
+      if (filters.selectedGenre !== "all" && !m.genres.includes(filters.selectedGenre)) return false;
+      if (
+        filters.selectedTheater !== "all" &&
+        !m.showtimes.some((s) => s.theater.id === filters.selectedTheater)
+      ) return false;
+      if (
+        filters.selectedDate !== "all" &&
+        !m.showtimes.some((s) => s.dayOffset === filters.selectedDate)
+      ) return false;
+      if (filters.selectedLang !== "all") {
+        const hasLang = m.showtimes.some(
+          (s) =>
+            s.language === filters.selectedLang &&
+            (filters.selectedTheater === "all" || s.theater.id === filters.selectedTheater) &&
+            (filters.selectedDate === "all" || s.dayOffset === filters.selectedDate)
+        );
+        if (!hasLang) return false;
+      }
+      return true;
+    });
+  }, [movies, filters]);
+
+  const activeFilterCount = [
+    filters.selectedLang !== "all",
+    filters.selectedGenre !== "all",
+    filters.selectedTheater !== "all",
+  ].filter(Boolean).length;
+
+  const rowFilters = {
+    selectedDate: filters.selectedDate,
+    selectedLang: filters.selectedLang,
+    selectedTheater: filters.selectedTheater,
+  };
 
   return (
     <>
-      <header>
-        <h1>Barcelona This Week</h1>
-        {weekRange && <p className="week-range">{weekRange}</p>}
-      </header>
-
-      <Banner banner={banner} />
-
-      <ChipNav
-        cinemas={cinemas}
-        active={activeNeighborhood}
-        onSelect={(name) => {
-          localStorage.setItem(LS_KEY, name);
-          setActiveNeighborhood(name);
-        }}
+      <Header
+        searchQuery={filters.searchQuery}
+        onSearch={(q) => setFilter("searchQuery", q)}
+        filmCount={filteredMovies.length}
+        filterPanelOpen={filters.filterPanelOpen}
+        onToggleFilter={toggleFilterPanel}
+        activeFilterCount={activeFilterCount}
       />
 
-      <MovieList
-        movies={movies}
-        activeNeighborhood={activeNeighborhood}
-        loading={loading}
-        onShowAll={() => setActiveNeighborhood("All")}
+      {!loading && !error && (
+        <DateBar
+          selectedDate={filters.selectedDate}
+          onSelect={(d) =>
+            setFilters((f) => ({ ...f, selectedDate: d }))
+          }
+        />
+      )}
+
+      <FilterPanel
+        open={filters.filterPanelOpen}
+        onClose={() => setFilters((f) => ({ ...f, filterPanelOpen: false }))}
+        filters={filters}
+        onFilter={setFilter}
+        genres={genres}
+        theaters={theaters}
       />
 
-      <footer>
-        <span id="last-updated">
-          {fetchedAt ? `Updated ${relativeTime(fetchedAt)}` : ""}
-        </span>
-      </footer>
+      <div className="layout">
+        <Sidebar
+          filters={filters}
+          onFilter={setFilter}
+          genres={genres}
+          theaters={theaters}
+          movies={movies}
+        />
+        <main>
+          <MovieList
+            movies={filteredMovies}
+            allMoviesEmpty={movies.length === 0}
+            loading={loading}
+            error={error}
+            onRetry={load}
+            generatedAt={generatedAt}
+            stale={stale}
+            filters={rowFilters}
+          />
+        </main>
+      </div>
     </>
   );
 }

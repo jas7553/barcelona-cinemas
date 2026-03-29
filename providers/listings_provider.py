@@ -154,6 +154,8 @@ class ListingsProvider:
                 Movie(
                     title=title,
                     tmdb_id=None,
+                    imdb_id=None,
+                    year=None,
                     synopsis=None,
                     rating=None,
                     runtime_mins=None,

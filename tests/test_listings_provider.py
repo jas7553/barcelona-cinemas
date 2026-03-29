@@ -58,8 +58,22 @@ def test_extract_cinema_name_strips_imax_span():
 # ── ListingsProvider.fetch ────────────────────────────────────────────────────
 
 CINEMAS: CinemaRegistry = {
-    "Verdi":   CinemaInfo(address="Carrer de Verdi, 32", neighborhood="Gràcia"),
-    "Glòries": CinemaInfo(address="Avinguda Diagonal, 208", neighborhood="Poble-Nou"),
+    "Verdi": CinemaInfo(
+        id="verdi",
+        name="Cinemes Verdi",
+        address="Carrer de Verdi, 32",
+        neighborhood="Gràcia",
+        website_url="https://www.cines-verdi.com/barcelona/",
+        maps_url="https://maps.google.com/?q=Cinemes+Verdi+Barcelona",
+    ),
+    "Glòries": CinemaInfo(
+        id="glories",
+        name="Cinesa Diagonal Mar",
+        address="Avinguda Diagonal, 208",
+        neighborhood="Poble-Nou",
+        website_url="https://www.cinesa.es/cines/diagonal-mar/",
+        maps_url="https://maps.google.com/?q=Avinguda+Diagonal+208+Barcelona",
+    ),
 }
 
 MINIMAL_HTML = """

@@ -1,30 +1,58 @@
 {
   "Verdi": {
+    "id": "verdi",
+    "name": "Cines Verdi",
     "address": "Carrer de Verdi, 32",
-    "neighborhood": "Gràcia"
+    "neighborhood": "Gràcia",
+    "website_url": "https://cinesverdi.com",
+    "maps_url": "https://maps.google.com/?q=Cines+Verdi,+Carrer+de+Verdi+32,+Barcelona"
   },
   "VP": {
+    "id": "verdi-park",
+    "name": "Verdi Park",
     "address": "Carrer de Torrijos, 49",
-    "neighborhood": "Gràcia"
+    "neighborhood": "Gràcia",
+    "website_url": "https://cinesverdi.com",
+    "maps_url": "https://maps.google.com/?q=Verdi+Park,+Carrer+de+Torrijos+49,+Barcelona"
   },
   "Malda": {
+    "id": "malda",
+    "name": "Cinema Maldà",
     "address": "Carrer del Pi, 5",
-    "neighborhood": "Gothic Quarter"
+    "neighborhood": "Gothic Quarter",
+    "website_url": "https://www.cinemalda.com",
+    "maps_url": "https://maps.google.com/?q=Cinema+Maldà,+Carrer+del+Pi+5,+Barcelona"
   },
   "FdC": {
+    "id": "filmoteca",
+    "name": "Filmoteca de Catalunya",
     "address": "Plaça de Salvador Seguí, 1-9",
-    "neighborhood": "El Raval"
+    "neighborhood": "El Raval",
+    "website_url": "https://filmoteca.cat",
+    "maps_url": "https://maps.google.com/?q=Filmoteca+de+Catalunya,+Plaça+de+Salvador+Seguí+1,+Barcelona"
   },
   "CinDigMar": {
+    "id": "diagonal-mar",
+    "name": "Cinesa Diagonal Mar",
     "address": "Avinguda del Litoral, 2",
-    "neighborhood": "Poble-Nou"
+    "neighborhood": "Diagonal Mar",
+    "website_url": "https://www.cinesa.es/cines/barcelona/diagonal-mar",
+    "maps_url": "https://maps.google.com/?q=Cinesa+Diagonal+Mar,+Avinguda+del+Litoral+2,+Barcelona"
   },
   "Glòries": {
+    "id": "glories",
+    "name": "Cinesa Glòries",
     "address": "Avinguda Diagonal, 208",
-    "neighborhood": "Poble-Nou"
+    "neighborhood": "Poble-Nou",
+    "website_url": "https://www.cinesa.es/cines/barcelona/glories",
+    "maps_url": "https://maps.google.com/?q=Cinesa+Glòries,+Avinguda+Diagonal+208,+Barcelona"
   },
   "Aribau": {
+    "id": "aribau",
+    "name": "Cinemes Aribau",
     "address": "Carrer d'Aribau, 8-10",
-    "neighborhood": "Eixample"
+    "neighborhood": "Eixample",
+    "website_url": "https://www.grupbalanas.com/aribau",
+    "maps_url": "https://maps.google.com/?q=Cinemes+Aribau,+Carrer+d'Aribau+8,+Barcelona"
   }
 }

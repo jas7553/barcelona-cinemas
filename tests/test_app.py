@@ -52,11 +52,17 @@ def test_api_accepts_requests_with_matching_origin_header(
 ) -> None:
     monkeypatch.setenv(app._ORIGIN_AUTH_ENV, "shared-secret")
     monkeypatch.setattr(pipeline, "get_listings", _listings)
+    monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
 
     response = client.get("/api/listings", headers={app._ORIGIN_AUTH_HEADER: "shared-secret"})
 
     assert response.status_code == 200
-    assert response.get_json() == _listings()
+    assert response.get_json() == {
+        "generated_at": "2026-03-28T12:00:00+00:00",
+        "stale": False,
+        "theaters": [],
+        "movies": [],
+    }
     assert response.headers["X-Request-Id"].startswith("req-")
 
 
@@ -82,11 +88,17 @@ def test_listings_returns_stale_cache_when_pipeline_errors(
         "read",
         lambda: Listings(fetched_at="2026-03-28T12:00:00+00:00", stale=False, movies=[]),
     )
+    monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
 
     response = client.get("/api/listings")
 
     assert response.status_code == 200
-    assert response.get_json() == {"fetched_at": "2026-03-28T12:00:00+00:00", "stale": True, "movies": []}
+    assert response.get_json() == {
+        "generated_at": "2026-03-28T12:00:00+00:00",
+        "stale": True,
+        "theaters": [],
+        "movies": [],
+    }
     assert '"event": "listings_request_summary"' in caplog.text
     assert '"fallback_used": true' in caplog.text
 

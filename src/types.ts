@@ -1,30 +1,62 @@
-export interface Showtime {
-  cinema: string;
+// API response types — mirror of HANDOFF.md §3 / transform.py output
+
+export interface Theater {
+  id: string;
+  name: string;
   neighborhood: string;
-  address: string;
-  date: string; // YYYY-MM-DD
-  time: string; // HH:MM
+  website_url: string;
+  maps_url: string;
+}
+
+export interface MovieLinks {
+  imdb: string | null;
+  letterboxd: string | null;
+  filmaffinity: string | null;
+}
+
+export interface Showtime {
+  theater_id: string;
+  date: string;       // YYYY-MM-DD
+  time: string;       // HH:MM
+  language: "vo" | "dub";
 }
 
 export interface Movie {
+  id: string;
   title: string;
-  tmdb_id: number | null;
-  synopsis: string | null;
+  year: number | null;
+  runtime_minutes: number | null;
+  genres: string[];
   rating: number | null;
-  runtime_mins: number | null;
-  genres: string[] | null;
+  synopsis: string;
+  links: MovieLinks;
   showtimes: Showtime[];
 }
 
 export interface Listings {
-  fetched_at: string;
+  generated_at: string;   // ISO 8601
   stale: boolean;
+  theaters: Theater[];
   movies: Movie[];
 }
 
-export type CinemaRegistry = Record<string, { address: string; neighborhood: string }>;
+// Client-side transformed types (post-transformResponse())
 
-export interface BannerState {
-  type: "stale" | "error";
-  message: string;
+export interface TransformedShowtime extends Showtime {
+  theater: Theater;
+  dayOffset: number;  // 0 = today, 1 = tomorrow, …, 6
+}
+
+export interface TransformedMovie extends Omit<Movie, "showtimes"> {
+  runtimeLabel: string;
+  showtimes: TransformedShowtime[];
+}
+
+export interface AppState {
+  selectedDate: "all" | number;
+  selectedLang: "all" | "vo" | "dub";
+  selectedGenre: string;
+  selectedTheater: string;
+  searchQuery: string;
+  filterPanelOpen: boolean;
 }

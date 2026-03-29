@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml  # type: ignore[import-untyped]
 
 
-class _CloudFormationLoader(yaml.SafeLoader):
+class _CloudFormationLoader(yaml.SafeLoader):  # type: ignore[misc]
     pass
 
 

@@ -1,70 +1,82 @@
-import type { Movie } from "../types";
-import { isFuture } from "../utils";
-import { MovieCard } from "./MovieCard";
+import type { AppState, TransformedMovie } from "../types";
+import { useState } from "react";
+import { relativeTime } from "../utils";
+import EmptyState from "./EmptyState";
+import MovieRow from "./MovieRow";
 
 interface Props {
-  movies: Movie[];
-  activeNeighborhood: string;
+  movies: TransformedMovie[];
+  allMoviesEmpty: boolean;
   loading: boolean;
-  onShowAll: () => void;
+  error: string | null;
+  onRetry: () => void;
+  generatedAt: string | null;
+  stale: boolean;
+  filters: Pick<AppState, "selectedDate" | "selectedLang" | "selectedTheater">;
 }
 
-export function MovieList({ movies, activeNeighborhood, loading, onShowAll }: Props) {
+const SKELETON_COUNT = 5;
+
+export default function MovieList({
+  movies,
+  allMoviesEmpty,
+  loading,
+  error,
+  onRetry,
+  generatedAt,
+  stale,
+  filters,
+}: Props) {
+  const [renderedAt] = useState(() => Date.now());
+  const generatedTimestamp = generatedAt == null ? Number.NaN : Date.parse(generatedAt);
+  const showStaleBanner =
+    stale ||
+    (Number.isFinite(generatedTimestamp) &&
+      renderedAt - generatedTimestamp > 24 * 60 * 60 * 1000);
+
   if (loading) {
     return (
-      <main id="movie-list">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="card skeleton" aria-hidden="true">
-            <div className="skeleton-title" />
-            <div className="skeleton-meta" />
-            <div className="skeleton-synopsis" />
+      <div className="movie-list">
+        {Array.from({ length: SKELETON_COUNT }, (_, i) => (
+          <div key={i} className="skeleton-row">
+            <div className="skeleton-block skeleton-title" />
+            <div className="skeleton-block skeleton-meta" />
+            <div className="skeleton-block skeleton-synopsis" />
+            <div className="skeleton-block skeleton-synopsis-2" />
+            <div className="skeleton-block skeleton-chips" />
           </div>
         ))}
-      </main>
+      </div>
     );
   }
 
-  const now = new Date();
-  const filtered = filterAndSort(movies, activeNeighborhood, now);
-
-  if (filtered.length === 0) {
+  if (error) {
     return (
-      <main id="movie-list">
-        {activeNeighborhood !== "All" ? (
-          <p className="state-msg">
-            No upcoming screenings near <strong>{activeNeighborhood}</strong>.{" "}
-            <a href="#" onClick={(e) => { e.preventDefault(); onShowAll(); }}>
-              Show all cinemas →
-            </a>
-          </p>
-        ) : (
-          <p className="state-msg">
-            No more screenings this week.
-            <br />
-            New listings typically arrive Monday.
-          </p>
-        )}
-      </main>
+      <div className="error-state">
+        <div className="empty-icon">⚠️</div>
+        <p className="empty-text">Couldn't load listings. Try refreshing.</p>
+        <button className="retry-btn" onClick={onRetry}>Retry</button>
+      </div>
     );
   }
 
   return (
-    <main id="movie-list">
-      {filtered.map((movie) => (
-        <MovieCard key={movie.title} movie={movie} />
-      ))}
-    </main>
-  );
-}
+    <>
+      {showStaleBanner && generatedAt && (
+        <div className="stale-banner">
+          Listings last updated {relativeTime(generatedAt)}
+        </div>
+      )}
 
-function filterAndSort(movies: Movie[], neighborhood: string, now: Date): Movie[] {
-  return movies
-    .map((m) => ({
-      ...m,
-      showtimes: m.showtimes.filter(
-        (s) => isFuture(s, now) && (neighborhood === "All" || s.neighborhood === neighborhood)
-      ),
-    }))
-    .filter((m) => m.showtimes.length > 0)
-    .sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+      {movies.length === 0 ? (
+        <EmptyState noListings={allMoviesEmpty} />
+      ) : (
+        <div className="movie-list">
+          {movies.map((m) => (
+            <MovieRow key={m.id} movie={m} filters={filters} />
+          ))}
+        </div>
+      )}
+    </>
+  );
 }

@@ -10,7 +10,7 @@ Failures are logged and result in null metadata fields; this module never raises
 
 import logging
 import os
-from typing import Any, TypedDict, cast
+from typing import Any, NamedTuple, TypedDict, cast
 
 import requests
 
@@ -28,6 +28,12 @@ class EnrichmentStats(TypedDict):
     tmdb_enriched_count: int
     tmdb_cache_hit_count: int
     tmdb_failure_count: int
+
+
+class _LookupResult(NamedTuple):
+    movie: Movie
+    enriched: bool
+    failed: bool
 
 
 def _api_key() -> str:
@@ -86,12 +92,12 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
                 stats["tmdb_cache_hit_count"] += 1
                 enriched.append({**cached, "showtimes": movie["showtimes"]})
             else:
-                merged, was_enriched, failed = _lookup_and_merge(movie, session, key)
-                if was_enriched:
+                result = _lookup_and_merge(movie, session, key)
+                if result.enriched:
                     stats["tmdb_enriched_count"] += 1
-                if failed:
+                if result.failed:
                     stats["tmdb_failure_count"] += 1
-                enriched.append(merged)
+                enriched.append(result.movie)
         if stats["tmdb_failure_count"]:
             emit_metric("TmdbLookupFailure", stats["tmdb_failure_count"])
         emit_metric("MoviesEnriched", stats["tmdb_enriched_count"])
@@ -101,14 +107,13 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
 
 def _lookup_and_merge(
     movie: Movie, session: requests.Session, api_key: str
-) -> tuple[Movie, bool, bool]:
+) -> _LookupResult:
     """Look up a movie on TMDb and merge metadata into the Movie dict."""
     try:
         raw_tmdb_data = _fetch_tmdb(movie["title"], session, api_key)
     except Exception as exc:
         logger.warning("TMDb lookup failed for %r: %s", movie["title"], exc)
-        raw_tmdb_data = None
-        return movie, False, True
+        return _LookupResult(movie, enriched=False, failed=True)
 
     tmdb_data = (
         normalize_tmdb_payload(raw_tmdb_data, title=movie["title"])
@@ -117,20 +122,22 @@ def _lookup_and_merge(
     )
 
     if tmdb_data is None:
-        return movie, False, False
+        return _LookupResult(movie, enriched=False, failed=False)
 
     genres: list[str] = [g["name"] for g in (tmdb_data.get("genres") or [])]
-    return (
+    return _LookupResult(
         {
             **movie,
             "tmdb_id":      tmdb_data.get("id"),
+            "imdb_id":      tmdb_data.get("imdb_id") or None,
+            "year":         tmdb_data.get("year") or None,
             "synopsis":     tmdb_data.get("overview") or None,
             "rating":       tmdb_data.get("vote_average") or None,
             "runtime_mins": tmdb_data.get("runtime") or None,
             "genres":       genres or None,
         },
-        True,
-        False,
+        enriched=True,
+        failed=False,
     )
 
 

@@ -13,6 +13,8 @@ def _movie(title: str, showtimes: list[Showtime] | None = None, **kwargs: Any) -
     return Movie(
         title=title,
         tmdb_id=kwargs.get("tmdb_id"),
+        imdb_id=kwargs.get("imdb_id"),
+        year=kwargs.get("year"),
         synopsis=kwargs.get("synopsis"),
         rating=kwargs.get("rating"),
         runtime_mins=kwargs.get("runtime_mins"),

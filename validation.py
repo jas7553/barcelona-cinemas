@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import math
 from collections.abc import Mapping
+from contextlib import suppress
 from datetime import date, datetime
 from typing import Any
 
@@ -60,6 +61,8 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     return Movie(
         title=title,
         tmdb_id=_as_optional_int(data.get("tmdb_id"), source=f"{source} tmdb_id"),
+        imdb_id=_as_optional_string(data.get("imdb_id"), source=f"{source} imdb_id"),
+        year=_as_optional_positive_int(data.get("year"), source=f"{source} year"),
         synopsis=_as_optional_string(data.get("synopsis"), source=f"{source} synopsis"),
         rating=_as_optional_rating(data.get("rating"), source=f"{source} rating"),
         runtime_mins=_as_optional_positive_int(data.get("runtime_mins"), source=f"{source} runtime_mins"),
@@ -140,6 +143,16 @@ def normalize_tmdb_payload(data: object, *, title: str) -> dict[str, Any] | None
     genres = _as_optional_genres_from_tmdb(data.get("genres"), title=title)
     if genres is not None:
         normalized["genres"] = genres
+
+    # release_date is "YYYY-MM-DD"; extract the 4-digit year as int.
+    release_date = data.get("release_date")
+    if isinstance(release_date, str) and len(release_date) >= 4:
+        with suppress(ValueError):
+            normalized["year"] = int(release_date[:4])
+
+    imdb_id = _as_optional_string(data.get("imdb_id"), source=f"TMDb imdb_id for {title!r}")
+    if imdb_id is not None:
+        normalized["imdb_id"] = imdb_id
 
     return normalized
 

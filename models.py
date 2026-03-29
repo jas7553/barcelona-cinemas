@@ -12,6 +12,8 @@ class Showtime(TypedDict):
 class Movie(TypedDict):
     title: str
     tmdb_id: int | None
+    imdb_id: str | None
+    year: int | None
     synopsis: str | None
     rating: float | None
     runtime_mins: int | None
@@ -26,8 +28,12 @@ class Listings(TypedDict):
 
 
 class CinemaInfo(TypedDict):
+    id: str
+    name: str
     address: str
     neighborhood: str
+    website_url: str
+    maps_url: str
 
 
 CinemaRegistry = dict[str, CinemaInfo]
