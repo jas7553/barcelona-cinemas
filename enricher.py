@@ -82,10 +82,17 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         log_event("tmdb_enrichment_summary", movie_count=len(movies), **stats)
         return movies, stats
 
+    cached_by_imdb: dict[str, Movie] = {
+        imdb_id: m for m in cached_movies if (imdb_id := m.get("imdb_id"))
+    }
+    cached_by_title: dict[str, Movie] = {
+        m["title"].lower(): m for m in cached_movies
+    }
+
     with requests.Session() as session:
         enriched: list[Movie] = []
         for movie in movies:
-            cached = _find_cached_movie(movie, cached_movies)
+            cached = _find_cached_movie(movie, cached_by_imdb, cached_by_title)
             if cached and cached.get("tmdb_id") is not None:
                 # Reuse cached TMDb metadata; replace showtimes with fresh ones.
                 stats["tmdb_cache_hit_count"] += 1
@@ -104,18 +111,17 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         return enriched, stats
 
 
-def _find_cached_movie(movie: Movie, cached_movies: list[Movie]) -> Movie | None:
+def _find_cached_movie(
+    movie: Movie,
+    cached_by_imdb: dict[str, Movie],
+    cached_by_title: dict[str, Movie],
+) -> Movie | None:
     imdb_id = movie.get("imdb_id")
     if imdb_id:
-        for cached in cached_movies:
-            if cached.get("imdb_id") == imdb_id:
-                return cached
-
-    title = movie["title"].lower()
-    for cached in cached_movies:
-        if cached["title"].lower() == title:
+        cached = cached_by_imdb.get(imdb_id)
+        if cached is not None:
             return cached
-    return None
+    return cached_by_title.get(movie["title"].lower())
 
 
 def _lookup_and_merge(
@@ -137,7 +143,7 @@ def _lookup_and_merge(
     if tmdb_data is None:
         return _LookupResult(movie, enriched=False, failed=False)
 
-    genres: list[str] = [g["name"] for g in (tmdb_data.get("genres") or [])]
+    genres: list[str] = tmdb_data.get("genres") or []
     return _LookupResult(
         {
             **movie,

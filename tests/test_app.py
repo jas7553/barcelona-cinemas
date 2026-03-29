@@ -102,8 +102,7 @@ def test_api_listings_includes_imdb_link_for_valid_movie(
     movie = response.get_json()["movies"][0]
     assert movie["links"]["imdb"] == "https://www.imdb.com/title/tt15239678"
     assert movie["poster_url"] == "https://image.tmdb.org/t/p/w342/dune.jpg"
-    assert movie["links"]["letterboxd"] is None
-    assert movie["links"]["filmaffinity"] is None
+    assert set(movie["links"].keys()) == {"imdb"}
 
 
 def test_api_listings_includes_null_imdb_link_when_missing(

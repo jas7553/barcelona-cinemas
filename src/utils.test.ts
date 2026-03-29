@@ -77,7 +77,7 @@ describe("transformResponse", () => {
           genres: ["Sci-Fi"],
           rating: 8.2,
           synopsis: "A lone astronaut races to save humanity.",
-          links: { imdb: null, letterboxd: null, filmaffinity: null },
+          links: { imdb: null },
           showtimes: [
             { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
           ],

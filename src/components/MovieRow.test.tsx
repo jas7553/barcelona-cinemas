@@ -13,7 +13,7 @@ const BASE_MOVIE: TransformedMovie = {
   genres: ["Sci-Fi"],
   rating: 8.2,
   synopsis: "A lone astronaut races to save humanity.",
-  links: { imdb: "https://www.imdb.com/title/tt12042730", letterboxd: null, filmaffinity: null },
+  links: { imdb: "https://www.imdb.com/title/tt12042730" },
   showtimes: [
     {
       theater_id: "verdi",
@@ -95,7 +95,7 @@ describe("MovieRow", () => {
   it("omits the details action when no IMDb link is available", () => {
     render(
       <MovieRow
-        movie={{ ...BASE_MOVIE, links: { imdb: null, letterboxd: null, filmaffinity: null } }}
+        movie={{ ...BASE_MOVIE, links: { imdb: null } }}
         filters={{ selectedDate: "all", selectedLang: "all", selectedTheater: "all" }}
       />
     );

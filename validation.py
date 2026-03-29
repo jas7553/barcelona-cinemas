@@ -102,15 +102,9 @@ def normalize_showtime(data: object, *, source: str) -> Showtime | None:
     address = _as_string(data.get("address"))
     show_date = _as_iso_date(data.get("date"))
     show_time = _as_clock_time(data.get("time"))
-    if None in (cinema, neighborhood, address, show_date, show_time):
+    if cinema is None or neighborhood is None or address is None or show_date is None or show_time is None:
         logger.warning("Rejected %s: showtime has invalid required fields", source)
         return None
-
-    assert cinema is not None
-    assert neighborhood is not None
-    assert address is not None
-    assert show_date is not None
-    assert show_time is not None
 
     showtime = Showtime(
         cinema=cinema,
@@ -274,14 +268,14 @@ def _as_optional_genres(value: object, *, source: str) -> list[str] | None:
     return genres or None
 
 
-def _as_optional_genres_from_tmdb(value: object, *, title: str) -> list[dict[str, str]] | None:
+def _as_optional_genres_from_tmdb(value: object, *, title: str) -> list[str] | None:
     if value is None:
         return None
     if not isinstance(value, list):
         logger.warning("Discarded TMDb genres for %r: expected list", title)
         return None
 
-    genres: list[dict[str, str]] = []
+    genres: list[str] = []
     for index, item in enumerate(value):
         if not isinstance(item, Mapping):
             logger.warning("Discarded TMDb genre %s for %r: expected object", index, title)
@@ -290,7 +284,7 @@ def _as_optional_genres_from_tmdb(value: object, *, title: str) -> list[dict[str
         if name is None:
             logger.warning("Discarded TMDb genre %s for %r: invalid name", index, title)
             continue
-        genres.append({"name": name})
+        genres.append(name)
 
     return genres or None
 

@@ -214,17 +214,16 @@ def test_no_imdb_link_when_imdb_id_missing():
     assert result["movies"][0]["links"]["imdb"] is None
 
 
-def test_no_imdb_link_when_imdb_id_is_malformed():
-    movie = _movie(imdb_id="not-an-imdb-id")
+def test_no_imdb_link_when_imdb_id_is_absent():
+    movie = _movie(imdb_id=None)
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     assert result["movies"][0]["links"]["imdb"] is None
 
 
-def test_letterboxd_and_filmaffinity_are_null():
+def test_links_contains_only_imdb():
     result = to_api_response(_listings(movies=[_movie()]), CINEMAS)
     links = result["movies"][0]["links"]
-    assert links["letterboxd"] is None
-    assert links["filmaffinity"] is None
+    assert set(links.keys()) == {"imdb"}
 
 
 def test_empty_movies_returned_when_no_movies():

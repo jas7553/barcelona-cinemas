@@ -10,8 +10,6 @@ export interface Theater {
 
 export interface MovieLinks {
   imdb: string | null;
-  letterboxd: string | null;
-  filmaffinity: string | null;
 }
 
 export interface Showtime {
