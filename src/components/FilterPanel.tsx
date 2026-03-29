@@ -27,9 +27,9 @@ export default function FilterPanel({ open, onClose, filters, onFilter, genres, 
   if (!open) return null;
 
   return (
-    <div className="filter-panel open">
-      <div>
-        <div className="filter-section-label">Language</div>
+    <div className="filter-panel open" id="mobile-filter-panel">
+      <div role="group" aria-labelledby="mobile-filter-language-label">
+        <div className="filter-section-label" id="mobile-filter-language-label">Language</div>
         <div className="filter-chips">
           {LANG_OPTIONS.map(({ value, label }) => (
             <button
@@ -45,8 +45,8 @@ export default function FilterPanel({ open, onClose, filters, onFilter, genres, 
       </div>
 
       {theaters.length > 0 && (
-        <div>
-          <div className="filter-section-label">Theater</div>
+        <div role="group" aria-labelledby="mobile-filter-theater-label">
+          <div className="filter-section-label" id="mobile-filter-theater-label">Theater</div>
           <div className="filter-chips">
             <button
               className="filter-chip"
@@ -70,8 +70,8 @@ export default function FilterPanel({ open, onClose, filters, onFilter, genres, 
       )}
 
       {genres.length > 0 && (
-        <div>
-          <div className="filter-section-label">Genre</div>
+        <div role="group" aria-labelledby="mobile-filter-genre-label">
+          <div className="filter-section-label" id="mobile-filter-genre-label">Genre</div>
           <div className="filter-chips">
             <button
               className="filter-chip"

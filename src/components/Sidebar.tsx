@@ -38,8 +38,8 @@ export default function Sidebar({ filters, onFilter, genres, theaters, movies }:
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-section">
-        <div className="filter-section-label">Language</div>
+      <div className="sidebar-section" role="group" aria-labelledby="sidebar-language-label">
+        <div className="filter-section-label" id="sidebar-language-label">Language</div>
         {langOptions.map(({ value, label, count }) => (
           <button
             key={value}
@@ -56,8 +56,8 @@ export default function Sidebar({ filters, onFilter, genres, theaters, movies }:
       </div>
 
       {theaters.length > 0 && (
-        <div className="sidebar-section">
-          <div className="filter-section-label">Theater</div>
+        <div className="sidebar-section" role="group" aria-labelledby="sidebar-theater-label">
+          <div className="filter-section-label" id="sidebar-theater-label">Theater</div>
           <button
             className="sidebar-btn"
             aria-pressed={selectedTheater === "all"}
@@ -80,8 +80,8 @@ export default function Sidebar({ filters, onFilter, genres, theaters, movies }:
       )}
 
       {genres.length > 0 && (
-        <div className="sidebar-section">
-          <div className="filter-section-label">Genre</div>
+        <div className="sidebar-section" role="group" aria-labelledby="sidebar-genre-label">
+          <div className="filter-section-label" id="sidebar-genre-label">Genre</div>
           <button
             className="sidebar-btn"
             aria-pressed={selectedGenre === "all"}

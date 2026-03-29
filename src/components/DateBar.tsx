@@ -22,13 +22,12 @@ export default function DateBar({ selectedDate, onSelect }: Props) {
   }
 
   return (
-    <div className="date-bar" role="tablist" aria-label="Filter by day">
+    <div className="date-bar" role="group" aria-label="Filter by day">
       {tabs.map((tab) => (
         <button
           key={String(tab.value)}
-          role="tab"
           className={`date-tab${tab.isAll ? " all-days" : ""}`}
-          aria-selected={selectedDate === tab.value}
+          aria-pressed={selectedDate === tab.value}
           onClick={() => onSelect(tab.value)}
         >
           {tab.label}

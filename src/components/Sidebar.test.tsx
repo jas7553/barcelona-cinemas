@@ -62,4 +62,20 @@ describe("Sidebar", () => {
     expect(screen.getByText("Cinema Maldà Extended Name")).toHaveClass("sidebar-btn-label");
     expect(screen.getByText("Gothic Quarter")).toHaveClass("sidebar-btn-meta");
   });
+
+  it("exposes named filter groups for assistive technology", () => {
+    render(
+      <Sidebar
+        filters={FILTERS}
+        onFilter={vi.fn()}
+        genres={["Sci-Fi"]}
+        theaters={THEATERS}
+        movies={MOVIES}
+      />
+    );
+
+    expect(screen.getByRole("group", { name: "Language" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Theater" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Genre" })).toBeInTheDocument();
+  });
 });

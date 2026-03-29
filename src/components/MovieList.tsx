@@ -37,7 +37,7 @@ export default function MovieList({
 
   if (loading) {
     return (
-      <div className="movie-list">
+      <div className="movie-list" aria-hidden="true">
         {Array.from({ length: SKELETON_COUNT }, (_, i) => (
           <div key={i} className="skeleton-row">
             <div className="skeleton-poster skeleton-block" />
@@ -70,10 +70,7 @@ export default function MovieList({
         <>
           <EmptyState noListings={allMoviesEmpty} />
           {generatedAt && (
-            <div
-              className={`list-footer-meta${showStaleNotice ? " is-stale" : ""}`}
-              role={showStaleNotice ? "status" : undefined}
-            >
+            <div className={`list-footer-meta${showStaleNotice ? " is-stale" : ""}`}>
               Listings last updated {relativeTime(generatedAt)}
             </div>
           )}
@@ -86,10 +83,7 @@ export default function MovieList({
             ))}
           </div>
           {generatedAt && (
-            <div
-              className={`list-footer-meta${showStaleNotice ? " is-stale" : ""}`}
-              role={showStaleNotice ? "status" : undefined}
-            >
+            <div className={`list-footer-meta${showStaleNotice ? " is-stale" : ""}`}>
               Listings last updated {relativeTime(generatedAt)}
             </div>
           )}

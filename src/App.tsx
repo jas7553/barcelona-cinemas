@@ -115,8 +115,19 @@ export default function App() {
     selectedTheater: filters.selectedTheater,
   };
 
+  const statusMessage = loading
+    ? "Loading movie listings."
+    : error
+      ? "Could not load movie listings."
+      : `${filteredMovies.length} ${filteredMovies.length === 1 ? "film" : "films"} shown.`;
+
   return (
     <>
+      <a className="skip-link" href="#main-content">Skip to listings</a>
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {statusMessage}
+      </div>
+
       <Header
         searchQuery={filters.searchQuery}
         onSearch={(q) => setFilter("searchQuery", q)}
@@ -152,7 +163,8 @@ export default function App() {
           theaters={theaters}
           movies={movies}
         />
-        <main>
+        <main id="main-content" aria-labelledby="page-title" aria-busy={loading}>
+          <h1 className="sr-only" id="page-title">Barcelona English-language cinema listings</h1>
           <MovieList
             movies={filteredMovies}
             allMoviesEmpty={movies.length === 0}

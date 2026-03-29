@@ -58,6 +58,44 @@ describe("App", () => {
     );
   });
 
+  it("renders a skip link and a named main region", () => {
+    render(<App />);
+
+    expect(screen.getByRole("link", { name: "Skip to listings" })).toHaveAttribute("href", "#main-content");
+    expect(screen.getByRole("main", { name: "Barcelona English-language cinema listings" })).toHaveAttribute(
+      "id",
+      "main-content"
+    );
+  });
+
+  it("announces loading and exposes the main region as busy while fetching", () => {
+    let resolveListings: ((value: Listings) => void) | undefined;
+    vi.spyOn(api, "fetchListings").mockImplementation(
+      () =>
+        new Promise<Listings>((resolve) => {
+          resolveListings = resolve;
+        })
+    );
+
+    render(<App />);
+
+    expect(screen.getByRole("status")).toHaveTextContent("Loading movie listings.");
+    expect(screen.getByRole("main", { name: "Barcelona English-language cinema listings" })).toHaveAttribute(
+      "aria-busy",
+      "true"
+    );
+
+    resolveListings?.(LISTINGS);
+  });
+
+  it("announces the result count after loading", async () => {
+    render(<App />);
+
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("1 film shown.")
+    );
+  });
+
   it("shows quiet freshness metadata when data is fresh", async () => {
     render(<App />);
     await waitFor(() =>
@@ -65,7 +103,7 @@ describe("App", () => {
     );
 
     expect(screen.getByText(/Listings last updated .*just now|Listings last updated .*minute|Listings last updated .*hour|Listings last updated .*day/)).toBeInTheDocument();
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("1 film shown.");
   });
 
   it("renders TMDb attribution once after listings load", async () => {
@@ -89,7 +127,7 @@ describe("App", () => {
     });
     render(<App />);
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(/Listings last updated/)
+      expect(screen.getByText(/Listings last updated/)).toBeInTheDocument()
     );
   });
 
@@ -116,7 +154,7 @@ describe("App", () => {
     render(<App />);
 
     await waitFor(() =>
-      expect(screen.getByRole("status")).toHaveTextContent(/Listings last updated/)
+      expect(screen.getByRole("status")).toHaveTextContent("1 film shown.")
     );
     expect(screen.getByRole("region", { name: "TMDb attribution" })).toBeInTheDocument();
   });

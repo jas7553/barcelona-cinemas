@@ -46,6 +46,7 @@ export default function Header({
       <button
         className={`filter-toggle${activeFilterCount > 0 ? " has-active" : ""}`}
         onClick={onToggleFilter}
+        aria-controls="mobile-filter-panel"
         aria-expanded={filterPanelOpen}
         aria-label="Toggle filters"
       >
