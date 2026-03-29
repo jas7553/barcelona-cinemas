@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "favicons": "./scripts/generate-favicons.sh",
     "typecheck": "tsc -b",
     "lint": "eslint src",
     "test": "vitest",
