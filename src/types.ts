@@ -26,6 +26,7 @@ export interface Movie {
   title: string;
   year: number | null;
   runtime_minutes: number | null;
+  poster_url: string | null;
   genres: string[];
   rating: number | null;
   synopsis: string;

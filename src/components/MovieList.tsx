@@ -29,7 +29,7 @@ export default function MovieList({
 }: Props) {
   const [renderedAt] = useState(() => Date.now());
   const generatedTimestamp = generatedAt == null ? Number.NaN : Date.parse(generatedAt);
-  const showStaleBanner =
+  const showStaleNotice =
     stale ||
     (Number.isFinite(generatedTimestamp) &&
       renderedAt - generatedTimestamp > 24 * 60 * 60 * 1000);
@@ -39,11 +39,14 @@ export default function MovieList({
       <div className="movie-list">
         {Array.from({ length: SKELETON_COUNT }, (_, i) => (
           <div key={i} className="skeleton-row">
-            <div className="skeleton-block skeleton-title" />
-            <div className="skeleton-block skeleton-meta" />
-            <div className="skeleton-block skeleton-synopsis" />
-            <div className="skeleton-block skeleton-synopsis-2" />
-            <div className="skeleton-block skeleton-chips" />
+            <div className="skeleton-poster skeleton-block" />
+            <div className="skeleton-content">
+              <div className="skeleton-block skeleton-title" />
+              <div className="skeleton-block skeleton-meta" />
+              <div className="skeleton-block skeleton-synopsis" />
+              <div className="skeleton-block skeleton-synopsis-2" />
+              <div className="skeleton-block skeleton-chips" />
+            </div>
           </div>
         ))}
       </div>
@@ -62,20 +65,34 @@ export default function MovieList({
 
   return (
     <>
-      {showStaleBanner && generatedAt && (
-        <div className="stale-banner">
-          Listings last updated {relativeTime(generatedAt)}
-        </div>
-      )}
-
       {movies.length === 0 ? (
-        <EmptyState noListings={allMoviesEmpty} />
+        <>
+          <EmptyState noListings={allMoviesEmpty} />
+          {generatedAt && (
+            <div
+              className={`list-footer-meta${showStaleNotice ? " is-stale" : ""}`}
+              role={showStaleNotice ? "status" : undefined}
+            >
+              Listings last updated {relativeTime(generatedAt)}
+            </div>
+          )}
+        </>
       ) : (
-        <div className="movie-list">
-          {movies.map((m) => (
-            <MovieRow key={m.id} movie={m} filters={filters} />
-          ))}
-        </div>
+        <>
+          <div className="movie-list">
+            {movies.map((m) => (
+              <MovieRow key={m.id} movie={m} filters={filters} />
+            ))}
+          </div>
+          {generatedAt && (
+            <div
+              className={`list-footer-meta${showStaleNotice ? " is-stale" : ""}`}
+              role={showStaleNotice ? "status" : undefined}
+            >
+              Listings last updated {relativeTime(generatedAt)}
+            </div>
+          )}
+        </>
       )}
     </>
   );

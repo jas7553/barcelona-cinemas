@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { formatDayLabel, formatRuntime, relativeTime } from "./utils";
+import type { Listings } from "./types";
+import { formatDayLabel, formatRuntime, relativeTime, transformResponse } from "./utils";
 
 describe("formatRuntime", () => {
   it("formats minutes only", () => expect(formatRuntime(45)).toBe("45m"));
@@ -49,5 +50,42 @@ describe("formatDayLabel", () => {
   it("returns formatted weekday for offset >= 2", () => {
     const label = formatDayLabel(2, new Date("2026-03-30"));
     expect(label).toMatch(/Mon/);
+  });
+});
+
+describe("transformResponse", () => {
+  it("preserves poster_url on transformed movies", () => {
+    const listings: Listings = {
+      generated_at: "2026-03-29T09:00:00Z",
+      stale: false,
+      theaters: [
+        {
+          id: "verdi",
+          name: "Cinemes Verdi",
+          neighborhood: "Gracia",
+          website_url: "https://cinesesverdi.com",
+          maps_url: "https://maps.google.com/?q=Verdi",
+        },
+      ],
+      movies: [
+        {
+          id: "movie-1",
+          title: "Project Hail Mary",
+          year: 2025,
+          runtime_minutes: 157,
+          poster_url: "https://image.tmdb.org/t/p/w342/project-hail-mary.jpg",
+          genres: ["Sci-Fi"],
+          rating: 8.2,
+          synopsis: "A lone astronaut races to save humanity.",
+          links: { imdb: null, letterboxd: null, filmaffinity: null },
+          showtimes: [
+            { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
+          ],
+        },
+      ],
+    };
+
+    const [movie] = transformResponse(listings);
+    expect(movie.poster_url).toBe("https://image.tmdb.org/t/p/w342/project-hail-mary.jpg");
   });
 });

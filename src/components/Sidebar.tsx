@@ -68,11 +68,11 @@ export default function Sidebar({ filters, onFilter, genres, theaters, movies }:
           {theaters.map((t) => (
             <button
               key={t.id}
-              className="sidebar-btn"
+              className="sidebar-btn sidebar-btn-split"
               aria-pressed={selectedTheater === t.id}
               onClick={() => onFilter("selectedTheater", t.id)}
             >
-              <span>{t.name}</span>
+              <span className="sidebar-btn-label">{t.name}</span>
               <span className="sidebar-btn-meta">{t.neighborhood}</span>
             </button>
           ))}

@@ -22,6 +22,7 @@ const LISTINGS: Listings = {
       title: "Project Hail Mary",
       year: 2025,
       runtime_minutes: 157,
+      poster_url: "https://image.tmdb.org/t/p/w342/example.jpg",
       genres: ["Sci-Fi"],
       rating: 8.2,
       synopsis: "A lone astronaut.",
@@ -57,14 +58,24 @@ describe("App", () => {
     );
   });
 
-  it("shows stale banner when data is stale", async () => {
+  it("shows quiet freshness metadata when data is fresh", async () => {
+    render(<App />);
+    await waitFor(() =>
+      expect(screen.getByText(/Listings last updated/)).toBeInTheDocument()
+    );
+
+    expect(screen.getByText(/Listings last updated .*just now|Listings last updated .*minute|Listings last updated .*hour|Listings last updated .*day/)).toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("shows emphasized stale metadata when data is stale", async () => {
     vi.spyOn(api, "fetchListings").mockResolvedValue({
       ...LISTINGS,
       stale: true,
     });
     render(<App />);
     await waitFor(() =>
-      expect(screen.getByText(/Listings last updated/)).toBeInTheDocument()
+      expect(screen.getByRole("status")).toHaveTextContent(/Listings last updated/)
     );
   });
 });
