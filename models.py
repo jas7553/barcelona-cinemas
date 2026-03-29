@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import NotRequired, TypedDict
 
 
 class Showtime(TypedDict):
@@ -7,6 +7,7 @@ class Showtime(TypedDict):
     address: str
     date: str   # YYYY-MM-DD
     time: str   # HH:MM
+    language: NotRequired[str]
 
 
 class Movie(TypedDict):
@@ -35,6 +36,7 @@ class CinemaInfo(TypedDict):
     neighborhood: str
     website_url: str
     maps_url: str
+    aliases: NotRequired[dict[str, list[str]]]
 
 
 CinemaRegistry = dict[str, CinemaInfo]

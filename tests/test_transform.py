@@ -143,7 +143,7 @@ def test_showtime_injects_language_vo():
 
 
 def test_showtime_preserves_explicit_language():
-    st_data: Showtime = {**_showtime(cinema="Verdi"), "language": "dub"}  # type: ignore[typeddict-unknown-key]
+    st_data: Showtime = {**_showtime(cinema="Verdi"), "language": "dub"}
     movie = _movie(showtimes=[st_data])
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     assert result["movies"][0]["showtimes"][0]["language"] == "dub"

@@ -2,7 +2,7 @@
 
 Small weekend project for tracking English-language movie showings in Barcelona.
 
-It aggregates local showtimes, enriches them with TMDb metadata, and serves the result through a React frontend with a Flask API running on AWS Lambda.
+It aggregates local showtimes from tracked listings providers, enriches them with TMDb metadata, and serves the result through a React frontend with a Flask API running on AWS Lambda.
 
 ## What It Does
 

@@ -59,6 +59,28 @@ def test_normalize_movie_discards_non_string_imdb_id() -> None:
     assert movie["imdb_id"] is None
 
 
+def test_normalize_movie_keeps_valid_showtime_language() -> None:
+    movie = normalize_movie(
+        {
+            "title": "Dune: Part Two",
+            "showtimes": [
+                {
+                    "cinema": "Verdi",
+                    "neighborhood": "Gràcia",
+                    "address": "Carrer de Verdi, 32",
+                    "date": "2026-03-28",
+                    "time": "18:00",
+                    "language": "vo",
+                }
+            ],
+        },
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert movie["showtimes"][0]["language"] == "vo"
+
+
 def test_normalize_tmdb_payload_keeps_valid_imdb_id() -> None:
     payload = normalize_tmdb_payload(
         {

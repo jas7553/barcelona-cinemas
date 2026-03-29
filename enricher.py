@@ -69,7 +69,6 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
     Return a new list of movies with TMDb metadata filled in.
     Reuses cached data for titles already seen; never mutates the input lists.
     """
-    cache_by_title = {m["title"].lower(): m for m in cached_movies}
     stats: EnrichmentStats = {
         "tmdb_enriched_count": 0,
         "tmdb_cache_hit_count": 0,
@@ -86,7 +85,7 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
     with requests.Session() as session:
         enriched: list[Movie] = []
         for movie in movies:
-            cached = cache_by_title.get(movie["title"].lower())
+            cached = _find_cached_movie(movie, cached_movies)
             if cached and cached.get("tmdb_id") is not None:
                 # Reuse cached TMDb metadata; replace showtimes with fresh ones.
                 stats["tmdb_cache_hit_count"] += 1
@@ -103,6 +102,20 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         emit_metric("MoviesEnriched", stats["tmdb_enriched_count"])
         log_event("tmdb_enrichment_summary", movie_count=len(movies), **stats)
         return enriched, stats
+
+
+def _find_cached_movie(movie: Movie, cached_movies: list[Movie]) -> Movie | None:
+    imdb_id = movie.get("imdb_id")
+    if imdb_id:
+        for cached in cached_movies:
+            if cached.get("imdb_id") == imdb_id:
+                return cached
+
+    title = movie["title"].lower()
+    for cached in cached_movies:
+        if cached["title"].lower() == title:
+            return cached
+    return None
 
 
 def _lookup_and_merge(

@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup, Tag
 
 from listings_config import listings_feed_url
 from models import CinemaRegistry, Movie, Showtime
+from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,8 @@ def _extract_cinema_name(badge: Tag) -> str:
 
 
 class ListingsProvider:
+    name = "english_cinema_bcn"
+
     def fetch(self, cinemas: CinemaRegistry) -> list[Movie]:
         """Fetch and parse the current listings feed."""
         resp = requests.get(listings_feed_url(), headers=_HEADERS, timeout=15)
@@ -104,6 +107,7 @@ class ListingsProvider:
 
         movies: list[Movie] = []
         seen_cinema_names: set[str] = set()
+        alias_lookup = build_cinema_alias_lookup(cinemas, self.name)
 
         for row in tbody.find_all("tr"):
             cells = row.find_all("td")
@@ -136,19 +140,23 @@ class ListingsProvider:
 
                     cinema_name = _extract_cinema_name(badge)
                     seen_cinema_names.add(cinema_name)
-
-                    if cinema_name not in cinemas:
+                    cinema_key = alias_lookup.get(normalize_alias(cinema_name))
+                    if cinema_key is None:
                         continue
 
                     showtimes.append(
                         Showtime(
-                            cinema=cinema_name,
-                            neighborhood=cinemas[cinema_name]["neighborhood"],
-                            address=cinemas[cinema_name]["address"],
+                            cinema=cinema_key,
+                            neighborhood=cinemas[cinema_key]["neighborhood"],
+                            address=cinemas[cinema_key]["address"],
                             date=show_date,
                             time=time_str,
+                            language="vo",
                         )
                     )
+
+            if not showtimes:
+                continue
 
             movies.append(
                 Movie(
@@ -166,7 +174,11 @@ class ListingsProvider:
             )
 
         # Log unrecognized cinema names to help tune cinemas.json.
-        unrecognized = seen_cinema_names - set(cinemas.keys())
+        unrecognized = {
+            cinema_name
+            for cinema_name in seen_cinema_names
+            if normalize_alias(cinema_name) not in alias_lookup
+        }
         if unrecognized:
             logger.warning(
                 "Unrecognized cinema names (not in cinemas.json): %s",

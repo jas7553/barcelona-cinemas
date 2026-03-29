@@ -153,6 +153,49 @@ def test_exact_title_match_preferred_over_popularity(mock_env):
     assert result[0]["tmdb_id"] == 2
 
 
+def test_cache_reuse_does_not_cross_exact_title_variants(mock_env):
+    cached = _movie(
+        "Wuthering Heights",
+        tmdb_id=25095,
+        imdb_id="tt0104181",
+        synopsis="Older adaptation",
+        showtimes=[_showtime("2026-03-27")],
+    )
+    fresh = _movie("\"Wuthering Heights\"", showtimes=[_showtime("2026-03-28")])
+
+    mock_session = MagicMock()
+    mock_session.__enter__ = MagicMock(return_value=mock_session)
+    mock_session.__exit__ = MagicMock(return_value=False)
+    mock_session.get.side_effect = [
+        MagicMock(
+            status_code=200,
+            json=lambda: {"results": [{"id": 1316092, "title": "\"Wuthering Heights\""}]},
+            raise_for_status=lambda: None,
+        ),
+        MagicMock(
+            status_code=200,
+            json=lambda: {
+                "id": 1316092,
+                "imdb_id": "tt32897959",
+                "poster_path": "/poster.jpg",
+                "overview": "New adaptation",
+                "vote_average": 6.4,
+                "runtime": 136,
+                "genres": [{"id": 18, "name": "Drama"}],
+            },
+            raise_for_status=lambda: None,
+        ),
+    ]
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, stats = enricher.enrich([fresh], [cached])
+
+    assert result[0]["tmdb_id"] == 1316092
+    assert result[0]["imdb_id"] == "tt32897959"
+    assert result[0]["synopsis"] == "New adaptation"
+    assert stats["tmdb_cache_hit_count"] == 0
+
+
 def test_invalid_tmdb_fields_are_safely_discarded(mock_env):
     """Malformed TMDb detail fields degrade to null instead of leaking bad data."""
     movie = _movie("Dune: Part Two", showtimes=[_showtime()])

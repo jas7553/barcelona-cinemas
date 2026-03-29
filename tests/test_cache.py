@@ -150,3 +150,41 @@ def test_read_normalizes_cache_by_dropping_invalid_movies_and_showtimes(tmp_cach
             ],
         }
     ]
+
+
+def test_read_keeps_older_showtimes_without_language_field(tmp_cache: Path) -> None:
+    tmp_cache.write_text(
+        json.dumps(
+            {
+                "fetched_at": "2026-03-28T12:00:00+00:00",
+                "stale": False,
+                "movies": [
+                    {
+                        "title": "Valid Film",
+                        "showtimes": [
+                            {
+                                "cinema": "Verdi",
+                                "neighborhood": "Gracia",
+                                "address": "Carrer de Verdi, 32",
+                                "date": "2026-03-28",
+                                "time": "18:00",
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+    )
+
+    result = cache.read()
+
+    assert result is not None
+    assert result["movies"][0]["showtimes"] == [
+        {
+            "cinema": "Verdi",
+            "neighborhood": "Gracia",
+            "address": "Carrer de Verdi, 32",
+            "date": "2026-03-28",
+            "time": "18:00",
+        }
+    ]

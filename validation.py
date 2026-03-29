@@ -112,13 +112,17 @@ def normalize_showtime(data: object, *, source: str) -> Showtime | None:
     assert show_date is not None
     assert show_time is not None
 
-    return Showtime(
+    showtime = Showtime(
         cinema=cinema,
         neighborhood=neighborhood,
         address=address,
         date=show_date,
         time=show_time,
     )
+    language = _as_optional_language(data.get("language"), source=f"{source} language")
+    if language is not None:
+        showtime["language"] = language
+    return showtime
 
 
 def normalize_tmdb_payload(data: object, *, title: str) -> dict[str, Any] | None:
@@ -196,6 +200,16 @@ def _as_optional_imdb_id(value: object, *, source: str) -> str | None:
     if _IMDB_ID_RE.fullmatch(imdb_id):
         return imdb_id
     logger.warning("Discarded %s: expected IMDb title id", source)
+    return None
+
+
+def _as_optional_language(value: object, *, source: str) -> str | None:
+    language = _as_optional_string(value, source=source)
+    if language is None:
+        return None
+    if language in ("vo", "dub"):
+        return language
+    logger.warning("Discarded %s: expected 'vo', 'dub', or null", source)
     return None
 
 

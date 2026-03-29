@@ -65,6 +65,7 @@ CINEMAS: CinemaRegistry = {
         neighborhood="Gràcia",
         website_url="https://www.cines-verdi.com/barcelona/",
         maps_url="https://maps.google.com/?q=Cinemes+Verdi+Barcelona",
+        aliases={"english_cinema_bcn": ["Verdi"]},
     ),
     "Glòries": CinemaInfo(
         id="glories",
@@ -73,6 +74,16 @@ CINEMAS: CinemaRegistry = {
         neighborhood="Poble-Nou",
         website_url="https://www.cinesa.es/cines/diagonal-mar/",
         maps_url="https://maps.google.com/?q=Avinguda+Diagonal+208+Barcelona",
+        aliases={"english_cinema_bcn": ["Glòries"]},
+    ),
+    "CinDiag": CinemaInfo(
+        id="diagonal",
+        name="Cinesa Diagonal",
+        address="Carrer de Santa Fe de Nou Mèxic, s/n",
+        neighborhood="Les Corts",
+        website_url="https://www.cinesa.es/cines/barcelona/diagonal",
+        maps_url="https://maps.google.com/?q=Cinesa+Diagonal",
+        aliases={"english_cinema_bcn": ["Cin Diag", "Cinesa Diagonal"]},
     ),
 }
 
@@ -149,9 +160,47 @@ def test_fetch_ignores_unknown_cinemas(caplog):
         mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         movies = ListingsProvider().fetch({})  # empty cinemas -> all unknown
 
-    # Movie still appears, but with no showtimes
+    assert movies == []
+
+
+def test_fetch_maps_alias_cinema_names_and_sets_vo_language():
+    html = """
+    <html><body>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Movie/Date</th>
+          <th>Sat, 28 Mar</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><div class="poster-container"><img alt="Project Hail Mary in English at cinemas in Barcelona" /></div></td>
+          <td><a class="badge badge-s bg-gradient2"><strong>18:00</strong> Cin Diag</a></td>
+        </tr>
+      </tbody>
+    </table>
+    </body></html>
+    """
+
+    with patch("providers.listings_provider.date") as mock_date, \
+         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings"), \
+         patch("providers.listings_provider.requests.get", return_value=_mock_response(html)):
+        mock_date.today.return_value = date(2026, 3, 28)
+        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+        movies = ListingsProvider().fetch(CINEMAS)
+
     assert len(movies) == 1
-    assert movies[0]["showtimes"] == []
+    assert movies[0]["showtimes"] == [
+        {
+            "cinema": "CinDiag",
+            "neighborhood": "Les Corts",
+            "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+            "date": "2026-03-28",
+            "time": "18:00",
+            "language": "vo",
+        }
+    ]
 
 
 def test_fetch_uses_runtime_configured_url():
