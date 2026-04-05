@@ -28,3 +28,6 @@ samconfig.toml
 # Lambda manual build artifacts (superseded by SAM)
 lambda.zip
 package/
+
+# Git worktrees
+.worktrees/
