@@ -4,9 +4,12 @@ import type { AppState, Theater, TransformedMovie } from "./types";
 import { normalizeForSearch, transformResponse } from "./utils";
 import DateBar from "./components/DateBar";
 import FilterPanel from "./components/FilterPanel";
+import Footer from "./components/Footer";
 import Header from "./components/Header";
 import MovieList from "./components/MovieList";
 import Sidebar from "./components/Sidebar";
+import TheaterFilterSheet from "./components/TheaterFilterSheet";
+import type { SortBy } from "./components/SortControl";
 
 const INITIAL_STATE: AppState = {
   selectedDate: "all",
@@ -25,6 +28,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<AppState>(INITIAL_STATE);
+  const [sortBy, setSortBy] = useState<SortBy>("rating");
+  const [theaterSheetOpen, setTheaterSheetOpen] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -79,7 +84,7 @@ export default function App() {
 
   const filteredMovies = useMemo(() => {
     const q = normalizeForSearch(filters.searchQuery);
-    return movies.filter((m) => {
+    const filtered = movies.filter((m) => {
       if (q && !normalizeForSearch(m.title).includes(q)) return false;
       if (filters.selectedGenre !== "all" && !m.genres.includes(filters.selectedGenre)) return false;
       if (
@@ -101,7 +106,21 @@ export default function App() {
       }
       return true;
     });
-  }, [movies, filters]);
+
+    const sorted = [...filtered];
+    if (sortBy === "rating") {
+      sorted.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+    } else if (sortBy === "title") {
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+    } else if (sortBy === "soonest") {
+      const earliest = (m: TransformedMovie) =>
+        m.showtimes.map((s) => s.date + "T" + s.time).sort()[0] ?? "9999";
+      sorted.sort((a, b) => earliest(a).localeCompare(earliest(b)));
+    } else if (sortBy === "screenings") {
+      sorted.sort((a, b) => b.showtimes.length - a.showtimes.length);
+    }
+    return sorted;
+  }, [movies, filters, sortBy]);
 
   const activeFilterCount = [
     filters.selectedLang !== "all",
@@ -153,6 +172,15 @@ export default function App() {
         onFilter={setFilter}
         genres={genres}
         theaters={theaters}
+        onOpenTheaterSheet={() => setTheaterSheetOpen(true)}
+      />
+
+      <TheaterFilterSheet
+        open={theaterSheetOpen}
+        onClose={() => setTheaterSheetOpen(false)}
+        theaters={theaters}
+        selectedTheater={filters.selectedTheater}
+        onSelect={(id) => setFilter("selectedTheater", id)}
       />
 
       <div className="layout">
@@ -174,9 +202,13 @@ export default function App() {
             generatedAt={generatedAt}
             stale={stale}
             filters={rowFilters}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
           />
         </main>
       </div>
+
+      <Footer />
     </>
   );
 }

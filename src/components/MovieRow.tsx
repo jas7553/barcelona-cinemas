@@ -7,6 +7,15 @@ interface Props {
   filters: Pick<AppState, "selectedDate" | "selectedLang" | "selectedTheater">;
 }
 
+function RatingPill({ rating }: { rating: number }) {
+  const cls =
+    rating >= 8 ? "rating-great" :
+    rating >= 7 ? "rating-good" :
+    rating >= 6 ? "rating-ok" :
+    "rating-low";
+  return <span className={`rating-pill ${cls}`}>★ {rating.toFixed(1)}</span>;
+}
+
 export default function MovieRow({ movie, filters }: Props) {
   const { selectedDate, selectedLang, selectedTheater } = filters;
   const imdbLink = movie.links.imdb;
@@ -23,6 +32,12 @@ export default function MovieRow({ movie, filters }: Props) {
   }
 
   const theaterEntries = [...theaterMap.entries()];
+
+  const shownGenres = movie.genres.slice(0, 3);
+  const extraGenres = movie.genres.length - 3;
+
+  const theaterCount = new Set(movie.showtimes.map((s) => s.theater.id)).size;
+  const screeningCount = movie.showtimes.length;
 
   return (
     <article className="movie-row">
@@ -50,13 +65,18 @@ export default function MovieRow({ movie, filters }: Props) {
         </div>
 
         <div className="info-tags">
-          {movie.rating != null && (
-            <span className="tag tag-rating">★ {movie.rating.toFixed(1)}</span>
-          )}
-          {movie.genres.map((g) => (
-            <span key={g} className="tag tag-genre">{g}</span>
+          {movie.rating != null && <RatingPill rating={movie.rating} />}
+          {shownGenres.map((g) => (
+            <span key={g} className="tag-genre">{g}</span>
           ))}
+          {extraGenres > 0 && (
+            <span className="tag-genre-overflow">+{extraGenres}</span>
+          )}
         </div>
+
+        <p className="availability-line">
+          {theaterCount} {theaterCount === 1 ? "theater" : "theaters"} · {screeningCount} {screeningCount === 1 ? "screening" : "screenings"}
+        </p>
 
         {movie.synopsis && <p className="synopsis">{movie.synopsis}</p>}
 

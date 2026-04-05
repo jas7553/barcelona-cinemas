@@ -17,10 +17,10 @@ export default function Header({
 }: Props) {
   return (
     <header className="header">
-      <div className="logo">
-        <div className="logo-icon">🎬</div>
-        <div className="logo-text">BCN<span>cinemas</span></div>
-      </div>
+      <a className="logo" href="/">
+        <span className="logo-bcn">BCN</span>
+        <span className="logo-cinemas">cinemas</span>
+      </a>
 
       <div className="search-wrap">
         <label className="search-label" htmlFor="search-input">Search films</label>
@@ -42,6 +42,15 @@ export default function Header({
       <span className="film-count">
         {filmCount} {filmCount === 1 ? "film" : "films"}
       </span>
+
+      <nav className="header-nav">
+        <button className="nav-tab" disabled aria-label="Discover (coming soon)">
+          Discover
+        </button>
+        <button className="nav-tab nav-tab--active" aria-current="page">
+          Showtimes
+        </button>
+      </nav>
 
       <button
         className={`filter-toggle${activeFilterCount > 0 ? " has-active" : ""}`}

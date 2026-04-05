@@ -32,6 +32,7 @@ describe("FilterPanel", () => {
         onFilter={vi.fn()}
         genres={["Drama"]}
         theaters={THEATERS}
+        onOpenTheaterSheet={vi.fn()}
       />
     );
 

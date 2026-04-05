@@ -11,8 +11,18 @@ const LANG_META = {
 
 export default function TimeChip({ showtime }: Props) {
   const lang = LANG_META[showtime.language];
+
+  const now = new Date();
+  const [y, mo, d] = showtime.date.split("-").map(Number);
+  const [h, m] = showtime.time.split(":").map(Number);
+  const showDatetime = new Date(y, mo - 1, d, h, m);
+  const isPast = showDatetime < now;
+
   return (
-    <div className="time-chip">
+    <div
+      className={`time-chip${isPast ? " time-chip--past" : ""}`}
+      aria-hidden={isPast ? "true" : undefined}
+    >
       <span className="time-chip-time">{showtime.time}</span>
       {lang ? (
         <span className={`time-chip-lang ${showtime.language}`} title={lang.title}>

@@ -35,7 +35,7 @@ export default function TheaterCard({ showtimes, selectedDate }: Props) {
             rel="noreferrer"
             aria-label={`Open ${theater.name} in Google Maps`}
           >
-            📍
+            Map
           </a>
         )}
       </div>

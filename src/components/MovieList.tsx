@@ -3,7 +3,7 @@ import { useState } from "react";
 import { relativeTime } from "../utils";
 import EmptyState from "./EmptyState";
 import MovieRow from "./MovieRow";
-import TmdbAttribution from "./TmdbAttribution";
+import SortControl, { type SortBy } from "./SortControl";
 
 interface Props {
   movies: TransformedMovie[];
@@ -14,6 +14,8 @@ interface Props {
   generatedAt: string | null;
   stale: boolean;
   filters: Pick<AppState, "selectedDate" | "selectedLang" | "selectedTheater">;
+  sortBy: SortBy;
+  onSortChange: (v: SortBy) => void;
 }
 
 const SKELETON_COUNT = 5;
@@ -27,6 +29,8 @@ export default function MovieList({
   generatedAt,
   stale,
   filters,
+  sortBy,
+  onSortChange,
 }: Props) {
   const [renderedAt] = useState(() => Date.now());
   const generatedTimestamp = generatedAt == null ? Number.NaN : Date.parse(generatedAt);
@@ -66,6 +70,7 @@ export default function MovieList({
 
   return (
     <>
+      <SortControl value={sortBy} onChange={onSortChange} />
       {movies.length === 0 ? (
         <>
           <EmptyState noListings={allMoviesEmpty} />
@@ -89,7 +94,6 @@ export default function MovieList({
           )}
         </>
       )}
-      <TmdbAttribution />
     </>
   );
 }

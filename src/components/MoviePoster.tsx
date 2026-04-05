@@ -5,20 +5,16 @@ interface Props {
   posterUrl: string | null;
 }
 
-function getPosterMonogram(title: string): string {
-  const parts = title
-    .split(/\s+/)
-    .map((part) => part.replace(/[^A-Za-z0-9]/g, ""))
-    .filter(Boolean);
-
-  if (parts.length === 0) return "FILM";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+function getTitleHue(title: string): number {
+  let h = 0;
+  for (const c of title) h = c.charCodeAt(0) + ((h << 5) - h);
+  return Math.abs(h) % 360;
 }
 
 export default function MoviePoster({ title, posterUrl }: Props) {
   const [imageFailed, setImageFailed] = useState(false);
   const showImage = Boolean(posterUrl) && !imageFailed;
+  const hue = getTitleHue(title);
 
   return (
     <div className="movie-poster" aria-hidden="true">
@@ -32,9 +28,19 @@ export default function MoviePoster({ title, posterUrl }: Props) {
           onError={() => setImageFailed(true)}
         />
       ) : (
-        <div className="movie-poster-fallback" data-testid="movie-poster-fallback">
-          <span className="movie-poster-monogram">{getPosterMonogram(title)}</span>
-          <span className="movie-poster-title">{title}</span>
+        <div
+          className="movie-poster-fallback"
+          data-testid="movie-poster-fallback"
+          style={{
+            background: `linear-gradient(145deg, hsl(${hue},30%,85%), hsl(${(hue + 30) % 360},25%,75%))`,
+          }}
+        >
+          <span
+            className="movie-poster-letter"
+            style={{ color: `hsl(${hue},20%,55%)` }}
+          >
+            {title[0]?.toUpperCase() ?? "?"}
+          </span>
         </div>
       )}
     </div>

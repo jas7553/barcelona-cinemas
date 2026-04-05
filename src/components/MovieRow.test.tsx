@@ -53,8 +53,8 @@ describe("MovieRow", () => {
       />
     );
 
-    expect(screen.getByText("PH")).toBeInTheDocument();
-    expect(screen.getByTestId("movie-poster-fallback")).toHaveTextContent("Project Hail Mary");
+    expect(screen.getByText("P")).toBeInTheDocument();
+    expect(screen.getByTestId("movie-poster-fallback")).toBeInTheDocument();
   });
 
   it("falls back when the poster image fails to load", () => {
@@ -68,7 +68,7 @@ describe("MovieRow", () => {
     const poster = screen.getByTestId("movie-poster-image");
     fireEvent.error(poster);
 
-    expect(screen.getByText("PH")).toBeInTheDocument();
+    expect(screen.getByText("P")).toBeInTheDocument();
     expect(screen.queryByTestId("movie-poster-image")).not.toBeInTheDocument();
     expect(screen.getByTestId("movie-poster-fallback")).toBeInTheDocument();
   });

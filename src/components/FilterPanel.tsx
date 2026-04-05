@@ -8,6 +8,7 @@ interface Props {
   onFilter: (key: keyof AppState, value: string) => void;
   genres: string[];
   theaters: Theater[];
+  onOpenTheaterSheet: () => void;
 }
 
 const LANG_OPTIONS: Array<{ value: AppState["selectedLang"]; label: string }> = [
@@ -16,7 +17,7 @@ const LANG_OPTIONS: Array<{ value: AppState["selectedLang"]; label: string }> = 
   { value: "dub", label: "Dubbed" },
 ];
 
-export default function FilterPanel({ open, onClose, filters, onFilter, genres, theaters }: Props) {
+export default function FilterPanel({ open, onClose, filters, onFilter, genres, theaters, onOpenTheaterSheet }: Props) {
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -25,6 +26,10 @@ export default function FilterPanel({ open, onClose, filters, onFilter, genres, 
   }, [open, onClose]);
 
   if (!open) return null;
+
+  const theaterLabel = filters.selectedTheater === "all"
+    ? "All theaters"
+    : theaters.find((t) => t.id === filters.selectedTheater)?.name ?? "Theater";
 
   return (
     <div className="filter-panel open" id="mobile-filter-panel">
@@ -47,7 +52,9 @@ export default function FilterPanel({ open, onClose, filters, onFilter, genres, 
       {theaters.length > 0 && (
         <div role="group" aria-labelledby="mobile-filter-theater-label">
           <div className="filter-section-label" id="mobile-filter-theater-label">Theater</div>
-          <div className="filter-chips">
+
+          {/* Desktop/tablet: chip list */}
+          <div className="filter-chips theater-chips-desktop">
             <button
               className="filter-chip"
               aria-pressed={filters.selectedTheater === "all"}
@@ -66,6 +73,14 @@ export default function FilterPanel({ open, onClose, filters, onFilter, genres, 
               </button>
             ))}
           </div>
+
+          {/* Mobile: bottom sheet trigger (visible only on mobile via CSS) */}
+          <button
+            className={`theater-sheet-trigger${filters.selectedTheater !== "all" ? " has-selection" : ""}`}
+            onClick={onOpenTheaterSheet}
+          >
+            {theaterLabel}
+          </button>
         </div>
       )}
 
