@@ -51,6 +51,17 @@ export interface TransformedMovie extends Omit<Movie, "showtimes"> {
   showtimes: TransformedShowtime[];
 }
 
+export interface FilmDiscovery extends TransformedMovie {
+  theaterCount: number;
+  screeningCount: number;
+  isNewRelease: boolean;
+  isLimitedRun: boolean;
+  isLastChance: boolean;
+  availableDays: string[];  // ["Today", "Tomorrow", "Tue"]
+}
+
+export type DiscoverSortBy = "rating" | "title" | "screenings";
+
 export interface AppState {
   selectedDate: "all" | number;
   selectedLang: "all" | "vo" | "dub";

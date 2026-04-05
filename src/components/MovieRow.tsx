@@ -5,6 +5,7 @@ import TheaterCard from "./TheaterCard";
 interface Props {
   movie: TransformedMovie;
   filters: Pick<AppState, "selectedDate" | "selectedLang" | "selectedTheater">;
+  forceExpanded?: boolean;
 }
 
 function RatingPill({ rating }: { rating: number }) {
@@ -40,7 +41,7 @@ export default function MovieRow({ movie, filters }: Props) {
   const screeningCount = movie.showtimes.length;
 
   return (
-    <article className="movie-row">
+    <article id={`film-${movie.id}`} className="movie-row">
       <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
 
       <div className="movie-row-content">

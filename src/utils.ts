@@ -1,4 +1,4 @@
-import type { Listings, Theater, TransformedMovie, TransformedShowtime } from "./types";
+import type { FilmDiscovery, Listings, Theater, TransformedMovie, TransformedShowtime } from "./types";
 
 // ── Runtime formatting ──────────────────────────────────────────────────────
 
@@ -83,4 +83,51 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
       .filter((s) => s.dayOffset >= 0 && s.dayOffset <= 6)
       .sort((a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time)),
   }));
+}
+
+// ── Discover helpers ────────────────────────────────────────────────────────
+
+/**
+ * Returns "Today" | "Tomorrow" | short weekday (e.g. "Mon")
+ */
+export function formatDayShort(offset: number, date: Date): string {
+  if (offset === 0) return "Today";
+  if (offset === 1) return "Tomorrow";
+  return date.toLocaleDateString("en-GB", { weekday: "short" });
+}
+
+/**
+ * Derives FilmDiscovery fields for each TransformedMovie.
+ */
+export function computeFilmDiscovery(movies: TransformedMovie[], now?: Date): FilmDiscovery[] {
+  const base = now ?? new Date();
+  const today = new Date(base);
+  today.setHours(0, 0, 0, 0);
+  const currentYear = today.getFullYear();
+  const cutoff = base.getTime() + 48 * 60 * 60 * 1000;
+
+  return movies.map((m) => {
+    const theaterIds = new Set(m.showtimes.map((s) => s.theater.id));
+    const theaterCount = theaterIds.size;
+    const screeningCount = m.showtimes.length;
+    const isNewRelease = m.year === currentYear;
+    const isLimitedRun = screeningCount <= 3;
+
+    const lastShowtime = m.showtimes
+      .map((s) => new Date(`${s.date}T${s.time}`).getTime())
+      .reduce((max, t) => Math.max(max, t), 0);
+    const isLastChance = lastShowtime > 0 && lastShowtime <= cutoff;
+
+    const offsetMap = new Map<number, Date>();
+    for (const s of m.showtimes) {
+      if (!offsetMap.has(s.dayOffset)) {
+        offsetMap.set(s.dayOffset, new Date(`${s.date}T00:00:00`));
+      }
+    }
+    const availableDays = [...offsetMap.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([offset, date]) => formatDayShort(offset, date));
+
+    return { ...m, theaterCount, screeningCount, isNewRelease, isLimitedRun, isLastChance, availableDays };
+  });
 }

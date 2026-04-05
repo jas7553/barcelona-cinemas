@@ -1,11 +1,25 @@
 export type SortBy = "rating" | "title" | "soonest" | "screenings";
 
-interface Props {
-  value: SortBy;
-  onChange: (v: SortBy) => void;
+interface SortOption {
+  value: string;
+  label: string;
 }
 
-export default function SortControl({ value, onChange }: Props) {
+const DEFAULT_OPTIONS: SortOption[] = [
+  { value: "rating", label: "Rating" },
+  { value: "title", label: "Title A–Z" },
+  { value: "soonest", label: "Soonest showtime" },
+  { value: "screenings", label: "Most screenings" },
+];
+
+interface Props {
+  value: string;
+  onChange: (v: string) => void;
+  options?: SortOption[];
+}
+
+export default function SortControl({ value, onChange, options }: Props) {
+  const opts = options ?? DEFAULT_OPTIONS;
   return (
     <div className="sort-control-wrap">
       <label className="sort-control-label" htmlFor="sort-select">Sort:</label>
@@ -13,12 +27,11 @@ export default function SortControl({ value, onChange }: Props) {
         id="sort-select"
         className="sort-control"
         value={value}
-        onChange={(e) => onChange(e.target.value as SortBy)}
+        onChange={(e) => onChange(e.target.value)}
       >
-        <option value="rating">Rating</option>
-        <option value="title">Title A–Z</option>
-        <option value="soonest">Soonest showtime</option>
-        <option value="screenings">Most screenings</option>
+        {opts.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
       </select>
     </div>
   );

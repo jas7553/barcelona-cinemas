@@ -16,6 +16,7 @@ interface Props {
   filters: Pick<AppState, "selectedDate" | "selectedLang" | "selectedTheater">;
   sortBy: SortBy;
   onSortChange: (v: SortBy) => void;
+  expandedFilmId?: string;
 }
 
 const SKELETON_COUNT = 5;
@@ -31,6 +32,7 @@ export default function MovieList({
   filters,
   sortBy,
   onSortChange,
+  expandedFilmId,
 }: Props) {
   const [renderedAt] = useState(() => Date.now());
   const generatedTimestamp = generatedAt == null ? Number.NaN : Date.parse(generatedAt);
@@ -70,7 +72,7 @@ export default function MovieList({
 
   return (
     <>
-      <SortControl value={sortBy} onChange={onSortChange} />
+      <SortControl value={sortBy} onChange={(v) => onSortChange(v as SortBy)} />
       {movies.length === 0 ? (
         <>
           <EmptyState noListings={allMoviesEmpty} />
@@ -84,7 +86,7 @@ export default function MovieList({
         <>
           <div className="movie-list">
             {movies.map((m) => (
-              <MovieRow key={m.id} movie={m} filters={filters} />
+              <MovieRow key={m.id} movie={m} filters={filters} forceExpanded={m.id === expandedFilmId} />
             ))}
           </div>
           {generatedAt && (

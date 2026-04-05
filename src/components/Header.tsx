@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 interface Props {
   searchQuery: string;
   onSearch: (q: string) => void;
@@ -5,6 +7,7 @@ interface Props {
   filterPanelOpen: boolean;
   onToggleFilter: () => void;
   activeFilterCount: number;
+  activeView: "films" | "showtimes";
 }
 
 export default function Header({
@@ -14,6 +17,7 @@ export default function Header({
   filterPanelOpen,
   onToggleFilter,
   activeFilterCount,
+  activeView,
 }: Props) {
   return (
     <header className="header">
@@ -44,12 +48,20 @@ export default function Header({
       </span>
 
       <nav className="header-nav">
-        <button className="nav-tab" disabled aria-label="Discover (coming soon)">
+        <Link
+          to="/films"
+          className={`nav-tab${activeView === "films" ? " nav-tab--active" : ""}`}
+          aria-current={activeView === "films" ? "page" : undefined}
+        >
           Discover
-        </button>
-        <button className="nav-tab nav-tab--active" aria-current="page">
+        </Link>
+        <Link
+          to="/showtimes"
+          className={`nav-tab${activeView === "showtimes" ? " nav-tab--active" : ""}`}
+          aria-current={activeView === "showtimes" ? "page" : undefined}
+        >
           Showtimes
-        </button>
+        </Link>
       </nav>
 
       <button

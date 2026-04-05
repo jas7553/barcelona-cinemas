@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import App from "./App";
 import * as api from "./api";
 import type { Listings } from "./types";
@@ -44,7 +45,7 @@ describe("App", () => {
   });
 
   it("shows loading skeletons initially then renders movies", async () => {
-    render(<App />);
+    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
     expect(document.querySelector(".skeleton-row")).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByText("Project Hail Mary")).toBeInTheDocument()
@@ -52,14 +53,14 @@ describe("App", () => {
   });
 
   it("renders film count in header after loading", async () => {
-    render(<App />);
+    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
     await waitFor(() =>
       expect(screen.getByText("1 film")).toBeInTheDocument()
     );
   });
 
   it("renders a skip link and a named main region", () => {
-    render(<App />);
+    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
 
     expect(screen.getByRole("link", { name: "Skip to listings" })).toHaveAttribute("href", "#main-content");
     expect(screen.getByRole("main", { name: "Barcelona English-language cinema listings" })).toHaveAttribute(
@@ -77,7 +78,7 @@ describe("App", () => {
         })
     );
 
-    render(<App />);
+    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
 
     expect(screen.getByRole("status")).toHaveTextContent("Loading movie listings.");
     expect(screen.getByRole("main", { name: "Barcelona English-language cinema listings" })).toHaveAttribute(
@@ -89,7 +90,7 @@ describe("App", () => {
   });
 
   it("announces the result count after loading", async () => {
-    render(<App />);
+    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
 
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent("1 film shown.")
@@ -97,7 +98,7 @@ describe("App", () => {
   });
 
   it("shows quiet freshness metadata when data is fresh", async () => {
-    render(<App />);
+    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
     await waitFor(() =>
       expect(screen.getByText(/Listings last updated/)).toBeInTheDocument()
     );
@@ -107,7 +108,7 @@ describe("App", () => {
   });
 
   it("renders TMDb attribution once after listings load", async () => {
-    render(<App />);
+    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
 
     const attribution = await screen.findByRole("region", { name: "TMDb attribution" });
     expect(attribution).toBeInTheDocument();
@@ -125,7 +126,7 @@ describe("App", () => {
       ...LISTINGS,
       stale: true,
     });
-    render(<App />);
+    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
     await waitFor(() =>
       expect(screen.getByText(/Listings last updated/)).toBeInTheDocument()
     );
@@ -137,7 +138,7 @@ describe("App", () => {
       movies: [],
     });
 
-    render(<App />);
+    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
 
     await waitFor(() =>
       expect(screen.getByText("No listings yet — check back soon.")).toBeInTheDocument()
@@ -151,7 +152,7 @@ describe("App", () => {
       stale: true,
     });
 
-    render(<App />);
+    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
 
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent("1 film shown.")
