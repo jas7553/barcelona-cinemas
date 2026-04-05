@@ -1223,12 +1223,12 @@ main {
   border-radius: var(--radius);
   overflow: hidden;
   cursor: pointer;
-  transition: box-shadow 0.15s, transform 0.15s;
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
 
 .film-card:hover {
+  border-color: var(--border);
   box-shadow: var(--shadow-hover);
-  transform: translateY(-1px);
 }
 
 .film-card-poster-wrap {
