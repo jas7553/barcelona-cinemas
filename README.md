@@ -68,6 +68,14 @@ Important:
 - In the current repo config, Vite proxies `/api` to `http://localhost:5001`.
 - If you run the backend with its default `PORT=5000`, either update [`vite.config.ts`](vite.config.ts) or start Flask on port `5001`.
 
+Refreshing the local cache:
+
+```bash
+npm run refresh-cache
+```
+
+This command loads local `.env` values automatically, refreshes the file cache, and prints how many movies have poster URLs after the refresh.
+
 ## Environment Variables
 
 Local development works without TMDb credentials, but enrichment is skipped and only raw listing data is returned.
@@ -94,8 +102,7 @@ CACHE_DIR=./cache
 CACHE_TTL_HOURS=12
 PORT=5000
 LISTINGS_FEED_URL=https://example.com/listings-feed
-# Optional:
-# TMDB_API_KEY=your_tmdb_key
+TMDB_API_KEY=your_tmdb_key
 # APP_DEBUG=true
 ```
 

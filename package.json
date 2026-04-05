@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "favicons": "./scripts/generate-favicons.sh",
+    "refresh-cache": "python3 scripts/refresh_cache.py",
     "typecheck": "tsc -b",
     "lint": "eslint src",
     "test": "vitest",
