@@ -291,12 +291,16 @@ button {
 }
 
 .tcard-name {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text);
 }
 
-.tcard-neighborhood { font-size: 12px; color: var(--text-muted); }
+.tcard-neighborhood {
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
 
 .tcard-distance {
   font-size: 12px;
