@@ -95,6 +95,28 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
       {isExpanded && (
         <div className="movie-row-expanded">
           {movie.synopsis && <p className="synopsis">{movie.synopsis}</p>}
+          <div className="movie-external-links" onClick={(e) => e.stopPropagation()}>
+            {movie.links.imdb && (
+              <a
+                className="ext-link"
+                href={movie.links.imdb}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`${movie.title} on IMDb (opens in a new tab)`}
+              >
+                IMDb
+              </a>
+            )}
+            <a
+              className="ext-link"
+              href={`https://letterboxd.com/search/${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}/`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Search ${movie.title} on Letterboxd (opens in a new tab)`}
+            >
+              Letterboxd
+            </a>
+          </div>
           <div className="showtimes-grid">
             {theaterEntries.map(([theaterId, times]) => {
               const theater = times[0].theater;
