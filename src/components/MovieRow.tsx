@@ -83,7 +83,7 @@ export default function MovieRow({ movie, filters }: Props) {
 
         <div className="showtimes-grid">
           {theaterEntries.map(([theaterId, times]) => (
-            <TheaterCard key={theaterId} showtimes={times} selectedDate={selectedDate} />
+            <TheaterCard key={theaterId} showtimes={times} distanceKm={null} />
           ))}
         </div>
       </div>
