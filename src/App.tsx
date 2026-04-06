@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { fetchListings } from "./api";
-import type { FilmDiscovery, Theater, TransformedMovie } from "./types";
-import { computeFilmDiscovery, transformResponse } from "./utils";
-import DiscoverView from "./views/DiscoverView";
+import type { Theater, TransformedMovie } from "./types";
+import { transformResponse } from "./utils";
 import ShowtimesView from "./views/ShowtimesView";
 
 export interface SharedProps {
   movies: TransformedMovie[];
   theaters: Theater[];
   genres: string[];
-  filmDiscovery: FilmDiscovery[];
   generatedAt: string | null;
   stale: boolean;
   loading: boolean;
@@ -69,13 +67,10 @@ export default function App() {
     return [...set].sort();
   }, [movies]);
 
-  const filmDiscovery = useMemo(() => computeFilmDiscovery(movies), [movies]);
-
   const shared: SharedProps = {
     movies,
     theaters,
     genres,
-    filmDiscovery,
     generatedAt,
     stale,
     loading,
@@ -85,10 +80,8 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/films" replace />} />
-      <Route path="/films" element={<DiscoverView {...shared} />} />
       <Route path="/showtimes" element={<ShowtimesView {...shared} />} />
-      <Route path="*" element={<Navigate to="/films" replace />} />
+      <Route path="*" element={<Navigate to="/showtimes" replace />} />
     </Routes>
   );
 }
