@@ -49,7 +49,10 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
       aria-expanded={isExpanded}
     >
       <div className="movie-row-collapsed">
-        <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
+        <div className="movie-poster-wrap" data-testid="poster-wrap">
+          <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
+          {isLastChance && <span className="last-chance-badge" aria-label="Last chance to see this film">Last Chance</span>}
+        </div>
 
         <div className="movie-row-content">
           <div className="movie-row-top">
@@ -59,7 +62,6 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
               {movie.runtimeLabel && <span className="movie-runtime"> · {movie.runtimeLabel}</span>}
             </div>
             <div className="movie-row-actions">
-              {isLastChance && <span className="last-chance-badge">Last Chance</span>}
               <button
                 className="hide-btn"
                 aria-label={`Hide ${movie.title}`}

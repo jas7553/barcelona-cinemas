@@ -184,13 +184,19 @@ button {
 }
 
 .last-chance-badge {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--accent);
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #fff;
+  background: rgba(232, 160, 32, 0.88);
   text-transform: uppercase;
+  padding: 3px 0;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .movie-row-actions {
@@ -232,16 +238,22 @@ button {
 .showtimes-grid { display: flex; flex-direction: column; gap: 10px; }
 
 /* ── Movie poster ────────────────────────────────────────────────────────── */
-.movie-poster {
+.movie-poster-wrap {
+  position: relative;
+  flex-shrink: 0;
   width: var(--poster-w-mobile);
+}
+
+@media (min-width: 480px) {
+  .movie-poster-wrap { width: var(--poster-w-desktop); }
+}
+
+.movie-poster {
+  width: 100%;
   aspect-ratio: 2/3;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
   overflow: hidden;
-}
-
-@media (min-width: 480px) {
-  .movie-poster { width: var(--poster-w-desktop); }
 }
 
 .movie-poster-image { width: 100%; height: 100%; object-fit: cover; display: block; }

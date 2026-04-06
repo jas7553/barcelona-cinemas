@@ -106,6 +106,13 @@ describe("MovieRow collapsed", () => {
     renderRow();
     expect(screen.getByTestId("expand-chevron")).toBeInTheDocument();
   });
+
+  it("renders Last Chance badge inside the poster wrap when showtimes.length <= 2", () => {
+    renderRow();
+    const posterWrap = screen.getByTestId("poster-wrap");
+    expect(posterWrap).toBeInTheDocument();
+    expect(posterWrap.querySelector(".last-chance-badge")).not.toBeNull();
+  });
 });
 
 describe("MovieRow expanded", () => {
