@@ -24,7 +24,20 @@ export default function TheaterCard({ showtimes, distanceKm }: Props) {
   return (
     <div className="theater-card">
       <div className="tcard-head">
-        <span className="tcard-name">{theater.name}</span>
+        {theater.maps_url ? (
+          <a
+            className="tcard-name tcard-name-link"
+            href={theater.maps_url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`${theater.name} — open in Google Maps`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {theater.name}
+          </a>
+        ) : (
+          <span className="tcard-name">{theater.name}</span>
+        )}
         <span className="tcard-neighborhood">{theater.neighborhood}</span>
         {distanceKm !== null && (
           <span className="tcard-distance">{distanceKm.toFixed(1)} km</span>

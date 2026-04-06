@@ -135,4 +135,30 @@ describe("MovieRow expanded", () => {
     renderRow(undefined, false);
     expect(screen.getByRole("article")).toHaveAttribute("aria-expanded", "false");
   });
+
+  it("renders a Google Maps link for the theater when maps_url is set", () => {
+    renderRow(undefined, true);
+    const mapsLink = screen.getByRole("link", { name: /cinemes verdi.*map/i });
+    expect(mapsLink).toHaveAttribute("href", THEATER.maps_url);
+    expect(mapsLink).toHaveAttribute("target", "_blank");
+  });
+
+  it("renders an IMDb link when imdb url is present", () => {
+    renderRow({ links: { imdb: "https://www.imdb.com/title/tt12042730" } }, true);
+    const imdbLink = screen.getByRole("link", { name: /imdb/i });
+    expect(imdbLink).toHaveAttribute("href", "https://www.imdb.com/title/tt12042730");
+    expect(imdbLink).toHaveAttribute("target", "_blank");
+  });
+
+  it("renders a Letterboxd search link", () => {
+    renderRow(undefined, true);
+    const lbLink = screen.getByRole("link", { name: /letterboxd/i });
+    expect(lbLink).toHaveAttribute("href", expect.stringContaining("letterboxd.com/search/"));
+    expect(lbLink).toHaveAttribute("target", "_blank");
+  });
+
+  it("does not render an IMDb link when imdb url is null", () => {
+    renderRow({ links: { imdb: null } }, true);
+    expect(screen.queryByRole("link", { name: /imdb/i })).not.toBeInTheDocument();
+  });
 });

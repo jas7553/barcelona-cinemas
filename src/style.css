@@ -235,6 +235,38 @@ button {
 
 .movie-row-expanded { padding-top: 12px; display: flex; flex-direction: column; gap: 12px; }
 .synopsis { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin: 0; }
+
+.movie-external-links {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.ext-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 1px;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+.ext-link:hover {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+.tcard-name-link {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.tcard-name-link:hover {
+  color: var(--accent);
+}
+
 .showtimes-grid { display: flex; flex-direction: column; gap: 10px; }
 
 /* ── Movie poster ────────────────────────────────────────────────────────── */
