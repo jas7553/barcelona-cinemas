@@ -1,5 +1,18 @@
 import type { Listings, Theater, TransformedMovie, TransformedShowtime } from "./types";
 
+// ── Geo distance ────────────────────────────────────────────────────────────
+
+/** Haversine formula — returns distance in kilometres. */
+export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLng = (lng2 - lng1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 // ── Runtime formatting ──────────────────────────────────────────────────────
 
 export function formatRuntime(mins: number): string {
@@ -83,4 +96,35 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
       .filter((s) => s.dayOffset >= 0 && s.dayOffset <= 6)
       .sort((a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time)),
   }));
+}
+
+// ── Smart sort ──────────────────────────────────────────────────────────────
+
+/**
+ * Sort films into four priority tiers:
+ *   0 = last chance (≤2 remaining screenings)
+ *   1 = highly rated (TMDb ≥ 7.5)
+ *   2 = widely screened (above-median screening count)
+ *   3 = everything else
+ * Within each tier, sort by rating descending.
+ * Films in hiddenIds are excluded entirely.
+ */
+export function smartSort(movies: TransformedMovie[], hiddenIds: Set<string>): TransformedMovie[] {
+  const visible = movies.filter((m) => !hiddenIds.has(m.id));
+
+  const counts = visible.map((m) => m.showtimes.length).sort((a, b) => a - b);
+  const median = counts.length === 0 ? 0 : counts[Math.floor(counts.length / 2)];
+
+  const tier = (m: TransformedMovie): number => {
+    if (m.showtimes.length <= 2) return 0;
+    if ((m.rating ?? 0) >= 7.5) return 1;
+    if (m.showtimes.length > median) return 2;
+    return 3;
+  };
+
+  return [...visible].sort((a, b) => {
+    const diff = tier(a) - tier(b);
+    if (diff !== 0) return diff;
+    return (b.rating ?? 0) - (a.rating ?? 0);
+  });
 }
