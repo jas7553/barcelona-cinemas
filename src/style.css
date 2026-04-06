@@ -193,6 +193,13 @@ button {
   flex-shrink: 0;
 }
 
+.movie-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .hide-btn {
   background: none;
   border: none;
@@ -201,10 +208,24 @@ button {
   color: var(--text-muted);
   line-height: 1;
   flex-shrink: 0;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .hide-btn:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
+
+.expand-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  opacity: 0.5;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+  flex-shrink: 0;
+}
+
+.expand-chevron.is-expanded {
+  transform: rotate(180deg);
+  opacity: 0.8;
+}
 
 .movie-row-expanded { padding-top: 12px; display: flex; flex-direction: column; gap: 12px; }
 .synopsis { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin: 0; }
