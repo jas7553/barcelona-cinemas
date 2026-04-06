@@ -6,6 +6,8 @@ export interface Theater {
   neighborhood: string;
   website_url: string;
   maps_url: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface MovieLinks {
@@ -59,3 +61,4 @@ export interface AppState {
   searchQuery: string;
   filterPanelOpen: boolean;
 }
+

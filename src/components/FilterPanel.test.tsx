@@ -19,6 +19,8 @@ const THEATERS: Theater[] = [
     neighborhood: "Gracia",
     website_url: "https://example.com/verdi",
     maps_url: "https://maps.google.com/?q=Verdi",
+    lat: null,
+    lng: null,
   },
 ];
 

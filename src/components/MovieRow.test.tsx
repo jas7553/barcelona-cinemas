@@ -23,6 +23,8 @@ const BASE_MOVIE: TransformedMovie = {
         neighborhood: "Gracia",
         website_url: "https://cinesesverdi.com",
         maps_url: "https://maps.google.com/?q=Verdi",
+        lat: null,
+        lng: null,
       },
       date: "2026-03-29",
       time: "18:00",
