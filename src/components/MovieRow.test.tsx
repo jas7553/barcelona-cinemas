@@ -101,6 +101,11 @@ describe("MovieRow collapsed", () => {
     renderRow({ showtimes: [...BASE_MOVIE.showtimes, ...extras] });
     expect(screen.queryByText(/last chance/i)).not.toBeInTheDocument();
   });
+
+  it("renders an expand chevron indicator", () => {
+    renderRow();
+    expect(screen.getByTestId("expand-chevron")).toBeInTheDocument();
+  });
 });
 
 describe("MovieRow expanded", () => {
@@ -112,5 +117,15 @@ describe("MovieRow expanded", () => {
   it("renders theater name when expanded", () => {
     renderRow(undefined, true);
     expect(screen.getByText("Cinemes Verdi")).toBeInTheDocument();
+  });
+
+  it("marks the article as expanded via aria-expanded", () => {
+    renderRow(undefined, true);
+    expect(screen.getByRole("article")).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("marks the article as collapsed via aria-expanded", () => {
+    renderRow(undefined, false);
+    expect(screen.getByRole("article")).toHaveAttribute("aria-expanded", "false");
   });
 });
