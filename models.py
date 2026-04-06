@@ -36,6 +36,8 @@ class CinemaInfo(TypedDict):
     neighborhood: str
     website_url: str
     maps_url: str
+    lat: NotRequired[float | None]
+    lng: NotRequired[float | None]
     aliases: NotRequired[dict[str, list[str]]]
 
 

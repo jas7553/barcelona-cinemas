@@ -1,9 +1,9 @@
-import type { AppState, TransformedMovie } from "../types";
 import { useState } from "react";
 import { relativeTime } from "../utils";
+import type { TransformedMovie } from "../types";
+import type { Coords } from "../hooks/useGeolocation";
 import EmptyState from "./EmptyState";
 import MovieRow from "./MovieRow";
-import SortControl, { type SortBy } from "./SortControl";
 
 interface Props {
   movies: TransformedMovie[];
@@ -13,10 +13,8 @@ interface Props {
   onRetry: () => void;
   generatedAt: string | null;
   stale: boolean;
-  filters: Pick<AppState, "selectedDate" | "selectedLang" | "selectedTheater">;
-  sortBy: SortBy;
-  onSortChange: (v: SortBy) => void;
-  expandedFilmId?: string;
+  onHide: (id: string) => void;
+  coords: Coords | null;
 }
 
 const SKELETON_COUNT = 5;
@@ -29,12 +27,12 @@ export default function MovieList({
   onRetry,
   generatedAt,
   stale,
-  filters,
-  sortBy,
-  onSortChange,
-  expandedFilmId,
+  onHide,
+  coords,
 }: Props) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [renderedAt] = useState(() => Date.now());
+
   const generatedTimestamp = generatedAt == null ? Number.NaN : Date.parse(generatedAt);
   const showStaleNotice =
     stale ||
@@ -72,7 +70,6 @@ export default function MovieList({
 
   return (
     <>
-      <SortControl value={sortBy} onChange={(v) => onSortChange(v as SortBy)} />
       {movies.length === 0 ? (
         <>
           <EmptyState noListings={allMoviesEmpty} />
@@ -86,7 +83,14 @@ export default function MovieList({
         <>
           <div className="movie-list">
             {movies.map((m) => (
-              <MovieRow key={m.id} movie={m} filters={filters} forceExpanded={m.id === expandedFilmId} />
+              <MovieRow
+                key={m.id}
+                movie={m}
+                isExpanded={m.id === expandedId}
+                onToggle={() => setExpandedId(m.id === expandedId ? null : m.id)}
+                onHide={onHide}
+                coords={coords}
+              />
             ))}
           </div>
           {generatedAt && (

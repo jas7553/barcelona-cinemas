@@ -6,6 +6,8 @@ export interface Theater {
   neighborhood: string;
   website_url: string;
   maps_url: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface MovieLinks {
@@ -51,11 +53,4 @@ export interface TransformedMovie extends Omit<Movie, "showtimes"> {
   showtimes: TransformedShowtime[];
 }
 
-export interface AppState {
-  selectedDate: "all" | number;
-  selectedLang: "all" | "vo" | "dub";
-  selectedGenre: string;
-  selectedTheater: string;
-  searchQuery: string;
-  filterPanelOpen: boolean;
-}
+

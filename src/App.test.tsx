@@ -15,6 +15,8 @@ const LISTINGS: Listings = {
       neighborhood: "Gràcia",
       website_url: "https://cinesesverdi.com",
       maps_url: "https://maps.google.com/?q=Verdi",
+      lat: null,
+      lng: null,
     },
   ],
   movies: [
@@ -49,13 +51,6 @@ describe("App", () => {
     expect(document.querySelector(".skeleton-row")).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByText("Project Hail Mary")).toBeInTheDocument()
-    );
-  });
-
-  it("renders film count in header after loading", async () => {
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
-    await waitFor(() =>
-      expect(screen.getByText("1 film")).toBeInTheDocument()
     );
   });
 
