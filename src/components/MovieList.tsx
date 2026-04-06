@@ -29,7 +29,6 @@ export default function MovieList({
   onRetry,
   generatedAt,
   stale,
-  filters,
   sortBy,
   onSortChange,
   expandedFilmId,
@@ -86,7 +85,7 @@ export default function MovieList({
         <>
           <div className="movie-list">
             {movies.map((m) => (
-              <MovieRow key={m.id} movie={m} filters={filters} forceExpanded={m.id === expandedFilmId} />
+              <MovieRow key={m.id} movie={m} isExpanded={m.id === expandedFilmId} onToggle={() => {}} onHide={() => {}} coords={null} />
             ))}
           </div>
           {generatedAt && (
