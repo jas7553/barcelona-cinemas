@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-
 interface Props {
   searchQuery: string;
   onSearch: (q: string) => void;
@@ -7,7 +5,6 @@ interface Props {
   filterPanelOpen: boolean;
   onToggleFilter: () => void;
   activeFilterCount: number;
-  activeView: "films" | "showtimes";
 }
 
 export default function Header({
@@ -17,7 +14,6 @@ export default function Header({
   filterPanelOpen,
   onToggleFilter,
   activeFilterCount,
-  activeView,
 }: Props) {
   return (
     <header className="header">
@@ -46,23 +42,6 @@ export default function Header({
       <span className="film-count">
         {filmCount} {filmCount === 1 ? "film" : "films"}
       </span>
-
-      <nav className="header-nav">
-        <Link
-          to="/films"
-          className={`nav-tab${activeView === "films" ? " nav-tab--active" : ""}`}
-          aria-current={activeView === "films" ? "page" : undefined}
-        >
-          Discover
-        </Link>
-        <Link
-          to="/showtimes"
-          className={`nav-tab${activeView === "showtimes" ? " nav-tab--active" : ""}`}
-          aria-current={activeView === "showtimes" ? "page" : undefined}
-        >
-          Showtimes
-        </Link>
-      </nav>
 
       <button
         className={`filter-toggle${activeFilterCount > 0 ? " has-active" : ""}`}

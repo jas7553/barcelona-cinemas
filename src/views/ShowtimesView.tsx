@@ -126,7 +126,6 @@ export default function ShowtimesView({
         filterPanelOpen={filters.filterPanelOpen}
         onToggleFilter={toggleFilterPanel}
         activeFilterCount={activeFilterCount}
-        activeView="showtimes"
       />
 
       {!loading && !error && (
