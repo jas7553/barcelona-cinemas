@@ -53,12 +53,4 @@ export interface TransformedMovie extends Omit<Movie, "showtimes"> {
   showtimes: TransformedShowtime[];
 }
 
-export interface AppState {
-  selectedDate: "all" | number;
-  selectedLang: "all" | "vo" | "dub";
-  selectedGenre: string;
-  selectedTheater: string;
-  searchQuery: string;
-  filterPanelOpen: boolean;
-}
 
