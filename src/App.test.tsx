@@ -159,4 +159,12 @@ describe("App", () => {
     );
     expect(screen.getByRole("region", { name: "TMDb attribution" })).toBeInTheDocument();
   });
+
+  it("redirects /films to the showtimes view", () => {
+    render(<MemoryRouter initialEntries={["/films"]}><App /></MemoryRouter>);
+    expect(screen.getByRole("link", { name: "Skip to listings" })).toHaveAttribute(
+      "href",
+      "#main-content"
+    );
+  });
 });
