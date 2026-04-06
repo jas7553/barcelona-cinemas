@@ -1,7 +1,17 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import MovieRow from "./MovieRow";
 import type { TransformedMovie } from "../types";
+
+const THEATER = {
+  id: "verdi",
+  name: "Cinemes Verdi",
+  neighborhood: "Gràcia",
+  website_url: "https://cinesverdi.com",
+  maps_url: "https://maps.google.com/?q=Verdi",
+  lat: 41.4035,
+  lng: 2.1580,
+};
 
 const BASE_MOVIE: TransformedMovie = {
   id: "movie-1",
@@ -17,16 +27,8 @@ const BASE_MOVIE: TransformedMovie = {
   showtimes: [
     {
       theater_id: "verdi",
-      theater: {
-        id: "verdi",
-        name: "Cinemes Verdi",
-        neighborhood: "Gracia",
-        website_url: "https://cinesesverdi.com",
-        maps_url: "https://maps.google.com/?q=Verdi",
-        lat: null,
-        lng: null,
-      },
-      date: "2026-03-29",
+      theater: THEATER,
+      date: "2099-06-01",
       time: "18:00",
       language: "vo",
       dayOffset: 0,
@@ -34,74 +36,81 @@ const BASE_MOVIE: TransformedMovie = {
   ],
 };
 
-describe("MovieRow", () => {
+function renderRow(overrides?: Partial<TransformedMovie>, expanded = false) {
+  const onToggle = vi.fn();
+  const onHide = vi.fn();
+  render(
+    <MovieRow
+      movie={{ ...BASE_MOVIE, ...overrides }}
+      isExpanded={expanded}
+      onToggle={onToggle}
+      onHide={onHide}
+      coords={null}
+    />
+  );
+  return { onToggle, onHide };
+}
+
+describe("MovieRow collapsed", () => {
+  it("renders the movie title", () => {
+    renderRow();
+    expect(screen.getByText("Project Hail Mary")).toBeInTheDocument();
+  });
+
   it("renders a poster image when poster_url is present", () => {
-    render(
-      <MovieRow
-        movie={BASE_MOVIE}
-        filters={{ selectedDate: "all", selectedLang: "all", selectedTheater: "all" }}
-      />
-    );
-
-    const poster = screen.getByTestId("movie-poster-image");
-    expect(poster).toHaveAttribute("src", BASE_MOVIE.poster_url);
+    renderRow();
+    expect(screen.getByTestId("movie-poster-image")).toHaveAttribute("src", BASE_MOVIE.poster_url);
   });
 
-  it("renders the designed fallback when poster_url is missing", () => {
-    render(
-      <MovieRow
-        movie={{ ...BASE_MOVIE, poster_url: null }}
-        filters={{ selectedDate: "all", selectedLang: "all", selectedTheater: "all" }}
-      />
-    );
-
-    expect(screen.getByText("P")).toBeInTheDocument();
+  it("renders the fallback when poster_url is missing", () => {
+    renderRow({ poster_url: null });
     expect(screen.getByTestId("movie-poster-fallback")).toBeInTheDocument();
   });
 
-  it("falls back when the poster image fails to load", () => {
-    render(
-      <MovieRow
-        movie={BASE_MOVIE}
-        filters={{ selectedDate: "all", selectedLang: "all", selectedTheater: "all" }}
-      />
-    );
-
-    const poster = screen.getByTestId("movie-poster-image");
-    fireEvent.error(poster);
-
-    expect(screen.getByText("P")).toBeInTheDocument();
-    expect(screen.queryByTestId("movie-poster-image")).not.toBeInTheDocument();
-    expect(screen.getByTestId("movie-poster-fallback")).toBeInTheDocument();
+  it("renders rating", () => {
+    renderRow();
+    expect(screen.getByText(/8\.2/)).toBeInTheDocument();
   });
 
-  it("renders a single IMDb details action with accessible new-tab labeling", () => {
-    render(
-      <MovieRow
-        movie={BASE_MOVIE}
-        filters={{ selectedDate: "all", selectedLang: "all", selectedTheater: "all" }}
-      />
-    );
-
-    const detailsLink = screen.getByRole("link", {
-      name: "View details for Project Hail Mary on IMDb (opens in a new tab)",
-    });
-
-    expect(detailsLink).toHaveAttribute("href", BASE_MOVIE.links.imdb);
-    expect(detailsLink).toHaveAttribute("target", "_blank");
-    expect(detailsLink).toHaveAttribute("rel", "noreferrer");
-    expect(detailsLink).toHaveTextContent("View on IMDb");
-    expect(screen.getByText("Project Hail Mary")).not.toHaveAttribute("href");
+  it("does not render synopsis when collapsed", () => {
+    renderRow();
+    expect(screen.queryByText("A lone astronaut races to save humanity.")).not.toBeInTheDocument();
   });
 
-  it("omits the details action when no IMDb link is available", () => {
-    render(
-      <MovieRow
-        movie={{ ...BASE_MOVIE, links: { imdb: null } }}
-        filters={{ selectedDate: "all", selectedLang: "all", selectedTheater: "all" }}
-      />
-    );
+  it("calls onToggle when the row is clicked", () => {
+    const { onToggle } = renderRow();
+    fireEvent.click(screen.getByRole("article"));
+    expect(onToggle).toHaveBeenCalledOnce();
+  });
 
-    expect(screen.queryByRole("link", { name: /IMDb/ })).not.toBeInTheDocument();
+  it("calls onHide when the hide button is clicked without triggering onToggle", () => {
+    const { onToggle, onHide } = renderRow();
+    const hideBtn = screen.getByRole("button", { name: /hide/i });
+    fireEvent.click(hideBtn);
+    expect(onHide).toHaveBeenCalledWith("movie-1");
+    expect(onToggle).not.toHaveBeenCalled();
+  });
+
+  it("shows Last Chance badge when showtimes.length <= 2", () => {
+    renderRow();
+    expect(screen.getByText(/last chance/i)).toBeInTheDocument();
+  });
+
+  it("does not show Last Chance badge when showtimes.length > 2", () => {
+    const extras = Array.from({ length: 3 }, (_, i) => ({ ...BASE_MOVIE.showtimes[0], time: `${18 + i}:00` }));
+    renderRow({ showtimes: [...BASE_MOVIE.showtimes, ...extras] });
+    expect(screen.queryByText(/last chance/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("MovieRow expanded", () => {
+  it("renders synopsis when expanded", () => {
+    renderRow(undefined, true);
+    expect(screen.getByText("A lone astronaut races to save humanity.")).toBeInTheDocument();
+  });
+
+  it("renders theater name when expanded", () => {
+    renderRow(undefined, true);
+    expect(screen.getByText("Cinemes Verdi")).toBeInTheDocument();
   });
 });
