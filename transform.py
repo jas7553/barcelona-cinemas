@@ -187,5 +187,7 @@ def _build_theaters(
                 "neighborhood": info["neighborhood"],
                 "website_url":  info["website_url"],
                 "maps_url":     info["maps_url"],
+                "lat":          info.get("lat"),
+                "lng":          info.get("lng"),
             })
     return theaters
