@@ -6,6 +6,8 @@
     "neighborhood": "Gràcia",
     "website_url": "https://cinesverdi.com",
     "maps_url": "https://maps.google.com/?q=Cines+Verdi,+Carrer+de+Verdi+32,+Barcelona",
+    "lat": 41.4035,
+    "lng": 2.1580,
     "aliases": {
       "english_cinema_bcn": ["Verdi"]
     }
@@ -17,6 +19,8 @@
     "neighborhood": "Gràcia",
     "website_url": "https://cinesverdi.com",
     "maps_url": "https://maps.google.com/?q=Verdi+Park,+Carrer+de+Torrijos+49,+Barcelona",
+    "lat": 41.4045,
+    "lng": 2.1575,
     "aliases": {
       "english_cinema_bcn": ["VP"]
     }
@@ -28,6 +32,8 @@
     "neighborhood": "Gothic Quarter",
     "website_url": "https://www.cinemalda.com",
     "maps_url": "https://maps.google.com/?q=Cinema+Maldà,+Carrer+del+Pi+5,+Barcelona",
+    "lat": 41.3826,
+    "lng": 2.1740,
     "aliases": {
       "english_cinema_bcn": ["Malda"]
     }
@@ -39,6 +45,8 @@
     "neighborhood": "El Raval",
     "website_url": "https://filmoteca.cat",
     "maps_url": "https://maps.google.com/?q=Filmoteca+de+Catalunya,+Plaça+de+Salvador+Seguí+1,+Barcelona",
+    "lat": 41.3797,
+    "lng": 2.1686,
     "aliases": {
       "english_cinema_bcn": ["FdC"]
     }
@@ -50,6 +58,8 @@
     "neighborhood": "Les Corts",
     "website_url": "https://www.cinesa.es/cines/barcelona/diagonal",
     "maps_url": "https://maps.google.com/?q=Cinesa+Diagonal,+Carrer+de+Santa+Fe+de+Nou+Mèxic,+Barcelona",
+    "lat": 41.3889,
+    "lng": 2.1183,
     "aliases": {
       "english_cinema_bcn": ["Cin Diag", "Cinesa Diagonal"]
     }
@@ -61,6 +71,8 @@
     "neighborhood": "Diagonal Mar",
     "website_url": "https://www.cinesa.es/cines/barcelona/diagonal-mar",
     "maps_url": "https://maps.google.com/?q=Cinesa+Diagonal+Mar,+Avinguda+del+Litoral+2,+Barcelona",
+    "lat": 41.4040,
+    "lng": 2.2115,
     "aliases": {
       "english_cinema_bcn": ["CinDigMar", "Cinesa Diagonal Mar"]
     }
@@ -72,6 +84,8 @@
     "neighborhood": "Porta",
     "website_url": "https://www.cinesa.es/cines/barcelona/som-multiespai",
     "maps_url": "https://maps.google.com/?q=Cinesa+SOM+Multiespai,+Avinguda+de+Rio+de+Janeiro+42,+Barcelona",
+    "lat": 41.4375,
+    "lng": 2.1691,
     "aliases": {
       "english_cinema_bcn": ["Cinesa SOM", "SOM", "Cinesa SOM Multiespai"]
     }
@@ -83,6 +97,8 @@
     "neighborhood": "Poble-Nou",
     "website_url": "https://www.cinesa.es/cines/barcelona/glories",
     "maps_url": "https://maps.google.com/?q=Cinesa+Glòries,+Avinguda+Diagonal+208,+Barcelona",
+    "lat": 41.4036,
+    "lng": 2.1886,
     "aliases": {
       "secondary": ["GLORIES", "GLÒRIES", "/glories", "BAL-GLORIAS"]
     }
@@ -94,6 +110,8 @@
     "neighborhood": "Eixample",
     "website_url": "https://www.grupbalanas.com/aribau",
     "maps_url": "https://maps.google.com/?q=Cinemes+Aribau,+Carrer+d'Aribau+8,+Barcelona",
+    "lat": 41.3912,
+    "lng": 2.1624,
     "aliases": {
       "secondary": ["ARIBAU", "/aribau", "BAL-ARIBAU"]
     }
@@ -105,6 +123,8 @@
     "neighborhood": "Eixample",
     "website_url": "https://www.moobycinemas.com/arenas",
     "maps_url": "https://maps.google.com/?q=Mooby+Arenas,+Gran+Via+de+les+Corts+Catalanes+385,+Barcelona",
+    "lat": 41.3761,
+    "lng": 2.1466,
     "aliases": {
       "secondary": ["ARENAS", "/arenas", "BAL-ARENAS"]
     }
@@ -116,6 +136,8 @@
     "neighborhood": "Sarrià-Sant Gervasi",
     "website_url": "https://www.moobycinemas.com/balmes",
     "maps_url": "https://maps.google.com/?q=Mooby+Balmes,+Carrer+de+Balmes+422,+Barcelona",
+    "lat": 41.4072,
+    "lng": 2.1362,
     "aliases": {
       "secondary": ["BALMES", "/balmes", "BAL-BALMES"]
     }
@@ -127,6 +149,8 @@
     "neighborhood": "Gràcia",
     "website_url": "https://www.moobycinemas.com/bosque",
     "maps_url": "https://maps.google.com/?q=Mooby+Bosque,+Rambla+del+Prat+16,+Barcelona",
+    "lat": 41.4029,
+    "lng": 2.1570,
     "aliases": {
       "secondary": ["BOSQUE", "/bosque", "BAL-BOSQUE"]
     }
@@ -138,6 +162,8 @@
     "neighborhood": "Dreta de l'Eixample",
     "website_url": "https://www.cinemesgirona.cat",
     "maps_url": "https://maps.google.com/?q=Cinemes+Girona,+Carrer+de+Girona+175,+Barcelona",
+    "lat": 41.3997,
+    "lng": 2.1682,
     "aliases": {
       "english_cinema_bcn": ["Girona", "Cinemes Girona"]
     }
@@ -149,6 +175,8 @@
     "neighborhood": "Sant Antoni",
     "website_url": "https://www.cinesrenoir.com/cines/floridablanca",
     "maps_url": "https://maps.google.com/?q=Renoir+Floridablanca,+Carrer+de+Floridablanca+135,+Barcelona",
+    "lat": 41.3804,
+    "lng": 2.1613,
     "aliases": {
       "english_cinema_bcn": ["RenFlo", "Renoir Floridablanca"]
     }
@@ -160,6 +188,8 @@
     "neighborhood": "Vila de Gràcia",
     "website_url": "https://espaitexas.cat/",
     "maps_url": "https://maps.google.com/?q=Espai+Texas,+Carrer+de+Bailèn+205,+Barcelona",
+    "lat": 41.4013,
+    "lng": 2.1658,
     "aliases": {
       "english_cinema_bcn": ["EspaiTex", "Espai Texas"]
     }
@@ -171,6 +201,8 @@
     "neighborhood": "Bon Pastor",
     "website_url": "https://www.yelmocines.es/cartelera/barcelona/westfield-la-maquinista",
     "maps_url": "https://maps.google.com/?q=Yelmo+Westfield+La+Maquinista,+Carrer+de+Potosí+2,+Barcelona",
+    "lat": 41.4392,
+    "lng": 2.2041,
     "aliases": {
       "english_cinema_bcn": ["Maquinista", "Yelmo Westfield La Maquinista"]
     }
@@ -182,6 +214,8 @@
     "neighborhood": "L'Hospitalet de Llobregat",
     "website_url": "https://cinesfilmax.com",
     "maps_url": "https://maps.google.com/?q=Cines+Filmax+Gran+Via,+Avinguda+de+la+Gran+Via+75,+L'Hospitalet+de+Llobregat",
+    "lat": 41.3610,
+    "lng": 2.1073,
     "aliases": {
       "english_cinema_bcn": ["Filmax", "Cines Filmax Gran Vía"]
     }
@@ -193,6 +227,8 @@
     "neighborhood": "Sarrià-Sant Gervasi",
     "website_url": "https://www.moobycinemas.com/sarria",
     "maps_url": "https://maps.google.com/?q=Mooby+Sarri%C3%A0,+Carrer+del+General+Mitre+38,+Barcelona",
+    "lat": 41.4051,
+    "lng": 2.1278,
     "aliases": {
       "secondary": ["SARRIA", "SARRIÀ", "/sarria", "BAL-SARRIA"],
       "english_cinema_bcn": ["Gr.Sarrià", "Gr. Sarrià", "Gran Sarrià", "Sarrià"]
