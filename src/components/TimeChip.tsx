@@ -4,33 +4,23 @@ interface Props {
   showtime: TransformedShowtime;
 }
 
-const LANG_META = {
-  vo:  { label: "VOSE", title: "Original version with subtitles" },
-  dub: { label: "DUB",  title: "Dubbed in Spanish" },
-};
-
 export default function TimeChip({ showtime }: Props) {
-  const lang = LANG_META[showtime.language];
-
   const now = new Date();
   const [y, mo, d] = showtime.date.split("-").map(Number);
   const [h, m] = showtime.time.split(":").map(Number);
   const showDatetime = new Date(y, mo - 1, d, h, m);
-  const isPast = showDatetime < now;
+
+  if (showDatetime < now) return null;
 
   return (
-    <div
-      className={`time-chip${isPast ? " time-chip--past" : ""}`}
-      aria-hidden={isPast ? "true" : undefined}
+    <a
+      className="time-chip"
+      href={showtime.theater.website_url || "#"}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`Book ${showtime.time} at ${showtime.theater.name} (opens in a new tab)`}
     >
-      <span className="time-chip-time">{showtime.time}</span>
-      {lang ? (
-        <span className={`time-chip-lang ${showtime.language}`} title={lang.title}>
-          {lang.label}
-        </span>
-      ) : (
-        <span className="time-chip-lang unknown">{showtime.language}</span>
-      )}
-    </div>
+      {showtime.time}
+    </a>
   );
 }
