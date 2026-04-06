@@ -5,8 +5,15 @@ import App from "./App";
 import * as api from "./api";
 import type { Listings } from "./types";
 
+/** A date string 2 days from now, which will always be within the 7-day window. */
+function futureDateStr(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 2);
+  return d.toISOString().slice(0, 10);
+}
+
 const LISTINGS: Listings = {
-  generated_at: "2026-03-29T09:00:00Z",
+  generated_at: new Date().toISOString(),
   stale: false,
   theaters: [
     {
@@ -31,8 +38,8 @@ const LISTINGS: Listings = {
       synopsis: "A lone astronaut.",
       links: { imdb: null },
       showtimes: [
-        { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
-        { theater_id: "verdi", date: "2026-03-29", time: "20:00", language: "vo" },
+        { theater_id: "verdi", date: futureDateStr(), time: "18:00", language: "vo" },
+        { theater_id: "verdi", date: futureDateStr(), time: "20:00", language: "vo" },
       ],
     },
   ],

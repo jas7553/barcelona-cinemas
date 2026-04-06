@@ -93,9 +93,15 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
           dayOffset,
         };
       })
-      .filter((s) => s.dayOffset >= 0 && s.dayOffset <= 6)
+      .filter((s) => {
+        if (s.dayOffset < 0 || s.dayOffset > 6) return false;
+        const [sy, smo, sd] = s.date.split("-").map(Number);
+        const [sh, sm] = s.time.split(":").map(Number);
+        return new Date(sy, smo - 1, sd, sh, sm) > new Date();
+      })
       .sort((a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time)),
-  }));
+  }))
+  .filter((movie) => movie.showtimes.length > 0);
 }
 
 // ── Smart sort ──────────────────────────────────────────────────────────────

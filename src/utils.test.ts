@@ -54,7 +54,11 @@ describe("formatDayLabel", () => {
 });
 
 describe("transformResponse", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
   it("preserves poster_url on transformed movies", () => {
+    vi.setSystemTime(new Date("2026-03-29T10:00:00"));
     const listings: Listings = {
       generated_at: "2026-03-29T09:00:00Z",
       stale: false,
@@ -89,6 +93,85 @@ describe("transformResponse", () => {
 
     const [movie] = transformResponse(listings);
     expect(movie.poster_url).toBe("https://image.tmdb.org/t/p/w342/project-hail-mary.jpg");
+  });
+
+  it("excludes showtimes whose datetime has already passed", () => {
+    // System time: 2026-03-29 at 20:00 — the 18:00 show is already over
+    vi.setSystemTime(new Date("2026-03-29T20:00:00"));
+    const listings: Listings = {
+      generated_at: "2026-03-29T09:00:00Z",
+      stale: false,
+      theaters: [
+        {
+          id: "verdi",
+          name: "Cinemes Verdi",
+          neighborhood: "Gracia",
+          website_url: "https://cinesesverdi.com",
+          maps_url: "",
+          lat: null,
+          lng: null,
+        },
+      ],
+      movies: [
+        {
+          id: "movie-1",
+          title: "Dead Film",
+          year: 2025,
+          runtime_minutes: 90,
+          poster_url: null,
+          genres: [],
+          rating: null,
+          synopsis: "",
+          links: { imdb: null },
+          showtimes: [
+            { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
+          ],
+        },
+      ],
+    };
+
+    const result = transformResponse(listings);
+    expect(result).toHaveLength(0);
+  });
+
+  it("keeps only future showtimes when a film has a mix of past and future", () => {
+    vi.setSystemTime(new Date("2026-03-29T16:00:00"));
+    const listings: Listings = {
+      generated_at: "2026-03-29T09:00:00Z",
+      stale: false,
+      theaters: [
+        {
+          id: "verdi",
+          name: "Cinemes Verdi",
+          neighborhood: "Gracia",
+          website_url: "",
+          maps_url: "",
+          lat: null,
+          lng: null,
+        },
+      ],
+      movies: [
+        {
+          id: "movie-1",
+          title: "Mixed Times",
+          year: 2025,
+          runtime_minutes: 90,
+          poster_url: null,
+          genres: [],
+          rating: null,
+          synopsis: "",
+          links: { imdb: null },
+          showtimes: [
+            { theater_id: "verdi", date: "2026-03-29", time: "12:00", language: "vo" }, // past
+            { theater_id: "verdi", date: "2026-03-29", time: "20:00", language: "vo" }, // future
+          ],
+        },
+      ],
+    };
+
+    const [movie] = transformResponse(listings);
+    expect(movie.showtimes).toHaveLength(1);
+    expect(movie.showtimes[0].time).toBe("20:00");
   });
 });
 
