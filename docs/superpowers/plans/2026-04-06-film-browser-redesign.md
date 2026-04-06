@@ -46,7 +46,8 @@
 
 ---
 
-## Task 1: Add lat/lng to cinemas.json and backend types
+## ✅ Task 1: Add lat/lng to cinemas.json and backend types
+<!-- Completed: commit 3df2885 -->
 
 **Files:**
 - Modify: `cinemas.json`
@@ -134,7 +135,8 @@ git commit -m "feat: add lat/lng coordinates to cinema registry and API response
 
 ---
 
-## Task 2: Update frontend Theater type
+## ✅ Task 2: Update frontend Theater type
+<!-- Completed: commit 25d1c43 -->
 
 **Files:**
 - Modify: `src/types.ts`
@@ -228,7 +230,8 @@ git commit -m "feat: add lat/lng to Theater type and update test fixtures"
 
 ---
 
-## Task 3: Add haversineKm and smartSort to utils.ts
+## ✅ Task 3: Add haversineKm and smartSort to utils.ts
+<!-- Completed: commit 2cdb09f -->
 
 **Files:**
 - Modify: `src/utils.ts`
@@ -401,7 +404,8 @@ git commit -m "feat: add haversineKm and smartSort utils"
 
 ---
 
-## Task 4: useHiddenFilms hook
+## ✅ Task 4: useHiddenFilms hook
+<!-- Completed: commit 646cfad -->
 
 **Files:**
 - Create: `src/hooks/useHiddenFilms.ts`
@@ -526,7 +530,8 @@ git commit -m "feat: add useHiddenFilms hook with localStorage persistence"
 
 ---
 
-## Task 5: useGeolocation hook
+## ✅ Task 5: useGeolocation hook
+<!-- Completed: commit cd280dc -->
 
 **Files:**
 - Create: `src/hooks/useGeolocation.ts`
@@ -645,7 +650,8 @@ git commit -m "feat: add useGeolocation hook"
 
 ---
 
-## Task 6: Dark theme CSS
+## ✅ Task 6: Dark theme CSS
+<!-- Completed: commit d3f7e4a. Note: .movie-row uses flex-direction:column (outer wrapper); .movie-row-collapsed is the inner row — Task 10 must match this structure. -->
 
 **Files:**
 - Modify: `src/style.css`
@@ -1066,7 +1072,8 @@ git commit -m "feat: dark theme CSS redesign"
 
 ---
 
-## Task 7: Simplify MoviePoster fallback
+## ✅ Task 7: Simplify MoviePoster fallback
+<!-- Completed: commit 3e9d7f2 -->
 
 **Files:**
 - Modify: `src/components/MoviePoster.tsx`
@@ -1129,7 +1136,8 @@ git commit -m "refactor: simplify MoviePoster to dark fallback style"
 
 ---
 
-## Task 8: Convert TimeChip to booking link
+## ✅ Task 8: Convert TimeChip to booking link
+<!-- Completed: commit 9572524 -->
 
 **Files:**
 - Modify: `src/components/TimeChip.tsx`
@@ -1176,7 +1184,8 @@ git commit -m "feat: convert TimeChip to booking link anchor"
 
 ---
 
-## Task 9: Update TheaterCard
+## ✅ Task 9: Update TheaterCard
+<!-- Completed: commit 4afd15c -->
 
 **Files:**
 - Modify: `src/components/TheaterCard.tsx`
@@ -1249,7 +1258,8 @@ git commit -m "feat: update TheaterCard with distance display and simplified day
 
 ---
 
-## Task 10: Redesign MovieRow
+## ✅ Task 10: Redesign MovieRow
+<!-- Completed: commit 6b294b4 -->
 
 **Files:**
 - Modify: `src/components/MovieRow.tsx`
@@ -1514,7 +1524,8 @@ git commit -m "feat: redesign MovieRow with collapsed/expanded state and hide bu
 
 ---
 
-## Task 11: Simplify MovieList
+## ✅ Task 11: Simplify MovieList
+<!-- Completed: commit 8a90cf6 -->
 
 **Files:**
 - Modify: `src/components/MovieList.tsx`
@@ -1640,7 +1651,8 @@ git commit -m "refactor: simplify MovieList, manage expand state internally"
 
 ---
 
-## Task 12: Simplify Header
+## ✅ Task 12: Simplify Header
+<!-- Completed: commit 8a90cf6 -->
 
 **Files:**
 - Modify: `src/components/Header.tsx`
@@ -1693,7 +1705,8 @@ git commit -m "refactor: simplify Header to logo + search only"
 
 ---
 
-## Task 13: Wire up App and ShowtimesView, delete dead components
+## ✅ Task 13: Wire up App and ShowtimesView, delete dead components
+<!-- Completed: commit 8a90cf6 -->
 
 **Files:**
 - Modify: `src/App.tsx`
@@ -1922,7 +1935,8 @@ git commit -m "feat: wire up App and ShowtimesView with hooks; delete dead compo
 
 ---
 
-## Task 14: Add "Show hidden films" to Footer
+## ✅ Task 14: Add "Show hidden films" to Footer
+<!-- Completed: commit 8a90cf6 -->
 
 **Files:**
 - Modify: `src/components/Footer.tsx`
