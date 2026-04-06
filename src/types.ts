@@ -1,4 +1,4 @@
-// API response types — mirror of HANDOFF.md §3 / transform.py output
+// API response types
 
 export interface Theater {
   id: string;
@@ -50,17 +50,6 @@ export interface TransformedMovie extends Omit<Movie, "showtimes"> {
   runtimeLabel: string;
   showtimes: TransformedShowtime[];
 }
-
-export interface FilmDiscovery extends TransformedMovie {
-  theaterCount: number;
-  screeningCount: number;
-  isNewRelease: boolean;
-  isLimitedRun: boolean;
-  isLastChance: boolean;
-  availableDays: string[];  // ["Today", "Tomorrow", "Tue"]
-}
-
-export type DiscoverSortBy = "rating" | "title" | "screenings";
 
 export interface AppState {
   selectedDate: "all" | number;
