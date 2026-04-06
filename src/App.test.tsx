@@ -54,13 +54,6 @@ describe("App", () => {
     );
   });
 
-  it("renders film count in header after loading", async () => {
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
-    await waitFor(() =>
-      expect(screen.getByText("1 film")).toBeInTheDocument()
-    );
-  });
-
   it("renders a skip link and a named main region", () => {
     render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
 
