@@ -1,92 +1,102 @@
-import type { AppState, TransformedMovie, TransformedShowtime } from "../types";
+import type { TransformedMovie, TransformedShowtime } from "../types";
+import type { Coords } from "../hooks/useGeolocation";
+import { haversineKm } from "../utils";
 import MoviePoster from "./MoviePoster";
 import TheaterCard from "./TheaterCard";
 
 interface Props {
   movie: TransformedMovie;
-  filters: Pick<AppState, "selectedDate" | "selectedLang" | "selectedTheater">;
-  forceExpanded?: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onHide: (id: string) => void;
+  coords: Coords | null;
 }
 
 function RatingPill({ rating }: { rating: number }) {
-  const cls =
-    rating >= 8 ? "rating-great" :
-    rating >= 7 ? "rating-good" :
-    rating >= 6 ? "rating-ok" :
-    "rating-low";
-  return <span className={`rating-pill ${cls}`}>★ {rating.toFixed(1)}</span>;
+  return <span className="rating-pill">★ {rating.toFixed(1)}</span>;
 }
 
-export default function MovieRow({ movie, filters }: Props) {
-  const { selectedDate, selectedLang, selectedTheater } = filters;
-  const imdbLink = movie.links.imdb;
+export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }: Props) {
+  const isLastChance = movie.showtimes.length <= 2;
+  const shownGenres = movie.genres.slice(0, 3);
 
-  // Group showtimes by theater, applying all active filters
+  // Group showtimes by theater
   const theaterMap = new Map<string, TransformedShowtime[]>();
   for (const s of movie.showtimes) {
-    if (selectedDate !== "all" && s.dayOffset !== selectedDate) continue;
-    if (selectedTheater !== "all" && s.theater.id !== selectedTheater) continue;
-    if (selectedLang !== "all" && s.language !== selectedLang) continue;
     const arr = theaterMap.get(s.theater.id) ?? [];
     arr.push(s);
     theaterMap.set(s.theater.id, arr);
   }
 
-  const theaterEntries = [...theaterMap.entries()];
-
-  const shownGenres = movie.genres.slice(0, 3);
-  const extraGenres = movie.genres.length - 3;
-
-  const theaterCount = new Set(movie.showtimes.map((s) => s.theater.id)).size;
-  const screeningCount = movie.showtimes.length;
+  // Sort theaters by distance if coords available, else alphabetically
+  const theaterEntries = [...theaterMap.entries()].sort(([, aShowtimes], [, bShowtimes]) => {
+    const aTheater = aShowtimes[0].theater;
+    const bTheater = bShowtimes[0].theater;
+    if (coords && aTheater.lat != null && aTheater.lng != null && bTheater.lat != null && bTheater.lng != null) {
+      const aDist = haversineKm(coords.lat, coords.lng, aTheater.lat, aTheater.lng);
+      const bDist = haversineKm(coords.lat, coords.lng, bTheater.lat, bTheater.lng);
+      return aDist - bDist;
+    }
+    return aTheater.name.localeCompare(bTheater.name);
+  });
 
   return (
-    <article id={`film-${movie.id}`} className="movie-row">
-      <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
+    <article
+      id={`film-${movie.id}`}
+      className="movie-row"
+      onClick={onToggle}
+      role="article"
+    >
+      <div className="movie-row-collapsed">
+        <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
 
-      <div className="movie-row-content">
-        <div className="info-top">
-          <span className="movie-title">{movie.title}</span>
-          {movie.year != null && <span className="movie-year">{movie.year}</span>}
-          {movie.runtimeLabel && <span className="movie-runtime">{movie.runtimeLabel}</span>}
-          {imdbLink && (
-            <span className="ext-links">
-              <a
-                className="ext-link"
-                href={imdbLink}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`View details for ${movie.title} on IMDb (opens in a new tab)`}
+        <div className="movie-row-content">
+          <div className="movie-row-top">
+            <div>
+              <span className="movie-title">{movie.title}</span>
+              {movie.year != null && <span className="movie-year"> · {movie.year}</span>}
+              {movie.runtimeLabel && <span className="movie-runtime"> · {movie.runtimeLabel}</span>}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+              {isLastChance && <span className="last-chance-badge">Last Chance</span>}
+              <button
+                className="hide-btn"
+                aria-label={`Hide ${movie.title}`}
+                onClick={(e) => { e.stopPropagation(); onHide(movie.id); }}
               >
-                <span className="ext-link-desktop">View on IMDb</span>
-                <span className="ext-link-mobile" aria-hidden="true">IMDb ↗</span>
-              </a>
-            </span>
-          )}
-        </div>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+              </button>
+            </div>
+          </div>
 
-        <div className="info-tags">
-          {movie.rating != null && <RatingPill rating={movie.rating} />}
-          {shownGenres.map((g) => (
-            <span key={g} className="tag-genre">{g}</span>
-          ))}
-          {extraGenres > 0 && (
-            <span className="tag-genre-overflow">+{extraGenres}</span>
-          )}
-        </div>
-
-        <p className="availability-line">
-          {theaterCount} {theaterCount === 1 ? "theater" : "theaters"} · {screeningCount} {screeningCount === 1 ? "screening" : "screenings"}
-        </p>
-
-        {movie.synopsis && <p className="synopsis">{movie.synopsis}</p>}
-
-        <div className="showtimes-grid">
-          {theaterEntries.map(([theaterId, times]) => (
-            <TheaterCard key={theaterId} showtimes={times} selectedDate={selectedDate} />
-          ))}
+          <div className="movie-meta">
+            {movie.rating != null && <RatingPill rating={movie.rating} />}
+            {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
+          </div>
         </div>
       </div>
+
+      {isExpanded && (
+        <div className="movie-row-expanded">
+          {movie.synopsis && <p className="synopsis">{movie.synopsis}</p>}
+          <div className="showtimes-grid">
+            {theaterEntries.map(([theaterId, times]) => {
+              const theater = times[0].theater;
+              const distanceKm =
+                coords && theater.lat != null && theater.lng != null
+                  ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
+                  : null;
+              return (
+                <TheaterCard key={theaterId} showtimes={times} distanceKm={distanceKm} />
+              );
+            })}
+          </div>
+        </div>
+      )}
     </article>
   );
 }
