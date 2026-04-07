@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { fetchListings } from "./api";
-import type { Theater, TransformedMovie } from "./types";
+import type { Listings, Theater, TransformedMovie } from "./types";
 import { transformResponse } from "./utils";
 import { useHiddenFilms } from "./hooks/useHiddenFilms";
 import { useGeolocation } from "./hooks/useGeolocation";
@@ -17,6 +17,7 @@ export interface SharedProps {
   onRetry: () => void;
   hiddenIds: Set<string>;
   onHide: (id: string) => void;
+  onClearHidden: () => void;
 }
 
 export default function App() {
@@ -30,40 +31,30 @@ export default function App() {
   const { hiddenIds, hideFilm, clearHidden } = useHiddenFilms();
   const coords = useGeolocation();
 
+  const applyListings = useCallback((data: Listings) => {
+    setMovies(transformResponse(data));
+    setTheaters(data.theaters);
+    setGeneratedAt(data.generated_at);
+    setStale(data.stale);
+  }, []);
+
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
     fetchListings()
-      .then((data) => {
-        setMovies(transformResponse(data));
-        setTheaters(data.theaters);
-        setGeneratedAt(data.generated_at);
-        setStale(data.stale);
-      })
+      .then(applyListings)
       .catch(() => setError("fetch failed"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [applyListings]);
 
   useEffect(() => {
     let cancelled = false;
     fetchListings()
-      .then((data) => {
-        if (cancelled) return;
-        setMovies(transformResponse(data));
-        setTheaters(data.theaters);
-        setGeneratedAt(data.generated_at);
-        setStale(data.stale);
-      })
+      .then((data) => { if (!cancelled) applyListings(data); })
       .catch(() => { if (!cancelled) setError("fetch failed"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, []);
-
-  // "__clear__" is a sentinel value used by Footer to clear all hidden films
-  const handleHide = useCallback((id: string) => {
-    if (id === "__clear__") clearHidden();
-    else hideFilm(id);
-  }, [hideFilm, clearHidden]);
+  }, [applyListings]);
 
   const shared: SharedProps = {
     movies,
@@ -74,7 +65,8 @@ export default function App() {
     error,
     onRetry: load,
     hiddenIds,
-    onHide: handleHide,
+    onHide: hideFilm,
+    onClearHidden: clearHidden,
   };
 
   return (

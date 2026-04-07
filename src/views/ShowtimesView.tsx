@@ -19,6 +19,7 @@ export default function ShowtimesView({
   onRetry,
   hiddenIds,
   onHide,
+  onClearHidden,
   coords,
 }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,7 +64,7 @@ export default function ShowtimesView({
         </main>
       </div>
 
-      <Footer hiddenCount={hiddenIds.size} onClearHidden={() => onHide("__clear__")} />
+      <Footer hiddenCount={hiddenIds.size} onClearHidden={onClearHidden} />
     </>
   );
 }
