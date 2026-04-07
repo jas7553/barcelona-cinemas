@@ -228,10 +228,10 @@ describe("smartSort", () => {
     expect(result.map(m => m.id)).toEqual(["b"]);
   });
 
-  it("places last-chance (≤2 screenings) films first", () => {
+  it("places last-chance (1 screening remaining) films first", () => {
     const movies = [
       makeMovie({ id: "popular", rating: 8.0, showtimes: [showtime(), showtime(), showtime(), showtime()] }),
-      makeMovie({ id: "last-chance", rating: 5.0, showtimes: [showtime(), showtime()] }),
+      makeMovie({ id: "last-chance", rating: 5.0, showtimes: [showtime()] }),
     ];
     const result = smartSort(movies, new Set());
     expect(result[0].id).toBe("last-chance");

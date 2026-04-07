@@ -89,7 +89,22 @@ export default function MovieList({
                 key={m.id}
                 movie={m}
                 isExpanded={m.id === expandedId}
-                onToggle={() => setExpandedId(m.id === expandedId ? null : m.id)}
+                onToggle={() => {
+                  const newId = m.id === expandedId ? null : m.id;
+                  if (newId && expandedId) {
+                    const el = document.getElementById(`film-${newId}`);
+                    if (el) {
+                      const before = el.getBoundingClientRect().top;
+                      setExpandedId(newId);
+                      requestAnimationFrame(() => {
+                        const after = el.getBoundingClientRect().top;
+                        if (after !== before) window.scrollBy({ top: after - before, behavior: "instant" });
+                      });
+                      return;
+                    }
+                  }
+                  setExpandedId(newId);
+                }}
                 onHide={onHide}
                 coords={coords}
               />

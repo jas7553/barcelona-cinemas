@@ -54,7 +54,7 @@ describe("App", () => {
   });
 
   it("shows loading skeletons initially then renders movies", async () => {
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/"]}><App /></MemoryRouter>);
     expect(document.querySelector(".skeleton-row")).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByText("Project Hail Mary")).toBeInTheDocument()
@@ -62,7 +62,7 @@ describe("App", () => {
   });
 
   it("renders a skip link and a named main region", () => {
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/"]}><App /></MemoryRouter>);
 
     expect(screen.getByRole("link", { name: "Skip to listings" })).toHaveAttribute("href", "#main-content");
     expect(screen.getByRole("main", { name: "Barcelona English-language cinema listings" })).toHaveAttribute(
@@ -80,7 +80,7 @@ describe("App", () => {
         })
     );
 
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/"]}><App /></MemoryRouter>);
 
     expect(screen.getByRole("status")).toHaveTextContent("Loading movie listings.");
     expect(screen.getByRole("main", { name: "Barcelona English-language cinema listings" })).toHaveAttribute(
@@ -92,7 +92,7 @@ describe("App", () => {
   });
 
   it("announces the result count after loading", async () => {
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/"]}><App /></MemoryRouter>);
 
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent("1 film shown.")
@@ -100,7 +100,7 @@ describe("App", () => {
   });
 
   it("shows quiet freshness metadata when data is fresh", async () => {
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/"]}><App /></MemoryRouter>);
     await waitFor(() =>
       expect(screen.getByText(/Listings last updated/)).toBeInTheDocument()
     );
@@ -110,7 +110,7 @@ describe("App", () => {
   });
 
   it("renders TMDb attribution once after listings load", async () => {
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/"]}><App /></MemoryRouter>);
 
     const attribution = await screen.findByRole("region", { name: "TMDb attribution" });
     expect(attribution).toBeInTheDocument();
@@ -128,7 +128,7 @@ describe("App", () => {
       ...LISTINGS,
       stale: true,
     });
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/"]}><App /></MemoryRouter>);
     await waitFor(() =>
       expect(screen.getByText(/Listings last updated/)).toBeInTheDocument()
     );
@@ -140,7 +140,7 @@ describe("App", () => {
       movies: [],
     });
 
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/"]}><App /></MemoryRouter>);
 
     await waitFor(() =>
       expect(screen.getByText("No listings yet — check back soon.")).toBeInTheDocument()
@@ -154,7 +154,7 @@ describe("App", () => {
       stale: true,
     });
 
-    render(<MemoryRouter initialEntries={["/showtimes"]}><App /></MemoryRouter>);
+    render(<MemoryRouter initialEntries={["/"]}><App /></MemoryRouter>);
 
     await waitFor(() =>
       expect(screen.getByRole("status")).toHaveTextContent("1 film shown.")
@@ -162,8 +162,8 @@ describe("App", () => {
     expect(screen.getByRole("region", { name: "TMDb attribution" })).toBeInTheDocument();
   });
 
-  it("redirects /films to the showtimes view", () => {
-    render(<MemoryRouter initialEntries={["/films"]}><App /></MemoryRouter>);
+  it("renders the showtimes view at /", () => {
+    render(<MemoryRouter initialEntries={["/"]}><App /></MemoryRouter>);
     expect(screen.getByRole("link", { name: "Skip to listings" })).toHaveAttribute(
       "href",
       "#main-content"

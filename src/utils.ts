@@ -94,7 +94,7 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
         };
       })
       .filter((s) => {
-        if (s.dayOffset < 0 || s.dayOffset > 6) return false;
+        if (s.dayOffset < 0 || s.dayOffset > 13) return false;
         const [sy, smo, sd] = s.date.split("-").map(Number);
         const [sh, sm] = s.time.split(":").map(Number);
         return new Date(sy, smo - 1, sd, sh, sm) > new Date();
@@ -122,7 +122,7 @@ export function smartSort(movies: TransformedMovie[], hiddenIds: Set<string>): T
   const median = counts.length === 0 ? 0 : counts[Math.floor(counts.length / 2)];
 
   const tier = (m: TransformedMovie): number => {
-    if (m.showtimes.length <= 2) return 0;
+    if (m.showtimes.length === 1) return 0;
     if ((m.rating ?? 0) >= 7.5) return 1;
     if (m.showtimes.length > median) return 2;
     return 3;
