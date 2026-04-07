@@ -297,7 +297,7 @@ React SPA (src/)  →  Flask API (app.py)  →  pipeline.py
 | `transform.py` | Transforms internal `Listings` → public API shape (called at HTTP boundary in `app.py`). |
 | `validation.py` | Validation and normalization for cached/fetched movie data. |
 | `providers/__init__.py` | `ListingsSource` protocol + `all_providers` list. Add new providers here. |
-| `providers/listings_provider.py` | Primary scraper. Parses `the 7-day cinema listings feed`. |
+| `providers/listings_provider.py` | Primary scraper. Parses the 7-day cinema listings feed. |
 | `providers/secondary_provider.py` | Secondary/fallback listings source. |
 | `providers/cinema_aliases.py` | Maps scraped cinema names to `cinemas.json` keys. |
 | `cinemas.json` | Cinema registry: `{ "short-name": { "name", "address", "neighborhood" } }`. Source of truth for which cinemas are tracked. |
