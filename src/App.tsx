@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { fetchListings } from "./api";
 import type { Listings, Theater, TransformedMovie } from "./types";
 import { transformResponse } from "./utils";
@@ -71,8 +71,7 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/showtimes" element={<ShowtimesView {...shared} coords={coords} />} />
-      <Route path="*" element={<Navigate to="/showtimes" replace />} />
+      <Route path="/" element={<ShowtimesView {...shared} coords={coords} />} />
     </Routes>
   );
 }

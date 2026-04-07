@@ -18,8 +18,13 @@ function RatingPill({ rating }: { rating: number }) {
 }
 
 export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }: Props) {
-  const isLastChance = movie.showtimes.length <= 2;
+  const isLastChance = movie.showtimes.length === 1;
   const shownGenres = movie.genres.slice(0, 3);
+
+  const handleToggle = () => {
+    if (window.getSelection()?.toString()) return;
+    onToggle();
+  };
 
   // Group by theater, compute each distance once, then sort by distance or name.
   const theaterEntries = useMemo(() => {
@@ -48,11 +53,10 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
     <article
       id={`film-${movie.id}`}
       className="movie-row"
-      onClick={onToggle}
       role="article"
       aria-expanded={isExpanded}
     >
-      <div className="movie-row-collapsed">
+      <div className="movie-row-collapsed" onClick={handleToggle} style={{ cursor: "pointer" }}>
         <div className="movie-poster-wrap" data-testid="poster-wrap">
           <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
           {isLastChance && <span className="last-chance-badge" aria-label="Last chance to see this film">Last Chance</span>}

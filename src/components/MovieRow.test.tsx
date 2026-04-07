@@ -91,12 +91,12 @@ describe("MovieRow collapsed", () => {
     expect(onToggle).not.toHaveBeenCalled();
   });
 
-  it("shows Last Chance badge when showtimes.length <= 2", () => {
+  it("shows Last Chance badge when showtimes.length === 1", () => {
     renderRow();
     expect(screen.getByText(/last chance/i)).toBeInTheDocument();
   });
 
-  it("does not show Last Chance badge when showtimes.length > 2", () => {
+  it("does not show Last Chance badge when showtimes.length > 1", () => {
     const extras = Array.from({ length: 3 }, (_, i) => ({ ...BASE_MOVIE.showtimes[0], time: `${18 + i}:00` }));
     renderRow({ showtimes: [...BASE_MOVIE.showtimes, ...extras] });
     expect(screen.queryByText(/last chance/i)).not.toBeInTheDocument();
@@ -107,7 +107,7 @@ describe("MovieRow collapsed", () => {
     expect(screen.getByTestId("expand-chevron")).toBeInTheDocument();
   });
 
-  it("renders Last Chance badge inside the poster wrap when showtimes.length <= 2", () => {
+  it("renders Last Chance badge inside the poster wrap when showtimes.length === 1", () => {
     renderRow();
     const posterWrap = screen.getByTestId("poster-wrap");
     expect(posterWrap).toBeInTheDocument();
