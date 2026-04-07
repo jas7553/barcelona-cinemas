@@ -172,13 +172,10 @@ def _debug_enabled() -> bool:
     return os.environ.get(_LOCAL_DEBUG_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-_mangum_handler: Any | None = None
+_mangum_handler = Mangum(WsgiToAsgi(app), lifespan="off")  # type: ignore[no-untyped-call]
 
 
 def _get_mangum_handler() -> Any:
-    global _mangum_handler
-    if _mangum_handler is None:
-        _mangum_handler = Mangum(WsgiToAsgi(app), lifespan="off")  # type: ignore[no-untyped-call]
     return _mangum_handler
 
 
