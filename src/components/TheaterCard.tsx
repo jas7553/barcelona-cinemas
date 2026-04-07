@@ -48,12 +48,10 @@ export default function TheaterCard({ showtimes, distanceKm }: Props) {
           const date = new Date(today);
           date.setDate(today.getDate() + offset);
           const label = formatDayLabel(offset, date);
-          const chips = times.map((s, i) => <TimeChip key={i} showtime={s} />).filter(Boolean);
-          if (chips.length === 0) return null;
           return (
             <div className="day-row" key={offset}>
               <span className={`day-label${offset === 0 ? " today" : ""}`}>{label}</span>
-              <div className="times-wrap">{chips}</div>
+              <div className="times-wrap">{times.map((s, i) => <TimeChip key={i} showtime={s} />)}</div>
             </div>
           );
         })}

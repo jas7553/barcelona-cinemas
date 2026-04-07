@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { TransformedMovie, TransformedShowtime } from "../types";
 import type { Coords } from "../hooks/useGeolocation";
 import { haversineKm } from "../utils";
@@ -20,25 +21,28 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
   const isLastChance = movie.showtimes.length <= 2;
   const shownGenres = movie.genres.slice(0, 3);
 
-  // Group showtimes by theater
-  const theaterMap = new Map<string, TransformedShowtime[]>();
-  for (const s of movie.showtimes) {
-    const arr = theaterMap.get(s.theater.id) ?? [];
-    arr.push(s);
-    theaterMap.set(s.theater.id, arr);
-  }
-
-  // Sort theaters by distance if coords available, else alphabetically
-  const theaterEntries = [...theaterMap.entries()].sort(([, aShowtimes], [, bShowtimes]) => {
-    const aTheater = aShowtimes[0].theater;
-    const bTheater = bShowtimes[0].theater;
-    if (coords && aTheater.lat != null && aTheater.lng != null && bTheater.lat != null && bTheater.lng != null) {
-      const aDist = haversineKm(coords.lat, coords.lng, aTheater.lat, aTheater.lng);
-      const bDist = haversineKm(coords.lat, coords.lng, bTheater.lat, bTheater.lng);
-      return aDist - bDist;
+  // Group by theater, compute each distance once, then sort by distance or name.
+  const theaterEntries = useMemo(() => {
+    const theaterMap = new Map<string, TransformedShowtime[]>();
+    for (const s of movie.showtimes) {
+      const arr = theaterMap.get(s.theater.id) ?? [];
+      arr.push(s);
+      theaterMap.set(s.theater.id, arr);
     }
-    return aTheater.name.localeCompare(bTheater.name);
-  });
+    return [...theaterMap.values()]
+      .map((times) => {
+        const theater = times[0].theater;
+        const distanceKm =
+          coords && theater.lat != null && theater.lng != null
+            ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
+            : null;
+        return { times, distanceKm };
+      })
+      .sort((a, b) => {
+        if (a.distanceKm !== null && b.distanceKm !== null) return a.distanceKm - b.distanceKm;
+        return a.times[0].theater.name.localeCompare(b.times[0].theater.name);
+      });
+  }, [movie.showtimes, coords]);
 
   return (
     <article
@@ -118,16 +122,9 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
             </a>
           </div>
           <div className="showtimes-grid">
-            {theaterEntries.map(([theaterId, times]) => {
-              const theater = times[0].theater;
-              const distanceKm =
-                coords && theater.lat != null && theater.lng != null
-                  ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
-                  : null;
-              return (
-                <TheaterCard key={theaterId} showtimes={times} distanceKm={distanceKm} />
-              );
-            })}
+            {theaterEntries.map(({ times, distanceKm }) => (
+              <TheaterCard key={times[0].theater.id} showtimes={times} distanceKm={distanceKm} />
+            ))}
           </div>
         </div>
       )}

@@ -11,7 +11,7 @@ import time
 import urllib.request
 from datetime import UTC, datetime
 from itertools import chain
-from typing import Any, cast
+from typing import Any, TypeVar, cast
 
 import cache
 import enricher
@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 _CINEMAS_FILE = "cinemas.json"
 _CACHE_TTL_HOURS = int(os.environ.get("CACHE_TTL_HOURS", 12))
+_N = TypeVar("_N", int, float)
 
 
 def _cf() -> Any:
@@ -237,14 +238,7 @@ def _pick_string(left: str | None, right: str | None) -> str | None:
     return sorted(candidates, key=lambda value: (-len(value), value.casefold()))[0]
 
 
-def _pick_int(left: int | None, right: int | None) -> int | None:
-    candidates = [value for value in (left, right) if value is not None]
-    if not candidates:
-        return None
-    return max(candidates)
-
-
-def _pick_float(left: float | None, right: float | None) -> float | None:
+def _pick_numeric(left: _N | None, right: _N | None) -> _N | None:
     candidates = [value for value in (left, right) if value is not None]
     if not candidates:
         return None
@@ -280,13 +274,13 @@ def _merge_movie_pair(left: Movie, right: Movie) -> Movie:
     )
     return Movie(
         title=_pick_string(left["title"], right["title"]) or left["title"],
-        tmdb_id=_pick_int(left.get("tmdb_id"), right.get("tmdb_id")),
+        tmdb_id=_pick_numeric(left.get("tmdb_id"), right.get("tmdb_id")),
         imdb_id=_pick_string(left.get("imdb_id"), right.get("imdb_id")),
-        year=_pick_int(left.get("year"), right.get("year")),
+        year=_pick_numeric(left.get("year"), right.get("year")),
         poster_url=_pick_string(left.get("poster_url"), right.get("poster_url")),
         synopsis=_pick_string(left.get("synopsis"), right.get("synopsis")),
-        rating=_pick_float(left.get("rating"), right.get("rating")),
-        runtime_mins=_pick_int(left.get("runtime_mins"), right.get("runtime_mins")),
+        rating=_pick_numeric(left.get("rating"), right.get("rating")),
+        runtime_mins=_pick_numeric(left.get("runtime_mins"), right.get("runtime_mins")),
         genres=_pick_genres(left.get("genres"), right.get("genres")),
         showtimes=merged_showtimes,
     )

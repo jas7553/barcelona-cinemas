@@ -68,16 +68,18 @@ export default function MovieList({
     );
   }
 
+  const footerMeta = generatedAt ? (
+    <div className={`list-footer-meta${showStaleNotice ? " is-stale" : ""}`}>
+      Listings last updated {relativeTime(generatedAt)}
+    </div>
+  ) : null;
+
   return (
     <>
       {movies.length === 0 ? (
         <>
           <EmptyState noListings={allMoviesEmpty} />
-          {generatedAt && (
-            <div className={`list-footer-meta${showStaleNotice ? " is-stale" : ""}`}>
-              Listings last updated {relativeTime(generatedAt)}
-            </div>
-          )}
+          {footerMeta}
         </>
       ) : (
         <>
@@ -93,11 +95,7 @@ export default function MovieList({
               />
             ))}
           </div>
-          {generatedAt && (
-            <div className={`list-footer-meta${showStaleNotice ? " is-stale" : ""}`}>
-              Listings last updated {relativeTime(generatedAt)}
-            </div>
-          )}
+          {footerMeta}
         </>
       )}
     </>
