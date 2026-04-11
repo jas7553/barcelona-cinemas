@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { relativeTime } from "../utils";
 import type { TransformedMovie } from "../types";
-import type { Coords } from "../hooks/useGeolocation";
+import type { Coords } from "../hooks/useLocationPin";
 import EmptyState from "./EmptyState";
 import MovieRow from "./MovieRow";
 
