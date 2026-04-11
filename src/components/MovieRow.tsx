@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { TransformedMovie, TransformedShowtime } from "../types";
-import type { Coords } from "../hooks/useGeolocation";
+import type { Coords } from "../hooks/useLocationPin";
 import { haversineKm } from "../utils";
 import MoviePoster from "./MoviePoster";
 import TheaterCard from "./TheaterCard";

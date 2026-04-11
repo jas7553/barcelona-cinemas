@@ -4,7 +4,7 @@ import { fetchListings } from "./api";
 import type { Listings, Theater, TransformedMovie } from "./types";
 import { transformResponse } from "./utils";
 import { useHiddenFilms } from "./hooks/useHiddenFilms";
-import { useGeolocation } from "./hooks/useGeolocation";
+import { useLocationPin } from "./hooks/useLocationPin";
 import ShowtimesView from "./views/ShowtimesView";
 
 export interface SharedProps {
@@ -29,7 +29,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
 
   const { hiddenIds, hideFilm, clearHidden } = useHiddenFilms();
-  const coords = useGeolocation();
+  const { coords, active: locationActive, error: locationError, toggle: toggleLocation } = useLocationPin();
 
   const applyListings = useCallback((data: Listings) => {
     setMovies(transformResponse(data));
@@ -71,7 +71,16 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<ShowtimesView {...shared} coords={coords} />} />
+      <Route
+        path="/"
+        element={
+          <ShowtimesView
+            {...shared}
+            coords={coords}
+            locationPin={{ active: locationActive, error: locationError, onToggle: toggleLocation }}
+          />
+        }
+      />
     </Routes>
   );
 }

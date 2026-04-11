@@ -100,6 +100,44 @@ button {
 .search-input::placeholder { color: var(--text-muted); }
 .search-input:focus { border-color: var(--accent); outline: none; box-shadow: none; }
 
+/* ── Location pin ─────────────────────────────────────────────────────────── */
+.location-pin {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+}
+
+.location-pin:hover { color: var(--text); }
+.location-pin.is-active { color: var(--accent); }
+
+.location-pin svg {
+  width: 16px;
+  height: 16px;
+}
+
+.location-pin-error {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  animation: pin-fade-out 3s forwards;
+}
+
+@keyframes pin-fade-out {
+  0%, 75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 /* ── Movie list ──────────────────────────────────────────────────────────── */
 .movie-list {
   display: flex;
