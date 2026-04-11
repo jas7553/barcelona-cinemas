@@ -55,8 +55,10 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
       className="movie-row"
       role="article"
       aria-expanded={isExpanded}
+      onClick={handleToggle}
+      style={{ cursor: "pointer" }}
     >
-      <div className="movie-row-collapsed" onClick={handleToggle} style={{ cursor: "pointer" }}>
+      <div className="movie-row-collapsed">
         <div className="movie-poster-wrap" data-testid="poster-wrap">
           <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
           {isLastChance && <span className="last-chance-badge" aria-label="Last chance to see this film">Last Chance</span>}
@@ -101,7 +103,7 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
       </div>
 
       {isExpanded && (
-        <div className="movie-row-expanded">
+        <div className="movie-row-expanded" onClick={(e) => e.stopPropagation()}>
           {movie.synopsis && <p className="synopsis">{movie.synopsis}</p>}
           <div className="movie-external-links" onClick={(e) => e.stopPropagation()}>
             {movie.links.imdb && (
