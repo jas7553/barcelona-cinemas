@@ -29,10 +29,19 @@ _CACHE_FILE = _CACHE_DIR / "listings.json"
 _S3_BUCKET = os.environ.get("S3_BUCKET", "")
 _S3_KEY = os.environ.get("S3_KEY", "listings.json")
 
+# Eagerly create the S3 client at module load time so boto3's import cost and
+# the initial TCP/TLS handshake are paid during Lambda Init, not on the first
+# handler invocation.  The singleton is reused across all warm invocations in
+# the same container, preserving the connection pool.
+if _CACHE_BACKEND == "s3":
+    import boto3  # type: ignore[import-untyped]
+    _s3_client: Any = boto3.client("s3")
+else:
+    _s3_client = None
+
 
 def _s3() -> Any:
-    import boto3  # type: ignore[import-untyped]
-    return boto3.client("s3")
+    return _s3_client
 
 
 def _is_s3_missing(exc: Exception) -> bool:
@@ -94,7 +103,7 @@ def write(listings: Listings) -> None:
         _s3().put_object(
             Bucket=_S3_BUCKET,
             Key=_S3_KEY,
-            Body=json.dumps(listings, indent=2, ensure_ascii=False).encode(),
+            Body=json.dumps(listings, ensure_ascii=False).encode(),
             ContentType="application/json",
         )
         return
