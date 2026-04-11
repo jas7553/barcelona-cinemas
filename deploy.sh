@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Full deployment: build frontend → package Lambda → deploy stack → sync S3 → invalidate CF
+# Full deployment: build frontend → package Lambda → deploy stack → sync S3 → invalidate CF → warm Lambda
 #
 # First deploy:   ./deploy.sh --guided
 # Subsequent:     ./deploy.sh
@@ -63,12 +63,28 @@ BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK" \
 # invalidation has fully propagated (~5 min), preventing 404s on cached pages mid-deploy.
 aws s3 sync static/ "s3://$BUCKET"
 
-echo "==> 5/5 Invalidate CloudFront cache"
+echo "==> 5/6 Invalidate CloudFront cache"
 DIST=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
   --output text)
 [ -z "$DIST" ] && { echo "ERROR: DistributionId not found in stack outputs"; exit 1; }
 aws cloudfront create-invalidation --distribution-id "$DIST" --paths "/*"
+
+echo "==> 6/6 Warm Lambda (reduce first cold start)"
+FUNC=$(aws cloudformation describe-stack-resource --stack-name "$STACK" \
+  --logical-resource-id ApiFunction \
+  --query "StackResourceDetail.PhysicalResourceId" \
+  --output text 2>/dev/null || true)
+if [ -n "$FUNC" ] && [ "$FUNC" != "None" ]; then
+  aws lambda invoke \
+    --function-name "$FUNC" \
+    --payload '{"source":"warmup"}' \
+    --cli-binary-format raw-in-base64-out \
+    /dev/null > /dev/null
+  echo "Lambda warmed."
+else
+  echo "Could not resolve function name — skipping warmup."
+fi
 
 echo ""
 APP=$(aws cloudformation describe-stacks --stack-name "$STACK" \
