@@ -14,7 +14,8 @@ from flask import Flask, g, jsonify, request, send_from_directory
 from mangum import Mangum
 from werkzeug.exceptions import HTTPException
 
-load_dotenv()
+if not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+    load_dotenv()
 
 import cache  # noqa: E402
 import observability  # noqa: E402

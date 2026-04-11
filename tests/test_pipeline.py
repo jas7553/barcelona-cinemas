@@ -87,7 +87,7 @@ def test_collect_movies_raises_when_all_providers_fail():
     provider_two.fetch.side_effect = RuntimeError("down")
 
     with (
-        patch.object(pipeline, "all_providers", return_value=[provider_one, provider_two]),
+        patch("providers.all_providers", return_value=[provider_one, provider_two]),
         pytest.raises(RuntimeError, match="Provider failed"),
     ):
         pipeline._collect_movies({})
@@ -133,7 +133,7 @@ def test_collect_movies_drops_invalid_movies_and_showtimes():
         },
     ]
 
-    with patch.object(pipeline, "all_providers", return_value=[provider]):
+    with patch("providers.all_providers", return_value=[provider]):
         result = pipeline._collect_movies({})
 
     assert len(result) == 1
@@ -200,7 +200,7 @@ def test_collect_movies_merges_provider_results_by_title_and_imdb_id():
         }
     ]
 
-    with patch.object(pipeline, "all_providers", return_value=[provider_one, provider_two]):
+    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
         result = pipeline._collect_movies({})
 
     assert len(result) == 1
@@ -259,7 +259,7 @@ def test_collect_movies_deduplicates_missing_and_explicit_vo_language():
         }
     ]
 
-    with patch.object(pipeline, "all_providers", return_value=[provider_one, provider_two]):
+    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
         result = pipeline._collect_movies({})
 
     assert len(result) == 1
@@ -327,7 +327,7 @@ def test_collect_movies_merges_quoted_and_unquoted_titles_when_identity_matches(
         }
     ]
 
-    with patch.object(pipeline, "all_providers", return_value=[provider_one, provider_two]):
+    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
         result = pipeline._collect_movies({})
 
     assert len(result) == 1
@@ -387,7 +387,7 @@ def test_collect_movies_keeps_conflicting_imdb_ids_split_even_when_titles_normal
         }
     ]
 
-    with patch.object(pipeline, "all_providers", return_value=[provider_one, provider_two]):
+    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
         result = pipeline._collect_movies({})
 
     assert len(result) == 2
@@ -513,7 +513,7 @@ def test_collect_movies_returns_data_when_one_provider_fails():
         }
     ]
 
-    with patch.object(pipeline, "all_providers", return_value=[provider_one, provider_two]):
+    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
         result = pipeline._collect_movies({})
 
     assert len(result) == 1
