@@ -3,6 +3,8 @@ Orchestration layer: coordinates listing retrieval, enrichment, and caching.
 app.py calls this module; it knows nothing about HTTP.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
@@ -11,14 +13,15 @@ import time
 import urllib.request
 from datetime import UTC, datetime
 from itertools import chain
-from typing import Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 import cache
-import enricher
 from models import CinemaRegistry, Listings, Movie, Showtime
 from observability import emit_metric, log_event, now_ms
-from providers import ListingsSource, all_providers
 from validation import normalize_movies
+
+if TYPE_CHECKING:
+    from providers import ListingsSource
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +130,8 @@ def _prewarm_cloudfront() -> None:
 
 
 def _refresh() -> Listings:
+    import enricher  # noqa: PLC0415
+
     cinemas = load_cinemas()
     existing = cache.read()
     cached_movies: list[Movie] = existing["movies"] if existing else []
@@ -147,6 +152,8 @@ def _refresh() -> Listings:
 
 
 def _collect_movies(cinemas: CinemaRegistry) -> list[Movie]:
+    from providers import all_providers  # noqa: PLC0415
+
     started_ms = now_ms()
     provider_results: list[list[Movie]] = []
     failed_provider_count = 0
