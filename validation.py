@@ -64,7 +64,7 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
         return None
 
     showtimes = normalize_showtimes(showtimes_raw, source=source)
-    return Movie(
+    movie = Movie(
         title=title,
         tmdb_id=_as_optional_int(data.get("tmdb_id"), source=f"{source} tmdb_id"),
         imdb_id=_as_optional_imdb_id(data.get("imdb_id"), source=f"{source} imdb_id"),
@@ -76,6 +76,13 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
         genres=_as_optional_genres(data.get("genres"), source=f"{source} genres"),
         showtimes=showtimes,
     )
+    backdrop_url = _as_optional_string(data.get("backdrop_url"), source=f"{source} backdrop_url")
+    if backdrop_url is not None:
+        movie["backdrop_url"] = backdrop_url
+    trailer_url = _as_optional_string(data.get("trailer_url"), source=f"{source} trailer_url")
+    if trailer_url is not None:
+        movie["trailer_url"] = trailer_url
+    return movie
 
 
 def normalize_showtimes(data: object, *, source: str) -> list[Showtime]:
