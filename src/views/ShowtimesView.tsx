@@ -26,14 +26,15 @@ export default function ShowtimesView({
   locationPin,
 }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [groupLastChance, setGroupLastChance] = useState(false);
 
   const filteredMovies = useMemo(() => {
     const q = normalizeForSearch(searchQuery);
     const searched = q
       ? movies.filter((m) => normalizeForSearch(m.title).includes(q))
       : movies;
-    return smartSort(searched, hiddenIds);
-  }, [movies, searchQuery, hiddenIds]);
+    return smartSort(searched, hiddenIds, groupLastChance);
+  }, [movies, searchQuery, hiddenIds, groupLastChance]);
 
   const statusMessage = loading
     ? "Loading movie listings."
@@ -48,7 +49,12 @@ export default function ShowtimesView({
         {statusMessage}
       </div>
 
-      <Header searchQuery={searchQuery} onSearch={setSearchQuery} locationPin={locationPin} />
+      <Header
+        searchQuery={searchQuery}
+        onSearch={setSearchQuery}
+        locationPin={locationPin}
+        lastChance={{ active: groupLastChance, onToggle: () => setGroupLastChance((v) => !v) }}
+      />
 
       <div className="layout">
         <main id="main-content" aria-labelledby="page-title" aria-busy={loading}>

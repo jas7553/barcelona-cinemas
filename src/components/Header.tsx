@@ -4,15 +4,22 @@ interface LocationPinProps {
   onToggle: () => void;
 }
 
+interface LastChanceProps {
+  active: boolean;
+  onToggle: () => void;
+}
+
 interface Props {
   searchQuery: string;
   onSearch: (q: string) => void;
   locationPin: LocationPinProps;
+  lastChance: LastChanceProps;
 }
 
-export default function Header({ searchQuery, onSearch, locationPin }: Props) {
+export default function Header({ searchQuery, onSearch, locationPin, lastChance }: Props) {
   return (
     <header className="header">
+      <div className="header-inner">
       <a className="logo" href="/">
         <span className="logo-bcn">BCN</span>
         <span className="logo-cinemas">cinemas</span>
@@ -35,6 +42,19 @@ export default function Header({ searchQuery, onSearch, locationPin }: Props) {
         />
       </div>
 
+      <button
+        type="button"
+        className={`last-chance-toggle${lastChance.active ? " is-active" : ""}`}
+        onClick={lastChance.onToggle}
+        aria-label={lastChance.active ? "Disable last chance grouping" : "Group last chance films first"}
+        title={lastChance.active ? "Last chance: on" : "Last chance: off"}
+      >
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+          <circle cx="8" cy="8" r="6.5" />
+          <path d="M8 4v4l2.5 2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
       {locationPin.error ? (
         <span className="location-pin-error" aria-live="polite">Location unavailable</span>
       ) : (
@@ -49,6 +69,7 @@ export default function Header({ searchQuery, onSearch, locationPin }: Props) {
           </svg>
         </button>
       )}
+      </div>
     </header>
   );
 }

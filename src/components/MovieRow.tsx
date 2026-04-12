@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { TransformedMovie } from "../types";
 import MoviePoster from "./MoviePoster";
@@ -9,8 +10,15 @@ interface Props {
 }
 
 export default function MovieRow({ movie, onHide }: Props) {
+  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
   const isLastChance = movie.showtimes.length === 1;
   const shownGenres = movie.genres.slice(0, 3);
+  const hasSynopsis = !!movie.synopsis;
+  const synopsisLong = hasSynopsis && movie.synopsis.length > 120;
+
+  const letterboxdHref = movie.links.imdb_id
+    ? `https://letterboxd.com/imdb/${movie.links.imdb_id}/`
+    : `https://letterboxd.com/search/${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}/`;
 
   const content = (
     <div className="movie-row-collapsed">
@@ -46,9 +54,45 @@ export default function MovieRow({ movie, onHide }: Props) {
           {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
         </div>
 
-        {movie.synopsis && (
-          <p className="synopsis-preview">{movie.synopsis}</p>
+        {hasSynopsis && (
+          <div className="synopsis-wrap" onClick={(e) => e.stopPropagation()}>
+            <p className={synopsisExpanded ? "synopsis" : "synopsis-preview"}>{movie.synopsis}</p>
+            {synopsisLong && (
+              <button
+                className="synopsis-toggle"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSynopsisExpanded((v) => !v); }}
+                aria-label={synopsisExpanded ? "Collapse synopsis" : "Expand synopsis"}
+              >
+                {synopsisExpanded ? "less" : "more"}
+              </button>
+            )}
+          </div>
         )}
+
+        <div className="movie-external-links" onClick={(e) => e.stopPropagation()}>
+          {movie.links.imdb && (
+            <a
+              className="ext-link"
+              href={movie.links.imdb}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${movie.title} on IMDb (opens in a new tab)`}
+            >
+              <img src="/imdb-favicon.png" width="12" height="12" aria-hidden="true" />
+              IMDb
+            </a>
+          )}
+          <a
+            className="ext-link"
+            href={letterboxdHref}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`${movie.title} on Letterboxd (opens in a new tab)`}
+          >
+            <img src="/letterboxd-favicon.ico" width="12" height="12" aria-hidden="true" />
+            Letterboxd
+          </a>
+        </div>
       </div>
     </div>
   );
@@ -60,6 +104,7 @@ export default function MovieRow({ movie, onHide }: Props) {
         id={`film-${movie.id}`}
         className="movie-row"
         role="article"
+        onClick={(e) => { if (window.getSelection()?.toString()) e.preventDefault(); }}
       >
         {content}
       </Link>

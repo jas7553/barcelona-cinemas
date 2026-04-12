@@ -296,7 +296,7 @@ def _as_optional_rating(value: object, *, source: str) -> float | None:
         return None
 
     rating = float(value)
-    if not math.isfinite(rating) or not 0 <= rating <= 10:
+    if not math.isfinite(rating) or not 0 < rating <= 10:
         logger.warning("Discarded %s: rating is out of range", source)
         return None
     return rating

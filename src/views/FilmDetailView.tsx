@@ -111,7 +111,9 @@ export default function FilmDetailView({ movies, loading, error, onRetry, coords
           <img src={movie.backdrop_url!} alt="" className="detail-backdrop" />
           <div className="detail-hero-gradient" />
           <div className="detail-hero-nav">
-            <Link to="/" className="back-btn back-btn--hero">← Back</Link>
+            <div className="layout">
+              <Link to="/" className="back-btn back-btn--hero">← Back</Link>
+            </div>
           </div>
           <div className="detail-hero-content">
             <div className="detail-poster-overlay">
@@ -127,6 +129,18 @@ export default function FilmDetailView({ movies, loading, error, onRetry, coords
                 {movie.runtimeLabel && <span>{movie.runtimeLabel}</span>}
                 {shownGenres.map((g) => <span key={g} className="tag-genre tag-genre--hero">{g}</span>)}
               </div>
+              {movie.trailer_url && (
+                <a
+                  className="trailer-btn"
+                  href={movie.trailer_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Watch ${movie.title} trailer on YouTube (opens in a new tab)`}
+                >
+                  <PlayIcon />
+                  Watch Trailer
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -164,9 +178,7 @@ export default function FilmDetailView({ movies, loading, error, onRetry, coords
           </>
         ))}
 
-        {movie.synopsis && <p className="detail-synopsis">{movie.synopsis}</p>}
-
-        {movie.trailer_url && (
+        {!hasBackdrop && movie.trailer_url && (
           <a
             className="trailer-btn"
             href={movie.trailer_url}
@@ -178,6 +190,8 @@ export default function FilmDetailView({ movies, loading, error, onRetry, coords
             Watch Trailer
           </a>
         )}
+
+        {movie.synopsis && <p className="detail-synopsis">{movie.synopsis}</p>}
 
         <div className="detail-external-links">
           {movie.links.imdb && (

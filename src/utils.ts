@@ -107,22 +107,26 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
 // ── Smart sort ──────────────────────────────────────────────────────────────
 
 /**
- * Sort films into four priority tiers:
- *   0 = last chance (≤2 remaining screenings)
+ * Sort films into priority tiers:
+ *   0 = last chance (1 remaining screening) — only when groupLastChance is true
  *   1 = highly rated (TMDb ≥ 7.5)
  *   2 = widely screened (above-median screening count)
  *   3 = everything else
  * Within each tier, sort by rating descending.
  * Films in hiddenIds are excluded entirely.
  */
-export function smartSort(movies: TransformedMovie[], hiddenIds: Set<string>): TransformedMovie[] {
+export function smartSort(
+  movies: TransformedMovie[],
+  hiddenIds: Set<string>,
+  groupLastChance = false,
+): TransformedMovie[] {
   const visible = movies.filter((m) => !hiddenIds.has(m.id));
 
   const counts = visible.map((m) => m.showtimes.length).sort((a, b) => a - b);
   const median = counts.length === 0 ? 0 : counts[Math.floor(counts.length / 2)];
 
   const tier = (m: TransformedMovie): number => {
-    if (m.showtimes.length === 1) return 0;
+    if (groupLastChance && m.showtimes.length === 1) return 0;
     if ((m.rating ?? 0) >= 7.5) return 1;
     if (m.showtimes.length > median) return 2;
     return 3;
