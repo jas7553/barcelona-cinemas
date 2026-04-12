@@ -124,6 +124,28 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
               <img src="https://letterboxd.com/favicon.ico" width="12" height="12" aria-hidden="true" />
               Letterboxd
             </a>
+            <a
+              className="ext-link"
+              href={`https://www.rottentomatoes.com/search?search=${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Search ${movie.title} on Rotten Tomatoes (opens in a new tab)`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img src="https://www.rottentomatoes.com/favicon.ico" width="12" height="12" aria-hidden="true" />
+              Rotten Tomatoes
+            </a>
+            <a
+              className="ext-link"
+              href={`https://www.metacritic.com/search/${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}/`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Search ${movie.title} on Metacritic (opens in a new tab)`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img src="https://www.metacritic.com/favicon.ico" width="12" height="12" aria-hidden="true" />
+              Metacritic
+            </a>
           </div>
           {!isExpanded && movie.synopsis && (
             <p className="synopsis-preview">{movie.synopsis}</p>
