@@ -115,10 +115,14 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
             )}
             <a
               className="ext-link"
-              href={`https://letterboxd.com/search/${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}/`}
+              href={
+                movie.links.imdb_id
+                  ? `https://letterboxd.com/imdb/${movie.links.imdb_id}/`
+                  : `https://letterboxd.com/search/${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}/`
+              }
               target="_blank"
               rel="noreferrer"
-              aria-label={`Search ${movie.title} on Letterboxd (opens in a new tab)`}
+              aria-label={`${movie.title} on Letterboxd (opens in a new tab)`}
               onClick={(e) => e.stopPropagation()}
             >
               <img src="https://letterboxd.com/favicon.ico" width="12" height="12" aria-hidden="true" />

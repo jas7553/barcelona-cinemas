@@ -12,6 +12,7 @@ export interface Theater {
 
 export interface MovieLinks {
   imdb: string | null;
+  imdb_id: string | null;
 }
 
 export interface Showtime {

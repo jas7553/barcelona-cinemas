@@ -114,6 +114,7 @@ def _transform_movie(
         "synopsis": synopsis or "",
         "links": {
             "imdb": imdb_url,
+            "imdb_id": imdb_id,
         },
         "showtimes": showtimes_out,
     }

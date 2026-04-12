@@ -36,7 +36,7 @@ const LISTINGS: Listings = {
       genres: ["Sci-Fi"],
       rating: 8.2,
       synopsis: "A lone astronaut.",
-      links: { imdb: null },
+      links: { imdb: null, imdb_id: null },
       showtimes: [
         { theater_id: "verdi", date: futureDateStr(), time: "18:00", language: "vo" },
         { theater_id: "verdi", date: futureDateStr(), time: "20:00", language: "vo" },
