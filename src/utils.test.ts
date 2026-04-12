@@ -83,7 +83,7 @@ describe("transformResponse", () => {
           genres: ["Sci-Fi"],
           rating: 8.2,
           synopsis: "A lone astronaut races to save humanity.",
-          links: { imdb: null },
+          links: { imdb: null, imdb_id: null },
           showtimes: [
             { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
           ],
@@ -122,7 +122,7 @@ describe("transformResponse", () => {
           genres: [],
           rating: null,
           synopsis: "",
-          links: { imdb: null },
+          links: { imdb: null, imdb_id: null },
           showtimes: [
             { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
           ],
@@ -160,7 +160,7 @@ describe("transformResponse", () => {
           genres: [],
           rating: null,
           synopsis: "",
-          links: { imdb: null },
+          links: { imdb: null, imdb_id: null },
           showtimes: [
             { theater_id: "verdi", date: "2026-03-29", time: "12:00", language: "vo" }, // past
             { theater_id: "verdi", date: "2026-03-29", time: "20:00", language: "vo" }, // future
@@ -185,7 +185,7 @@ function makeMovie(overrides: Partial<TransformedMovie> & { id: string; showtime
     genres: [],
     rating: 7.0,
     synopsis: "",
-    links: { imdb: null },
+    links: { imdb: null, imdb_id: null },
     ...overrides,
   };
 }

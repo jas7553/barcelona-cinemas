@@ -23,7 +23,7 @@ const BASE_MOVIE: TransformedMovie = {
   genres: ["Sci-Fi"],
   rating: 8.2,
   synopsis: "A lone astronaut races to save humanity.",
-  links: { imdb: "https://www.imdb.com/title/tt12042730" },
+  links: { imdb: "https://www.imdb.com/title/tt12042730", imdb_id: "tt12042730" },
   showtimes: [
     {
       theater_id: "verdi",
@@ -146,7 +146,7 @@ describe("MovieRow expanded", () => {
   });
 
   it("renders an IMDb link when imdb url is present", () => {
-    renderRow({ links: { imdb: "https://www.imdb.com/title/tt12042730" } }, true);
+    renderRow({ links: { imdb: "https://www.imdb.com/title/tt12042730", imdb_id: "tt12042730" } }, true);
     const imdbLink = screen.getByRole("link", { name: /imdb/i });
     expect(imdbLink).toHaveAttribute("href", "https://www.imdb.com/title/tt12042730");
     expect(imdbLink).toHaveAttribute("target", "_blank");
@@ -160,7 +160,7 @@ describe("MovieRow expanded", () => {
   });
 
   it("does not render an IMDb link when imdb url is null", () => {
-    renderRow({ links: { imdb: null } }, true);
+    renderRow({ links: { imdb: null, imdb_id: null } }, true);
     expect(screen.queryByRole("link", { name: /imdb/i })).not.toBeInTheDocument();
   });
 
