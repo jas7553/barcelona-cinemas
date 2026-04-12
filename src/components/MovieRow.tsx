@@ -109,7 +109,7 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
                 aria-label={`${movie.title} on IMDb (opens in a new tab)`}
                 onClick={(e) => e.stopPropagation()}
               >
-                <img src="https://www.imdb.com/favicon.ico" width="12" height="12" aria-hidden="true" />
+                <img src="/imdb-favicon.png" width="12" height="12" aria-hidden="true" />
                 IMDb
               </a>
             )}
@@ -125,7 +125,7 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
               aria-label={`${movie.title} on Letterboxd (opens in a new tab)`}
               onClick={(e) => e.stopPropagation()}
             >
-              <img src="https://letterboxd.com/favicon.ico" width="12" height="12" aria-hidden="true" />
+              <img src="/letterboxd-favicon.ico" width="12" height="12" aria-hidden="true" />
               Letterboxd
             </a>
             <a
@@ -147,7 +147,7 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
               aria-label={`Search ${movie.title} on Metacritic (opens in a new tab)`}
               onClick={(e) => e.stopPropagation()}
             >
-              <img src="https://www.metacritic.com/favicon.ico" width="12" height="12" aria-hidden="true" />
+              <img src="/metacritic-favicon.ico" width="12" height="12" aria-hidden="true" />
               Metacritic
             </a>
           </div>
