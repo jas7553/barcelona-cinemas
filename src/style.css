@@ -89,7 +89,7 @@ button {
   width: 100%;
   padding: 7px 10px 7px 32px;
   background: var(--bg-elevated);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text);
   font-family: var(--font-sans);
@@ -178,10 +178,13 @@ button {
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 14px 0;
+  padding: 16px 0;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
+  transition: background 0.12s ease;
 }
+
+.movie-row:hover { background: rgba(255, 255, 255, 0.025); }
 
 .movie-row-collapsed {
   display: flex;
@@ -189,7 +192,7 @@ button {
   width: 100%;
 }
 
-.movie-row-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.movie-row-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 
 .movie-row-top {
   display: flex;
@@ -227,7 +230,7 @@ button {
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
   color: #fff;
@@ -252,8 +255,11 @@ button {
   color: var(--text-muted);
   line-height: 1;
   flex-shrink: 0;
-  opacity: 0.45;
+  opacity: 0.6;
+  transition: color 0.12s ease, opacity 0.12s ease;
 }
+
+.hide-btn:hover { color: var(--text); opacity: 1; }
 
 .hide-btn:focus-visible { outline: 2px solid var(--accent); border-radius: 4px; }
 
@@ -261,7 +267,7 @@ button {
   display: flex;
   align-items: center;
   color: var(--text-muted);
-  opacity: 0.5;
+  opacity: 0.65;
   transition: transform 0.18s ease, opacity 0.18s ease;
   flex-shrink: 0;
 }
@@ -380,7 +386,6 @@ button {
 .tcard-neighborhood {
   font-size: 11px;
   color: var(--text-muted);
-  opacity: 0.75;
 }
 
 .tcard-distance {
@@ -458,7 +463,7 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .footer-disclaimer { font-size: 12px; color: var(--text-muted); text-align: center; margin: 0; }
@@ -525,7 +530,7 @@ button {
 .tmdb-attribution-source,
 .tmdb-attribution-disclaimer {
   margin: 0;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
