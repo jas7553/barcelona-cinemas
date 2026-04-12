@@ -99,13 +99,7 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
             {movie.rating != null && <RatingPill rating={movie.rating} />}
             {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
           </div>
-        </div>
-      </div>
-
-      {isExpanded && (
-        <div className="movie-row-expanded" onClick={(e) => e.stopPropagation()}>
-          {movie.synopsis && <p className="synopsis">{movie.synopsis}</p>}
-          <div className="movie-external-links" onClick={(e) => e.stopPropagation()}>
+          <div className="movie-external-links">
             {movie.links.imdb && (
               <a
                 className="ext-link"
@@ -113,6 +107,7 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
                 target="_blank"
                 rel="noreferrer"
                 aria-label={`${movie.title} on IMDb (opens in a new tab)`}
+                onClick={(e) => e.stopPropagation()}
               >
                 IMDb
               </a>
@@ -123,10 +118,20 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
               target="_blank"
               rel="noreferrer"
               aria-label={`Search ${movie.title} on Letterboxd (opens in a new tab)`}
+              onClick={(e) => e.stopPropagation()}
             >
               Letterboxd
             </a>
           </div>
+          {!isExpanded && movie.synopsis && (
+            <p className="synopsis-preview">{movie.synopsis}</p>
+          )}
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="movie-row-expanded" onClick={(e) => e.stopPropagation()}>
+          {movie.synopsis && <p className="synopsis">{movie.synopsis}</p>}
           <div className="showtimes-grid">
             {theaterEntries.map(({ times, distanceKm }) => (
               <TheaterCard key={times[0].theater.id} showtimes={times} distanceKm={distanceKm} />
