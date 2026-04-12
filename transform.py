@@ -85,6 +85,8 @@ def _transform_movie(
     imdb_id: str | None = movie.get("imdb_id")
     year: int | None = movie.get("year")
     poster_url: str | None = movie.get("poster_url")
+    backdrop_url: str | None = movie.get("backdrop_url")
+    trailer_url: str | None = movie.get("trailer_url")
     synopsis: str | None = movie.get("synopsis")
     rating: float | None = movie.get("rating")
     runtime_mins: int | None = movie.get("runtime_mins")
@@ -109,6 +111,8 @@ def _transform_movie(
         "year": year,
         "runtime_minutes": runtime_mins,
         "poster_url": poster_url,
+        "backdrop_url": backdrop_url,
+        "trailer_url": trailer_url,
         "genres": genres,
         "rating": rating,
         "synopsis": synopsis or "",

@@ -38,6 +38,11 @@ def index() -> Any:
     return send_from_directory(app.static_folder, "index.html")  # type: ignore[arg-type]
 
 
+@app.get("/<path:path>")
+def spa_fallback(path: str) -> Any:
+    return send_from_directory(app.static_folder, "index.html")  # type: ignore[arg-type]
+
+
 @app.get("/api/cinemas")
 def cinemas() -> Any:
     try:

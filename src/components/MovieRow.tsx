@@ -1,62 +1,31 @@
-import { useMemo } from "react";
-import type { TransformedMovie, TransformedShowtime } from "../types";
-import type { Coords } from "../hooks/useLocationPin";
-import { haversineKm } from "../utils";
+import { useNavigate } from "react-router-dom";
+import type { TransformedMovie } from "../types";
 import MoviePoster from "./MoviePoster";
-import TheaterCard from "./TheaterCard";
+import RatingPill from "./RatingPill";
 
 interface Props {
   movie: TransformedMovie;
-  isExpanded: boolean;
-  onToggle: () => void;
   onHide: (id: string) => void;
-  coords: Coords | null;
 }
 
-function RatingPill({ rating }: { rating: number }) {
-  return <span className="rating-pill">★ {rating.toFixed(1)}</span>;
-}
-
-export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }: Props) {
+export default function MovieRow({ movie, onHide }: Props) {
+  const navigate = useNavigate();
   const isLastChance = movie.showtimes.length === 1;
   const shownGenres = movie.genres.slice(0, 3);
 
-  const handleToggle = () => {
+  const handleClick = () => {
     if (window.getSelection()?.toString()) return;
-    onToggle();
-  };
-
-  // Group by theater, compute each distance once, then sort by distance or name.
-  const theaterEntries = useMemo(() => {
-    const theaterMap = new Map<string, TransformedShowtime[]>();
-    for (const s of movie.showtimes) {
-      const arr = theaterMap.get(s.theater.id) ?? [];
-      arr.push(s);
-      theaterMap.set(s.theater.id, arr);
+    if (movie.links.imdb_id) {
+      void navigate(`/film/${movie.links.imdb_id}`);
     }
-    return [...theaterMap.values()]
-      .map((times) => {
-        const theater = times[0].theater;
-        const distanceKm =
-          coords && theater.lat != null && theater.lng != null
-            ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
-            : null;
-        return { times, distanceKm };
-      })
-      .sort((a, b) => {
-        if (a.distanceKm !== null && b.distanceKm !== null) return a.distanceKm - b.distanceKm;
-        return a.times[0].theater.name.localeCompare(b.times[0].theater.name);
-      });
-  }, [movie.showtimes, coords]);
+  };
 
   return (
     <article
       id={`film-${movie.id}`}
-      className="movie-row"
+      className={`movie-row${movie.links.imdb_id ? "" : " movie-row--no-link"}`}
       role="article"
-      aria-expanded={isExpanded}
-      onClick={handleToggle}
-      style={{ cursor: "pointer" }}
+      onClick={handleClick}
     >
       <div className="movie-row-collapsed">
         <div className="movie-poster-wrap" data-testid="poster-wrap">
@@ -83,15 +52,6 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
                   <line x1="1" y1="1" x2="23" y2="23" />
                 </svg>
               </button>
-              <span
-                className={`expand-chevron${isExpanded ? " is-expanded" : ""}`}
-                data-testid="expand-chevron"
-                aria-hidden="true"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </span>
             </div>
           </div>
 
@@ -99,74 +59,12 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
             {movie.rating != null && <RatingPill rating={movie.rating} />}
             {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
           </div>
-          <div className="movie-external-links">
-            {movie.links.imdb && (
-              <a
-                className="ext-link"
-                href={movie.links.imdb}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`${movie.title} on IMDb (opens in a new tab)`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <img src="/imdb-favicon.png" width="12" height="12" aria-hidden="true" />
-                IMDb
-              </a>
-            )}
-            <a
-              className="ext-link"
-              href={
-                movie.links.imdb_id
-                  ? `https://letterboxd.com/imdb/${movie.links.imdb_id}/`
-                  : `https://letterboxd.com/search/${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}/`
-              }
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`${movie.title} on Letterboxd (opens in a new tab)`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img src="/letterboxd-favicon.ico" width="12" height="12" aria-hidden="true" />
-              Letterboxd
-            </a>
-            <a
-              className="ext-link"
-              href={`https://www.rottentomatoes.com/search?search=${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}`}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`Search ${movie.title} on Rotten Tomatoes (opens in a new tab)`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img src="/rt-favicon.ico" width="12" height="12" aria-hidden="true" />
-              Rotten Tomatoes
-            </a>
-            <a
-              className="ext-link"
-              href={`https://www.metacritic.com/search/${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}/`}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`Search ${movie.title} on Metacritic (opens in a new tab)`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img src="/metacritic-favicon.ico" width="12" height="12" aria-hidden="true" />
-              Metacritic
-            </a>
-          </div>
-          {!isExpanded && movie.synopsis && (
+
+          {movie.synopsis && (
             <p className="synopsis-preview">{movie.synopsis}</p>
           )}
         </div>
       </div>
-
-      {isExpanded && (
-        <div className="movie-row-expanded" onClick={(e) => e.stopPropagation()}>
-          {movie.synopsis && <p className="synopsis">{movie.synopsis}</p>}
-          <div className="showtimes-grid">
-            {theaterEntries.map(({ times, distanceKm }) => (
-              <TheaterCard key={times[0].theater.id} showtimes={times} distanceKm={distanceKm} />
-            ))}
-          </div>
-        </div>
-      )}
     </article>
   );
 }

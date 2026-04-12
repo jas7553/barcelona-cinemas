@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 _IMDB_ID_RE = re.compile(r"tt\d+")
 _TMDB_POSTER_PATH_RE = re.compile(r"/[^?#]+")
 _TMDB_POSTER_BASE_URL = "https://image.tmdb.org/t/p/w342"
+_TMDB_BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
 
 
 def normalize_listings(data: object, *, source: str) -> Listings | None:
@@ -119,7 +120,9 @@ def normalize_showtime(data: object, *, source: str) -> Showtime | None:
     return showtime
 
 
-def normalize_tmdb_payload(data: object, *, title: str) -> dict[str, Any] | None:
+def normalize_tmdb_payload(
+    data: object, *, title: str, videos: object = None
+) -> dict[str, Any] | None:
     """Validate TMDb detail payload fields we merge into the app model."""
     if not isinstance(data, Mapping):
         logger.warning("Rejected TMDb payload for %r: detail payload is not an object", title)
@@ -151,6 +154,12 @@ def normalize_tmdb_payload(data: object, *, title: str) -> dict[str, Any] | None
     poster_url = _as_tmdb_poster_url(data.get("poster_path"), title=title)
     if poster_url is not None:
         normalized["poster_url"] = poster_url
+
+    backdrop_url = _as_tmdb_backdrop_url(data.get("backdrop_path"), title=title)
+    if backdrop_url is not None:
+        normalized["backdrop_url"] = backdrop_url
+
+    normalized["trailer_url"] = _as_trailer_url(videos, title=title)
 
     # release_date is "YYYY-MM-DD"; extract the 4-digit year as int.
     release_date = data.get("release_date")
@@ -215,6 +224,42 @@ def _as_tmdb_poster_url(value: object, *, title: str) -> str | None:
         return f"{_TMDB_POSTER_BASE_URL}{poster_path}"
     logger.warning("Discarded TMDb poster_path for %r: expected image path", title)
     return None
+
+
+def _as_tmdb_backdrop_url(value: object, *, title: str) -> str | None:
+    backdrop_path = _as_optional_string(value, source=f"TMDb backdrop_path for {title!r}")
+    if backdrop_path is None:
+        return None
+    if _TMDB_POSTER_PATH_RE.fullmatch(backdrop_path):
+        return f"{_TMDB_BACKDROP_BASE_URL}{backdrop_path}"
+    logger.warning("Discarded TMDb backdrop_path for %r: expected image path", title)
+    return None
+
+
+def _as_trailer_url(videos: object, *, title: str) -> str | None:
+    """Extract the first official YouTube trailer URL from a TMDb /videos response."""
+    if not isinstance(videos, Mapping):
+        return None
+    results = videos.get("results")
+    if not isinstance(results, list):
+        return None
+
+    def _is_youtube_trailer(v: object) -> bool:
+        if not isinstance(v, Mapping):
+            return False
+        return v.get("site") == "YouTube" and v.get("type") == "Trailer"
+
+    trailers = [v for v in results if _is_youtube_trailer(v)]
+    if not trailers:
+        return None
+
+    official = next((v for v in trailers if isinstance(v, Mapping) and v.get("official") is True), None)
+    pick: Mapping[str, Any] = official if official is not None else trailers[0]
+    key = _as_non_empty_string(pick.get("key"))
+    if key is None:
+        logger.warning("Discarded TMDb trailer for %r: missing key", title)
+        return None
+    return f"https://www.youtube.com/watch?v={key}"
 
 
 def _as_optional_int(value: object, *, source: str) -> int | None:
