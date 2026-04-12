@@ -129,14 +129,14 @@ def _lookup_and_merge(
 ) -> _LookupResult:
     """Look up a movie on TMDb and merge metadata into the Movie dict."""
     try:
-        raw_tmdb_data = _fetch_tmdb(movie["title"], session, api_key)
+        raw_detail, raw_videos = _fetch_tmdb(movie["title"], session, api_key)
     except Exception as exc:
         logger.warning("TMDb lookup failed for %r: %s", movie["title"], exc)
         return _LookupResult(movie, enriched=False, failed=True)
 
     tmdb_data = (
-        normalize_tmdb_payload(raw_tmdb_data, title=movie["title"])
-        if raw_tmdb_data is not None
+        normalize_tmdb_payload(raw_detail, title=movie["title"], videos=raw_videos)
+        if raw_detail is not None
         else None
     )
 
@@ -151,6 +151,8 @@ def _lookup_and_merge(
             "imdb_id":      tmdb_data.get("imdb_id"),
             "year":         tmdb_data.get("year"),
             "poster_url":   tmdb_data.get("poster_url"),
+            "backdrop_url": tmdb_data.get("backdrop_url"),
+            "trailer_url":  tmdb_data.get("trailer_url"),
             "synopsis":     tmdb_data.get("overview"),
             "rating":       tmdb_data.get("vote_average"),
             "runtime_mins": tmdb_data.get("runtime"),
@@ -161,9 +163,11 @@ def _lookup_and_merge(
     )
 
 
-def _fetch_tmdb(title: str, session: requests.Session, api_key: str) -> dict[str, Any] | None:
+def _fetch_tmdb(
+    title: str, session: requests.Session, api_key: str
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
     """
-    Search TMDb for a title and return the details dict, or None on failure.
+    Search TMDb for a title and return (detail, videos) dicts, or (None, None) on failure.
     Prefers an exact title match; falls back to the first (most popular) result.
     """
     search_resp = session.get(
@@ -176,7 +180,7 @@ def _fetch_tmdb(title: str, session: requests.Session, api_key: str) -> dict[str
 
     if not results:
         logger.debug("No TMDb results for %r", title)
-        return None
+        return None, None
 
     # Prefer exact title match (case-insensitive); otherwise take first by popularity.
     title_lower = title.lower()
@@ -192,4 +196,19 @@ def _fetch_tmdb(title: str, session: requests.Session, api_key: str) -> dict[str
         timeout=10,
     )
     detail_resp.raise_for_status()
-    return cast(dict[str, Any], detail_resp.json())
+    detail_data = cast(dict[str, Any], detail_resp.json())
+
+    # Fetch videos to get trailer URL; failure is non-fatal.
+    videos_data: dict[str, Any] | None = None
+    try:
+        videos_resp = session.get(
+            f"{_BASE_URL}/movie/{match['id']}/videos",
+            params={"language": "en-US", "api_key": api_key},
+            timeout=10,
+        )
+        videos_resp.raise_for_status()
+        videos_data = cast(dict[str, Any], videos_resp.json())
+    except Exception as exc:
+        logger.warning("TMDb videos fetch failed for %r: %s", title, exc)
+
+    return detail_data, videos_data

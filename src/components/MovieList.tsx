@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { relativeTime } from "../utils";
 import type { TransformedMovie } from "../types";
-import type { Coords } from "../hooks/useLocationPin";
 import EmptyState from "./EmptyState";
 import MovieRow from "./MovieRow";
 
@@ -14,7 +13,6 @@ interface Props {
   generatedAt: string | null;
   stale: boolean;
   onHide: (id: string) => void;
-  coords: Coords | null;
 }
 
 const SKELETON_COUNT = 5;
@@ -28,9 +26,7 @@ export default function MovieList({
   generatedAt,
   stale,
   onHide,
-  coords,
 }: Props) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [renderedAt] = useState(() => Date.now());
 
   const generatedTimestamp = generatedAt == null ? Number.NaN : Date.parse(generatedAt);
@@ -88,25 +84,7 @@ export default function MovieList({
               <MovieRow
                 key={m.id}
                 movie={m}
-                isExpanded={m.id === expandedId}
-                onToggle={() => {
-                  const newId = m.id === expandedId ? null : m.id;
-                  if (newId && expandedId) {
-                    const el = document.getElementById(`film-${newId}`);
-                    if (el) {
-                      const before = el.getBoundingClientRect().top;
-                      setExpandedId(newId);
-                      requestAnimationFrame(() => {
-                        const after = el.getBoundingClientRect().top;
-                        if (after !== before) window.scrollBy({ top: after - before, behavior: "instant" });
-                      });
-                      return;
-                    }
-                  }
-                  setExpandedId(newId);
-                }}
                 onHide={onHide}
-                coords={coords}
               />
             ))}
           </div>

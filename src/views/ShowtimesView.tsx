@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
 import type { SharedProps } from "../App";
 import { normalizeForSearch, smartSort } from "../utils";
-import type { Coords } from "../hooks/useLocationPin";
 import Header from "../components/Header";
 import MovieList from "../components/MovieList";
 import Footer from "../components/Footer";
 
 interface Props extends SharedProps {
-  coords: Coords | null;
   locationPin: {
     active: boolean;
     error: boolean;
@@ -25,7 +23,6 @@ export default function ShowtimesView({
   hiddenIds,
   onHide,
   onClearHidden,
-  coords,
   locationPin,
 }: Props) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -65,7 +62,6 @@ export default function ShowtimesView({
             generatedAt={generatedAt}
             stale={stale}
             onHide={onHide}
-            coords={coords}
           />
         </main>
       </div>

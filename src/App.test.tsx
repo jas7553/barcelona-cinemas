@@ -33,6 +33,8 @@ const LISTINGS: Listings = {
       year: 2025,
       runtime_minutes: 157,
       poster_url: "https://image.tmdb.org/t/p/w342/example.jpg",
+      backdrop_url: null,
+      trailer_url: null,
       genres: ["Sci-Fi"],
       rating: 8.2,
       synopsis: "A lone astronaut.",

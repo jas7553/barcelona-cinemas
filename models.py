@@ -16,6 +16,8 @@ class Movie(TypedDict):
     imdb_id: str | None
     year: int | None
     poster_url: str | None
+    backdrop_url: NotRequired[str | None]
+    trailer_url: NotRequired[str | None]
     synopsis: str | None
     rating: float | None
     runtime_mins: int | None

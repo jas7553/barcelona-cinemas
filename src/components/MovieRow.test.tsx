@@ -1,17 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import MovieRow from "./MovieRow";
 import type { TransformedMovie } from "../types";
-
-const THEATER = {
-  id: "verdi",
-  name: "Cinemes Verdi",
-  neighborhood: "Gràcia",
-  website_url: "https://cinesverdi.com",
-  maps_url: "https://maps.google.com/?q=Verdi",
-  lat: 41.4035,
-  lng: 2.1580,
-};
 
 const BASE_MOVIE: TransformedMovie = {
   id: "movie-1",
@@ -20,6 +11,8 @@ const BASE_MOVIE: TransformedMovie = {
   runtime_minutes: 157,
   runtimeLabel: "2h 37m",
   poster_url: "https://image.tmdb.org/t/p/w342/project-hail-mary.jpg",
+  backdrop_url: null,
+  trailer_url: null,
   genres: ["Sci-Fi"],
   rating: 8.2,
   synopsis: "A lone astronaut races to save humanity.",
@@ -27,7 +20,15 @@ const BASE_MOVIE: TransformedMovie = {
   showtimes: [
     {
       theater_id: "verdi",
-      theater: THEATER,
+      theater: {
+        id: "verdi",
+        name: "Cinemes Verdi",
+        neighborhood: "Gràcia",
+        website_url: "https://cinesverdi.com",
+        maps_url: "https://maps.google.com/?q=Verdi",
+        lat: 41.4035,
+        lng: 2.1580,
+      },
       date: "2099-06-01",
       time: "18:00",
       language: "vo",
@@ -36,22 +37,20 @@ const BASE_MOVIE: TransformedMovie = {
   ],
 };
 
-function renderRow(overrides?: Partial<TransformedMovie>, expanded = false) {
-  const onToggle = vi.fn();
+function renderRow(overrides?: Partial<TransformedMovie>) {
   const onHide = vi.fn();
   render(
-    <MovieRow
-      movie={{ ...BASE_MOVIE, ...overrides }}
-      isExpanded={expanded}
-      onToggle={onToggle}
-      onHide={onHide}
-      coords={null}
-    />
+    <MemoryRouter>
+      <MovieRow
+        movie={{ ...BASE_MOVIE, ...overrides }}
+        onHide={onHide}
+      />
+    </MemoryRouter>
   );
-  return { onToggle, onHide };
+  return { onHide };
 }
 
-describe("MovieRow collapsed", () => {
+describe("MovieRow", () => {
   it("renders the movie title", () => {
     renderRow();
     expect(screen.getByText("Project Hail Mary")).toBeInTheDocument();
@@ -72,25 +71,10 @@ describe("MovieRow collapsed", () => {
     expect(screen.getByText(/8\.2/)).toBeInTheDocument();
   });
 
-  it("renders synopsis preview when collapsed", () => {
+  it("renders synopsis preview", () => {
     renderRow();
     expect(screen.getByText("A lone astronaut races to save humanity.")).toBeInTheDocument();
     expect(document.querySelector(".synopsis-preview")).toBeInTheDocument();
-    expect(document.querySelector(".synopsis")).not.toBeInTheDocument();
-  });
-
-  it("calls onToggle when the row is clicked", () => {
-    const { onToggle } = renderRow();
-    fireEvent.click(screen.getByRole("article"));
-    expect(onToggle).toHaveBeenCalledOnce();
-  });
-
-  it("calls onHide when the hide button is clicked without triggering onToggle", () => {
-    const { onToggle, onHide } = renderRow();
-    const hideBtn = screen.getByRole("button", { name: /hide/i });
-    fireEvent.click(hideBtn);
-    expect(onHide).toHaveBeenCalledWith("movie-1");
-    expect(onToggle).not.toHaveBeenCalled();
   });
 
   it("shows Last Chance badge when showtimes.length === 1", () => {
@@ -104,77 +88,22 @@ describe("MovieRow collapsed", () => {
     expect(screen.queryByText(/last chance/i)).not.toBeInTheDocument();
   });
 
-  it("renders an expand chevron indicator", () => {
-    renderRow();
-    expect(screen.getByTestId("expand-chevron")).toBeInTheDocument();
-  });
-
-  it("renders Last Chance badge inside the poster wrap when showtimes.length === 1", () => {
+  it("renders Last Chance badge inside the poster wrap", () => {
     renderRow();
     const posterWrap = screen.getByTestId("poster-wrap");
-    expect(posterWrap).toBeInTheDocument();
     expect(posterWrap.querySelector(".last-chance-badge")).not.toBeNull();
   });
-});
 
-describe("MovieRow expanded", () => {
-  it("renders synopsis when expanded", () => {
-    renderRow(undefined, true);
-    expect(screen.getByText("A lone astronaut races to save humanity.")).toBeInTheDocument();
+  it("calls onHide when the hide button is clicked", () => {
+    const { onHide } = renderRow();
+    const hideBtn = screen.getByRole("button", { name: /hide/i });
+    fireEvent.click(hideBtn);
+    expect(onHide).toHaveBeenCalledWith("movie-1");
   });
 
-  it("renders theater name when expanded", () => {
-    renderRow(undefined, true);
-    expect(screen.getByText("Cinemes Verdi")).toBeInTheDocument();
-  });
-
-  it("marks the article as expanded via aria-expanded", () => {
-    renderRow(undefined, true);
-    expect(screen.getByRole("article")).toHaveAttribute("aria-expanded", "true");
-  });
-
-  it("marks the article as collapsed via aria-expanded", () => {
-    renderRow(undefined, false);
-    expect(screen.getByRole("article")).toHaveAttribute("aria-expanded", "false");
-  });
-
-  it("renders a Google Maps link for the theater when maps_url is set", () => {
-    renderRow(undefined, true);
-    const mapsLink = screen.getByRole("link", { name: /cinemes verdi.*map/i });
-    expect(mapsLink).toHaveAttribute("href", THEATER.maps_url);
-    expect(mapsLink).toHaveAttribute("target", "_blank");
-  });
-
-  it("renders an IMDb link when imdb url is present", () => {
-    renderRow({ links: { imdb: "https://www.imdb.com/title/tt12042730", imdb_id: "tt12042730" } }, true);
-    const imdbLink = screen.getByRole("link", { name: /imdb/i });
-    expect(imdbLink).toHaveAttribute("href", "https://www.imdb.com/title/tt12042730");
-    expect(imdbLink).toHaveAttribute("target", "_blank");
-  });
-
-  it("renders a Letterboxd search link", () => {
-    renderRow(undefined, true);
-    const lbLink = screen.getByRole("link", { name: /letterboxd/i });
-    expect(lbLink).toHaveAttribute("href", expect.stringContaining("letterboxd.com/search/"));
-    expect(lbLink).toHaveAttribute("target", "_blank");
-  });
-
-  it("does not render an IMDb link when imdb url is null", () => {
-    renderRow({ links: { imdb: null, imdb_id: null } }, true);
-    expect(screen.queryByRole("link", { name: /imdb/i })).not.toBeInTheDocument();
-  });
-
-  it("renders a Rotten Tomatoes search link", () => {
-    renderRow(undefined, true);
-    const rtLink = screen.getByRole("link", { name: /rotten tomatoes/i });
-    expect(rtLink).toHaveAttribute("href", expect.stringContaining("rottentomatoes.com/search"));
-    expect(rtLink).toHaveAttribute("target", "_blank");
-  });
-
-  it("renders a Metacritic search link", () => {
-    renderRow(undefined, true);
-    const mcLink = screen.getByRole("link", { name: /metacritic/i });
-    expect(mcLink).toHaveAttribute("href", expect.stringContaining("metacritic.com/search"));
-    expect(mcLink).toHaveAttribute("target", "_blank");
+  it("does not call onHide on row click", () => {
+    const { onHide } = renderRow();
+    fireEvent.click(screen.getByRole("article"));
+    expect(onHide).not.toHaveBeenCalled();
   });
 });

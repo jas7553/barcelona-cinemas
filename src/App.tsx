@@ -6,6 +6,7 @@ import { transformResponse } from "./utils";
 import { useHiddenFilms } from "./hooks/useHiddenFilms";
 import { useLocationPin } from "./hooks/useLocationPin";
 import ShowtimesView from "./views/ShowtimesView";
+import FilmDetailView from "./views/FilmDetailView";
 
 export interface SharedProps {
   movies: TransformedMovie[];
@@ -76,8 +77,19 @@ export default function App() {
         element={
           <ShowtimesView
             {...shared}
-            coords={coords}
             locationPin={{ active: locationActive, error: locationError, onToggle: toggleLocation }}
+          />
+        }
+      />
+      <Route
+        path="/film/:id"
+        element={
+          <FilmDetailView
+            movies={movies}
+            loading={loading}
+            error={error}
+            onRetry={load}
+            coords={coords}
           />
         }
       />

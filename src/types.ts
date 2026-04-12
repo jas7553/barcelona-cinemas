@@ -28,6 +28,8 @@ export interface Movie {
   year: number | null;
   runtime_minutes: number | null;
   poster_url: string | null;
+  backdrop_url: string | null;
+  trailer_url: string | null;
   genres: string[];
   rating: number | null;
   synopsis: string;
