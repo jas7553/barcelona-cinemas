@@ -109,6 +109,7 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
                 aria-label={`${movie.title} on IMDb (opens in a new tab)`}
                 onClick={(e) => e.stopPropagation()}
               >
+                <img src="https://www.imdb.com/favicon.ico" width="12" height="12" aria-hidden="true" />
                 IMDb
               </a>
             )}
@@ -120,6 +121,7 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
               aria-label={`Search ${movie.title} on Letterboxd (opens in a new tab)`}
               onClick={(e) => e.stopPropagation()}
             >
+              <img src="https://letterboxd.com/favicon.ico" width="12" height="12" aria-hidden="true" />
               Letterboxd
             </a>
           </div>
