@@ -72,9 +72,11 @@ describe("MovieRow collapsed", () => {
     expect(screen.getByText(/8\.2/)).toBeInTheDocument();
   });
 
-  it("does not render synopsis when collapsed", () => {
+  it("renders synopsis preview when collapsed", () => {
     renderRow();
-    expect(screen.queryByText("A lone astronaut races to save humanity.")).not.toBeInTheDocument();
+    expect(screen.getByText("A lone astronaut races to save humanity.")).toBeInTheDocument();
+    expect(document.querySelector(".synopsis-preview")).toBeInTheDocument();
+    expect(document.querySelector(".synopsis")).not.toBeInTheDocument();
   });
 
   it("calls onToggle when the row is clicked", () => {
