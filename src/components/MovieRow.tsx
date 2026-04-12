@@ -136,7 +136,7 @@ export default function MovieRow({ movie, isExpanded, onToggle, onHide, coords }
               aria-label={`Search ${movie.title} on Rotten Tomatoes (opens in a new tab)`}
               onClick={(e) => e.stopPropagation()}
             >
-              <img src="https://www.rottentomatoes.com/favicon.ico" width="12" height="12" aria-hidden="true" />
+              <img src="/rt-favicon.ico" width="12" height="12" aria-hidden="true" />
               Rotten Tomatoes
             </a>
             <a
