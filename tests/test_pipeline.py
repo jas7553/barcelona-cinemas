@@ -20,8 +20,7 @@ def _listings() -> Listings:
 
 @pytest.fixture()
 def tmp_cache(tmp_path, monkeypatch):
-    monkeypatch.setattr(cache, "_CACHE_DIR", tmp_path)
-    monkeypatch.setattr(cache, "_CACHE_FILE", tmp_path / "listings.json")
+    monkeypatch.setattr(cache, "_backend", cache._FileBackend(tmp_path, tmp_path / "listings.json"))
 
 
 def test_get_listings_returns_cache_when_fresh(tmp_cache, monkeypatch):

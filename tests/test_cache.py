@@ -16,8 +16,7 @@ from models import Listings
 def tmp_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     """Redirect cache module to use a temporary directory."""
     cache_file = tmp_path / "listings.json"
-    monkeypatch.setattr(cache, "_CACHE_DIR", tmp_path)
-    monkeypatch.setattr(cache, "_CACHE_FILE", cache_file)
+    monkeypatch.setattr(cache, "_backend", cache._FileBackend(tmp_path, cache_file))
     return cache_file
 
 
@@ -55,8 +54,7 @@ def test_write_then_read_round_trips(tmp_cache: Path) -> None:
 
 def test_write_creates_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     nested = tmp_path / "a" / "b"
-    monkeypatch.setattr(cache, "_CACHE_DIR", nested)
-    monkeypatch.setattr(cache, "_CACHE_FILE", nested / "listings.json")
+    monkeypatch.setattr(cache, "_backend", cache._FileBackend(nested, nested / "listings.json"))
     cache.write(_make_listings())
     assert (nested / "listings.json").exists()
 
