@@ -298,6 +298,9 @@ button {
 }
 
 .ext-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
@@ -306,6 +309,11 @@ button {
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   padding-bottom: 1px;
   transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+.ext-link img {
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .ext-link:hover {
