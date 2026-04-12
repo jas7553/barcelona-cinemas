@@ -163,4 +163,18 @@ describe("MovieRow expanded", () => {
     renderRow({ links: { imdb: null } }, true);
     expect(screen.queryByRole("link", { name: /imdb/i })).not.toBeInTheDocument();
   });
+
+  it("renders a Rotten Tomatoes search link", () => {
+    renderRow(undefined, true);
+    const rtLink = screen.getByRole("link", { name: /rotten tomatoes/i });
+    expect(rtLink).toHaveAttribute("href", expect.stringContaining("rottentomatoes.com/search"));
+    expect(rtLink).toHaveAttribute("target", "_blank");
+  });
+
+  it("renders a Metacritic search link", () => {
+    renderRow(undefined, true);
+    const mcLink = screen.getByRole("link", { name: /metacritic/i });
+    expect(mcLink).toHaveAttribute("href", expect.stringContaining("metacritic.com/search"));
+    expect(mcLink).toHaveAttribute("target", "_blank");
+  });
 });
