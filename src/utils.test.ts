@@ -236,13 +236,22 @@ describe("smartSort", () => {
     expect(result.map(m => m.id)).toEqual(["b"]);
   });
 
-  it("places last-chance (1 screening remaining) films first", () => {
+  it("places last-chance (1 screening remaining) films first when groupLastChance=true", () => {
+    const movies = [
+      makeMovie({ id: "popular", rating: 8.0, showtimes: [showtime(), showtime(), showtime(), showtime()] }),
+      makeMovie({ id: "last-chance", rating: 5.0, showtimes: [showtime()] }),
+    ];
+    const result = smartSort(movies, new Set(), true);
+    expect(result[0].id).toBe("last-chance");
+  });
+
+  it("does not group last-chance films first by default", () => {
     const movies = [
       makeMovie({ id: "popular", rating: 8.0, showtimes: [showtime(), showtime(), showtime(), showtime()] }),
       makeMovie({ id: "last-chance", rating: 5.0, showtimes: [showtime()] }),
     ];
     const result = smartSort(movies, new Set());
-    expect(result[0].id).toBe("last-chance");
+    expect(result[0].id).toBe("popular");
   });
 
   it("places highly-rated (≥7.5) films before widely-screened", () => {

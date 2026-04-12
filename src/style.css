@@ -57,10 +57,16 @@ button {
   height: var(--header-h);
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
   display: flex;
   align-items: center;
   gap: 12px;
+  max-width: 680px;
+  margin: 0 auto;
   padding: 0 16px;
+  height: 100%;
 }
 
 .logo { text-decoration: none; display: flex; align-items: baseline; gap: 3px; }
@@ -136,6 +142,30 @@ button {
 @keyframes pin-fade-out {
   0%, 75% { opacity: 1; }
   100% { opacity: 0; }
+}
+
+.last-chance-toggle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+}
+
+.last-chance-toggle:hover { color: var(--text); }
+.last-chance-toggle.is-active { color: var(--accent); }
+
+.last-chance-toggle svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* ── Movie list ──────────────────────────────────────────────────────────── */
@@ -279,7 +309,7 @@ button {
 }
 
 .movie-row-expanded { padding-top: 12px; display: flex; flex-direction: column; gap: 12px; cursor: default; }
-.synopsis { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin: 0; cursor: text; }
+.synopsis { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin: 0; }
 
 .synopsis-preview {
   font-size: 13px;
@@ -291,6 +321,23 @@ button {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.synopsis-wrap { display: flex; flex-direction: column; gap: 2px; }
+
+.synopsis-toggle {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.12s;
+}
+
+.synopsis-toggle:hover { opacity: 1; }
 
 .movie-external-links {
   display: flex;
@@ -322,26 +369,6 @@ button {
   border-bottom-color: var(--text);
 }
 
-.tcard-links {
-  display: flex;
-  gap: 6px;
-}
-
-.tcard-link {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-}
-
-.tcard-link:hover {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
 .showtimes-grid { display: flex; flex-direction: column; gap: 10px; }
 
 /* ── Movie poster ────────────────────────────────────────────────────────── */
@@ -353,6 +380,7 @@ button {
 
 @media (min-width: 480px) {
   .movie-poster-wrap { width: var(--poster-w-desktop); }
+  .search-wrap { max-width: 320px; }
 }
 
 .movie-poster {
@@ -637,7 +665,7 @@ button {
   top: 0;
   left: 0;
   right: 0;
-  padding: 14px 16px;
+  padding: 14px 0;
   background: linear-gradient(to bottom, rgba(17, 17, 17, 0.55) 0%, transparent 100%);
 }
 

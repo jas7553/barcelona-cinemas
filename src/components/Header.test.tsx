@@ -4,15 +4,16 @@ import { describe, it, expect, vi } from "vitest";
 import Header from "./Header";
 
 const defaultPin = { active: false, error: false, onToggle: vi.fn() };
+const defaultLastChance = { active: false, onToggle: vi.fn() };
 
 describe("Header", () => {
   it("renders search input", () => {
-    render(<Header searchQuery="" onSearch={vi.fn()} locationPin={defaultPin} />);
+    render(<Header searchQuery="" onSearch={vi.fn()} locationPin={defaultPin} lastChance={defaultLastChance} />);
     expect(screen.getByRole("searchbox")).toBeInTheDocument();
   });
 
   it("renders inactive pin button by default", () => {
-    render(<Header searchQuery="" onSearch={vi.fn()} locationPin={defaultPin} />);
+    render(<Header searchQuery="" onSearch={vi.fn()} locationPin={defaultPin} lastChance={defaultLastChance} />);
     expect(screen.getByRole("button", { name: /enable distance sorting/i })).toBeInTheDocument();
   });
 
@@ -22,6 +23,7 @@ describe("Header", () => {
         searchQuery=""
         onSearch={vi.fn()}
         locationPin={{ ...defaultPin, active: true }}
+        lastChance={defaultLastChance}
       />,
     );
     expect(screen.getByRole("button", { name: /disable distance sorting/i })).toBeInTheDocument();
@@ -35,6 +37,7 @@ describe("Header", () => {
         searchQuery=""
         onSearch={vi.fn()}
         locationPin={{ ...defaultPin, onToggle }}
+        lastChance={defaultLastChance}
       />,
     );
     await userEvent.click(screen.getByRole("button", { name: /enable distance sorting/i }));
@@ -47,6 +50,7 @@ describe("Header", () => {
         searchQuery=""
         onSearch={vi.fn()}
         locationPin={{ ...defaultPin, error: true }}
+        lastChance={defaultLastChance}
       />,
     );
     expect(screen.getByText(/location unavailable/i)).toBeInTheDocument();
