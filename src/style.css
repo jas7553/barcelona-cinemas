@@ -595,16 +595,21 @@ button {
 
 .detail-hero {
   position: relative;
-  aspect-ratio: 16/9;
+  width: 100%;
+  height: 320px;
   overflow: hidden;
   background: var(--bg-card);
-  max-height: 420px;
+}
+
+@media (min-width: 480px) {
+  .detail-hero { height: 420px; }
 }
 
 .detail-backdrop {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 20%;
   display: block;
 }
 
@@ -617,33 +622,131 @@ button {
 .detail-hero-gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(17, 17, 17, 0.92) 0%, transparent 55%);
+  background: linear-gradient(
+    to top,
+    rgba(17, 17, 17, 1) 0%,
+    rgba(17, 17, 17, 0.8) 28%,
+    rgba(17, 17, 17, 0.25) 58%,
+    transparent 80%
+  );
   pointer-events: none;
 }
 
-.detail-poster-overlay {
+.detail-hero-nav {
   position: absolute;
-  bottom: -44px;
-  left: 16px;
-  width: 80px;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 14px 16px;
+  background: linear-gradient(to bottom, rgba(17, 17, 17, 0.55) 0%, transparent 100%);
+}
+
+.back-btn--hero {
+  color: rgba(255, 255, 255, 0.85);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  margin-bottom: 0;
+}
+
+.back-btn--hero:hover { color: #fff; }
+
+.detail-hero-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0 16px 20px;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  max-width: 712px;
+  margin: 0 auto;
+}
+
+.detail-poster-overlay {
+  width: 90px;
+  flex-shrink: 0;
   border-radius: var(--radius);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.75);
   overflow: hidden;
-  z-index: 1;
 }
 
 @media (min-width: 480px) {
-  .detail-poster-overlay { width: 100px; bottom: -52px; }
+  .detail-poster-overlay { width: 120px; }
+}
+
+.detail-hero-text {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 2px;
+}
+
+.detail-hero-title {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+  margin: 0 0 6px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 480px) {
+  .detail-hero-title { font-size: 26px; }
+}
+
+.detail-title-row { align-items: flex-start; }
+
+.detail-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tag-genre--hero {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.detail-poster-info-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.detail-poster-top {
+  display: block;
+  width: 110px;
+  flex-shrink: 0;
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 480px) {
+  .detail-poster-top { width: 130px; }
+}
+
+.detail-poster-info {
+  flex: 1;
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.detail-poster-info .detail-meta {
+  flex-wrap: wrap;
 }
 
 .detail-body {
   max-width: 680px;
   margin: 0 auto;
-  padding: 60px 16px 48px;
+  padding: 24px 16px 48px;
 }
 
-@media (min-width: 480px) {
-  .detail-body { padding-top: 72px; }
+.detail-page--has-hero .detail-body {
+  padding-top: 20px;
 }
 
 .back-btn {

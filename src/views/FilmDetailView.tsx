@@ -102,37 +102,67 @@ export default function FilmDetailView({ movies, loading, error, onRetry, coords
   const rtHref = `https://www.rottentomatoes.com/search?search=${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}`;
   const metacriticHref = `https://www.metacritic.com/search/${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}/`;
 
+  const hasBackdrop = !!movie.backdrop_url;
+
   return (
-    <div className="detail-page">
-      <div className="detail-hero">
-        {movie.backdrop_url ? (
-          <img
-            src={movie.backdrop_url}
-            alt=""
-            className="detail-backdrop"
-          />
-        ) : (
-          <div className="detail-backdrop-fallback" />
-        )}
-        <div className="detail-hero-gradient" />
-        <div className="detail-poster-overlay">
-          <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
+    <div className={`detail-page${hasBackdrop ? " detail-page--has-hero" : ""}`}>
+      {hasBackdrop && (
+        <div className="detail-hero">
+          <img src={movie.backdrop_url!} alt="" className="detail-backdrop" />
+          <div className="detail-hero-gradient" />
+          <div className="detail-hero-nav">
+            <Link to="/" className="back-btn back-btn--hero">← Back</Link>
+          </div>
+          <div className="detail-hero-content">
+            <div className="detail-poster-overlay">
+              <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
+            </div>
+            <div className="detail-hero-text">
+              <div className="detail-title-row">
+                <h1 className="detail-hero-title">{movie.title}</h1>
+                {movie.rating != null && <RatingPill rating={movie.rating} />}
+              </div>
+              <div className="detail-hero-meta">
+                {movie.year != null && <span>{movie.year}</span>}
+                {movie.runtimeLabel && <span>{movie.runtimeLabel}</span>}
+                {shownGenres.map((g) => <span key={g} className="tag-genre tag-genre--hero">{g}</span>)}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="detail-body">
-        <Link to="/" className="back-btn">← Back</Link>
+        {!hasBackdrop && <Link to="/" className="back-btn">← Back</Link>}
 
-        <div className="detail-title-row">
-          <h1 className="detail-title">{movie.title}</h1>
-          {movie.rating != null && <RatingPill rating={movie.rating} />}
-        </div>
-
-        <div className="detail-meta">
-          {movie.year != null && <span>{movie.year}</span>}
-          {movie.runtimeLabel && <span>{movie.runtimeLabel}</span>}
-          {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
-        </div>
+        {!hasBackdrop && (movie.poster_url ? (
+          <div className="detail-poster-info-row">
+            <img src={movie.poster_url} alt={movie.title} className="detail-poster-top" />
+            <div className="detail-poster-info">
+              <div className="detail-title-row">
+                <h1 className="detail-title">{movie.title}</h1>
+                {movie.rating != null && <RatingPill rating={movie.rating} />}
+              </div>
+              <div className="detail-meta">
+                {movie.year != null && <span>{movie.year}</span>}
+                {movie.runtimeLabel && <span>{movie.runtimeLabel}</span>}
+                {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="detail-title-row">
+              <h1 className="detail-title">{movie.title}</h1>
+              {movie.rating != null && <RatingPill rating={movie.rating} />}
+            </div>
+            <div className="detail-meta">
+              {movie.year != null && <span>{movie.year}</span>}
+              {movie.runtimeLabel && <span>{movie.runtimeLabel}</span>}
+              {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
+            </div>
+          </>
+        ))}
 
         {movie.synopsis && <p className="detail-synopsis">{movie.synopsis}</p>}
 
