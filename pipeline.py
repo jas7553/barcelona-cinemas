@@ -44,6 +44,9 @@ def load_cinemas() -> CinemaRegistry:
     if _cinemas_cache is None:
         with open(_CINEMAS_FILE) as f:
             _cinemas_cache = cast(CinemaRegistry, json.load(f))
+        assert isinstance(_cinemas_cache, dict) and _cinemas_cache, (
+            f"{_CINEMAS_FILE} loaded empty or non-dict — registry is corrupted"
+        )
     return _cinemas_cache
 
 
@@ -279,8 +282,12 @@ def _merge_movie_pair(left: Movie, right: Movie) -> Movie:
             _canonical_language(showtime),
         ),
     )
+    merged_title = _pick_string(left["title"], right["title"])
+    assert merged_title is not None, (
+        f"_pick_string returned None for non-empty titles {left['title']!r} and {right['title']!r}"
+    )
     return Movie(
-        title=_pick_string(left["title"], right["title"]) or left["title"],
+        title=merged_title,
         tmdb_id=_pick_numeric(left.get("tmdb_id"), right.get("tmdb_id")),
         imdb_id=_pick_string(left.get("imdb_id"), right.get("imdb_id")),
         year=_pick_numeric(left.get("year"), right.get("year")),

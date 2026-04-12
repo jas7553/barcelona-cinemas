@@ -29,19 +29,36 @@ _CACHE_FILE = _CACHE_DIR / "listings.json"
 _S3_BUCKET = os.environ.get("S3_BUCKET", "")
 _S3_KEY = os.environ.get("S3_KEY", "listings.json")
 
-# Eagerly create the S3 client at module load time so boto3's import cost and
-# the initial TCP/TLS handshake are paid during Lambda Init, not on the first
-# handler invocation.  The singleton is reused across all warm invocations in
-# the same container, preserving the connection pool.
-if _CACHE_BACKEND == "s3":
-    import boto3  # type: ignore[import-untyped]
-    _s3_client: Any = boto3.client("s3")
-else:
-    _s3_client = None
 
+class _FileBackend:
+    def __init__(self, cache_dir: Path, cache_file: Path) -> None:
+        self._cache_dir = cache_dir
+        self._cache_file = cache_file
 
-def _s3() -> Any:
-    return _s3_client
+    def read(self) -> Listings | None:
+        try:
+            with self._cache_file.open() as f:
+                listings = normalize_listings(json.load(f), source="file cache")
+                if listings is None:
+                    log_event("cache_invalid", backend="file", path=str(self._cache_file))
+                    return None
+                return listings
+        except FileNotFoundError:
+            log_event("cache_missing", backend="file", path=str(self._cache_file))
+            return None
+        except Exception as exc:
+            log_event(
+                "cache_read_failure",
+                backend="file",
+                path=str(self._cache_file),
+                exception_type=type(exc).__name__,
+            )
+            return None
+
+    def write(self, listings: Listings) -> None:
+        self._cache_dir.mkdir(parents=True, exist_ok=True)
+        with self._cache_file.open("w") as f:
+            json.dump(listings, f, indent=2, ensure_ascii=False)
 
 
 def _is_s3_missing(exc: Exception) -> bool:
@@ -50,66 +67,63 @@ def _is_s3_missing(exc: Exception) -> bool:
     return error.get("Code") in {"NoSuchKey", "404"}
 
 
-def read() -> Listings | None:
-    """Return cached listings, or None if the cache does not exist."""
-    if _CACHE_BACKEND == "s3":
+class _S3Backend:
+    def __init__(self, client: Any, bucket: str, key: str) -> None:
+        self._client = client
+        self._bucket = bucket
+        self._key = key
+
+    def read(self) -> Listings | None:
         try:
-            body = _s3().get_object(Bucket=_S3_BUCKET, Key=_S3_KEY)["Body"].read()
+            body = self._client.get_object(Bucket=self._bucket, Key=self._key)["Body"].read()
             listings = normalize_listings(json.loads(body), source="S3 cache")
             if listings is None:
-                log_event(
-                    "cache_invalid",
-                    backend="s3",
-                    bucket=_S3_BUCKET,
-                    key=_S3_KEY,
-                )
+                log_event("cache_invalid", backend="s3", bucket=self._bucket, key=self._key)
                 return None
             return listings
         except Exception as exc:
             if _is_s3_missing(exc):
-                log_event("cache_missing", backend="s3", bucket=_S3_BUCKET, key=_S3_KEY)
+                log_event("cache_missing", backend="s3", bucket=self._bucket, key=self._key)
                 return None
             log_event(
                 "cache_read_failure",
                 backend="s3",
-                bucket=_S3_BUCKET,
-                key=_S3_KEY,
+                bucket=self._bucket,
+                key=self._key,
                 exception_type=type(exc).__name__,
             )
             return None
-    try:
-        with _CACHE_FILE.open() as f:
-            listings = normalize_listings(json.load(f), source="file cache")
-            if listings is None:
-                log_event("cache_invalid", backend="file", path=str(_CACHE_FILE))
-                return None
-            return listings
-    except FileNotFoundError:
-        log_event("cache_missing", backend="file", path=str(_CACHE_FILE))
-        return None
-    except Exception as exc:
-        log_event(
-            "cache_read_failure",
-            backend="file",
-            path=str(_CACHE_FILE),
-            exception_type=type(exc).__name__,
+
+    def write(self, listings: Listings) -> None:
+        self._client.put_object(
+            Bucket=self._bucket,
+            Key=self._key,
+            Body=json.dumps(listings, ensure_ascii=False).encode(),
+            ContentType="application/json",
         )
-        return None
+
+
+# Select the backend once at module load. Tests can monkeypatch `_backend`
+# directly to redirect reads/writes without touching the file system.
+if _CACHE_BACKEND == "s3":
+    import boto3  # type: ignore[import-untyped]
+
+    # Eagerly create the S3 client so boto3's import cost and the initial
+    # TCP/TLS handshake are paid during Lambda Init, not on the first handler
+    # invocation. The singleton is reused across all warm invocations.
+    _backend: _FileBackend | _S3Backend = _S3Backend(boto3.client("s3"), _S3_BUCKET, _S3_KEY)
+else:
+    _backend = _FileBackend(_CACHE_DIR, _CACHE_FILE)
+
+
+def read() -> Listings | None:
+    """Return cached listings, or None if the cache does not exist."""
+    return _backend.read()
 
 
 def write(listings: Listings) -> None:
     """Write listings to the cache."""
-    if _CACHE_BACKEND == "s3":
-        _s3().put_object(
-            Bucket=_S3_BUCKET,
-            Key=_S3_KEY,
-            Body=json.dumps(listings, ensure_ascii=False).encode(),
-            ContentType="application/json",
-        )
-        return
-    _CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    with _CACHE_FILE.open("w") as f:
-        json.dump(listings, f, indent=2, ensure_ascii=False)
+    _backend.write(listings)
 
 
 def age_hours(cached: Listings | None = None) -> float:
