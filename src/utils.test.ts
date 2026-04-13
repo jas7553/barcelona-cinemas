@@ -223,8 +223,8 @@ describe("smartSort", () => {
     id: "t1", name: "T1", neighborhood: "A",
     website_url: "", maps_url: "", lat: null, lng: null,
   };
-  const showtime = (date = "2099-01-01") => ({
-    theater_id: "t1", theater, date, time: "20:00", language: "vo" as const, dayOffset: 1,
+  const showtime = (date = "2099-01-01", dayOffset = 1) => ({
+    theater_id: "t1", theater, date, time: "20:00", language: "vo" as const, dayOffset,
   });
 
   it("excludes hidden film IDs", () => {
@@ -236,10 +236,10 @@ describe("smartSort", () => {
     expect(result.map(m => m.id)).toEqual(["b"]);
   });
 
-  it("places last-chance (1 screening remaining) films first when groupLastChance=true", () => {
+  it("places last-chance (only today/tomorrow screenings) films first when groupLastChance=true", () => {
     const movies = [
-      makeMovie({ id: "popular", rating: 8.0, showtimes: [showtime(), showtime(), showtime(), showtime()] }),
-      makeMovie({ id: "last-chance", rating: 5.0, showtimes: [showtime()] }),
+      makeMovie({ id: "popular", rating: 8.0, showtimes: [showtime("2099-01-01", 3), showtime("2099-01-01", 4)] }),
+      makeMovie({ id: "last-chance", rating: 5.0, showtimes: [showtime("2099-01-01", 0)] }),
     ];
     const result = smartSort(movies, new Set(), true);
     expect(result[0].id).toBe("last-chance");
