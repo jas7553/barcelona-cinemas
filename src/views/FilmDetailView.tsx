@@ -68,6 +68,31 @@ export default function FilmDetailView({ movies, loading, error, onRetry, coords
     return () => window.removeEventListener("scroll", handle);
   }, [movie]);
 
+  useEffect(() => {
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!meta || !movie?.backdrop_url) return;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext("2d")!;
+        const sampleH = Math.max(1, Math.floor(img.naturalHeight * 0.15));
+        ctx.drawImage(img, 0, 0, img.naturalWidth, sampleH, 0, 0, 1, 1);
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        meta.content = `rgb(${r},${g},${b})`;
+      } catch {
+        // CORS blocked — leave theme-color as-is
+      }
+    };
+    img.src = movie.backdrop_url;
+    return () => {
+      meta.content = "#111111";
+    };
+  }, [movie?.backdrop_url]);
+
   if (loading && !movie) {
     return (
       <div className="detail-loading">
