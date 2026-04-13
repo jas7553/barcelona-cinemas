@@ -79,11 +79,12 @@ export default function MovieList({
         </>
       ) : (
         <>
-          <div className="movie-list">
-            {movies.map((m) => (
+          <div className="movie-list movie-list--animate">
+            {movies.map((m, i) => (
               <MovieRow
                 key={m.id}
                 movie={m}
+                index={i}
                 onHide={onHide}
               />
             ))}

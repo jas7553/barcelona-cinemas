@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { TransformedMovie } from "../types";
 import MoviePoster from "./MoviePoster";
@@ -5,16 +6,27 @@ import RatingPill from "./RatingPill";
 
 interface Props {
   movie: TransformedMovie;
+  index?: number;
   onHide: (id: string) => void;
 }
 
-export default function MovieRow({ movie, onHide }: Props) {
+export default function MovieRow({ movie, index = 0, onHide }: Props) {
+  const [hiding, setHiding] = useState(false);
   const isLastChance = movie.showtimes.every((s) => s.dayOffset <= 1);
   const shownGenres = movie.genres.slice(0, 3);
 
   const letterboxdHref = movie.links.imdb_id
     ? `https://letterboxd.com/imdb/${movie.links.imdb_id}/`
     : `https://letterboxd.com/search/${encodeURIComponent(`${movie.title}${movie.year != null ? ` ${movie.year}` : ""}`)}/`;
+
+  function handleHide(e: React.MouseEvent) {
+    e.stopPropagation();
+    e.preventDefault();
+    setHiding(true);
+    setTimeout(() => onHide(movie.id), 210);
+  }
+
+  const animationDelay = index < 8 ? `${index * 35}ms` : undefined;
 
   const content = (
     <div className="movie-row-collapsed">
@@ -34,7 +46,7 @@ export default function MovieRow({ movie, onHide }: Props) {
             <button
               className="hide-btn"
               aria-label={`Hide ${movie.title}`}
-              onClick={(e) => { e.stopPropagation(); onHide(movie.id); }}
+              onClick={handleHide}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
@@ -78,12 +90,16 @@ export default function MovieRow({ movie, onHide }: Props) {
     </div>
   );
 
+  const className = `movie-row${hiding ? " movie-row--hiding" : ""}`;
+  const style = animationDelay ? { animationDelay } : undefined;
+
   if (movie.links.imdb_id) {
     return (
       <Link
         to={`/film/${movie.links.imdb_id}`}
         id={`film-${movie.id}`}
-        className="movie-row"
+        className={className}
+        style={style}
         role="article"
         onClick={(e) => { if (window.getSelection()?.toString()) e.preventDefault(); }}
       >
@@ -93,7 +109,7 @@ export default function MovieRow({ movie, onHide }: Props) {
   }
 
   return (
-    <article id={`film-${movie.id}`} className="movie-row movie-row--no-link" role="article">
+    <article id={`film-${movie.id}`} className={className} style={style} role="article">
       {content}
     </article>
   );
