@@ -126,7 +126,7 @@ export function smartSort(
   const median = counts.length === 0 ? 0 : counts[Math.floor(counts.length / 2)];
 
   const tier = (m: TransformedMovie): number => {
-    if (groupLastChance && m.showtimes.length === 1) return 0;
+    if (groupLastChance && m.showtimes.every((s) => s.dayOffset <= 1)) return 0;
     if ((m.rating ?? 0) >= 7.5) return 1;
     if (m.showtimes.length > median) return 2;
     return 3;

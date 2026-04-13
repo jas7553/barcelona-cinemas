@@ -71,19 +71,13 @@ describe("MovieRow", () => {
     expect(screen.getByText(/8\.2/)).toBeInTheDocument();
   });
 
-  it("renders synopsis preview", () => {
-    renderRow();
-    expect(screen.getByText("A lone astronaut races to save humanity.")).toBeInTheDocument();
-    expect(document.querySelector(".synopsis-preview")).toBeInTheDocument();
-  });
-
   it("shows Last Chance badge when showtimes.length === 1", () => {
     renderRow();
     expect(screen.getByText(/last chance/i)).toBeInTheDocument();
   });
 
-  it("does not show Last Chance badge when showtimes.length > 1", () => {
-    const extras = Array.from({ length: 3 }, (_, i) => ({ ...BASE_MOVIE.showtimes[0], time: `${18 + i}:00` }));
+  it("does not show Last Chance badge when showtimes include future days", () => {
+    const extras = Array.from({ length: 3 }, (_, i) => ({ ...BASE_MOVIE.showtimes[0], time: `${18 + i}:00`, dayOffset: 2 + i }));
     renderRow({ showtimes: [...BASE_MOVIE.showtimes, ...extras] });
     expect(screen.queryByText(/last chance/i)).not.toBeInTheDocument();
   });

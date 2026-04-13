@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { TransformedMovie } from "../types";
 import MoviePoster from "./MoviePoster";
@@ -10,11 +9,8 @@ interface Props {
 }
 
 export default function MovieRow({ movie, onHide }: Props) {
-  const [synopsisExpanded, setSynopsisExpanded] = useState(false);
-  const isLastChance = movie.showtimes.length === 1;
+  const isLastChance = movie.showtimes.every((s) => s.dayOffset <= 1);
   const shownGenres = movie.genres.slice(0, 3);
-  const hasSynopsis = !!movie.synopsis;
-  const synopsisLong = hasSynopsis && movie.synopsis.length > 120;
 
   const letterboxdHref = movie.links.imdb_id
     ? `https://letterboxd.com/imdb/${movie.links.imdb_id}/`
@@ -53,21 +49,6 @@ export default function MovieRow({ movie, onHide }: Props) {
           {movie.rating != null && <RatingPill rating={movie.rating} />}
           {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
         </div>
-
-        {hasSynopsis && (
-          <div className="synopsis-wrap" onClick={(e) => e.stopPropagation()}>
-            <p className={synopsisExpanded ? "synopsis" : "synopsis-preview"}>{movie.synopsis}</p>
-            {synopsisLong && (
-              <button
-                className="synopsis-toggle"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSynopsisExpanded((v) => !v); }}
-                aria-label={synopsisExpanded ? "Collapse synopsis" : "Expand synopsis"}
-              >
-                {synopsisExpanded ? "less" : "more"}
-              </button>
-            )}
-          </div>
-        )}
 
         <div className="movie-external-links" onClick={(e) => e.stopPropagation()}>
           {movie.links.imdb && (
