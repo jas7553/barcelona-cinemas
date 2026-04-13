@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { TransformedShowtime, TransformedMovie } from "../types";
 import type { Coords } from "../hooks/useLocationPin";
@@ -59,6 +59,15 @@ export default function FilmDetailView({ movies, loading, error, onRetry, coords
   const { id } = useParams<{ id: string }>();
   const movie = movies.find((m) => m.links.imdb_id === id);
 
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!movie) return;
+    const handle = () => setScrolled(window.scrollY > 100);
+    window.addEventListener("scroll", handle, { passive: true });
+    return () => window.removeEventListener("scroll", handle);
+  }, [movie]);
+
   if (loading && !movie) {
     return (
       <div className="detail-loading">
@@ -105,54 +114,73 @@ export default function FilmDetailView({ movies, loading, error, onRetry, coords
   const hasBackdrop = !!movie.backdrop_url;
 
   return (
-    <div className={`detail-page${hasBackdrop ? " detail-page--has-hero" : ""}`}>
-      {hasBackdrop && (
-        <div className="detail-hero">
-          <img src={movie.backdrop_url!} alt="" className="detail-backdrop" />
-          <div className="detail-hero-gradient" />
-          <div className="detail-hero-nav">
-            <div className="layout">
-              <Link to="/" className="back-btn back-btn--hero">← Back</Link>
+    <>
+      <div className={`detail-sticky-nav${scrolled ? " is-visible" : ""}`}>
+        <Link to="/" className="back-btn" style={{ marginBottom: 0 }}>← Back</Link>
+        <span className="detail-sticky-nav-title">{movie.title}</span>
+      </div>
+
+      <div className={`detail-page${hasBackdrop ? " detail-page--has-hero" : ""}`}>
+        {hasBackdrop && (
+          <div className="detail-hero">
+            <img src={movie.backdrop_url!} alt="" className="detail-backdrop" />
+            <div className="detail-hero-gradient" />
+            <div className="detail-hero-nav">
+              <div className="layout">
+                <Link to="/" className="back-btn back-btn--hero">← Back</Link>
+              </div>
+            </div>
+            <div className="detail-hero-content">
+              <div className="detail-poster-overlay">
+                <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
+              </div>
+              <div className="detail-hero-text">
+                <div className="detail-title-row">
+                  <h1 className="detail-hero-title">{movie.title}</h1>
+                  {movie.rating != null && <RatingPill rating={movie.rating} />}
+                </div>
+                <div className="detail-hero-meta">
+                  {movie.year != null && <span>{movie.year}</span>}
+                  {movie.runtimeLabel && <span>{movie.runtimeLabel}</span>}
+                  {shownGenres.map((g) => <span key={g} className="tag-genre tag-genre--hero">{g}</span>)}
+                </div>
+                {movie.trailer_url && (
+                  <a
+                    className="trailer-btn"
+                    href={movie.trailer_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Watch ${movie.title} trailer on YouTube (opens in a new tab)`}
+                  >
+                    <PlayIcon />
+                    Watch Trailer
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-          <div className="detail-hero-content">
-            <div className="detail-poster-overlay">
-              <MoviePoster title={movie.title} posterUrl={movie.poster_url} />
-            </div>
-            <div className="detail-hero-text">
-              <div className="detail-title-row">
-                <h1 className="detail-hero-title">{movie.title}</h1>
-                {movie.rating != null && <RatingPill rating={movie.rating} />}
-              </div>
-              <div className="detail-hero-meta">
-                {movie.year != null && <span>{movie.year}</span>}
-                {movie.runtimeLabel && <span>{movie.runtimeLabel}</span>}
-                {shownGenres.map((g) => <span key={g} className="tag-genre tag-genre--hero">{g}</span>)}
-              </div>
-              {movie.trailer_url && (
-                <a
-                  className="trailer-btn"
-                  href={movie.trailer_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Watch ${movie.title} trailer on YouTube (opens in a new tab)`}
-                >
-                  <PlayIcon />
-                  Watch Trailer
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+        )}
 
-      <div className="detail-body">
-        {!hasBackdrop && <Link to="/" className="back-btn">← Back</Link>}
+        <div className="detail-body">
+          {!hasBackdrop && <Link to="/" className="back-btn">← Back</Link>}
 
-        {!hasBackdrop && (movie.poster_url ? (
-          <div className="detail-poster-info-row">
-            <img src={movie.poster_url} alt={movie.title} className="detail-poster-top" />
-            <div className="detail-poster-info">
+          {!hasBackdrop && (movie.poster_url ? (
+            <div className="detail-poster-info-row">
+              <img src={movie.poster_url} alt={movie.title} className="detail-poster-top" />
+              <div className="detail-poster-info">
+                <div className="detail-title-row">
+                  <h1 className="detail-title">{movie.title}</h1>
+                  {movie.rating != null && <RatingPill rating={movie.rating} />}
+                </div>
+                <div className="detail-meta">
+                  {movie.year != null && <span>{movie.year}</span>}
+                  {movie.runtimeLabel && <span>{movie.runtimeLabel}</span>}
+                  {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
               <div className="detail-title-row">
                 <h1 className="detail-title">{movie.title}</h1>
                 {movie.rating != null && <RatingPill rating={movie.rating} />}
@@ -162,89 +190,77 @@ export default function FilmDetailView({ movies, loading, error, onRetry, coords
                 {movie.runtimeLabel && <span>{movie.runtimeLabel}</span>}
                 {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
               </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="detail-title-row">
-              <h1 className="detail-title">{movie.title}</h1>
-              {movie.rating != null && <RatingPill rating={movie.rating} />}
-            </div>
-            <div className="detail-meta">
-              {movie.year != null && <span>{movie.year}</span>}
-              {movie.runtimeLabel && <span>{movie.runtimeLabel}</span>}
-              {shownGenres.map((g) => <span key={g} className="tag-genre">{g}</span>)}
-            </div>
-          </>
-        ))}
+            </>
+          ))}
 
-        {!hasBackdrop && movie.trailer_url && (
-          <a
-            className="trailer-btn"
-            href={movie.trailer_url}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`Watch ${movie.title} trailer on YouTube (opens in a new tab)`}
-          >
-            <PlayIcon />
-            Watch Trailer
-          </a>
-        )}
-
-        {movie.synopsis && <p className="detail-synopsis">{movie.synopsis}</p>}
-
-        <div className="detail-external-links">
-          {movie.links.imdb && (
+          {!hasBackdrop && movie.trailer_url && (
             <a
-              className="ext-link"
-              href={movie.links.imdb}
+              className="trailer-btn"
+              href={movie.trailer_url}
               target="_blank"
               rel="noreferrer"
-              aria-label={`${movie.title} on IMDb (opens in a new tab)`}
+              aria-label={`Watch ${movie.title} trailer on YouTube (opens in a new tab)`}
             >
-              <img src="/imdb-favicon.png" width="12" height="12" aria-hidden="true" />
-              IMDb
+              <PlayIcon />
+              Watch Trailer
             </a>
           )}
-          <a
-            className="ext-link"
-            href={letterboxdHref}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`${movie.title} on Letterboxd (opens in a new tab)`}
-          >
-            <img src="/letterboxd-favicon.ico" width="12" height="12" aria-hidden="true" />
-            Letterboxd
-          </a>
-          <a
-            className="ext-link"
-            href={rtHref}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`Search ${movie.title} on Rotten Tomatoes (opens in a new tab)`}
-          >
-            <img src="/rt-favicon.ico" width="12" height="12" aria-hidden="true" />
-            Rotten Tomatoes
-          </a>
-          <a
-            className="ext-link"
-            href={metacriticHref}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`Search ${movie.title} on Metacritic (opens in a new tab)`}
-          >
-            <img src="/metacritic-favicon.ico" width="12" height="12" aria-hidden="true" />
-            Metacritic
-          </a>
-        </div>
 
-        {movie.showtimes.length > 0 && (
-          <>
-            <h2 className="detail-showtimes-heading">Showtimes</h2>
-            <TheaterEntries movie={movie} coords={coords} />
-          </>
-        )}
+          {movie.synopsis && <p className="detail-synopsis">{movie.synopsis}</p>}
+
+          <div className="detail-external-links">
+            {movie.links.imdb && (
+              <a
+                className="ext-link"
+                href={movie.links.imdb}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`${movie.title} on IMDb (opens in a new tab)`}
+              >
+                <img src="/imdb-favicon.png" width="12" height="12" aria-hidden="true" />
+                IMDb
+              </a>
+            )}
+            <a
+              className="ext-link"
+              href={letterboxdHref}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${movie.title} on Letterboxd (opens in a new tab)`}
+            >
+              <img src="/letterboxd-favicon.ico" width="12" height="12" aria-hidden="true" />
+              Letterboxd
+            </a>
+            <a
+              className="ext-link"
+              href={rtHref}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Search ${movie.title} on Rotten Tomatoes (opens in a new tab)`}
+            >
+              <img src="/rt-favicon.ico" width="12" height="12" aria-hidden="true" />
+              Rotten Tomatoes
+            </a>
+            <a
+              className="ext-link"
+              href={metacriticHref}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Search ${movie.title} on Metacritic (opens in a new tab)`}
+            >
+              <img src="/metacritic-favicon.ico" width="12" height="12" aria-hidden="true" />
+              Metacritic
+            </a>
+          </div>
+
+          {movie.showtimes.length > 0 && (
+            <>
+              <h2 className="detail-showtimes-heading">Showtimes</h2>
+              <TheaterEntries movie={movie} coords={coords} />
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

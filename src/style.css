@@ -3,6 +3,7 @@
   --bg:           #111111;
   --bg-card:      #1c1c1c;
   --bg-elevated:  #242424;
+  --bg-overlay:   #2e2e2e;
   --text:         #ede9e3;
   --text-muted:   #888480;
   --accent:       #e8a020;
@@ -11,6 +12,11 @@
   --radius:       10px;
   --radius-sm:    6px;
   --font-sans:    "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --text-xs:      11px;
+  --text-sm:      13px;
+  --text-base:    16px;
+  --text-lg:      18px;
+  --text-xl:      22px;
   --header-h:     52px;
   --poster-w-mobile:  clamp(60px, 20vw, 80px);
   --poster-w-desktop: 100px;
@@ -26,7 +32,7 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -207,7 +213,7 @@ button {
 .day-filter-btn:hover { color: var(--text); }
 
 .day-filter-btn.is-active {
-  background: rgba(232, 160, 32, 0.12);
+  background: linear-gradient(90deg, rgba(232, 160, 32, 0.18) 0%, rgba(212, 96, 26, 0.1) 100%);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -260,7 +266,17 @@ button {
   padding: 16px 0;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
-  transition: background 0.12s ease;
+  max-height: 400px;
+  transition: background 0.12s ease, max-height 0.2s cubic-bezier(0.4, 0, 1, 1), opacity 0.15s ease, padding 0.15s ease;
+}
+
+.movie-row--hiding {
+  max-height: 0 !important;
+  overflow: hidden;
+  opacity: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border-bottom-width: 0;
 }
 
 .movie-row:hover { background: rgba(255, 255, 255, 0.025); }
@@ -419,7 +435,7 @@ button {
 
 /* ── Theater card and time chips ─────────────────────────────────────────── */
 .theater-card {
-  background: var(--bg-elevated);
+  background: var(--bg-overlay);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
@@ -462,7 +478,12 @@ button {
   min-width: 36px;
 }
 
-.day-label.today { color: var(--accent); }
+.day-label.today {
+  background: linear-gradient(90deg, #e8a020, #d4601a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 .times-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .time-chip {
@@ -480,10 +501,24 @@ button {
   white-space: nowrap;
 }
 
+.time-chip--past {
+  opacity: 0.32;
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 255, 255, 0.25);
+}
+
 /* ── Footer and miscellaneous ────────────────────────────────────────────── */
 .error-state { padding: 40px 16px; text-align: center; }
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; text-align: center; }
 .empty-text  { color: var(--text-muted); font-size: 14px; }
+
+.empty-icon {
+  width: 52px;
+  height: 52px;
+  color: var(--text-muted);
+  opacity: 0.45;
+  margin-bottom: 14px;
+}
 
 .retry-btn {
   margin-top: 12px;
@@ -607,6 +642,82 @@ button {
   .skeleton-block {
     animation: none;
   }
+
+  .logo-bcn,
+  .logo-cinemas {
+    animation: none;
+  }
+
+  .movie-list--animate .movie-row {
+    animation: none;
+  }
+
+  .detail-sticky-nav {
+    transition: none;
+  }
+
+  .movie-row--hiding {
+    transition: none;
+  }
+}
+
+/* ── Row stagger animation ───────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.movie-list--animate .movie-row {
+  animation: fadeUp 0.22s ease both;
+}
+
+/* ── Logo slide-in animation ─────────────────────────────────────────────── */
+@keyframes logoSlideLeft {
+  from { transform: translateX(-10px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes logoSlideRight {
+  from { transform: translateX(8px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+.logo-bcn     { animation: logoSlideLeft  0.35s ease both; }
+.logo-cinemas { animation: logoSlideRight 0.35s ease both 0.08s; }
+
+/* ── Detail sticky nav ───────────────────────────────────────────────────── */
+.detail-sticky-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  height: var(--header-h);
+  background: rgba(17, 17, 17, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.detail-sticky-nav.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.detail-sticky-nav-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Film detail page ────────────────────────────────────────────────────── */
@@ -695,7 +806,7 @@ button {
 }
 
 .detail-hero-title {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.2;
   color: #fff;
@@ -704,7 +815,7 @@ button {
 }
 
 @media (min-width: 480px) {
-  .detail-hero-title { font-size: 26px; }
+  .detail-hero-title { font-size: 28px; }
 }
 
 

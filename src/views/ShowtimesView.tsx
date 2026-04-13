@@ -47,7 +47,11 @@ export default function ShowtimesView({
   const filteredMovies = useMemo(() => {
     const q = normalizeForSearch(searchQuery);
     let result = q
-      ? movies.filter((m) => normalizeForSearch(m.title).includes(q))
+      ? movies.filter(
+          (m) =>
+            normalizeForSearch(m.title).includes(q) ||
+            m.genres.some((g) => normalizeForSearch(g).includes(q))
+        )
       : movies;
     if (dayFilter !== "all") {
       result = result.filter((m) => m.showtimes.some((s) => s.dayOffset === dayFilter));
