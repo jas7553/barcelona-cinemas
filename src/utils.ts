@@ -1,4 +1,4 @@
-import type { Listings, Theater, TransformedMovie, TransformedShowtime } from "./types";
+import type { Listings, Theater, TransformedMovie, TransformedShowtime, CinemaViewGroup } from "./types";
 
 // ── Geo distance ────────────────────────────────────────────────────────────
 
@@ -11,6 +11,11 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
     Math.sin(dLat / 2) ** 2 +
     Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+export function formatDistKm(km: number | null | undefined): string | null {
+  if (km == null) return null;
+  return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 }
 
 // ── Runtime formatting ──────────────────────────────────────────────────────
@@ -40,6 +45,32 @@ export function formatDaySubLabel(date: Date): string {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
+/** Generate 7-day array of chip labels for the day picker. */
+export function generateDays(): Array<{ label: string; fullLabel: string; offset: number }> {
+  const hour = new Date().getHours();
+  const result: Array<{ label: string; fullLabel: string; offset: number }> = [];
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+
+    if (i === 0) {
+      result.push({
+        label: hour >= 18 ? "Tonight" : "Today",
+        fullLabel: hour >= 18 ? "tonight" : "today",
+        offset: 0,
+      });
+    } else {
+      const weekday = d.toLocaleDateString("en-GB", { weekday: "short" });
+      const weekdayFull = d.toLocaleDateString("en-GB", { weekday: "long" });
+      const day = d.getDate();
+      result.push({ label: `${weekday} ${day}`, fullLabel: `${weekdayFull} ${day}`, offset: i });
+    }
+  }
+
+  return result;
+}
+
 // ── Search normalization ────────────────────────────────────────────────────
 
 export function normalizeForSearch(s: string): string {
@@ -57,6 +88,26 @@ export function relativeTime(isoStr: string): string {
   if (diffHrs < 24) return `${diffHrs} hour${diffHrs !== 1 ? "s" : ""} ago`;
   const diffDays = Math.round(diffHrs / 24);
   return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+}
+
+/** Returns a compact age string for the data freshness note, or null if under 1h old. */
+export function formatDataAge(isoStr: string): string | null {
+  const diffMs = Date.now() - new Date(isoStr).getTime();
+  const diffH = diffMs / (1000 * 60 * 60);
+  if (diffH < 1) return null;
+  if (diffH < 2) return "1h ago";
+  return `${Math.floor(diffH)}h ago`;
+}
+
+// ── Last-chance detection ───────────────────────────────────────────────────
+
+/**
+ * A film is "last chance" when it has only 1 unique cinema showing it
+ * OR 3 or fewer total remaining showtimes.
+ */
+export function isLastChance(movie: TransformedMovie): boolean {
+  const theaters = new Set(movie.showtimes.map((s) => s.theater.id));
+  return theaters.size <= 1 || movie.showtimes.length <= 3;
 }
 
 // ── Client-side API response transform ─────────────────────────────────────
@@ -89,6 +140,8 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
             neighborhood: "",
             website_url: "",
             maps_url: "",
+            lat: null,
+            lng: null,
           },
           dayOffset,
         };
@@ -102,6 +155,59 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
       .sort((a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time)),
   }))
   .filter((movie) => movie.showtimes.length > 0);
+}
+
+// ── Cinema group builder ────────────────────────────────────────────────────
+
+/** Group films by theater for the selected day. Sorted by distance if coords provided. */
+export function buildCinemaGroups(
+  movies: TransformedMovie[],
+  dayOffset: number,
+  coords: { lat: number; lng: number } | null,
+): CinemaViewGroup[] {
+  const theaterMap = new Map<
+    string,
+    { theaterName: string; lat: number | null; lng: number | null; mapsUrl: string; films: CinemaViewGroup["films"] }
+  >();
+
+  for (const movie of movies) {
+    const dayShowtimes = movie.showtimes.filter((s) => s.dayOffset === dayOffset);
+    const byTheater = new Map<string, { theater: TransformedShowtime["theater"]; times: string[] }>();
+
+    for (const s of dayShowtimes) {
+      const entry = byTheater.get(s.theater.id) ?? { theater: s.theater, times: [] };
+      if (!entry.times.includes(s.time)) entry.times.push(s.time);
+      byTheater.set(s.theater.id, entry);
+    }
+
+    for (const [theaterId, { theater, times }] of byTheater) {
+      const existing = theaterMap.get(theaterId) ?? {
+        theaterName: theater.name,
+        lat: theater.lat ?? null,
+        lng: theater.lng ?? null,
+        mapsUrl: theater.maps_url,
+        films: [],
+      };
+      existing.films.push({ movie, times: [...times].sort() });
+      theaterMap.set(theaterId, existing);
+    }
+  }
+
+  const groups: CinemaViewGroup[] = [...theaterMap.entries()].map(([id, g]) => ({
+    theaterId: id,
+    ...g,
+    distanceKm:
+      coords && g.lat != null && g.lng != null
+        ? haversineKm(coords.lat, coords.lng, g.lat, g.lng)
+        : undefined,
+  }));
+
+  return groups.sort((a, b) => {
+    if (a.distanceKm !== undefined && b.distanceKm !== undefined) {
+      return a.distanceKm - b.distanceKm;
+    }
+    return a.theaterName.localeCompare(b.theaterName);
+  });
 }
 
 // ── Smart sort ──────────────────────────────────────────────────────────────

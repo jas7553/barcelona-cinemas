@@ -56,4 +56,15 @@ export interface TransformedMovie extends Omit<Movie, "showtimes"> {
   showtimes: TransformedShowtime[];
 }
 
-
+export interface CinemaViewGroup {
+  theaterId: string;
+  theaterName: string;
+  lat: number | null;
+  lng: number | null;
+  mapsUrl: string;
+  films: Array<{
+    movie: TransformedMovie;
+    times: string[];
+  }>;
+  distanceKm?: number;
+}
