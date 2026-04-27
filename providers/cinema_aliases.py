@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Iterable
 
 from models import CinemaInfo, CinemaRegistry
 
 
 def normalize_alias(value: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "", value.lower())
+    nfd = unicodedata.normalize("NFD", value.lower())
+    return re.sub(r"[^a-z0-9]+", "", nfd)
 
 
 def iter_cinema_aliases(info: CinemaInfo, source: str) -> Iterable[str]:
