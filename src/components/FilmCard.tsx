@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { isLastChance } from "../utils";
 import type { TransformedMovie } from "../types";
@@ -5,10 +6,10 @@ import type { TransformedMovie } from "../types";
 interface Props {
   movie: TransformedMovie;
   dayOffset?: number;
-  onTap: (movie: TransformedMovie) => void;
+  onSelect: (movie: TransformedMovie) => void;
 }
 
-export default function FilmCard({ movie, dayOffset, onTap }: Props) {
+export default function FilmCard({ movie, dayOffset, onSelect }: Props) {
   const lc = isLastChance(movie);
 
   const filtered =
@@ -23,22 +24,16 @@ export default function FilmCard({ movie, dayOffset, onTap }: Props) {
   const meta = [genre, movie.year?.toString()].filter(Boolean).join(" · ");
 
   return (
-    <a
-      href={`#/film/${movie.id}`}
+    <Link
+      to={`/film/${movie.id}`}
       className={`film-card${lc ? " film-card--lc" : ""}`}
-      onClick={(e) => {
-        if (e.metaKey || e.ctrlKey) return;
-        e.preventDefault();
-        onTap(movie);
-      }}
+      onClick={() => onSelect(movie)}
     >
       {movie.poster_url ? (
         <img
           src={movie.poster_url}
           alt={movie.title}
-          width={72}
-          height={106}
-          style={{ objectFit: "cover", flexShrink: 0, alignSelf: "flex-start" }}
+          className="film-card__poster"
         />
       ) : (
         <PosterPlaceholder w={72} h={106} id={movie.id} style={{ alignSelf: "flex-start" }} />
@@ -59,13 +54,13 @@ export default function FilmCard({ movie, dayOffset, onTap }: Props) {
         {dayOffset !== undefined && dayTimes.length > 0 && (
           <div className="film-card__times">
             {dayTimes.map((t) => (
-              <div key={t} className={`time-pill${lc ? " time-pill--lc" : ""}`}>
+              <time key={t} className={`time-pill${lc ? " time-pill--lc" : ""}`}>
                 {t}
-              </div>
+              </time>
             ))}
           </div>
         )}
       </div>
-    </a>
+    </Link>
   );
 }

@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function BrowseIcon({ color }: { color: string }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round">
@@ -20,30 +22,29 @@ function SearchIcon({ color }: { color: string }) {
 
 interface Props {
   active: "list" | "search";
-  onNavigate: (screen: "list" | "search") => void;
 }
 
-export default function BottomNav({ active, onNavigate }: Props) {
+export default function BottomNav({ active }: Props) {
   const tabs = [
-    { id: "list" as const, label: "Browse", Icon: BrowseIcon },
-    { id: "search" as const, label: "Search", Icon: SearchIcon },
+    { id: "list" as const, label: "Browse", Icon: BrowseIcon, to: "/" },
+    { id: "search" as const, label: "Search", Icon: SearchIcon, to: "/search" },
   ];
 
   return (
     <nav className="bottom-nav">
-      {tabs.map(({ id, label, Icon }) => {
+      {tabs.map(({ id, label, Icon, to }) => {
         const isActive = active === id;
         const color = isActive ? "var(--accent)" : "var(--text-mute)";
         return (
-          <button
+          <Link
             key={id}
+            to={to}
             className={`bottom-nav__tab${isActive ? " bottom-nav__tab--active" : ""}`}
-            onClick={() => onNavigate(id)}
             aria-label={label}
           >
             <Icon color={color} />
             <span className="bottom-nav__tab-label">{label}</span>
-          </button>
+          </Link>
         );
       })}
     </nav>

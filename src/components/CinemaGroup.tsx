@@ -1,13 +1,14 @@
+import { Link } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { isLastChance, formatDistKm } from "../utils";
 import type { CinemaViewGroup, TransformedMovie } from "../types";
 
 interface Props {
   group: CinemaViewGroup;
-  onFilmTap: (movie: TransformedMovie) => void;
+  onFilmSelect: (movie: TransformedMovie) => void;
 }
 
-export default function CinemaGroup({ group, onFilmTap }: Props) {
+export default function CinemaGroup({ group, onFilmSelect }: Props) {
   const distLabel = formatDistKm(group.distanceKm);
 
   return (
@@ -20,15 +21,11 @@ export default function CinemaGroup({ group, onFilmTap }: Props) {
       {group.films.map(({ movie, times }) => {
         const lc = isLastChance(movie);
         return (
-          <a
+          <Link
             key={movie.id}
-            href={`#/film/${movie.id}`}
+            to={`/film/${movie.id}`}
             className="cinema-group__film"
-            onClick={(e) => {
-              if (e.metaKey || e.ctrlKey) return;
-              e.preventDefault();
-              onFilmTap(movie);
-            }}
+            onClick={() => onFilmSelect(movie)}
           >
             {movie.poster_url ? (
               <img
@@ -48,13 +45,13 @@ export default function CinemaGroup({ group, onFilmTap }: Props) {
               </div>
               <div className="cinema-group__film-times">
                 {times.map((t) => (
-                  <div key={t} className={`time-pill${lc ? " time-pill--lc" : ""}`}>
+                  <time key={t} className={`time-pill${lc ? " time-pill--lc" : ""}`}>
                     {t}
-                  </div>
+                  </time>
                 ))}
               </div>
             </div>
-          </a>
+          </Link>
         );
       })}
     </div>

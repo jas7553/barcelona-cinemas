@@ -45,8 +45,13 @@
 /* ── Resets ─────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-::-webkit-scrollbar { display: none; }
-html { scrollbar-width: none; }
+.film-list-scroll::-webkit-scrollbar,
+.detail-content::-webkit-scrollbar,
+.day-chips::-webkit-scrollbar { display: none; }
+
+.film-list-scroll,
+.detail-content,
+.day-chips { scrollbar-width: none; }
 
 body {
   font-family: var(--font-ui);
@@ -69,7 +74,6 @@ input {
   background: none;
   font: inherit;
   color: inherit;
-  outline: none;
 }
 
 a { color: inherit; text-decoration: none; }
@@ -160,7 +164,6 @@ img { display: block; }
   gap: 6px;
   overflow-x: auto;
   padding-bottom: 10px;
-  -webkit-overflow-scrolling: touch;
 }
 
 .day-chip {
@@ -227,7 +230,6 @@ img { display: block; }
 .film-list-scroll {
   flex: 1;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .film-list {
@@ -248,6 +250,15 @@ img { display: block; }
   transition: opacity 0.12s;
   color: inherit;
   text-decoration: none;
+}
+
+.film-card__poster {
+  width: 72px;
+  height: 106px;
+  object-fit: cover;
+  flex-shrink: 0;
+  align-self: flex-start;
+  display: block;
 }
 
 .film-card:active { opacity: 0.75; }
@@ -528,6 +539,7 @@ img { display: block; }
   font-size: 15px;
   color: var(--text);
   caret-color: var(--accent);
+  outline: none;
 }
 
 .search-input::placeholder { color: var(--text-mute); }
@@ -621,7 +633,6 @@ img { display: block; }
   z-index: 2;
   flex: 1;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
 }
@@ -811,6 +822,7 @@ img { display: block; }
   padding: 10px 12px;
   flex-wrap: wrap;
 }
+
 
 .detail-bottom-spacer { height: 24px; }
 

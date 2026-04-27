@@ -12,7 +12,6 @@ interface Props {
   movie: TransformedMovie;
   coords: { lat: number; lng: number } | null;
   onBack: () => void;
-  onSearch: () => void;
 }
 
 function BackIcon() {
@@ -46,7 +45,7 @@ function FaviconLink({ domain, label, href }: { domain: string; label: string; h
   );
 }
 
-export default function FilmDetail({ movie, coords, onBack, onSearch }: Props) {
+export default function FilmDetail({ movie, coords, onBack }: Props) {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [scrollY, setScrollY] = useState(0);
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
@@ -240,9 +239,7 @@ export default function FilmDetail({ movie, coords, onBack, onSearch }: Props) {
                     </button>
                     <div className="cinema-row__times">
                       {times.map(({ key, t }) => (
-                        <div key={key} className="time-pill time-pill--lg">
-                          {t}
-                        </div>
+                        <time key={key} className="time-pill time-pill--lg">{t}</time>
                       ))}
                     </div>
                   </div>
@@ -255,13 +252,7 @@ export default function FilmDetail({ movie, coords, onBack, onSearch }: Props) {
         </div>
       </div>
 
-      <BottomNav
-        active="list"
-        onNavigate={(s) => {
-          if (s === "list") onBack();
-          if (s === "search") onSearch();
-        }}
-      />
+      <BottomNav active="list" />
     </div>
   );
 }
