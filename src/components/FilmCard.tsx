@@ -38,10 +38,10 @@ export default function FilmCard({ movie, dayOffset, onTap }: Props) {
           alt={movie.title}
           width={72}
           height={106}
-          style={{ objectFit: "cover", flexShrink: 0 }}
+          style={{ objectFit: "cover", flexShrink: 0, alignSelf: "flex-start" }}
         />
       ) : (
-        <PosterPlaceholder w={72} h={106} id={movie.id} />
+        <PosterPlaceholder w={72} h={106} id={movie.id} style={{ alignSelf: "flex-start" }} />
       )}
 
       <div className="film-card__body">
