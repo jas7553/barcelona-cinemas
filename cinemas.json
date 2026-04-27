@@ -233,5 +233,18 @@
       "secondary": ["SARRIA", "SARRIÀ", "/sarria", "BAL-SARRIA"],
       "english_cinema_bcn": ["Gr.Sarrià", "Gr. Sarrià", "Gran Sarrià", "Sarrià"]
     }
+  },
+  "Zumzeig": {
+    "id": "zumzeig",
+    "name": "Zumzeig Cinecooperativa",
+    "address": "Carrer de Béjar, 53",
+    "neighborhood": "Hostafrancs",
+    "website_url": "https://zumzeigcine.coop",
+    "maps_url": "https://maps.google.com/?q=Zumzeig+Cinecooperativa,+Carrer+de+Béjar+53,+Barcelona",
+    "lat": 41.3773,
+    "lng": 2.1450,
+    "aliases": {
+      "english_cinema_bcn": ["Zumzeig"]
+    }
   }
 }
