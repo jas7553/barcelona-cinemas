@@ -7,7 +7,7 @@ import type { TransformedMovie } from "../types";
 interface Props {
   movies: TransformedMovie[];
   isActive: boolean;
-  onFilmTap: (movie: TransformedMovie) => void;
+  onFilmSelect: (movie: TransformedMovie) => void;
   onCancel: () => void;
 }
 
@@ -20,7 +20,7 @@ function SearchIconSmall() {
   );
 }
 
-export default function SearchScreen({ movies, isActive, onFilmTap, onCancel }: Props) {
+export default function SearchScreen({ movies, isActive, onFilmSelect, onCancel }: Props) {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -83,7 +83,7 @@ export default function SearchScreen({ movies, isActive, onFilmTap, onCancel }: 
         {results.length > 0 ? (
           <div className="film-list">
             {results.map((m) => (
-              <FilmCard key={m.id} movie={m} onTap={onFilmTap} />
+              <FilmCard key={m.id} movie={m} onSelect={onFilmSelect} />
             ))}
           </div>
         ) : query.trim().length > 0 ? (
@@ -98,7 +98,7 @@ export default function SearchScreen({ movies, isActive, onFilmTap, onCancel }: 
         ) : null}
       </div>
 
-      <BottomNav active="search" onNavigate={(s) => { if (s === "list") onCancel(); }} />
+      <BottomNav active="search" />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { HashRouter, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { fetchListings } from "./api";
 import type { Listings, TransformedMovie } from "./types";
@@ -54,16 +54,24 @@ function AppInner() {
     [selectedFilmId, movies],
   );
 
-  const openDetail = useCallback(
-    (movie: TransformedMovie) => {
-      void navigate(`/film/${movie.id}`);
-      if (!locationActive && !locationRequested.current) {
-        locationRequested.current = true;
-        toggleLocation();
-      }
-    },
-    [locationActive, navigate, toggleLocation],
-  );
+  useEffect(() => {
+    if (screen === "detail" && !locationActive && !locationRequested.current) {
+      locationRequested.current = true;
+      toggleLocation();
+    }
+  }, [screen, locationActive, toggleLocation]);
+
+  useEffect(() => {
+    if (screen === "detail" && selectedFilm) {
+      document.title = `${selectedFilm.title} · Barcelona This Week`;
+    } else if (screen === "search") {
+      document.title = "Search · Barcelona This Week";
+    } else {
+      document.title = "Barcelona This Week";
+    }
+  }, [screen, selectedFilm]);
+
+  const onFilmSelect = useCallback(() => {}, []);
 
   return (
     <div className={`app-wrapper${dark ? " dark" : ""}`}>
@@ -76,7 +84,7 @@ function AppInner() {
               error={error}
               generatedAt={generatedAt}
               coords={coords}
-              onFilmTap={openDetail}
+              onFilmSelect={onFilmSelect}
               onSearch={() => navigate("/search")}
               onRetry={load}
             />
@@ -87,7 +95,7 @@ function AppInner() {
             <SearchScreen
               movies={movies}
               isActive
-              onFilmTap={openDetail}
+              onFilmSelect={onFilmSelect}
               onCancel={() => navigate("/")}
             />
           </div>
@@ -98,8 +106,7 @@ function AppInner() {
               key={selectedFilm.id}
               movie={selectedFilm}
               coords={coords}
-              onBack={() => navigate(-1)}
-              onSearch={() => navigate("/search")}
+              onBack={() => navigate("/")}
             />
           </div>
         )}
@@ -110,10 +117,10 @@ function AppInner() {
 
 export default function App() {
   return (
-    <HashRouter>
+    <BrowserRouter>
       <ThemeProvider>
         <AppInner />
       </ThemeProvider>
-    </HashRouter>
+    </BrowserRouter>
   );
 }

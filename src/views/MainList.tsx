@@ -13,7 +13,7 @@ interface Props {
   error: string | null;
   generatedAt: string | null;
   coords: { lat: number; lng: number } | null;
-  onFilmTap: (movie: TransformedMovie) => void;
+  onFilmSelect: (movie: TransformedMovie) => void;
   onSearch: () => void;
   onRetry: () => void;
 }
@@ -57,7 +57,7 @@ export default function MainList({
   error,
   generatedAt,
   coords,
-  onFilmTap,
+  onFilmSelect,
   onSearch,
   onRetry,
 }: Props) {
@@ -148,7 +148,7 @@ export default function MainList({
         </div>
 
         {loading ? (
-          <div className="loading-pulse">
+          <div className="loading-pulse" role="status" aria-label="Loading films">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="loading-card" />
             ))}
@@ -179,7 +179,7 @@ export default function MainList({
           ) : (
             <div className="film-list">
               {dayMovies.map((m) => (
-                <FilmCard key={m.id} movie={m} dayOffset={selectedDay ?? undefined} onTap={onFilmTap} />
+                <FilmCard key={m.id} movie={m} dayOffset={selectedDay ?? undefined} onSelect={onFilmSelect} />
               ))}
             </div>
           )
@@ -197,18 +197,13 @@ export default function MainList({
         ) : (
           <div className="film-list">
             {cinemaGroups.map((g) => (
-              <CinemaGroup key={g.theaterId} group={g} onFilmTap={onFilmTap} />
+              <CinemaGroup key={g.theaterId} group={g} onFilmSelect={onFilmSelect} />
             ))}
           </div>
         )}
       </div>
 
-      <BottomNav
-        active="list"
-        onNavigate={(s) => {
-          if (s === "search") onSearch();
-        }}
-      />
+      <BottomNav active="list" />
     </div>
   );
 }

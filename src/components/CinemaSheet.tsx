@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
 
 export interface SheetVenueData {
@@ -15,6 +16,21 @@ interface Props {
 export default function CinemaSheet({ venue, onClose }: Props) {
   const { dark } = useTheme();
   const visible = !!venue;
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      const firstFocusable = sheetRef.current?.querySelector<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      firstFocusable?.focus();
+    } else {
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
+    }
+  }, [visible]);
 
   return (
     <>
@@ -23,7 +39,14 @@ export default function CinemaSheet({ venue, onClose }: Props) {
         onClick={onClose}
         aria-hidden="true"
       />
-      <div className={`cinema-sheet${visible ? " cinema-sheet--visible" : ""}`} role="dialog">
+      <div
+        ref={sheetRef}
+        className={`cinema-sheet${visible ? " cinema-sheet--visible" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-hidden={!visible}
+        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+      >
         <div className="sheet-handle-row">
           <div className="sheet-handle" />
         </div>
