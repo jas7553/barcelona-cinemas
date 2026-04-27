@@ -59,36 +59,46 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
     [movie.showtimes],
   );
 
+  type DayGroup = { label: string | null; offset: number; times: { key: string; t: string }[] };
+
   const cinemaRows = useMemo(() => {
     const showtimes =
       selectedDay != null
         ? movie.showtimes.filter((s) => s.dayOffset === selectedDay)
         : movie.showtimes;
 
-    const dayLabelMap = new Map(generateDays().map((d) => [d.offset, d.label.split(" ")[0]]));
+    const dayLabelMap = new Map(generateDays().map((d) => [d.offset, d.label]));
 
-    const byTheater = new Map<string, { theater: (typeof showtimes)[0]["theater"]; timeKeys: string[]; times: string[] }>();
+    const byTheater = new Map<string, { theater: (typeof showtimes)[0]["theater"]; groups: Map<number, DayGroup> }>();
 
     for (const s of showtimes) {
-      const entry = byTheater.get(s.theater.id) ?? { theater: s.theater, timeKeys: [], times: [] };
+      const entry = byTheater.get(s.theater.id) ?? { theater: s.theater, groups: new Map<number, DayGroup>() };
       const key = `${s.dayOffset}-${s.time}`;
-      if (!entry.timeKeys.includes(key)) {
-        entry.timeKeys.push(key);
-        entry.times.push(selectedDay != null ? s.time : `${dayLabelMap.get(s.dayOffset)} ${s.time}`);
+      if (selectedDay != null) {
+        const group = entry.groups.get(0) ?? { label: null, offset: 0, times: [] };
+        if (!group.times.some((x) => x.key === key)) group.times.push({ key, t: s.time });
+        entry.groups.set(0, group);
+      } else {
+        const label =
+          dayLabelMap.get(s.dayOffset) ??
+          new Date(`${s.date}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric" });
+        const group = entry.groups.get(s.dayOffset) ?? { label, offset: s.dayOffset, times: [] };
+        if (!group.times.some((x) => x.key === key)) group.times.push({ key, t: s.time });
+        entry.groups.set(s.dayOffset, group);
       }
       byTheater.set(s.theater.id, entry);
     }
 
     return [...byTheater.values()]
-      .map(({ theater, timeKeys, times }) => {
+      .map(({ theater, groups }) => {
         const distKm =
           coords && theater.lat != null && theater.lng != null
             ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
             : undefined;
-        const sortedTimes = selectedDay != null
-          ? times.map((t, i) => ({ key: timeKeys[i], t })).sort((a, b) => a.t.localeCompare(b.t))
-          : times.map((t, i) => ({ key: timeKeys[i], t }));
-        return { theater, times: sortedTimes, distKm };
+        const dayGroups: DayGroup[] = [...groups.values()]
+          .sort((a, b) => a.offset - b.offset)
+          .map((g) => ({ ...g, times: [...g.times].sort((a, b) => a.t.localeCompare(b.t)) }));
+        return { theater, dayGroups, distKm };
       })
       .sort((a, b) => {
         if (a.distKm !== undefined && b.distKm !== undefined) return a.distKm - b.distKm;
@@ -216,7 +226,7 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                 No screenings on this day.
               </div>
             ) : (
-              cinemaRows.map(({ theater, times, distKm }) => {
+              cinemaRows.map(({ theater, dayGroups, distKm }) => {
                 const dl = formatDistKm(distKm);
                 return (
                   <div key={theater.id} className="cinema-row">
@@ -237,10 +247,23 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                         <ChevronRightIcon />
                       </div>
                     </button>
-                    <div className="cinema-row__times">
-                      {times.map(({ key, t }) => (
-                        <time key={key} className="time-pill time-pill--lg">{t}</time>
-                      ))}
+                    <div className={selectedDay == null ? "cinema-row__times cinema-row__times--grouped" : "cinema-row__times"}>
+                      {dayGroups.map((group) =>
+                        group.label == null ? (
+                          group.times.map(({ key, t }) => (
+                            <time key={key} className="time-pill time-pill--lg">{t}</time>
+                          ))
+                        ) : (
+                          <div key={group.offset} className="cinema-row__day-group">
+                            <span className="cinema-row__day-label">{group.label}</span>
+                            <div className="cinema-row__day-pills">
+                              {group.times.map(({ key, t }) => (
+                                <time key={key} className="time-pill time-pill--lg">{t}</time>
+                              ))}
+                            </div>
+                          </div>
+                        )
+                      )}
                     </div>
                   </div>
                 );
