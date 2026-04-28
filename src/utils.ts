@@ -217,7 +217,7 @@ export function buildCinemaRows(
 /** Group films by theater for the selected day. Sorted by distance if coords provided. */
 export function buildCinemaGroups(
   movies: TransformedMovie[],
-  dayOffset: number,
+  dayOffset: number | null,
   coords: { lat: number; lng: number } | null,
 ): CinemaViewGroup[] {
   const theaterMap = new Map<
@@ -226,7 +226,9 @@ export function buildCinemaGroups(
   >();
 
   for (const movie of movies) {
-    const dayShowtimes = movie.showtimes.filter((s) => s.dayOffset === dayOffset);
+    const dayShowtimes = dayOffset == null
+      ? movie.showtimes
+      : movie.showtimes.filter((s) => s.dayOffset === dayOffset);
     const byTheater = new Map<string, { theater: TransformedShowtime["theater"]; times: string[] }>();
 
     for (const s of dayShowtimes) {

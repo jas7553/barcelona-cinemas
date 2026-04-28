@@ -62,7 +62,7 @@ export default function MainList({
   );
 
   const cinemaGroups = useMemo(
-    () => (view === "cinema" ? buildCinemaGroups(movies, selectedDay ?? 0, coords) : []),
+    () => (view === "cinema" ? buildCinemaGroups(movies, selectedDay, coords) : []),
     [movies, selectedDay, coords, view],
   );
 
@@ -71,7 +71,6 @@ export default function MainList({
       const next = new URLSearchParams(prev);
       if (v === "cinema") {
         next.set("view", "cinema");
-        if (!next.has("day")) next.set("day", "0");
       } else {
         next.delete("view");
       }
@@ -181,12 +180,16 @@ export default function MainList({
           <div className="empty-state">
             <div className="empty-state__overline">No screenings</div>
             <div className="empty-state__heading">
-              No cinemas showing<br />on {dayLabel}
+              {selectedDay == null ? "No cinemas found" : <>No cinemas showing<br />on {dayLabel}</>}
             </div>
-            <div className="empty-state__body">Try another day.</div>
-            <button className="empty-state__btn" onClick={() => setSelectedDay(null)}>
-              Show all days
-            </button>
+            <div className="empty-state__body">
+              {selectedDay == null ? "No screenings found." : "Try another day."}
+            </div>
+            {selectedDay != null && (
+              <button className="empty-state__btn" onClick={() => setSelectedDay(null)}>
+                Show all days
+              </button>
+            )}
           </div>
         ) : (
           <div className="film-list">
