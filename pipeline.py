@@ -44,9 +44,10 @@ def load_cinemas() -> CinemaRegistry:
     if _cinemas_cache is None:
         with open(_CINEMAS_FILE) as f:
             _cinemas_cache = cast(CinemaRegistry, json.load(f))
-        assert isinstance(_cinemas_cache, dict) and _cinemas_cache, (
-            f"{_CINEMAS_FILE} loaded empty or non-dict — registry is corrupted"
-        )
+        if not (isinstance(_cinemas_cache, dict) and _cinemas_cache):
+            raise RuntimeError(
+                f"{_CINEMAS_FILE} loaded empty or non-dict — registry is corrupted"
+            )
     return _cinemas_cache
 
 
@@ -283,9 +284,10 @@ def _merge_movie_pair(left: Movie, right: Movie) -> Movie:
         ),
     )
     merged_title = _pick_string(left["title"], right["title"])
-    assert merged_title is not None, (
-        f"_pick_string returned None for non-empty titles {left['title']!r} and {right['title']!r}"
-    )
+    if merged_title is None:
+        raise RuntimeError(
+            f"_pick_string returned None for non-empty titles {left['title']!r} and {right['title']!r}"
+        )
     return Movie(
         title=merged_title,
         tmdb_id=_pick_numeric(left.get("tmdb_id"), right.get("tmdb_id")),

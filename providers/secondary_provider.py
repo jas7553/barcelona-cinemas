@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from collections.abc import Mapping
 
@@ -19,7 +20,9 @@ _HEADERS = {
         "Chrome/122.0.0.0 Safari/537.36"
     )
 }
-_SECONDARY_LISTINGS_URL = "https://www.moobycinemas.com/cartelera"
+_SECONDARY_LISTINGS_URL = os.environ.get(
+    "SECONDARY_LISTINGS_URL", "https://www.moobycinemas.com/cartelera"
+)
 _WINDOW_SHOPS_RE = re.compile(r"window\.shops\s*=\s*(\{.*?\});", re.DOTALL)
 
 

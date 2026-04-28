@@ -129,20 +129,13 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
     ...movie,
     runtimeLabel: movie.runtime_minutes != null ? formatRuntime(movie.runtime_minutes) : "",
     showtimes: movie.showtimes
+      .filter((s) => s.theater_id in theaterMap)
       .map((s): TransformedShowtime => {
         const showDate = new Date(`${s.date}T00:00:00`);
         const dayOffset = Math.round((showDate.getTime() - today.getTime()) / 86400000);
         return {
           ...s,
-          theater: theaterMap[s.theater_id] ?? {
-            id: s.theater_id,
-            name: s.theater_id,
-            neighborhood: "",
-            website_url: "",
-            maps_url: "",
-            lat: null,
-            lng: null,
-          },
+          theater: theaterMap[s.theater_id],
           dayOffset,
         };
       })

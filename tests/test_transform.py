@@ -223,7 +223,7 @@ def test_no_imdb_link_when_imdb_id_is_absent():
 def test_links_contains_only_imdb():
     result = to_api_response(_listings(movies=[_movie()]), CINEMAS)
     links = result["movies"][0]["links"]
-    assert set(links.keys()) == {"imdb"}
+    assert set(links.keys()) == {"imdb", "imdb_id"}
 
 
 def test_empty_movies_returned_when_no_movies():
