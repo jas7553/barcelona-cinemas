@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrowserRouter, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { fetchListings } from "./api";
-import type { Listings, TransformedMovie } from "./types";
+import type { TransformedMovie } from "./types";
 import { transformResponse } from "./utils";
 import { useLocationPin } from "./hooks/useLocationPin";
 import MainList from "./views/MainList";
@@ -25,28 +25,26 @@ function AppInner() {
 
   const { coords, active: locationActive, toggle: toggleLocation } = useLocationPin();
 
-  const applyListings = useCallback((data: Listings) => {
-    setMovies(transformResponse(data));
-    setGeneratedAt(data.generated_at);
-  }, []);
+  const [fetchKey, setFetchKey] = useState(0);
+
+  useEffect(() => {
+    fetchListings()
+      .then((data) => {
+        setMovies(transformResponse(data));
+        setGeneratedAt(data.generated_at);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("fetch failed");
+        setLoading(false);
+      });
+  }, [fetchKey]);
 
   const load = useCallback(() => {
     setLoading(true);
     setError(null);
-    fetchListings()
-      .then(applyListings)
-      .catch(() => setError("fetch failed"))
-      .finally(() => setLoading(false));
-  }, [applyListings]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchListings()
-      .then((data) => { if (!cancelled) applyListings(data); })
-      .catch(() => { if (!cancelled) setError("fetch failed"); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [applyListings]);
+    setFetchKey((k) => k + 1);
+  }, []);
 
   const selectedFilmId = screen === "detail" ? location.pathname.slice("/film/".length) : null;
   const selectedFilm = useMemo(
@@ -71,8 +69,6 @@ function AppInner() {
     }
   }, [screen, selectedFilm]);
 
-  const onFilmSelect = useCallback(() => {}, []);
-
   return (
     <div className={`app-wrapper${dark ? " dark" : ""}`}>
       <div className="app-shell">
@@ -84,7 +80,6 @@ function AppInner() {
               error={error}
               generatedAt={generatedAt}
               coords={coords}
-              onFilmSelect={onFilmSelect}
               onSearch={() => navigate("/search")}
               onRetry={load}
             />
@@ -95,7 +90,6 @@ function AppInner() {
             <SearchScreen
               movies={movies}
               isActive
-              onFilmSelect={onFilmSelect}
               onCancel={() => navigate("/")}
             />
           </div>

@@ -56,6 +56,13 @@ export interface TransformedMovie extends Omit<Movie, "showtimes"> {
   showtimes: TransformedShowtime[];
 }
 
+export interface SheetVenueData {
+  name: string;
+  neighborhood?: string;
+  distLabel?: string;
+  mapsUrl?: string;
+}
+
 export interface CinemaViewGroup {
   theaterId: string;
   theaterName: string;

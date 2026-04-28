@@ -1,26 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import FilmCard from "../components/FilmCard";
 import BottomNav from "../components/BottomNav";
+import { SearchIcon } from "../components/Icons";
 import { normalizeForSearch } from "../utils";
 import type { TransformedMovie } from "../types";
 
 interface Props {
   movies: TransformedMovie[];
   isActive: boolean;
-  onFilmSelect: (movie: TransformedMovie) => void;
   onCancel: () => void;
 }
 
-function SearchIconSmall() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" strokeWidth="2" strokeLinecap="round">
-      <circle cx="11" cy="11" r="7" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
-
-export default function SearchScreen({ movies, isActive, onFilmSelect, onCancel }: Props) {
+export default function SearchScreen({ movies, isActive, onCancel }: Props) {
   const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -45,7 +36,7 @@ export default function SearchScreen({ movies, isActive, onFilmSelect, onCancel 
       <div className="search-header">
         <div className="search-row">
           <div className="search-input-wrap">
-            <SearchIconSmall />
+            <SearchIcon size={16} color="var(--text-mute)" />
             <input
               ref={inputRef}
               className="search-input"
@@ -83,7 +74,7 @@ export default function SearchScreen({ movies, isActive, onFilmSelect, onCancel 
         {results.length > 0 ? (
           <div className="film-list">
             {results.map((m) => (
-              <FilmCard key={m.id} movie={m} onSelect={onFilmSelect} />
+              <FilmCard key={m.id} movie={m} />
             ))}
           </div>
         ) : query.trim().length > 0 ? (

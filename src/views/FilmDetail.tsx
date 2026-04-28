@@ -3,46 +3,15 @@ import BackdropPlaceholder from "../components/BackdropPlaceholder";
 import PosterPlaceholder from "../components/PosterPlaceholder";
 import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
-import type { SheetVenueData } from "../components/CinemaSheet";
 import BottomNav from "../components/BottomNav";
-import { haversineKm, formatDistKm, generateDays } from "../utils";
-import type { TransformedMovie } from "../types";
+import { BackIcon, ChevronRightIcon } from "../components/Icons";
+import { formatDistKm, formatMovieMeta, buildCinemaRows } from "../utils";
+import type { TransformedMovie, SheetVenueData } from "../types";
 
 interface Props {
   movie: TransformedMovie;
   coords: { lat: number; lng: number } | null;
   onBack: () => void;
-}
-
-function BackIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="15 18 9 12 15 6" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" strokeWidth="2.5" strokeLinecap="round">
-      <polyline points="9 18 15 12 9 6" />
-    </svg>
-  );
-}
-
-function FaviconLink({ domain, label, href }: { domain: string; label: string; href: string }) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer" className="ext-link">
-      <img
-        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
-        width={14}
-        height={14}
-        alt=""
-        style={{ borderRadius: 2 }}
-      />
-      {label}
-    </a>
-  );
 }
 
 export default function FilmDetail({ movie, coords, onBack }: Props) {
@@ -59,55 +28,12 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
     [movie.showtimes],
   );
 
-  type DayGroup = { label: string | null; offset: number; times: { key: string; t: string }[] };
+  const cinemaRows = useMemo(
+    () => buildCinemaRows(movie, selectedDay, coords),
+    [movie, selectedDay, coords],
+  );
 
-  const cinemaRows = useMemo(() => {
-    const showtimes =
-      selectedDay != null
-        ? movie.showtimes.filter((s) => s.dayOffset === selectedDay)
-        : movie.showtimes;
-
-    const dayLabelMap = new Map(generateDays().map((d) => [d.offset, d.label]));
-
-    const byTheater = new Map<string, { theater: (typeof showtimes)[0]["theater"]; groups: Map<number, DayGroup> }>();
-
-    for (const s of showtimes) {
-      const entry = byTheater.get(s.theater.id) ?? { theater: s.theater, groups: new Map<number, DayGroup>() };
-      const key = `${s.dayOffset}-${s.time}`;
-      if (selectedDay != null) {
-        const group = entry.groups.get(0) ?? { label: null, offset: 0, times: [] };
-        if (!group.times.some((x) => x.key === key)) group.times.push({ key, t: s.time });
-        entry.groups.set(0, group);
-      } else {
-        const label =
-          dayLabelMap.get(s.dayOffset) ??
-          new Date(`${s.date}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric" });
-        const group = entry.groups.get(s.dayOffset) ?? { label, offset: s.dayOffset, times: [] };
-        if (!group.times.some((x) => x.key === key)) group.times.push({ key, t: s.time });
-        entry.groups.set(s.dayOffset, group);
-      }
-      byTheater.set(s.theater.id, entry);
-    }
-
-    return [...byTheater.values()]
-      .map(({ theater, groups }) => {
-        const distKm =
-          coords && theater.lat != null && theater.lng != null
-            ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
-            : undefined;
-        const dayGroups: DayGroup[] = [...groups.values()]
-          .sort((a, b) => a.offset - b.offset)
-          .map((g) => ({ ...g, times: [...g.times].sort((a, b) => a.t.localeCompare(b.t)) }));
-        return { theater, dayGroups, distKm };
-      })
-      .sort((a, b) => {
-        if (a.distKm !== undefined && b.distKm !== undefined) return a.distKm - b.distKm;
-        return a.theater.name.localeCompare(b.theater.name);
-      });
-  }, [movie.showtimes, selectedDay, coords]);
-
-  const genre = movie.genres.slice(0, 2).join(" · ");
-  const meta = [genre, movie.year?.toString(), movie.runtimeLabel].filter(Boolean).join(" · ");
+  const meta = formatMovieMeta(movie, true);
 
   const letterboxdHref = movie.links.imdb_id
     ? `https://letterboxd.com/imdb/${movie.links.imdb_id}/`
@@ -277,5 +203,20 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
 
       <BottomNav active="list" />
     </div>
+  );
+}
+
+function FaviconLink({ domain, label, href }: { domain: string; label: string; href: string }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="ext-link">
+      <img
+        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
+        width={14}
+        height={14}
+        alt=""
+        style={{ borderRadius: 2 }}
+      />
+      {label}
+    </a>
   );
 }
