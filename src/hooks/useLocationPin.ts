@@ -9,6 +9,7 @@ export interface LocationPin {
   active: boolean;
   coords: Coords | null;
   error: boolean;
+  resolving: boolean;
   toggle: () => void;
 }
 
@@ -18,6 +19,9 @@ export function useLocationPin(): LocationPin {
   const [active, setActive] = useState(false);
   const [coords, setCoords] = useState<Coords | null>(null);
   const [error, setError] = useState(false);
+  const [resolving, setResolving] = useState(
+    () => localStorage.getItem(STORAGE_KEY) === "true" && !!navigator.geolocation,
+  );
   const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialized = useRef(false);
 
@@ -36,9 +40,11 @@ export function useLocationPin(): LocationPin {
       (pos) => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setActive(true);
+        setResolving(false);
       },
       () => {
         localStorage.removeItem(STORAGE_KEY);
+        setResolving(false);
       },
     );
   }, []);
@@ -78,5 +84,5 @@ export function useLocationPin(): LocationPin {
     };
   }, []);
 
-  return { active, coords, error, toggle };
+  return { active, coords, error, resolving, toggle };
 }

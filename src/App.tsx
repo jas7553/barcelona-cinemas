@@ -23,7 +23,7 @@ function AppInner() {
   const [error, setError] = useState<string | null>(null);
   const locationRequested = useRef(false);
 
-  const { coords, active: locationActive, toggle: toggleLocation } = useLocationPin();
+  const { coords, active: locationActive, resolving: locationResolving, toggle: toggleLocation } = useLocationPin();
 
   const [fetchKey, setFetchKey] = useState(0);
 
@@ -80,6 +80,7 @@ function AppInner() {
               error={error}
               generatedAt={generatedAt}
               coords={coords}
+              locationResolving={locationResolving}
               onSearch={() => navigate("/search")}
               onRetry={load}
             />
