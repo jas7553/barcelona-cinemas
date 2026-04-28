@@ -96,7 +96,8 @@ export default function MainList({
       <div className="main-header">
           <div className="header-top">
             <h1 className="app-title">
-              Barcelona<br />This Week
+              <span className="app-title__line">Barcelona</span>
+              <span className="app-title__line app-title__line--2">This Week</span>
             </h1>
             <div className="header-actions">
               <button className="icon-btn" onClick={toggleDark} aria-label="Toggle dark mode">
