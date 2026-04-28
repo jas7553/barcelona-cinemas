@@ -23,7 +23,7 @@ export default function PosterPlaceholder({ w, h, id, style }: Props) {
   };
 
   return (
-    <svg width={w} height={h} style={{ display: "block", flexShrink: 0, ...style }}>
+    <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} preserveAspectRatio="xMidYMid slice" style={{ display: "block", flexShrink: 0, ...style }}>
       <defs>
         <pattern id={pid} patternUnits="userSpaceOnUse" width="12" height="12" patternTransform="rotate(35)">
           <rect width="12" height="12" fill={c} />

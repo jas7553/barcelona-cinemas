@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import DayPicker from "../components/DayPicker";
 import FilmCard from "../components/FilmCard";
 import CinemaGroup from "../components/CinemaGroup";
@@ -14,6 +15,7 @@ interface Props {
   error: string | null;
   generatedAt: string | null;
   coords: { lat: number; lng: number } | null;
+  locationResolving: boolean;
   onSearch: () => void;
   onRetry: () => void;
 }
@@ -24,12 +26,25 @@ export default function MainList({
   error,
   generatedAt,
   coords,
+  locationResolving,
   onSearch,
   onRetry,
 }: Props) {
   const { dark, toggle: toggleDark } = useTheme();
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [view, setView] = useState<"film" | "cinema">("film");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const rawDay = searchParams.get("day");
+  const selectedDay: number | null = rawDay !== null && !isNaN(Number(rawDay)) ? Number(rawDay) : null;
+  const view: "film" | "cinema" = searchParams.get("view") === "cinema" ? "cinema" : "film";
+
+  const setSelectedDay = (day: number | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (day == null) next.delete("day");
+      else next.set("day", String(day));
+      return next;
+    }, { replace: true });
+  };
 
   const days = generateDays();
 
@@ -52,8 +67,16 @@ export default function MainList({
   );
 
   const handleSetView = (v: "film" | "cinema") => {
-    if (v === "cinema" && selectedDay == null) setSelectedDay(0);
-    setView(v);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (v === "cinema") {
+        next.set("view", "cinema");
+        if (!next.has("day")) next.set("day", "0");
+      } else {
+        next.delete("view");
+      }
+      return next;
+    }, { replace: true });
   };
 
   const dataAge = generatedAt ? formatDataAge(generatedAt) : null;
@@ -149,6 +172,12 @@ export default function MainList({
               ))}
             </div>
           )
+        ) : locationResolving ? (
+          <div className="loading-pulse loading-pulse--cinema" role="status" aria-label="Loading cinemas">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="loading-card" />
+            ))}
+          </div>
         ) : cinemaGroups.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state__overline">No screenings</div>

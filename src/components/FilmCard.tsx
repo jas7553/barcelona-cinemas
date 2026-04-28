@@ -33,7 +33,9 @@ export default function FilmCard({ movie, dayOffset }: Props) {
           className="film-card__poster"
         />
       ) : (
-        <PosterPlaceholder w={72} h={106} id={movie.id} style={{ alignSelf: "flex-start" }} />
+        <div className="film-card__poster-wrap">
+          <PosterPlaceholder w={72} h={106} id={movie.id} />
+        </div>
       )}
 
       <div className="film-card__body">
