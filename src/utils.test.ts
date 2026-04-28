@@ -66,6 +66,7 @@ describe("transformResponse", () => {
         {
           id: "verdi",
           name: "Cinemes Verdi",
+          address: "Carrer de Verdi, 32",
           neighborhood: "Gracia",
           website_url: "https://cinesesverdi.com",
           maps_url: "https://maps.google.com/?q=Verdi",
@@ -107,6 +108,7 @@ describe("transformResponse", () => {
         {
           id: "verdi",
           name: "Cinemes Verdi",
+          address: "Carrer de Verdi, 32",
           neighborhood: "Gracia",
           website_url: "https://cinesesverdi.com",
           maps_url: "",
@@ -147,6 +149,7 @@ describe("transformResponse", () => {
         {
           id: "verdi",
           name: "Cinemes Verdi",
+          address: "Carrer de Verdi, 32",
           neighborhood: "Gracia",
           website_url: "",
           maps_url: "",
@@ -220,7 +223,7 @@ describe("haversineKm", () => {
 
 describe("smartSort", () => {
   const theater = {
-    id: "t1", name: "T1", neighborhood: "A",
+    id: "t1", name: "T1", address: "", neighborhood: "A",
     website_url: "", maps_url: "", lat: null, lng: null,
   };
   const showtime = (date = "2099-01-01", dayOffset = 1) => ({
