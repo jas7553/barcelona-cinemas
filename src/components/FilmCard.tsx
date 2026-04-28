@@ -1,15 +1,14 @@
 import { Link } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
-import { isLastChance } from "../utils";
+import { isLastChance, formatMovieMeta } from "../utils";
 import type { TransformedMovie } from "../types";
 
 interface Props {
   movie: TransformedMovie;
   dayOffset?: number;
-  onSelect: (movie: TransformedMovie) => void;
 }
 
-export default function FilmCard({ movie, dayOffset, onSelect }: Props) {
+export default function FilmCard({ movie, dayOffset }: Props) {
   const lc = isLastChance(movie);
 
   const filtered =
@@ -20,14 +19,12 @@ export default function FilmCard({ movie, dayOffset, onSelect }: Props) {
   const dayTimes = [...new Set(filtered.map((s) => s.time))].sort();
   const cinemaCount = new Set(filtered.map((s) => s.theater.id)).size;
 
-  const genre = movie.genres.slice(0, 2).join(" · ");
-  const meta = [genre, movie.year?.toString()].filter(Boolean).join(" · ");
+  const meta = formatMovieMeta(movie);
 
   return (
     <Link
       to={`/film/${movie.id}`}
       className={`film-card${lc ? " film-card--lc" : ""}`}
-      onClick={() => onSelect(movie)}
     >
       {movie.poster_url ? (
         <img

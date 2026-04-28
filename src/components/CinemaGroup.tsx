@@ -1,14 +1,13 @@
 import { Link } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { isLastChance, formatDistKm } from "../utils";
-import type { CinemaViewGroup, TransformedMovie } from "../types";
+import type { CinemaViewGroup } from "../types";
 
 interface Props {
   group: CinemaViewGroup;
-  onFilmSelect: (movie: TransformedMovie) => void;
 }
 
-export default function CinemaGroup({ group, onFilmSelect }: Props) {
+export default function CinemaGroup({ group }: Props) {
   const distLabel = formatDistKm(group.distanceKm);
 
   return (
@@ -25,7 +24,6 @@ export default function CinemaGroup({ group, onFilmSelect }: Props) {
             key={movie.id}
             to={`/film/${movie.id}`}
             className="cinema-group__film"
-            onClick={() => onFilmSelect(movie)}
           >
             {movie.poster_url ? (
               <img

@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { generateDays } from "../utils";
 
 interface Props {
@@ -8,12 +7,12 @@ interface Props {
 }
 
 export default function DayPicker({ selectedDay, onSelect, activeDays }: Props) {
-  const days = useMemo(() => generateDays(), []);
+  const days = generateDays();
 
   return (
     <div className="day-chips">
       <button
-        className={["day-chip", selectedDay === null ? "day-chip--active" : ""].filter(Boolean).join(" ")}
+        className={`day-chip${selectedDay === null ? " day-chip--active" : ""}`}
         onClick={() => onSelect(null)}
       >
         All
@@ -24,13 +23,7 @@ export default function DayPicker({ selectedDay, onSelect, activeDays }: Props) 
         return (
           <button
             key={offset}
-            className={[
-              "day-chip",
-              isActive ? "day-chip--active" : "",
-              !hasScreenings && !isActive ? "day-chip--faded" : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
+            className={`day-chip${isActive ? " day-chip--active" : ""}${!hasScreenings && !isActive ? " day-chip--faded" : ""}`}
             onClick={() => onSelect(isActive ? null : offset)}
           >
             {label}

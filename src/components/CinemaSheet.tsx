@@ -1,12 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useTheme } from "../context/ThemeContext";
-
-export interface SheetVenueData {
-  name: string;
-  neighborhood?: string;
-  distLabel?: string;
-  mapsUrl?: string;
-}
+import type { SheetVenueData } from "../types";
 
 interface Props {
   venue: SheetVenueData | null;
