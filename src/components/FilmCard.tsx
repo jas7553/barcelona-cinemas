@@ -20,11 +20,12 @@ export default function FilmCard({ movie, dayOffset }: Props) {
   const cinemaCount = new Set(filtered.map((s) => s.theater.id)).size;
 
   const meta = formatMovieMeta(movie);
+  const showTimes = dayOffset !== undefined && dayTimes.length > 0;
 
   return (
     <Link
       to={`/film/${movie.id}`}
-      className={`film-card${lc ? " film-card--lc" : ""}`}
+      className={`film-card${lc ? " film-card--lc" : ""}${showTimes ? " film-card--with-times" : ""}`}
     >
       {movie.poster_url ? (
         <img
@@ -50,7 +51,7 @@ export default function FilmCard({ movie, dayOffset }: Props) {
             {cinemaCount} {cinemaCount === 1 ? "cinema" : "cinemas"}
           </div>
         </div>
-        {dayOffset !== undefined && dayTimes.length > 0 && (
+        {showTimes && (
           <div className="film-card__times">
             {dayTimes.map((t) => (
               <time key={t} className={`time-pill${lc ? " time-pill--lc" : ""}`}>
