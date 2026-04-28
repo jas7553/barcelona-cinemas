@@ -5,7 +5,7 @@ import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
 import BottomNav from "../components/BottomNav";
 import { BackIcon, ChevronRightIcon } from "../components/Icons";
-import { formatDistKm, formatMovieMeta, buildCinemaRows } from "../utils";
+import { formatDistKm, formatMovieMeta, buildCinemaRows, haversineKm } from "../utils";
 import type { TransformedMovie, SheetVenueData } from "../types";
 
 interface Props {
@@ -18,6 +18,8 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [scrollY, setScrollY] = useState(0);
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
+  // Snapshot at mount — prevents jarring reorder when geolocation resolves after render
+  const [sortCoords] = useState(coords);
   const contentRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -29,8 +31,8 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
   );
 
   const cinemaRows = useMemo(
-    () => buildCinemaRows(movie, selectedDay, coords),
-    [movie, selectedDay, coords],
+    () => buildCinemaRows(movie, selectedDay, sortCoords),
+    [movie, selectedDay, sortCoords],
   );
 
   const meta = formatMovieMeta(movie, true);
@@ -152,7 +154,10 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                 No screenings on this day.
               </div>
             ) : (
-              cinemaRows.map(({ theater, dayGroups, distKm }) => {
+              cinemaRows.map(({ theater, dayGroups }) => {
+                const distKm = coords && theater.lat != null && theater.lng != null
+                  ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
+                  : undefined;
                 const dl = formatDistKm(distKm);
                 return (
                   <div key={theater.id} className="cinema-row">

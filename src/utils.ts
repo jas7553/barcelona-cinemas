@@ -162,7 +162,7 @@ export function formatMovieMeta(movie: TransformedMovie, includeRuntime = false)
 // ── Cinema row builder (film detail view) ───────────────────────────────────
 
 export type DayGroup = { label: string | null; offset: number; times: { key: string; t: string }[] };
-export type CinemaRow = { theater: TransformedShowtime["theater"]; dayGroups: DayGroup[]; distKm: number | undefined };
+export type CinemaRow = { theater: TransformedShowtime["theater"]; dayGroups: DayGroup[] };
 
 export function buildCinemaRows(
   movie: TransformedMovie,
@@ -197,17 +197,17 @@ export function buildCinemaRows(
 
   return [...byTheater.values()]
     .map(({ theater, groups }) => {
-      const distKm =
-        coords && theater.lat != null && theater.lng != null
-          ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
-          : undefined;
       const dayGroups: DayGroup[] = [...groups.values()]
         .sort((a, b) => a.offset - b.offset)
         .map((g) => ({ ...g, times: [...g.times].sort((a, b) => a.t.localeCompare(b.t)) }));
-      return { theater, dayGroups, distKm };
+      return { theater, dayGroups };
     })
     .sort((a, b) => {
-      if (a.distKm !== undefined && b.distKm !== undefined) return a.distKm - b.distKm;
+      if (coords && a.theater.lat != null && a.theater.lng != null && b.theater.lat != null && b.theater.lng != null) {
+        const da = haversineKm(coords.lat, coords.lng, a.theater.lat, a.theater.lng);
+        const db = haversineKm(coords.lat, coords.lng, b.theater.lat, b.theater.lng);
+        return da - db;
+      }
       return a.theater.name.localeCompare(b.theater.name);
     });
 }
