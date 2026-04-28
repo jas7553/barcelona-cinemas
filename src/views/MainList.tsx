@@ -85,7 +85,11 @@ export default function MainList({
   const listNoun = view === "film"
     ? `film${listCount !== 1 ? "s" : ""}`
     : `cinema${listCount !== 1 ? "s" : ""}`;
-  const showingLabel = selectedDay == null ? "showing this week" : `showing on ${dayLabel}`;
+  const showingLabel = selectedDay == null
+    ? "showing this week"
+    : (dayLabel === "tonight" || dayLabel === "today")
+      ? `showing ${dayLabel}`
+      : `showing on ${dayLabel}`;
 
   return (
     <>
