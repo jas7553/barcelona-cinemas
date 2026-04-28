@@ -158,11 +158,11 @@ def normalize_tmdb_payload(
     if genres is not None:
         normalized["genres"] = genres
 
-    poster_url = _as_tmdb_poster_url(data.get("poster_path"), title=title)
+    poster_url = _as_tmdb_image_url(data.get("poster_path"), field="poster_path", base_url=_TMDB_POSTER_BASE_URL, title=title)
     if poster_url is not None:
         normalized["poster_url"] = poster_url
 
-    backdrop_url = _as_tmdb_backdrop_url(data.get("backdrop_path"), title=title)
+    backdrop_url = _as_tmdb_image_url(data.get("backdrop_path"), field="backdrop_path", base_url=_TMDB_BACKDROP_BASE_URL, title=title)
     if backdrop_url is not None:
         normalized["backdrop_url"] = backdrop_url
 
@@ -223,23 +223,13 @@ def _as_optional_language(value: object, *, source: str) -> str | None:
     return None
 
 
-def _as_tmdb_poster_url(value: object, *, title: str) -> str | None:
-    poster_path = _as_optional_string(value, source=f"TMDb poster_path for {title!r}")
-    if poster_path is None:
+def _as_tmdb_image_url(value: object, *, field: str, base_url: str, title: str) -> str | None:
+    path = _as_optional_string(value, source=f"TMDb {field} for {title!r}")
+    if path is None:
         return None
-    if _TMDB_POSTER_PATH_RE.fullmatch(poster_path):
-        return f"{_TMDB_POSTER_BASE_URL}{poster_path}"
-    logger.warning("Discarded TMDb poster_path for %r: expected image path", title)
-    return None
-
-
-def _as_tmdb_backdrop_url(value: object, *, title: str) -> str | None:
-    backdrop_path = _as_optional_string(value, source=f"TMDb backdrop_path for {title!r}")
-    if backdrop_path is None:
-        return None
-    if _TMDB_POSTER_PATH_RE.fullmatch(backdrop_path):
-        return f"{_TMDB_BACKDROP_BASE_URL}{backdrop_path}"
-    logger.warning("Discarded TMDb backdrop_path for %r: expected image path", title)
+    if _TMDB_POSTER_PATH_RE.fullmatch(path):
+        return f"{base_url}{path}"
+    logger.warning("Discarded TMDb %s for %r: expected image path", field, title)
     return None
 
 

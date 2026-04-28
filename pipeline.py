@@ -171,12 +171,12 @@ def _collect_movies(cinemas: CinemaRegistry) -> list[Movie]:
 
     if not provider_results:
         emit_metric("CollectionFailure", 1)
-        raise RuntimeError("Provider failed to return listings")
+        raise RuntimeError("All providers failed to return listings")
 
     movies = _merge_movies(list(chain.from_iterable(provider_results)))
     if not movies:
         emit_metric("CollectionFailure", 1)
-        raise RuntimeError("Provider failed to return listings")
+        raise RuntimeError("Providers returned data but merge produced no movies")
     log_event(
         "collection_summary",
         provider_count=len(provider_results),

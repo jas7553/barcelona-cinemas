@@ -94,7 +94,6 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         for movie in movies:
             cached = _find_cached_movie(movie, cached_by_imdb, cached_by_title)
             if cached and cached.get("tmdb_id") is not None:
-                # Reuse cached TMDb metadata; replace showtimes with fresh ones.
                 stats["tmdb_cache_hit_count"] += 1
                 enriched.append({**cached, "showtimes": movie["showtimes"]})
             else:

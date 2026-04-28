@@ -87,7 +87,7 @@ def test_collect_movies_raises_when_all_providers_fail():
 
     with (
         patch("providers.all_providers", return_value=[provider_one, provider_two]),
-        pytest.raises(RuntimeError, match="Provider failed"),
+        pytest.raises(RuntimeError, match="All providers failed"),
     ):
         pipeline._collect_movies({})
 

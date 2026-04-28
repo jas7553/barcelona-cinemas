@@ -31,13 +31,11 @@ def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegis
 
     cutoff = _parse_cutoff(generated_at)
 
-    # Build a lookup of cinema short-name → CinemaInfo.  Only include cinemas
-    # that have the new metadata fields (id, website_url, maps_url).
+    # Only include cinemas that have the new metadata fields (id, website_url, maps_url).
     cinema_lookup: dict[str, CinemaInfo] = {
         k: v for k, v in cinemas.items() if "id" in v
     }
 
-    # Collect only the theater IDs that actually appear in surviving showtimes.
     seen_theater_ids: set[str] = set()
 
     movies_out: list[dict[str, Any]] = []
@@ -144,7 +142,6 @@ def _transform_showtimes(
         show_date: str = st.get("date", "")
         show_time: str = st.get("time", "")
 
-        # Filter to within 7 days of generated_at.
         if cutoff is not None and show_date:
             try:
                 d = datetime.fromisoformat(show_date).replace(tzinfo=UTC)
@@ -157,7 +154,6 @@ def _transform_showtimes(
         language_value = st.get("language", "vo")
         language = language_value if isinstance(language_value, str) else "vo"
 
-        # Validate language; fall back with a warning.
         if language not in ("vo", "dub"):
             logger.warning("Unknown language value %r for showtime at %s %s", language, cinema_name, show_date)
 

@@ -32,9 +32,7 @@ def _parse_date(header: str) -> str:
     Convert a header like "Sat, 28 Mar" to "YYYY-MM-DD".
     Infers year from today; handles Dec→Jan rollover.
     """
-    # header format: "Sat, 28 Mar" or "Sat 28 Mar" (strip day name)
     parts = header.replace(",", "").split()
-    # parts: ["Sat", "28", "Mar"]  or  ["Movie/Date"] for the first column
     if len(parts) < 3:
         return ""
     try:

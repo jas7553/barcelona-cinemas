@@ -154,7 +154,7 @@ class SecondaryProvider:
                     continue
 
                 imdb_id_value = event.get("imdbid")
-                imdb_id = imdb_id_value.strip() if isinstance(imdb_id_value, str) and imdb_id_value.strip() else None
+                imdb_id = (imdb_id_value.strip() or None) if isinstance(imdb_id_value, str) else None
                 movie_key = (imdb_id or "", title.strip().casefold())
                 movie = movies_by_key.get(movie_key)
                 if movie is None:

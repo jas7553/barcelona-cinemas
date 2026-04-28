@@ -162,7 +162,7 @@ export function formatMovieMeta(movie: TransformedMovie, includeRuntime = false)
 // ── Cinema row builder (film detail view) ───────────────────────────────────
 
 export type DayGroup = { label: string | null; offset: number; times: { key: string; t: string }[] };
-export type CinemaRow = { theater: TransformedShowtime["theater"]; dayGroups: DayGroup[] };
+export type CinemaRow = { theater: TransformedShowtime["theater"]; dayGroups: DayGroup[]; distKm?: number };
 
 export function buildCinemaRows(
   movie: TransformedMovie,
@@ -195,21 +195,21 @@ export function buildCinemaRows(
     byTheater.set(s.theater.id, entry);
   }
 
-  return [...byTheater.values()]
-    .map(({ theater, groups }) => {
-      const dayGroups: DayGroup[] = [...groups.values()]
-        .sort((a, b) => a.offset - b.offset)
-        .map((g) => ({ ...g, times: [...g.times].sort((a, b) => a.t.localeCompare(b.t)) }));
-      return { theater, dayGroups };
-    })
-    .sort((a, b) => {
-      if (coords && a.theater.lat != null && a.theater.lng != null && b.theater.lat != null && b.theater.lng != null) {
-        const da = haversineKm(coords.lat, coords.lng, a.theater.lat, a.theater.lng);
-        const db = haversineKm(coords.lat, coords.lng, b.theater.lat, b.theater.lng);
-        return da - db;
-      }
-      return a.theater.name.localeCompare(b.theater.name);
-    });
+  const rows = [...byTheater.values()].map(({ theater, groups }) => {
+    const dayGroups: DayGroup[] = [...groups.values()]
+      .sort((a, b) => a.offset - b.offset)
+      .map((g) => ({ ...g, times: [...g.times].sort((a, b) => a.t.localeCompare(b.t)) }));
+    const distKm =
+      coords && theater.lat != null && theater.lng != null
+        ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
+        : undefined;
+    return { theater, dayGroups, distKm };
+  });
+
+  return rows.sort((a, b) => {
+    if (a.distKm !== undefined && b.distKm !== undefined) return a.distKm - b.distKm;
+    return a.theater.name.localeCompare(b.theater.name);
+  });
 }
 
 // ── Cinema group builder ────────────────────────────────────────────────────

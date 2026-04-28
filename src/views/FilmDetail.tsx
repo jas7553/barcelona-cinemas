@@ -5,7 +5,7 @@ import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
 import BottomNav from "../components/BottomNav";
 import { BackIcon, ChevronRightIcon } from "../components/Icons";
-import { formatDistKm, formatMovieMeta, buildCinemaRows, haversineKm } from "../utils";
+import { formatDistKm, formatMovieMeta, buildCinemaRows } from "../utils";
 import type { TransformedMovie, SheetVenueData } from "../types";
 
 interface Props {
@@ -154,10 +154,7 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                 No screenings on this day.
               </div>
             ) : (
-              cinemaRows.map(({ theater, dayGroups }) => {
-                const distKm = coords && theater.lat != null && theater.lng != null
-                  ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
-                  : undefined;
+              cinemaRows.map(({ theater, dayGroups, distKm }) => {
                 const dl = formatDistKm(distKm);
                 return (
                   <div key={theater.id} className="cinema-row">
