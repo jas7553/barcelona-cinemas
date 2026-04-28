@@ -3,6 +3,7 @@
 export interface Theater {
   id: string;
   name: string;
+  address: string;
   neighborhood: string;
   website_url: string;
   maps_url: string;
@@ -58,9 +59,13 @@ export interface TransformedMovie extends Omit<Movie, "showtimes"> {
 
 export interface SheetVenueData {
   name: string;
+  address?: string;
   neighborhood?: string;
   distLabel?: string;
   mapsUrl?: string;
+  websiteUrl?: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface CinemaViewGroup {

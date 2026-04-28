@@ -189,6 +189,7 @@ def _build_theaters(
             theaters.append({
                 "id":           info["id"],
                 "name":         info["name"],
+                "address":      info["address"],
                 "neighborhood": info["neighborhood"],
                 "website_url":  info["website_url"],
                 "maps_url":     info["maps_url"],

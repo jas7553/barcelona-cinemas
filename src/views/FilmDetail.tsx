@@ -166,9 +166,13 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                       onClick={() =>
                         setSheetVenue({
                           name: theater.name,
+                          address: theater.address || undefined,
                           neighborhood: theater.neighborhood || undefined,
                           distLabel: dl ?? undefined,
                           mapsUrl: theater.maps_url || undefined,
+                          websiteUrl: theater.website_url || undefined,
+                          lat: theater.lat,
+                          lng: theater.lng,
                         })
                       }
                     >

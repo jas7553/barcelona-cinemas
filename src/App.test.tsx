@@ -18,6 +18,7 @@ const LISTINGS: Listings = {
     {
       id: "verdi",
       name: "Cinemes Verdi",
+      address: "Carrer de Verdi, 32",
       neighborhood: "Gràcia",
       website_url: "https://cinesesverdi.com",
       maps_url: "https://maps.google.com/?q=Verdi",
