@@ -9,53 +9,41 @@ interface Props {
 
 export default function CinemaSheet({ venue, onClose }: Props) {
   const { dark } = useTheme();
-  const visible = !!venue;
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    if (visible) {
-      previousFocusRef.current = document.activeElement as HTMLElement;
-      const firstFocusable = sheetRef.current?.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-      );
-      firstFocusable?.focus();
-    } else {
-      previousFocusRef.current?.focus();
-      previousFocusRef.current = null;
+    const el = dialogRef.current;
+    if (!el) return;
+    if (venue) {
+      el.showModal();
+    } else if (el.open) {
+      el.close();
     }
-  }, [visible]);
+  }, [venue]);
 
   return (
-    <>
-      <div
-        className={`sheet-scrim${visible ? " sheet-scrim--visible" : ""}`}
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div
-        ref={sheetRef}
-        className={`cinema-sheet${visible ? " cinema-sheet--visible" : ""}`}
-        role="dialog"
-        aria-modal="true"
-        aria-hidden={!visible}
-        onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
-      >
-        <div className="sheet-handle-row">
-          <div className="sheet-handle" />
+    <dialog
+      ref={dialogRef}
+      className="cinema-dialog"
+      onClose={onClose}
+      onClick={(e) => { if (e.target === dialogRef.current) onClose(); }}
+    >
+      <div className="cinema-dialog__inner" onClick={(e) => e.stopPropagation()}>
+        <div className="cinema-dialog__header">
+          <div>
+            <div className="sheet-cinema-name">{venue?.name}</div>
+            {venue?.neighborhood && (
+              <div className="sheet-cinema-address">{venue.neighborhood}</div>
+            )}
+            {venue?.distLabel && (
+              <div className="sheet-cinema-dist">{venue.distLabel} away</div>
+            )}
+          </div>
+          <button className="cinema-dialog__close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
         </div>
 
-        <div className="sheet-header">
-          <div className="sheet-cinema-name">{venue?.name}</div>
-          {venue?.neighborhood && (
-            <div className="sheet-cinema-address">{venue.neighborhood}</div>
-          )}
-          {venue?.distLabel && (
-            <div className="sheet-cinema-dist">{venue.distLabel} away</div>
-          )}
-        </div>
-
-        {/* Map placeholder */}
         <div className="sheet-map">
           <svg width="100%" height="130" style={{ display: "block" }}>
             <defs>
@@ -106,6 +94,6 @@ export default function CinemaSheet({ venue, onClose }: Props) {
           )}
         </div>
       </div>
-    </>
+    </dialog>
   );
 }
