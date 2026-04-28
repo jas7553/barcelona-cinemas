@@ -89,9 +89,8 @@ export default function MainList({
   const showingLabel = selectedDay == null ? "showing this week" : `showing on ${dayLabel}`;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bg)" }}>
-      <div className="film-list-scroll">
-        <div className="main-header">
+    <>
+      <div className="main-header">
           <div className="header-top">
             <h1 className="app-title">
               Barcelona<br />This Week
@@ -196,9 +195,7 @@ export default function MainList({
             ))}
           </div>
         )}
-      </div>
-
       <BottomNav active="list" />
-    </div>
+    </>
   );
 }

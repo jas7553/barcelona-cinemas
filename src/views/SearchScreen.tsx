@@ -32,7 +32,7 @@ export default function SearchScreen({ movies, isActive, onCancel }: Props) {
   }, [movies, query]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bg)" }}>
+    <>
       <div className="search-header">
         <div className="search-row">
           <div className="search-input-wrap">
@@ -70,26 +70,24 @@ export default function SearchScreen({ movies, isActive, onCancel }: Props) {
         <div className="search-divider" />
       </div>
 
-      <div className="film-list-scroll">
-        {results.length > 0 ? (
-          <div className="film-list">
-            {results.map((m) => (
-              <FilmCard key={m.id} movie={m} />
-            ))}
+      {results.length > 0 ? (
+        <div className="film-list">
+          {results.map((m) => (
+            <FilmCard key={m.id} movie={m} />
+          ))}
+        </div>
+      ) : query.trim().length > 0 ? (
+        <div className="empty-state">
+          <div className="empty-state__emoji">🎞</div>
+          <div className="empty-state__heading">Nothing showing</div>
+          <div className="empty-state__body">
+            No English-language screenings match{" "}
+            <em>"{query}"</em> this week.
           </div>
-        ) : query.trim().length > 0 ? (
-          <div className="empty-state">
-            <div className="empty-state__emoji">🎞</div>
-            <div className="empty-state__heading">Nothing showing</div>
-            <div className="empty-state__body">
-              No English-language screenings match{" "}
-              <em>"{query}"</em> this week.
-            </div>
-          </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <BottomNav active="search" />
-    </div>
+    </>
   );
 }
