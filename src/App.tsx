@@ -6,7 +6,6 @@ import type { TransformedMovie } from "./types";
 import { transformResponse } from "./utils";
 import { useLocationPin } from "./hooks/useLocationPin";
 import MainList from "./views/MainList";
-import SearchScreen from "./views/SearchScreen";
 import FilmDetail from "./views/FilmDetail";
 
 function AppInner() {
@@ -15,7 +14,6 @@ function AppInner() {
   const navigate = useNavigate();
   const screen =
     location.pathname.startsWith("/film/") ? "detail"
-    : location.pathname === "/search" ? "search"
     : "list";
   const [movies, setMovies] = useState<TransformedMovie[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
@@ -62,8 +60,6 @@ function AppInner() {
   useEffect(() => {
     if (screen === "detail" && selectedFilm) {
       document.title = `${selectedFilm.title} · Barcelona This Week`;
-    } else if (screen === "search") {
-      document.title = "Search · Barcelona This Week";
     } else {
       document.title = "Barcelona This Week";
     }
@@ -81,17 +77,7 @@ function AppInner() {
               generatedAt={generatedAt}
               coords={coords}
               locationResolving={locationResolving}
-              onSearch={() => navigate("/search")}
               onRetry={load}
-            />
-          </div>
-        )}
-        {screen === "search" && (
-          <div className="screen">
-            <SearchScreen
-              movies={movies}
-              isActive
-              onCancel={() => navigate("/")}
             />
           </div>
         )}

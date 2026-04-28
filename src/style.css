@@ -240,7 +240,7 @@ img { display: block; }
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px 16px 80px;
+  padding: 12px 16px 24px;
 }
 
 /* ── Film card ───────────────────────────────────────────────────────────────── */
@@ -438,43 +438,6 @@ img { display: block; }
   margin-top: 5px;
 }
 
-/* ── Bottom nav ──────────────────────────────────────────────────────────────── */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(100%, 840px);
-  z-index: 10;
-  display: flex;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
-}
-
-.bottom-nav__tab {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 10px 0 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-mute);
-  font-family: var(--font-ui);
-}
-
-.bottom-nav__tab--active { color: var(--accent); }
-
-.bottom-nav__tab-label {
-  font-size: 10px;
-  font-weight: 400;
-}
-
-.bottom-nav__tab--active .bottom-nav__tab-label { font-weight: 600; }
-
 /* ── Empty states ────────────────────────────────────────────────────────────── */
 .empty-state {
   display: flex;
@@ -530,7 +493,7 @@ img { display: block; }
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px 16px 80px;
+  padding: 12px 16px 24px;
 }
 
 .loading-card {
@@ -541,17 +504,12 @@ img { display: block; }
   animation: pulse 1.4s ease-in-out infinite;
 }
 
-/* ── Search screen ───────────────────────────────────────────────────────────── */
-.search-header {
-  background: var(--bg);
-  padding: 0 16px 10px;
-  padding-top: max(52px, calc(env(safe-area-inset-top, 0px) + 12px));
-}
-
+/* ── Search (inline header) ──────────────────────────────────────────────────── */
 .search-row {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 6px 0 4px;
 }
 
 .search-input-wrap {
@@ -1025,10 +983,6 @@ img { display: block; }
 
 /* ── Responsive (≥640px) ─────────────────────────────────────────────────────── */
 @media (min-width: 640px) {
-  .bottom-nav {
-    display: none;
-  }
-
   .main-header {
     padding-left: 24px;
     padding-right: 24px;
@@ -1054,11 +1008,6 @@ img { display: block; }
 
   .loading-pulse--cinema {
     grid-template-columns: 1fr;
-  }
-
-  .search-header {
-    padding-left: 24px;
-    padding-right: 24px;
   }
 
   .detail-poster-row {
