@@ -3,7 +3,6 @@ import BackdropPlaceholder from "../components/BackdropPlaceholder";
 import PosterPlaceholder from "../components/PosterPlaceholder";
 import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
-import BottomNav from "../components/BottomNav";
 import { BackIcon, ChevronRightIcon } from "../components/Icons";
 import { formatDistKm, formatMovieMeta, buildCinemaRows } from "../utils";
 import type { TransformedMovie, SheetVenueData } from "../types";
@@ -207,7 +206,6 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
         </div>
       </div>
 
-      <BottomNav active="list" />
     </div>
   );
 }
