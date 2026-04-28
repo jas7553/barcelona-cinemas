@@ -103,8 +103,7 @@ class _S3Backend:
         )
 
 
-# Select the backend once at module load. Tests can monkeypatch `_backend`
-# directly to redirect reads/writes without touching the file system.
+# Tests can monkeypatch `_backend` directly to redirect reads/writes without touching the file system.
 if _CACHE_BACKEND == "s3":
     import boto3  # type: ignore[import-untyped]
 
