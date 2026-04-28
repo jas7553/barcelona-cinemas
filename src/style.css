@@ -254,10 +254,10 @@ img { display: block; }
 
 .film-card__poster {
   width: 72px;
-  min-height: 106px;
+  height: 106px;
   object-fit: cover;
   flex-shrink: 0;
-  align-self: stretch;
+  align-self: flex-start;
   display: block;
 }
 
@@ -265,13 +265,23 @@ img { display: block; }
   width: 72px;
   min-height: 106px;
   flex-shrink: 0;
-  align-self: stretch;
+  align-self: flex-start;
   overflow: hidden;
 }
 
 .film-card__poster-wrap svg {
   width: 100%;
   height: 100%;
+}
+
+.film-card--with-times .film-card__poster {
+  height: auto;
+  min-height: 106px;
+  align-self: stretch;
+}
+
+.film-card--with-times .film-card__poster-wrap {
+  align-self: stretch;
 }
 
 .film-card:active { opacity: 0.75; }
