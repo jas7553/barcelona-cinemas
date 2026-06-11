@@ -42,6 +42,10 @@ export default function MainList({
   const rawQuery = searchParams.get("q");
   const searching = rawQuery !== null;
   const searchQuery = rawQuery ?? "";
+  // The input is driven by local state, not the URL: writing ?q= per keystroke
+  // re-rendered the input from async router state, which could drop fast
+  // keystrokes. The URL follows behind, debounced.
+  const [searchInput, setSearchInput] = useState(searchQuery);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const prevSearching = useRef(searching);
   // Projector warm-up plays once per session, not on every return to the list
@@ -68,7 +72,21 @@ export default function MainList({
   // already gone and scrollY has collapsed to 0.
   useLayoutEffect(() => {
     const saved = sessionStorage.getItem("btw-list-scroll");
-    if (saved) window.scrollTo(0, Number(saved));
+    if (saved) {
+      sessionStorage.removeItem("btw-list-scroll");
+      const target = Number(saved);
+      window.scrollTo(0, target);
+      // The first jump clamps if cards below the fold haven't laid out yet —
+      // keep nudging for a few frames until the page is tall enough.
+      let tries = 0;
+      const settle = () => {
+        if (Math.abs(window.scrollY - target) > 1 && tries++ < 20) {
+          window.scrollTo(0, target);
+          requestAnimationFrame(settle);
+        }
+      };
+      requestAnimationFrame(settle);
+    }
     const save = () => sessionStorage.setItem("btw-list-scroll", String(window.scrollY));
     document.addEventListener("click", save, true);
     return () => document.removeEventListener("click", save, true);
@@ -108,14 +126,14 @@ export default function MainList({
   );
 
   const searchResults = useMemo(() => {
-    const q = normalizeForSearch(searchQuery);
+    const q = normalizeForSearch(searchInput);
     if (!q) return movies;
     return movies.filter(
       (m) =>
         normalizeForSearch(m.title).includes(q) ||
         m.genres.some((g) => normalizeForSearch(g).includes(q)),
     );
-  }, [movies, searchQuery]);
+  }, [movies, searchInput]);
 
   const handleSetView = (v: "film" | "cinema") => {
     setSearchParams((prev) => {
@@ -137,15 +155,27 @@ export default function MainList({
     }, { replace: true });
   };
 
-  const openSearch = () => setSearchQuery("");
+  const openSearch = () => {
+    setSearchInput("");
+    setSearchQuery("");
+  };
 
   const closeSearch = () => {
+    setSearchInput("");
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       next.delete("q");
       return next;
     }, { replace: true });
   };
+
+  // Sync the typed query into the URL once typing pauses
+  useEffect(() => {
+    if (!searching || searchInput === searchQuery) return;
+    const t = setTimeout(() => setSearchQuery(searchInput), 200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searching, searchInput, searchQuery]);
 
   // Focus the input when search opens via the button — but not when search
   // state is restored from the URL (back navigation), where a popping
@@ -198,19 +228,24 @@ export default function MainList({
                 <input
                   ref={searchInputRef}
                   className="search-input"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") e.currentTarget.blur();
+                    if (e.key === "Escape") closeSearch();
                   }}
                   enterKeyHint="done"
                   placeholder="Film title, genre…"
                   aria-label="Search films"
                 />
-                {searchQuery.length > 0 && (
+                {searchInput.length > 0 && (
                   <button
                     className="search-clear"
-                    onClick={() => setSearchQuery("")}
+                    onClick={() => {
+                      setSearchInput("");
+                      setSearchQuery("");
+                      searchInputRef.current?.focus();
+                    }}
                     aria-label="Clear search"
                   >
                     ✕
@@ -222,7 +257,7 @@ export default function MainList({
               </button>
             </div>
             <div className="search-hint" aria-live="polite">
-              {searchQuery.trim().length === 0
+              {searchInput.trim().length === 0
                 ? "All films in English this week"
                 : searchResults.length === 0
                   ? "No results"
@@ -269,9 +304,9 @@ export default function MainList({
                 ) : error ? null : (
                   <>
                     {listCount} {listNoun}{atCinemas} {showingLabel}
-                    {dataAge && (
+                    {(dataAge || stale) && (
                       <span className={`result-count-age${stale ? " result-count-age--stale" : ""}`}>
-                        {" "}· updated {dataAge}
+                        {" "}· {dataAge ? `updated ${dataAge}` : "may be out of date"}
                       </span>
                     )}
                   </>
@@ -300,12 +335,11 @@ export default function MainList({
               <FilmCard key={m.id} movie={m} />
             ))}
           </div>
-        ) : searchQuery.trim().length > 0 ? (
+        ) : searchInput.trim().length > 0 ? (
           <div className="empty-state">
-            <div className="empty-state__overline">No results</div>
             <div className="empty-state__heading">Nothing showing</div>
             <div className="empty-state__body">
-              No English-language screenings match <em>"{searchQuery}"</em> this week.
+              No English-language screenings match <em>"{searchInput}"</em> this week.
             </div>
           </div>
         ) : null
@@ -329,14 +363,24 @@ export default function MainList({
           <div className="empty-state">
             <div className="empty-state__overline">No screenings</div>
             <div className="empty-state__heading">
-              Nothing showing<br />on {dayLabel}
+              Nothing showing<br />{showingLabel}
             </div>
-            <div className="empty-state__body">
-              Try another day — most films run Wed through Sun.
-            </div>
-            <button className="empty-state__btn" onClick={() => setSelectedDay(null)}>
-              Show all days
-            </button>
+            {selectedDay == null ? (
+              <div className="empty-state__body">
+                {dataAge
+                  ? `Listings were last updated ${dataAge} and may be out of date. Check back soon.`
+                  : "Check back soon — listings refresh every few hours."}
+              </div>
+            ) : (
+              <>
+                <div className="empty-state__body">
+                  Try another day — most films run Wed through Sun.
+                </div>
+                <button className="empty-state__btn" onClick={() => setSelectedDay(null)}>
+                  Show all days
+                </button>
+              </>
+            )}
           </div>
         ) : (
           <div className="film-list">
@@ -355,10 +399,14 @@ export default function MainList({
         <div className="empty-state">
           <div className="empty-state__overline">No screenings</div>
           <div className="empty-state__heading">
-            {selectedDay == null ? "No cinemas found" : <>No cinemas showing<br />on {dayLabel}</>}
+            {selectedDay == null ? "No cinemas found" : <>No cinemas showing<br />{showingLabel}</>}
           </div>
           <div className="empty-state__body">
-            {selectedDay == null ? "No screenings found." : "Try another day."}
+            {selectedDay == null
+              ? dataAge
+                ? `Listings were last updated ${dataAge} and may be out of date. Check back soon.`
+                : "Check back soon — listings refresh every few hours."
+              : "Try another day."}
           </div>
           {selectedDay != null && (
             <button className="empty-state__btn" onClick={() => setSelectedDay(null)}>

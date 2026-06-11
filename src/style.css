@@ -184,6 +184,11 @@ img { display: block; }
   gap: 6px;
   overflow-x: auto;
   padding-bottom: 10px;
+  /* Fade the right edge as a "more chips this way" hint; the trailing
+     padding means fully-scrolled chips clear the faded zone. */
+  padding-right: 28px;
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
 }
 
 .day-chip {
@@ -687,11 +692,18 @@ img { display: block; }
   color: var(--text);
   font-family: var(--font-ui);
   font-weight: 500;
-  transition: opacity 0.12s;
+  transition: opacity 0.18s, transform 0.18s;
 }
 
 .dark .detail-back-btn { background: rgba(0, 0, 0, 0.6); }
 .detail-back-btn:active { opacity: 0.75; }
+
+/* Tucked away while scrolling down so it never covers showtime rows */
+.detail-back-btn--hidden {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
 
 .detail-content {
   position: relative;
@@ -985,8 +997,9 @@ img { display: block; }
   font-size: 22px;
   line-height: 1;
   color: var(--text-mute);
-  padding: 10px 10px 10px 14px;
-  margin: -10px -10px 0 0;
+  /* ≥44px tap target */
+  padding: 12px 12px 12px 16px;
+  margin: -12px -12px 0 0;
   flex-shrink: 0;
   transition: color 0.12s;
 }
