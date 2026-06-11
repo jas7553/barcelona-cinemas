@@ -266,6 +266,7 @@ img { display: block; }
   flex-shrink: 0;
   align-self: flex-start;
   display: block;
+  background: var(--surface2);
 }
 
 .film-card__poster-wrap {
@@ -587,6 +588,7 @@ img { display: block; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+  background: var(--surface2);
 }
 
 .detail-backdrop-gradient {
@@ -650,6 +652,7 @@ img { display: block; }
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
+  background: var(--surface2);
 }
 
 .detail-meta-col {

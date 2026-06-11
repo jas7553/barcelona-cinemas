@@ -39,13 +39,15 @@ export default function MainList({
   const prevSearching = useRef(searching);
 
   // Restore scroll when returning from a film detail; the list unmounts while
-  // the detail screen is shown, so the browser can't do this for us.
+  // the detail screen is shown, so the browser can't do this for us. Save on
+  // click capture (before a Link can navigate) — at unmount the list DOM is
+  // already gone and scrollY has collapsed to 0.
   useLayoutEffect(() => {
     const saved = sessionStorage.getItem("btw-list-scroll");
     if (saved) window.scrollTo(0, Number(saved));
-    return () => {
-      sessionStorage.setItem("btw-list-scroll", String(window.scrollY));
-    };
+    const save = () => sessionStorage.setItem("btw-list-scroll", String(window.scrollY));
+    document.addEventListener("click", save, true);
+    return () => document.removeEventListener("click", save, true);
   }, []);
 
   const rawDay = searchParams.get("day");
