@@ -149,7 +149,13 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
       })
       .sort((a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time)),
   }))
-  .filter((movie) => movie.showtimes.length > 0);
+  .filter((movie) => movie.showtimes.length > 0)
+  // Scrape order is arbitrary; rating is on every card, so rating-desc gives
+  // the list a self-explanatory order. Unrated films sink, ties alphabetical.
+  .sort(
+    (a, b) =>
+      (b.rating ?? -1) - (a.rating ?? -1) || a.title.localeCompare(b.title),
+  );
 }
 
 // ── Movie metadata formatting ───────────────────────────────────────────────
@@ -224,7 +230,14 @@ export function buildCinemaGroups(
 ): CinemaViewGroup[] {
   const theaterMap = new Map<
     string,
-    { theaterName: string; lat: number | null; lng: number | null; mapsUrl: string; films: CinemaViewGroup["films"] }
+    {
+      theaterName: string;
+      theater: TransformedShowtime["theater"];
+      lat: number | null;
+      lng: number | null;
+      mapsUrl: string;
+      films: CinemaViewGroup["films"];
+    }
   >();
 
   for (const movie of movies) {
@@ -242,6 +255,7 @@ export function buildCinemaGroups(
     for (const [theaterId, { theater, times }] of byTheater) {
       const existing = theaterMap.get(theaterId) ?? {
         theaterName: theater.name,
+        theater,
         lat: theater.lat ?? null,
         lng: theater.lng ?? null,
         mapsUrl: theater.maps_url,

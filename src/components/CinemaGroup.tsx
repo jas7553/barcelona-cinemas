@@ -1,22 +1,30 @@
 import { Link, useLocation } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
+import { ChevronRightIcon } from "./Icons";
 import { isLastChance, formatDistKm } from "../utils";
 import type { CinemaViewGroup } from "../types";
 
 interface Props {
   group: CinemaViewGroup;
+  onCinemaTap: (group: CinemaViewGroup, distLabel: string | null) => void;
 }
 
-export default function CinemaGroup({ group }: Props) {
+export default function CinemaGroup({ group, onCinemaTap }: Props) {
   const location = useLocation();
   const distLabel = formatDistKm(group.distanceKm);
 
   return (
     <div className="cinema-group">
-      <div className="cinema-group__header">
+      <button
+        className="cinema-group__header"
+        onClick={() => onCinemaTap(group, distLabel)}
+      >
         <span className="cinema-group__name">{group.theaterName}</span>
-        {distLabel && <span className="cinema-group__dist">{distLabel}</span>}
-      </div>
+        <span className="cinema-group__right">
+          {distLabel && <span className="cinema-group__dist">{distLabel}</span>}
+          <ChevronRightIcon />
+        </span>
+      </button>
 
       {group.films.map(({ movie, times }) => {
         const lc = isLastChance(movie);

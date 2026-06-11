@@ -131,12 +131,14 @@ check(
 );
 await page.locator(".detail-back-btn").click();
 await page.waitForSelector(".film-card");
-await page.waitForTimeout(300);
 check("back keeps filters", page.url().includes("day=1"), page.url());
+const scrollRestored = await page
+  .waitForFunction((y) => Math.abs(window.scrollY - y) < 50, scrollBefore, { timeout: 3000 })
+  .then(() => true)
+  .catch(() => false);
 check(
   "back restores scroll",
-  scrollBefore > 0 &&
-    Math.abs((await page.evaluate(() => window.scrollY)) - scrollBefore) < 50,
+  scrollBefore > 0 && scrollRestored,
   `scrollY=${await page.evaluate(() => window.scrollY)} expected≈${scrollBefore}`,
 );
 
@@ -160,6 +162,15 @@ check("cancel clears query param", !page.url().includes("q="), page.url());
 await page.locator(".view-tab", { hasText: "By Cinema" }).click();
 await page.waitForSelector(".cinema-group", { timeout: 5000 });
 check("cinema view renders groups", (await page.locator(".cinema-group").count()) > 0);
+check("near-me toggle present", (await page.locator(".near-btn").count()) === 1);
+
+// Cinema header in the list view opens the venue sheet
+await page.locator(".cinema-group__header").first().click();
+await page.waitForTimeout(300);
+check("list cinema header opens sheet", (await page.locator(".cinema-dialog[open]").count()) === 1);
+await page.keyboard.press("Escape");
+await page.waitForTimeout(300);
+
 await page.locator(".cinema-group__film").first().click();
 await page.waitForSelector(".detail-film-title");
 await page.locator(".cinema-row__header").first().click();
