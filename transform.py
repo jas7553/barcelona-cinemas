@@ -32,9 +32,7 @@ def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegis
     cutoff = _parse_cutoff(generated_at)
 
     # Only include cinemas that have the new metadata fields (id, website_url, maps_url).
-    cinema_lookup: dict[str, CinemaInfo] = {
-        k: v for k, v in cinemas.items() if "id" in v
-    }
+    cinema_lookup: dict[str, CinemaInfo] = {k: v for k, v in cinemas.items() if "id" in v}
 
     seen_theater_ids: set[str] = set()
 
@@ -90,9 +88,7 @@ def _transform_movie(
     runtime_mins: int | None = movie.get("runtime_mins")
     genres: list[str] = movie.get("genres") or []
 
-    imdb_url: str | None = (
-        f"https://www.imdb.com/title/{imdb_id}" if imdb_id else None
-    )
+    imdb_url: str | None = f"https://www.imdb.com/title/{imdb_id}" if imdb_id else None
 
     movie_id: str = str(tmdb_id) if tmdb_id is not None else title.lower().replace(" ", "-")
 
@@ -163,12 +159,14 @@ def _transform_showtimes(
         seen.add(key)
 
         seen_theater_ids.add(theater_id)
-        out.append({
-            "theater_id": theater_id,
-            "date": show_date,
-            "time": show_time,
-            "language": language,
-        })
+        out.append(
+            {
+                "theater_id": theater_id,
+                "date": show_date,
+                "time": show_time,
+                "language": language,
+            }
+        )
 
     return out
 
@@ -182,14 +180,16 @@ def _build_theaters(
     # Preserve cinemas.json order (Python dicts are insertion-ordered).
     for info in cinema_lookup.values():
         if info["id"] in seen_theater_ids:
-            theaters.append({
-                "id":           info["id"],
-                "name":         info["name"],
-                "address":      info["address"],
-                "neighborhood": info["neighborhood"],
-                "website_url":  info["website_url"],
-                "maps_url":     info["maps_url"],
-                "lat":          info.get("lat"),
-                "lng":          info.get("lng"),
-            })
+            theaters.append(
+                {
+                    "id": info["id"],
+                    "name": info["name"],
+                    "address": info["address"],
+                    "neighborhood": info["neighborhood"],
+                    "website_url": info["website_url"],
+                    "maps_url": info["maps_url"],
+                    "lat": info.get("lat"),
+                    "lng": info.get("lng"),
+                }
+            )
     return theaters

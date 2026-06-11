@@ -9,9 +9,7 @@ class _CloudFormationLoader(yaml.SafeLoader):  # type: ignore[misc]
     pass
 
 
-def _construct_passthrough(
-    loader: yaml.SafeLoader, tag_suffix: str, node: yaml.nodes.Node
-) -> object:
+def _construct_passthrough(loader: yaml.SafeLoader, tag_suffix: str, node: yaml.nodes.Node) -> object:
     if isinstance(node, yaml.ScalarNode):
         return loader.construct_scalar(node)
     if isinstance(node, yaml.SequenceNode):

@@ -5,8 +5,8 @@ class Showtime(TypedDict):
     cinema: str
     neighborhood: str
     address: str
-    date: str   # YYYY-MM-DD
-    time: str   # HH:MM
+    date: str  # YYYY-MM-DD
+    time: str  # HH:MM
     language: NotRequired[str]
 
 

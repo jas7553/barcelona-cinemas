@@ -35,9 +35,7 @@ def test_read_returns_none_when_no_file(tmp_cache: Path) -> None:
 
 def test_read_logs_invalid_cache_payload(tmp_cache: Path, caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.INFO, logger="observability")
-    tmp_cache.write_text(
-        json.dumps({"fetched_at": "not-a-date", "stale": False, "movies": "bad-shape"})
-    )
+    tmp_cache.write_text(json.dumps({"fetched_at": "not-a-date", "stale": False, "movies": "bad-shape"}))
 
     assert cache.read() is None
     assert '"event": "cache_invalid"' in caplog.text
@@ -75,9 +73,7 @@ def test_age_hours_returns_inf_for_missing_fetched_at(tmp_cache: Path) -> None:
 
 
 def test_read_returns_none_for_invalid_cache_payload(tmp_cache: Path) -> None:
-    tmp_cache.write_text(
-        json.dumps({"fetched_at": "not-a-date", "stale": False, "movies": "bad-shape"})
-    )
+    tmp_cache.write_text(json.dumps({"fetched_at": "not-a-date", "stale": False, "movies": "bad-shape"}))
 
     assert cache.read() is None
 

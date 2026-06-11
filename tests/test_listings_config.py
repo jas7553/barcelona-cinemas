@@ -45,9 +45,7 @@ def test_listings_feed_url_raises_when_unset(monkeypatch):
     monkeypatch.delenv("LISTINGS_FEED_URL", raising=False)
     monkeypatch.delenv("LISTINGS_FEED_SSM_PARAMETER", raising=False)
 
-    with pytest.raises(
-        OSError, match="Neither LISTINGS_FEED_URL nor LISTINGS_FEED_SSM_PARAMETER is set"
-    ):
+    with pytest.raises(OSError, match="Neither LISTINGS_FEED_URL nor LISTINGS_FEED_SSM_PARAMETER is set"):
         listings_config.listings_feed_url()
 
 

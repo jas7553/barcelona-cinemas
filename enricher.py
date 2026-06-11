@@ -82,12 +82,8 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         log_event("tmdb_enrichment_summary", movie_count=len(movies), **stats)
         return movies, stats
 
-    cached_by_imdb: dict[str, Movie] = {
-        imdb_id: m for m in cached_movies if (imdb_id := m.get("imdb_id"))
-    }
-    cached_by_title: dict[str, Movie] = {
-        m["title"].lower(): m for m in cached_movies
-    }
+    cached_by_imdb: dict[str, Movie] = {imdb_id: m for m in cached_movies if (imdb_id := m.get("imdb_id"))}
+    cached_by_title: dict[str, Movie] = {m["title"].lower(): m for m in cached_movies}
 
     with requests.Session() as session:
         enriched: list[Movie] = []
@@ -123,9 +119,7 @@ def _find_cached_movie(
     return cached_by_title.get(movie["title"].lower())
 
 
-def _lookup_and_merge(
-    movie: Movie, session: requests.Session, api_key: str
-) -> _LookupResult:
+def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> _LookupResult:
     """Look up a movie on TMDb and merge metadata into the Movie dict."""
     try:
         raw_detail, raw_videos = _fetch_tmdb(movie["title"], session, api_key)
@@ -134,9 +128,7 @@ def _lookup_and_merge(
         return _LookupResult(movie, enriched=False, failed=True)
 
     tmdb_data = (
-        normalize_tmdb_payload(raw_detail, title=movie["title"], videos=raw_videos)
-        if raw_detail is not None
-        else None
+        normalize_tmdb_payload(raw_detail, title=movie["title"], videos=raw_videos) if raw_detail is not None else None
     )
 
     if tmdb_data is None:
@@ -146,16 +138,16 @@ def _lookup_and_merge(
     return _LookupResult(
         {
             **movie,
-            "tmdb_id":      tmdb_data.get("id"),
-            "imdb_id":      tmdb_data.get("imdb_id"),
-            "year":         tmdb_data.get("year"),
-            "poster_url":   tmdb_data.get("poster_url"),
+            "tmdb_id": tmdb_data.get("id"),
+            "imdb_id": tmdb_data.get("imdb_id"),
+            "year": tmdb_data.get("year"),
+            "poster_url": tmdb_data.get("poster_url"),
             "backdrop_url": tmdb_data.get("backdrop_url"),
-            "trailer_url":  tmdb_data.get("trailer_url"),
-            "synopsis":     tmdb_data.get("overview"),
-            "rating":       tmdb_data.get("vote_average"),
+            "trailer_url": tmdb_data.get("trailer_url"),
+            "synopsis": tmdb_data.get("overview"),
+            "rating": tmdb_data.get("vote_average"),
             "runtime_mins": tmdb_data.get("runtime"),
-            "genres":       genres or None,
+            "genres": genres or None,
         },
         enriched=True,
         failed=False,

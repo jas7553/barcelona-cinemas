@@ -55,9 +55,15 @@ def mock_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_reuses_cached_metadata(mock_env):
     """Movie already in cache keeps its TMDb data; only showtimes are updated."""
-    cached = _movie("Dune: Part Two", tmdb_id=42, imdb_id="tt15239678",
-                    poster_url="https://image.tmdb.org/t/p/w342/poster.jpg", synopsis="Old synopsis", rating=8.5,
-                    showtimes=[_showtime("2026-03-27")])
+    cached = _movie(
+        "Dune: Part Two",
+        tmdb_id=42,
+        imdb_id="tt15239678",
+        poster_url="https://image.tmdb.org/t/p/w342/poster.jpg",
+        synopsis="Old synopsis",
+        rating=8.5,
+        showtimes=[_showtime("2026-03-27")],
+    )
     fresh = _movie("Dune: Part Two", showtimes=[_showtime("2026-03-28")])
 
     with patch("enricher.requests.Session") as MockSession:
@@ -131,7 +137,7 @@ def test_exact_title_match_preferred_over_popularity(mock_env):
     search_results = {
         "results": [
             {"id": 1, "title": "Alien: Romulus"},  # higher popularity, first result
-            {"id": 2, "title": "Alien"},            # exact match
+            {"id": 2, "title": "Alien"},  # exact match
         ]
     }
     detail = {**TMDB_DETAIL, "id": 2}
@@ -161,7 +167,7 @@ def test_cache_reuse_does_not_cross_exact_title_variants(mock_env):
         synopsis="Older adaptation",
         showtimes=[_showtime("2026-03-27")],
     )
-    fresh = _movie("\"Wuthering Heights\"", showtimes=[_showtime("2026-03-28")])
+    fresh = _movie('"Wuthering Heights"', showtimes=[_showtime("2026-03-28")])
 
     mock_session = MagicMock()
     mock_session.__enter__ = MagicMock(return_value=mock_session)
@@ -169,7 +175,7 @@ def test_cache_reuse_does_not_cross_exact_title_variants(mock_env):
     mock_session.get.side_effect = [
         MagicMock(
             status_code=200,
-            json=lambda: {"results": [{"id": 1316092, "title": "\"Wuthering Heights\""}]},
+            json=lambda: {"results": [{"id": 1316092, "title": '"Wuthering Heights"'}]},
             raise_for_status=lambda: None,
         ),
         MagicMock(

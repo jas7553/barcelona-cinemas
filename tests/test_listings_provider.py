@@ -14,6 +14,7 @@ from providers.listings_provider import (
 
 # ── _parse_date ───────────────────────────────────────────────────────────────
 
+
 def test_parse_date_standard():
     today = date.today()
     # Use today's month/day to get a stable year result
@@ -39,9 +40,11 @@ def test_parse_date_invalid_returns_empty():
 
 # ── _extract_cinema_name ──────────────────────────────────────────────────────
 
+
 def test_extract_cinema_name_plain():
     from bs4 import BeautifulSoup
-    html = '<a><strong>18:00</strong> Verdi</a>'
+
+    html = "<a><strong>18:00</strong> Verdi</a>"
     badge = BeautifulSoup(html, "html.parser").find("a")
     assert isinstance(badge, Tag)
     assert _extract_cinema_name(badge) == "Verdi"
@@ -49,6 +52,7 @@ def test_extract_cinema_name_plain():
 
 def test_extract_cinema_name_strips_imax_span():
     from bs4 import BeautifulSoup
+
     html = '<a><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>'
     badge = BeautifulSoup(html, "html.parser").find("a")
     assert isinstance(badge, Tag)
@@ -125,9 +129,11 @@ def _mock_response(html: str) -> MagicMock:
 
 
 def test_fetch_returns_movie_with_stripped_title():
-    with patch("providers.listings_provider.date") as mock_date, \
-         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings"), \
-         patch("providers.listings_provider.requests.get", return_value=_mock_response(MINIMAL_HTML)):
+    with (
+        patch("providers.listings_provider.date") as mock_date,
+        patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings"),
+        patch("providers.listings_provider.requests.get", return_value=_mock_response(MINIMAL_HTML)),
+    ):
         mock_date.today.return_value = date(2026, 3, 28)
         mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         movies = ListingsProvider().fetch(CINEMAS)
@@ -137,9 +143,11 @@ def test_fetch_returns_movie_with_stripped_title():
 
 
 def test_fetch_returns_correct_showtime():
-    with patch("providers.listings_provider.date") as mock_date, \
-         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings"), \
-         patch("providers.listings_provider.requests.get", return_value=_mock_response(MINIMAL_HTML)):
+    with (
+        patch("providers.listings_provider.date") as mock_date,
+        patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings"),
+        patch("providers.listings_provider.requests.get", return_value=_mock_response(MINIMAL_HTML)),
+    ):
         mock_date.today.return_value = date(2026, 3, 28)
         mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         movies = ListingsProvider().fetch(CINEMAS)
@@ -153,9 +161,11 @@ def test_fetch_returns_correct_showtime():
 
 def test_fetch_ignores_unknown_cinemas(caplog):
     """Cinema names not in cinemas.json are excluded from showtimes and logged."""
-    with patch("providers.listings_provider.date") as mock_date, \
-         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings"), \
-         patch("providers.listings_provider.requests.get", return_value=_mock_response(MINIMAL_HTML)):
+    with (
+        patch("providers.listings_provider.date") as mock_date,
+        patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings"),
+        patch("providers.listings_provider.requests.get", return_value=_mock_response(MINIMAL_HTML)),
+    ):
         mock_date.today.return_value = date(2026, 3, 28)
         mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         movies = ListingsProvider().fetch({})  # empty cinemas -> all unknown
@@ -183,9 +193,11 @@ def test_fetch_maps_alias_cinema_names_and_sets_vo_language():
     </body></html>
     """
 
-    with patch("providers.listings_provider.date") as mock_date, \
-         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings"), \
-         patch("providers.listings_provider.requests.get", return_value=_mock_response(html)):
+    with (
+        patch("providers.listings_provider.date") as mock_date,
+        patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings"),
+        patch("providers.listings_provider.requests.get", return_value=_mock_response(html)),
+    ):
         mock_date.today.return_value = date(2026, 3, 28)
         mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         movies = ListingsProvider().fetch(CINEMAS)
@@ -204,9 +216,11 @@ def test_fetch_maps_alias_cinema_names_and_sets_vo_language():
 
 
 def test_fetch_uses_runtime_configured_url():
-    with patch("providers.listings_provider.date") as mock_date, \
-         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings") as mock_url, \
-         patch("providers.listings_provider.requests.get", return_value=_mock_response(MINIMAL_HTML)) as mock_get:
+    with (
+        patch("providers.listings_provider.date") as mock_date,
+        patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/listings") as mock_url,
+        patch("providers.listings_provider.requests.get", return_value=_mock_response(MINIMAL_HTML)) as mock_get,
+    ):
         mock_date.today.return_value = date(2026, 3, 28)
         mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         ListingsProvider().fetch(CINEMAS)
