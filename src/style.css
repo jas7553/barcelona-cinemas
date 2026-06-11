@@ -118,6 +118,11 @@ img { display: block; }
   50%       { opacity: 0.3; }
 }
 
+@keyframes detailIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
 /* ── Main list header ────────────────────────────────────────────────────────── */
 .main-header {
   background: var(--bg);
@@ -573,6 +578,8 @@ img { display: block; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Entry only — back to the list stays instant, like a native pop */
+  animation: detailIn 0.22s ease-out;
 }
 
 .detail-backdrop {
@@ -997,6 +1004,7 @@ img { display: block; }
 @media (prefers-reduced-motion: reduce) {
   .app-title--animate .app-title__line { animation: none; }
   .loading-card { animation: none; opacity: 0.5; }
+  .detail-screen { animation: none; }
   .cinema-dialog,
   .cinema-dialog::backdrop { transition: none; }
 }

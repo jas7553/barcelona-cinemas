@@ -37,8 +37,11 @@ if [[ ! -f "$TMP_PNG" ]]; then
 fi
 
 cp "$SOURCE_SVG" "$ROOT_DIR/public/favicon.svg"
-cp "$TMP_PNG" "$ROOT_DIR/public/favicon.png"
-cp "$TMP_PNG" "$ROOT_DIR/public/apple-touch-icon.png"
+
+# index.html declares these as 256x256 — shipping the raw 512px render
+# roughly quadruples the bytes for no visible gain
+sips -z 256 256 "$TMP_PNG" --out "$ROOT_DIR/public/favicon.png" >/dev/null
+sips -z 256 256 "$TMP_PNG" --out "$ROOT_DIR/public/apple-touch-icon.png" >/dev/null
 
 sips -z 32 32 "$TMP_PNG" --out "$ROOT_DIR/public/favicon-32x32.png" >/dev/null
 sips -z 16 16 "$TMP_PNG" --out "$ROOT_DIR/public/favicon-16x16.png" >/dev/null
