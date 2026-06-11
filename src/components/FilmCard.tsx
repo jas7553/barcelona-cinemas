@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { isLastChance, formatMovieMeta } from "../utils";
@@ -8,7 +9,7 @@ interface Props {
   dayOffset?: number;
 }
 
-export default function FilmCard({ movie, dayOffset }: Props) {
+function FilmCard({ movie, dayOffset }: Props) {
   const location = useLocation();
   const lc = isLastChance(movie);
 
@@ -33,6 +34,10 @@ export default function FilmCard({ movie, dayOffset }: Props) {
           src={movie.poster_url}
           alt={movie.title}
           className="film-card__poster"
+          width={72}
+          height={106}
+          loading="lazy"
+          decoding="async"
         />
       ) : (
         <div className="film-card__poster-wrap">
@@ -65,3 +70,5 @@ export default function FilmCard({ movie, dayOffset }: Props) {
     </Link>
   );
 }
+
+export default memo(FilmCard);

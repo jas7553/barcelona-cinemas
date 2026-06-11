@@ -2,8 +2,26 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BrowserRouter, useLocation, useNavigate } from "react-router-dom";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import { fetchListings } from "./api";
-import type { TransformedMovie } from "./types";
+import type { Listings, TransformedMovie } from "./types";
 import { transformResponse } from "./utils";
+
+const LISTINGS_CACHE_KEY = "btw-listings";
+
+// Stale-while-revalidate: paint instantly from the last successful response,
+// then refresh silently. transformResponse drops past showtimes, so an old
+// cache can only under-show, never show dead screenings.
+function readListingsCache(): { movies: TransformedMovie[]; generatedAt: string; stale: boolean } | null {
+  try {
+    const raw = localStorage.getItem(LISTINGS_CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as Listings;
+    const movies = transformResponse(data);
+    if (movies.length === 0) return null;
+    return { movies, generatedAt: data.generated_at, stale: data.stale };
+  } catch {
+    return null;
+  }
+}
 import { useLocationPin } from "./hooks/useLocationPin";
 import MainList from "./views/MainList";
 import FilmDetail from "./views/FilmDetail";
@@ -15,12 +33,14 @@ function AppInner() {
   const screen =
     location.pathname.startsWith("/film/") ? "detail"
     : "list";
-  const [movies, setMovies] = useState<TransformedMovie[]>([]);
-  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
-  const [stale, setStale] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [cached] = useState(readListingsCache);
+  const [movies, setMovies] = useState<TransformedMovie[]>(cached?.movies ?? []);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(cached?.generatedAt ?? null);
+  const [stale, setStale] = useState(cached?.stale ?? false);
+  const [loading, setLoading] = useState(cached === null);
   const [error, setError] = useState<string | null>(null);
   const locationRequested = useRef(false);
+  const hasData = useRef(cached !== null);
 
   const { coords, active: locationActive, resolving: locationResolving, toggle: toggleLocation } = useLocationPin();
 
@@ -33,9 +53,16 @@ function AppInner() {
         setGeneratedAt(data.generated_at);
         setStale(data.stale);
         setLoading(false);
+        hasData.current = true;
+        try {
+          localStorage.setItem(LISTINGS_CACHE_KEY, JSON.stringify(data));
+        } catch {
+          // storage unavailable — instant repeat paint just won't happen
+        }
       })
       .catch(() => {
-        setError("fetch failed");
+        // Keep showing cached data; only surface the error with nothing to show
+        if (!hasData.current) setError("fetch failed");
         setLoading(false);
       });
   }, [fetchKey]);

@@ -67,6 +67,8 @@ button {
   color: inherit;
   font: inherit;
   padding: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 input {
@@ -76,7 +78,12 @@ input {
   color: inherit;
 }
 
-a { color: inherit; text-decoration: none; }
+a {
+  color: inherit;
+  text-decoration: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
 
 img { display: block; }
 

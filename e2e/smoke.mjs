@@ -180,7 +180,19 @@ const chipVisible = await page.evaluate(() => {
 });
 check("deep-linked day chip in view", chipVisible);
 
+// No console errors before the deliberate-failure section below
 check("no console errors", consoleErrors.length === 0, consoleErrors.join(" | "));
+
+// Stale-while-revalidate: with the API dead, a repeat visit must still paint
+// from the localStorage cache (the aborted fetch logs expected errors)
+check(
+  "listings cached locally",
+  await page.evaluate(() => localStorage.getItem("btw-listings") !== null),
+);
+await ctx.route("**/api/listings", (route) => route.abort());
+await page.goto(BASE);
+await page.waitForSelector(".film-card", { timeout: 5000 });
+check("cached paint with API down", (await page.locator(".film-card").count()) > 0);
 
 await browser.close();
 console.log(failures.length ? `\n${failures.length} failure(s)` : "\nall checks passed");

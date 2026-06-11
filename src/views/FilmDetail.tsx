@@ -65,7 +65,13 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
       {/* Backdrop */}
       <div className="detail-backdrop" style={{ opacity: backdropOpacity }}>
         {movie.backdrop_url ? (
-          <img src={movie.backdrop_url} alt="" className="detail-backdrop-img" />
+          <img
+            src={movie.backdrop_url}
+            alt=""
+            className="detail-backdrop-img"
+            fetchPriority="high"
+            decoding="async"
+          />
         ) : (
           <BackdropPlaceholder w={430} h={200} id={movie.id} />
         )}
@@ -99,6 +105,7 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                   alt={movie.title}
                   width={76}
                   height={112}
+                  decoding="async"
                   style={{ objectFit: "cover" }}
                 />
               ) : (
