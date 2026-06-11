@@ -418,6 +418,11 @@ img { display: block; }
   font-size: 13px;
 }
 
+.time-pill--more {
+  border-color: var(--border);
+  color: var(--text-sub);
+}
+
 /* ── Cinema group (By Cinema) ────────────────────────────────────────────────── */
 .cinema-group {
   background: var(--surface);
@@ -500,7 +505,7 @@ img { display: block; }
   font-size: 11px;
   color: var(--text-mute);
   text-align: center;
-  padding: 0 32px 28px;
+  padding: 0 32px calc(28px + env(safe-area-inset-bottom, 0px));
   line-height: 1.5;
   max-width: 420px;
   margin: 0 auto;
@@ -910,7 +915,7 @@ img { display: block; }
 }
 
 
-.detail-bottom-spacer { height: 24px; }
+.detail-bottom-spacer { height: calc(24px + env(safe-area-inset-bottom, 0px)); }
 
 /* ── Cinema dialog ────────────────────────────────────────────────────────────── */
 .cinema-dialog {

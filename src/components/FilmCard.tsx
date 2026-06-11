@@ -21,6 +21,12 @@ function FilmCard({ movie, dayOffset }: Props) {
   const dayTimes = [...new Set(filtered.map((s) => s.time))].sort();
   const cinemaCount = new Set(filtered.map((s) => s.theater.id)).size;
 
+  // A popular film can have 16+ distinct times on one day — cap the pills;
+  // the detail screen has the full per-cinema breakdown
+  const MAX_PILLS = 6;
+  const shownTimes = dayTimes.slice(0, MAX_PILLS);
+  const extraTimes = dayTimes.length - shownTimes.length;
+
   const meta = formatMovieMeta(movie);
   const showTimes = dayOffset !== undefined && dayTimes.length > 0;
 
@@ -59,11 +65,14 @@ function FilmCard({ movie, dayOffset }: Props) {
         </div>
         {showTimes && (
           <div className="film-card__times">
-            {dayTimes.map((t) => (
+            {shownTimes.map((t) => (
               <time key={t} className={`time-pill${lc ? " time-pill--lc" : ""}`}>
                 {t}
               </time>
             ))}
+            {extraTimes > 0 && (
+              <span className="time-pill time-pill--more">+{extraTimes} more</span>
+            )}
           </div>
         )}
       </div>
