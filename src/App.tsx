@@ -42,7 +42,7 @@ function AppInner() {
   const locationRequested = useRef(false);
   const hasData = useRef(cached !== null);
 
-  const { coords, active: locationActive, resolving: locationResolving, toggle: toggleLocation } = useLocationPin();
+  const { coords, active: locationActive, error: locationError, resolving: locationResolving, toggle: toggleLocation } = useLocationPin();
 
   const [fetchKey, setFetchKey] = useState(0);
 
@@ -106,7 +106,10 @@ function AppInner() {
               generatedAt={generatedAt}
               stale={stale}
               coords={coords}
+              locationActive={locationActive}
+              locationError={locationError}
               locationResolving={locationResolving}
+              onToggleLocation={toggleLocation}
               onRetry={load}
             />
           </div>

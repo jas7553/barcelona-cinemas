@@ -3,10 +3,11 @@ import { useSearchParams } from "react-router-dom";
 import DayPicker from "../components/DayPicker";
 import FilmCard from "../components/FilmCard";
 import CinemaGroup from "../components/CinemaGroup";
-import { MoonIcon, SunIcon, SearchIcon } from "../components/Icons";
+import CinemaSheet from "../components/CinemaSheet";
+import { MoonIcon, SunIcon, SearchIcon, PinIcon } from "../components/Icons";
 import { useTheme } from "../context/ThemeContext";
 import { generateDays, formatDataAge, buildCinemaGroups, normalizeForSearch } from "../utils";
-import type { TransformedMovie } from "../types";
+import type { CinemaViewGroup, SheetVenueData, TransformedMovie } from "../types";
 
 interface Props {
   movies: TransformedMovie[];
@@ -15,7 +16,10 @@ interface Props {
   generatedAt: string | null;
   stale: boolean;
   coords: { lat: number; lng: number } | null;
+  locationActive: boolean;
+  locationError: boolean;
   locationResolving: boolean;
+  onToggleLocation: () => void;
   onRetry: () => void;
 }
 
@@ -26,7 +30,10 @@ export default function MainList({
   generatedAt,
   stale,
   coords,
+  locationActive,
+  locationError,
   locationResolving,
+  onToggleLocation,
   onRetry,
 }: Props) {
   const { dark, toggle: toggleDark } = useTheme();
@@ -39,6 +46,21 @@ export default function MainList({
   const prevSearching = useRef(searching);
   // Projector warm-up plays once per session, not on every return to the list
   const [warmAnim] = useState(() => sessionStorage.getItem("btw-warmed") === null);
+  const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
+
+  const openCinemaSheet = (group: CinemaViewGroup, distLabel: string | null) => {
+    const t = group.theater;
+    setSheetVenue({
+      name: t.name,
+      address: t.address || undefined,
+      neighborhood: t.neighborhood || undefined,
+      distLabel: distLabel ?? undefined,
+      mapsUrl: t.maps_url || undefined,
+      websiteUrl: t.website_url || undefined,
+      lat: t.lat,
+      lng: t.lng,
+    });
+  };
 
   // Restore scroll when returning from a film detail; the list unmounts while
   // the detail screen is shown, so the browser can't do this for us. Save on
@@ -225,18 +247,31 @@ export default function MainList({
               ))}
             </div>
 
-            <div className="result-count" aria-live="polite">
-              {loading ? (
-                "Loading…"
-              ) : error ? null : (
-                <>
-                  {listCount} {listNoun} {showingLabel}
-                  {dataAge && (
-                    <span className={`result-count-age${stale ? " result-count-age--stale" : ""}`}>
-                      {" "}· updated {dataAge}
-                    </span>
-                  )}
-                </>
+            <div className="result-row">
+              <div className="result-count" aria-live="polite">
+                {loading ? (
+                  "Loading…"
+                ) : error ? null : (
+                  <>
+                    {listCount} {listNoun} {showingLabel}
+                    {dataAge && (
+                      <span className={`result-count-age${stale ? " result-count-age--stale" : ""}`}>
+                        {" "}· updated {dataAge}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+              {view === "cinema" && (
+                <button
+                  className={`near-btn${locationActive ? " near-btn--active" : ""}`}
+                  onClick={onToggleLocation}
+                  aria-pressed={locationActive}
+                  aria-label="Sort cinemas by distance"
+                >
+                  <PinIcon size={12} />
+                  {locationError ? "No location" : locationResolving ? "Locating…" : "Near me"}
+                </button>
               )}
             </div>
           </>
@@ -319,10 +354,12 @@ export default function MainList({
       ) : (
         <div className="film-list">
           {cinemaGroups.map((g) => (
-            <CinemaGroup key={g.theaterId} group={g} />
+            <CinemaGroup key={g.theaterId} group={g} onCinemaTap={openCinemaSheet} />
           ))}
         </div>
       )}
+
+      <CinemaSheet venue={sheetVenue} onClose={() => setSheetVenue(null)} />
     </>
   );
 }
