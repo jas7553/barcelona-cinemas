@@ -42,7 +42,7 @@ export default function CinemaGroup({ group, onCinemaTap }: Props) {
                 height={52}
                 loading="lazy"
                 decoding="async"
-                style={{ objectFit: "cover", flexShrink: 0, borderRadius: 2 }}
+                style={{ objectFit: "cover", flexShrink: 0, borderRadius: 2, background: "var(--surface2)" }}
               />
             ) : (
               <PosterPlaceholder w={36} h={52} id={movie.id} />
