@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import DayPicker from "../components/DayPicker";
 import FilmCard from "../components/FilmCard";
@@ -32,6 +32,16 @@ export default function MainList({
   const [searching, setSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Restore scroll when returning from a film detail; the list unmounts while
+  // the detail screen is shown, so the browser can't do this for us.
+  useLayoutEffect(() => {
+    const saved = sessionStorage.getItem("btw-list-scroll");
+    if (saved) window.scrollTo(0, Number(saved));
+    return () => {
+      sessionStorage.setItem("btw-list-scroll", String(window.scrollY));
+    };
+  }, []);
 
   const rawDay = searchParams.get("day");
   const selectedDay: number | null = rawDay !== null && !isNaN(Number(rawDay)) ? Number(rawDay) : null;
@@ -124,6 +134,10 @@ export default function MainList({
                   className="search-input"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                  }}
+                  enterKeyHint="done"
                   placeholder="Film title, genre…"
                   aria-label="Search films"
                 />
@@ -169,12 +183,11 @@ export default function MainList({
 
             <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} />
 
-            <div className="view-tabs" role="tablist">
+            <div className="view-tabs">
               {(["film", "cinema"] as const).map((v) => (
                 <button
                   key={v}
-                  role="tab"
-                  aria-selected={view === v}
+                  aria-pressed={view === v}
                   className={`view-tab${view === v ? " view-tab--active" : ""}`}
                   onClick={() => handleSetView(v)}
                 >

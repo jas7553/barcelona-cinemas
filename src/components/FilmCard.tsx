@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { isLastChance, formatMovieMeta } from "../utils";
 import type { TransformedMovie } from "../types";
@@ -9,6 +9,7 @@ interface Props {
 }
 
 export default function FilmCard({ movie, dayOffset }: Props) {
+  const location = useLocation();
   const lc = isLastChance(movie);
 
   const filtered =
@@ -24,7 +25,7 @@ export default function FilmCard({ movie, dayOffset }: Props) {
 
   return (
     <Link
-      to={`/film/${movie.id}`}
+      to={{ pathname: `/film/${movie.id}`, search: location.search }}
       className={`film-card${lc ? " film-card--lc" : ""}${showTimes ? " film-card--with-times" : ""}`}
     >
       {movie.poster_url ? (
