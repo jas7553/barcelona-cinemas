@@ -32,6 +32,8 @@ export default function CinemaGroup({ group }: Props) {
                 alt={movie.title}
                 width={36}
                 height={52}
+                loading="lazy"
+                decoding="async"
                 style={{ objectFit: "cover", flexShrink: 0, borderRadius: 2 }}
               />
             ) : (
