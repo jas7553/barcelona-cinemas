@@ -54,6 +54,7 @@ describe("App", () => {
   });
   afterEach(() => {
     vi.restoreAllMocks();
+    window.history.pushState({}, "", "/");
   });
 
   it("shows loading skeletons initially then renders film title", async () => {
@@ -82,6 +83,16 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     // Screen stays in DOM but list screen loses is-pushed class
     expect(document.querySelector(".screen-list.is-pushed")).not.toBeInTheDocument();
+  });
+
+  it("shows not-found state when deep-linking to an unknown film", async () => {
+    window.history.pushState({}, "", "/film/does-not-exist");
+    render(<App />);
+    expect(document.querySelector(".loading-card")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("This film isn't showing")).toBeInTheDocument()
+    );
+    expect(screen.getByRole("button", { name: "See what's on" })).toBeInTheDocument();
   });
 
   it("navigates to film detail on card tap", async () => {

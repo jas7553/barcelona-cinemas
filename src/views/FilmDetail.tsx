@@ -128,11 +128,11 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
             )}
             <div className="external-links">
               {movie.links.imdb && (
-                <FaviconLink domain="imdb.com" label="IMDb" href={movie.links.imdb} />
+                <FaviconLink icon="/imdb-favicon.png" label="IMDb" href={movie.links.imdb} />
               )}
-              <FaviconLink domain="letterboxd.com" label="Letterboxd" href={letterboxdHref} />
-              <FaviconLink domain="rottentomatoes.com" label="Rotten Tomatoes" href={rtHref} />
-              <FaviconLink domain="metacritic.com" label="Metacritic" href={metacriticHref} />
+              <FaviconLink icon="/letterboxd-favicon.ico" label="Letterboxd" href={letterboxdHref} />
+              <FaviconLink icon="/rt-favicon.ico" label="Rotten Tomatoes" href={rtHref} />
+              <FaviconLink icon="/metacritic-favicon.ico" label="Metacritic" href={metacriticHref} />
             </div>
           </div>
 
@@ -210,16 +210,10 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
   );
 }
 
-function FaviconLink({ domain, label, href }: { domain: string; label: string; href: string }) {
+function FaviconLink({ icon, label, href }: { icon: string; label: string; href: string }) {
   return (
     <a href={href} target="_blank" rel="noreferrer" className="ext-link">
-      <img
-        src={`https://www.google.com/s2/favicons?domain=${domain}&sz=32`}
-        width={14}
-        height={14}
-        alt=""
-        style={{ borderRadius: 2 }}
-      />
+      <img src={icon} width={14} height={14} alt="" style={{ borderRadius: 2 }} />
       {label}
     </a>
   );
