@@ -36,9 +36,7 @@ def _movie(imdb_id: str | None) -> Movie:
     )
 
 
-def test_api_allows_local_requests_when_origin_token_unset(
-    client: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_api_allows_local_requests_when_origin_token_unset(client: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(app._ORIGIN_AUTH_ENV, raising=False)
     monkeypatch.setattr(
         pipeline,
@@ -62,9 +60,7 @@ def test_api_rejects_direct_requests_when_origin_token_is_configured(
     assert response.get_json() == {"error": "Forbidden"}
 
 
-def test_api_accepts_requests_with_matching_origin_header(
-    client: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_api_accepts_requests_with_matching_origin_header(client: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(app._ORIGIN_AUTH_ENV, "shared-secret")
     monkeypatch.setattr(pipeline, "get_listings", _listings)
     monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
@@ -81,9 +77,7 @@ def test_api_accepts_requests_with_matching_origin_header(
     assert response.headers["X-Request-Id"].startswith("req-")
 
 
-def test_api_listings_includes_imdb_link_for_valid_movie(
-    client: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_api_listings_includes_imdb_link_for_valid_movie(client: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(app._ORIGIN_AUTH_ENV, raising=False)
     monkeypatch.setattr(
         pipeline,
@@ -105,9 +99,7 @@ def test_api_listings_includes_imdb_link_for_valid_movie(
     assert set(movie["links"].keys()) == {"imdb", "imdb_id"}
 
 
-def test_api_listings_includes_null_imdb_link_when_missing(
-    client: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_api_listings_includes_null_imdb_link_when_missing(client: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(app._ORIGIN_AUTH_ENV, raising=False)
     monkeypatch.setattr(
         pipeline,
@@ -128,9 +120,7 @@ def test_api_listings_includes_null_imdb_link_when_missing(
     assert movie["links"]["imdb"] is None
 
 
-def test_api_rejects_requests_with_wrong_origin_header(
-    client: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_api_rejects_requests_with_wrong_origin_header(client: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(app._ORIGIN_AUTH_ENV, "shared-secret")
 
     response = client.get("/api/listings", headers={app._ORIGIN_AUTH_HEADER: "wrong-secret"})
@@ -165,9 +155,7 @@ def test_listings_returns_stale_cache_when_pipeline_errors(
     assert '"fallback_used": true' in caplog.text
 
 
-def test_listings_returns_503_when_cache_is_unavailable(
-    client: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_listings_returns_503_when_cache_is_unavailable(client: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(app._ORIGIN_AUTH_ENV, raising=False)
     monkeypatch.setattr(
         pipeline,
@@ -182,9 +170,7 @@ def test_listings_returns_503_when_cache_is_unavailable(
     assert response.get_json() == {"error": "Service unavailable"}
 
 
-def test_listings_returns_503_when_stale_cache_read_also_fails(
-    client: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_listings_returns_503_when_stale_cache_read_also_fails(client: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(app._ORIGIN_AUTH_ENV, raising=False)
     monkeypatch.setattr(
         pipeline,
@@ -203,9 +189,7 @@ def test_listings_returns_503_when_stale_cache_read_also_fails(
     assert response.get_json() == {"error": "Service unavailable"}
 
 
-def test_cinemas_returns_safe_500_when_loading_fails(
-    client: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_cinemas_returns_safe_500_when_loading_fails(client: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(app._ORIGIN_AUTH_ENV, raising=False)
     monkeypatch.setattr(
         pipeline,
@@ -237,9 +221,7 @@ def test_api_405_uses_json_error_shape(client: Any, monkeypatch: pytest.MonkeyPa
     assert response.get_json() == {"error": "Method Not Allowed"}
 
 
-def test_api_unhandled_exception_uses_generic_json_500(
-    client: Any, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_api_unhandled_exception_uses_generic_json_500(client: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(app._ORIGIN_AUTH_ENV, raising=False)
     original_view = app.app.view_functions["cinemas"]
 

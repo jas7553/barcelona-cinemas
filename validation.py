@@ -127,9 +127,7 @@ def normalize_showtime(data: object, *, source: str) -> Showtime | None:
     return showtime
 
 
-def normalize_tmdb_payload(
-    data: object, *, title: str, videos: object = None
-) -> dict[str, Any] | None:
+def normalize_tmdb_payload(data: object, *, title: str, videos: object = None) -> dict[str, Any] | None:
     """Validate TMDb detail payload fields we merge into the app model."""
     if not isinstance(data, Mapping):
         logger.warning("Rejected TMDb payload for %r: detail payload is not an object", title)
@@ -158,11 +156,15 @@ def normalize_tmdb_payload(
     if genres is not None:
         normalized["genres"] = genres
 
-    poster_url = _as_tmdb_image_url(data.get("poster_path"), field="poster_path", base_url=_TMDB_POSTER_BASE_URL, title=title)
+    poster_url = _as_tmdb_image_url(
+        data.get("poster_path"), field="poster_path", base_url=_TMDB_POSTER_BASE_URL, title=title
+    )
     if poster_url is not None:
         normalized["poster_url"] = poster_url
 
-    backdrop_url = _as_tmdb_image_url(data.get("backdrop_path"), field="backdrop_path", base_url=_TMDB_BACKDROP_BASE_URL, title=title)
+    backdrop_url = _as_tmdb_image_url(
+        data.get("backdrop_path"), field="backdrop_path", base_url=_TMDB_BACKDROP_BASE_URL, title=title
+    )
     if backdrop_url is not None:
         normalized["backdrop_url"] = backdrop_url
 

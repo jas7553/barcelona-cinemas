@@ -80,6 +80,7 @@ def _movie(title: str = "Test Film", showtimes: list[Showtime] | None = None, **
 
 # ── Top-level shape ───────────────────────────────────────────────────────────
 
+
 def test_renames_fetched_at_to_generated_at():
     listings = _listings()
     result = to_api_response(listings, CINEMAS)
@@ -100,6 +101,7 @@ def test_returns_theaters_and_movies_keys():
 
 
 # ── Theater list ──────────────────────────────────────────────────────────────
+
 
 def test_theaters_only_include_cinemas_with_showtimes():
     movie = _movie(showtimes=[_showtime(cinema="Verdi")])
@@ -126,6 +128,7 @@ def test_empty_theaters_when_no_showtimes():
 
 
 # ── Showtime transformation ───────────────────────────────────────────────────
+
 
 def test_showtime_uses_theater_id_slug():
     movie = _movie(showtimes=[_showtime(cinema="Verdi")])
@@ -178,6 +181,7 @@ def test_ignores_unknown_cinema_names():
 
 
 # ── Movie field mapping ───────────────────────────────────────────────────────
+
 
 def test_movie_fields_mapped_correctly():
     movie = _movie(

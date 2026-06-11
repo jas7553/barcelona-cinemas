@@ -19,9 +19,18 @@ _HEADERS = {
 }
 
 _MONTH_MAP = {
-    "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4,
-    "May": 5, "Jun": 6, "Jul": 7, "Aug": 8,
-    "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12,
+    "Jan": 1,
+    "Feb": 2,
+    "Mar": 3,
+    "Apr": 4,
+    "May": 5,
+    "Jun": 6,
+    "Jul": 7,
+    "Aug": 8,
+    "Sep": 9,
+    "Oct": 10,
+    "Nov": 11,
+    "Dec": 12,
 }
 
 _TITLE_SUFFIX = " in English at cinemas in Barcelona"
@@ -173,9 +182,7 @@ class ListingsProvider:
 
         # Log unrecognized cinema names to help tune cinemas.json.
         unrecognized = {
-            cinema_name
-            for cinema_name in seen_cinema_names
-            if normalize_alias(cinema_name) not in alias_lookup
+            cinema_name for cinema_name in seen_cinema_names if normalize_alias(cinema_name) not in alias_lookup
         }
         if unrecognized:
             logger.warning(

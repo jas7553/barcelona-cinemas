@@ -216,5 +216,6 @@ def handler(event: dict[str, Any], context: Any) -> Any:
         return {"statusCode": 200}
     return _get_mangum_handler()(event, context)
 
+
 if __name__ == "__main__":
     app.run(port=int(os.environ.get("PORT", 5000)), debug=_debug_enabled())

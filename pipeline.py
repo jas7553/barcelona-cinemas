@@ -13,7 +13,7 @@ import time
 import urllib.request
 from datetime import UTC, datetime
 from itertools import chain
-from typing import TYPE_CHECKING, Any, TypeVar, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import cache
 from models import CinemaRegistry, Listings, Movie, Showtime
@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 
 _CINEMAS_FILE = "cinemas.json"
 _CACHE_TTL_HOURS = int(os.environ.get("CACHE_TTL_HOURS", 12))
-_N = TypeVar("_N", int, float)
 
 
 def _cf() -> Any:
@@ -45,9 +44,7 @@ def load_cinemas() -> CinemaRegistry:
         with open(_CINEMAS_FILE) as f:
             _cinemas_cache = cast(CinemaRegistry, json.load(f))
         if not (isinstance(_cinemas_cache, dict) and _cinemas_cache):
-            raise RuntimeError(
-                f"{_CINEMAS_FILE} loaded empty or non-dict — registry is corrupted"
-            )
+            raise RuntimeError(f"{_CINEMAS_FILE} loaded empty or non-dict — registry is corrupted")
     return _cinemas_cache
 
 
@@ -249,7 +246,7 @@ def _pick_string(left: str | None, right: str | None) -> str | None:
     return sorted(candidates, key=lambda value: (-len(value), value.casefold()))[0]
 
 
-def _pick_numeric(left: _N | None, right: _N | None) -> _N | None:
+def _pick_numeric[N: (int, float)](left: N | None, right: N | None) -> N | None:
     candidates = [value for value in (left, right) if value is not None]
     if not candidates:
         return None
@@ -285,9 +282,7 @@ def _merge_movie_pair(left: Movie, right: Movie) -> Movie:
     )
     merged_title = _pick_string(left["title"], right["title"])
     if merged_title is None:
-        raise RuntimeError(
-            f"_pick_string returned None for non-empty titles {left['title']!r} and {right['title']!r}"
-        )
+        raise RuntimeError(f"_pick_string returned None for non-empty titles {left['title']!r} and {right['title']!r}")
     return Movie(
         title=merged_title,
         tmdb_id=_pick_numeric(left.get("tmdb_id"), right.get("tmdb_id")),

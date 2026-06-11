@@ -279,7 +279,7 @@ def test_collect_movies_merges_quoted_and_unquoted_titles_when_identity_matches(
     provider_one.name = "provider_one"
     provider_one.fetch.return_value = [
         {
-            "title": "\"Wuthering Heights\"",
+            "title": '"Wuthering Heights"',
             "tmdb_id": None,
             "imdb_id": None,
             "year": None,
@@ -339,7 +339,7 @@ def test_collect_movies_keeps_conflicting_imdb_ids_split_even_when_titles_normal
     provider_one.name = "provider_one"
     provider_one.fetch.return_value = [
         {
-            "title": "\"Wuthering Heights\"",
+            "title": '"Wuthering Heights"',
             "tmdb_id": 1316092,
             "imdb_id": "tt32897959",
             "year": 2026,

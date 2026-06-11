@@ -31,3 +31,6 @@ package/
 
 # Git worktrees
 .worktrees/
+
+# Generated knowledge-graph output
+graphify-out/
