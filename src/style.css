@@ -140,12 +140,13 @@ img { display: block; }
   line-height: 1.05;
 }
 
-.app-title__line {
-  display: block;
+.app-title__line { display: block; }
+
+.app-title--animate .app-title__line {
   animation: projectorWarm 1.6s ease-out both;
 }
 
-.app-title__line--2 {
+.app-title--animate .app-title__line--2 {
   animation-delay: 0.12s;
 }
 
@@ -994,7 +995,7 @@ img { display: block; }
 
 /* ── Reduced motion ──────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .app-title__line { animation: none; }
+  .app-title--animate .app-title__line { animation: none; }
   .loading-card { animation: none; opacity: 0.5; }
   .cinema-dialog,
   .cinema-dialog::backdrop { transition: none; }

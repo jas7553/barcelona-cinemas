@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import DayPicker from "../components/DayPicker";
 import FilmCard from "../components/FilmCard";
@@ -37,6 +37,8 @@ export default function MainList({
   const searchQuery = rawQuery ?? "";
   const searchInputRef = useRef<HTMLInputElement>(null);
   const prevSearching = useRef(searching);
+  // Projector warm-up plays once per session, not on every return to the list
+  const [warmAnim] = useState(() => sessionStorage.getItem("btw-warmed") === null);
 
   // Restore scroll when returning from a film detail; the list unmounts while
   // the detail screen is shown, so the browser can't do this for us. Save on
@@ -131,6 +133,10 @@ export default function MainList({
     prevSearching.current = searching;
   }, [searching]);
 
+  useEffect(() => {
+    sessionStorage.setItem("btw-warmed", "1");
+  }, []);
+
   const dataAge = generatedAt ? formatDataAge(generatedAt) : null;
   const dayLabel = selectedDay == null ? "this week" : (days.find((d) => d.offset === selectedDay)?.fullLabel ?? "");
 
@@ -190,7 +196,7 @@ export default function MainList({
         ) : (
           <>
             <div className="header-top">
-              <h1 className="app-title">
+              <h1 className={`app-title${warmAnim ? " app-title--animate" : ""}`}>
                 <span className="app-title__line">Barcelona</span>
                 <span className="app-title__line app-title__line--2">This Week</span>
               </h1>
