@@ -495,6 +495,17 @@ img { display: block; }
   margin-top: 5px;
 }
 
+/* ── List footnote ───────────────────────────────────────────────────────────── */
+.list-footnote {
+  font-size: 11px;
+  color: var(--text-mute);
+  text-align: center;
+  padding: 0 32px 28px;
+  line-height: 1.5;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
 /* ── Empty states ────────────────────────────────────────────────────────────── */
 .empty-state {
   display: flex;

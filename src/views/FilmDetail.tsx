@@ -159,7 +159,12 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
 
             {cinemaRows.length > 0 && (
               <div className="cinema-count">
-                {cinemaRows.length} cinema{cinemaRows.length !== 1 ? "s" : ""} showing
+                {(() => {
+                  const n = movie.showtimes.filter(
+                    (s) => selectedDay == null || s.dayOffset === selectedDay,
+                  ).length;
+                  return `${n} showtime${n !== 1 ? "s" : ""} · ${cinemaRows.length} cinema${cinemaRows.length !== 1 ? "s" : ""}`;
+                })()}
               </div>
             )}
 

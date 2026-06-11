@@ -166,11 +166,26 @@ export default function MainList({
   const listNoun = view === "film"
     ? `film${listCount !== 1 ? "s" : ""}`
     : `cinema${listCount !== 1 ? "s" : ""}`;
+  // "21 films at 14 cinemas" tells the visitor the coverage at a glance
+  const cinemaCount = useMemo(() => {
+    if (view !== "film") return null;
+    const ids = new Set(
+      dayMovies.flatMap((m) =>
+        m.showtimes
+          .filter((s) => selectedDay == null || s.dayOffset === selectedDay)
+          .map((s) => s.theater.id),
+      ),
+    );
+    return ids.size;
+  }, [view, dayMovies, selectedDay]);
+  const atCinemas = cinemaCount != null && cinemaCount > 0
+    ? ` at ${cinemaCount} cinema${cinemaCount !== 1 ? "s" : ""}`
+    : "";
   const showingLabel = selectedDay == null
-    ? "showing this week"
+    ? "this week"
     : (dayLabel === "tonight" || dayLabel === "today")
-      ? `showing ${dayLabel}`
-      : `showing on ${dayLabel}`;
+      ? dayLabel
+      : `on ${dayLabel}`;
 
   return (
     <>
@@ -253,7 +268,7 @@ export default function MainList({
                   "Loading…"
                 ) : error ? null : (
                   <>
-                    {listCount} {listNoun} {showingLabel}
+                    {listCount} {listNoun}{atCinemas} {showingLabel}
                     {dataAge && (
                       <span className={`result-count-age${stale ? " result-count-age--stale" : ""}`}>
                         {" "}· updated {dataAge}
@@ -356,6 +371,13 @@ export default function MainList({
           {cinemaGroups.map((g) => (
             <CinemaGroup key={g.theaterId} group={g} onCinemaTap={openCinemaSheet} />
           ))}
+        </div>
+      )}
+
+      {!searching && !loading && !error && listCount > 0 && (
+        <div className="list-footnote">
+          All listings are original-version (VO) screenings — English audio
+          unless the film itself isn't in English.
         </div>
       )}
 
