@@ -19,10 +19,16 @@ export default function CinemaSheet({ venue, onClose }: Props) {
     }
   }, [venue]);
 
-  const directionsUrl =
-    venue?.lat != null && venue.lng != null
-      ? `https://www.google.com/maps/dir/?api=1&destination=${venue.lat},${venue.lng}`
-      : venue?.mapsUrl;
+  // Prefer a business search over raw coordinates: Maps resolves the actual
+  // venue (name, entrance, hours) instead of dropping a nameless pin, and the
+  // link keeps working even if our stored coords drift.
+  const directionsUrl = venue
+    ? venue.address
+      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${venue.name}, ${venue.address}, Barcelona`)}`
+      : venue.lat != null && venue.lng != null
+        ? `https://www.google.com/maps/dir/?api=1&destination=${venue.lat},${venue.lng}`
+        : venue.mapsUrl
+    : undefined;
 
   return (
     <dialog
