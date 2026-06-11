@@ -40,6 +40,7 @@ export default function DayPicker({ selectedDay, onSelect, activeDays }: Props) 
             key={offset}
             ref={isActive ? activeRef : undefined}
             className={`day-chip${isActive ? " day-chip--active" : ""}${!hasScreenings && !isActive ? " day-chip--faded" : ""}`}
+            aria-label={!hasScreenings && !isActive ? `${label} — no screenings` : undefined}
             onClick={() => onSelect(isActive ? null : offset)}
           >
             {label}

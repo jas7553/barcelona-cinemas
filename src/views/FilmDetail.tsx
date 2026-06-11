@@ -5,7 +5,7 @@ import PosterPlaceholder from "../components/PosterPlaceholder";
 import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
 import { BackIcon, ChevronRightIcon } from "../components/Icons";
-import { formatDistKm, formatMovieMeta, buildCinemaRows } from "../utils";
+import { formatDistKm, formatMovieMeta, buildCinemaRows, haversineKm } from "../utils";
 import type { TransformedMovie, SheetVenueData } from "../types";
 
 interface Props {
@@ -24,11 +24,13 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
     return movie.showtimes.some((s) => s.dayOffset === day) ? day : null;
   });
   const [scrollY, setScrollY] = useState(0);
+  const [backHidden, setBackHidden] = useState(false);
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
   // Snapshot at mount — prevents jarring reorder when geolocation resolves after render
   const [sortCoords] = useState(coords);
   const contentRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+  const lastScrollTop = useRef(0);
 
   const backdropOpacity = Math.max(0, 1 - scrollY / 130);
 
@@ -53,7 +55,14 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
   const onScroll = useCallback(() => {
     if (rafRef.current != null) return;
     rafRef.current = requestAnimationFrame(() => {
-      setScrollY(contentRef.current?.scrollTop ?? 0);
+      const y = contentRef.current?.scrollTop ?? 0;
+      setScrollY(y);
+      // Tuck the floating Back pill away while scrolling down so it doesn't
+      // sit on top of the showtime grid; bring it back on any upward scroll.
+      const last = lastScrollTop.current;
+      lastScrollTop.current = y;
+      if (y > last && y > 160) setBackHidden(true);
+      else if (y < last || y <= 160) setBackHidden(false);
       rafRef.current = null;
     });
   }, []);
@@ -82,7 +91,11 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
       </div>
 
       {/* Back button */}
-      <button className="detail-back-btn" onClick={onBack} aria-label="Back">
+      <button
+        className={`detail-back-btn${backHidden ? " detail-back-btn--hidden" : ""}`}
+        onClick={onBack}
+        aria-label="Back"
+      >
         <BackIcon />
         <span>Back</span>
       </button>
@@ -175,7 +188,14 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
               </div>
             ) : (
               cinemaRows.map(({ theater, dayGroups, distKm }) => {
-                const dl = formatDistKm(distKm);
+                // Sort order stays frozen to mount-time coords, but distance
+                // labels use live coords — geolocation usually resolves after
+                // first render, and without this the labels never appear.
+                const liveKm =
+                  coords && theater.lat != null && theater.lng != null
+                    ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
+                    : distKm;
+                const dl = formatDistKm(liveKm);
                 return (
                   <div key={theater.id} className="cinema-row">
                     <button

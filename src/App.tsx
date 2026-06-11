@@ -26,6 +26,12 @@ import { useLocationPin } from "./hooks/useLocationPin";
 import MainList from "./views/MainList";
 import FilmDetail from "./views/FilmDetail";
 
+// The list restores its own scroll position (sessionStorage) — the browser's
+// popstate restoration races it and wins with a stale, clamped value.
+if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
+  window.history.scrollRestoration = "manual";
+}
+
 function AppInner() {
   const { dark } = useTheme();
   const location = useLocation();
@@ -78,6 +84,14 @@ function AppInner() {
     () => (selectedFilmId ? (movies.find((m) => m.id === selectedFilmId) ?? null) : null),
     [selectedFilmId, movies],
   );
+
+  // Unknown paths render the list anyway — clean the URL so shares/bookmarks
+  // don't carry a dead path
+  useEffect(() => {
+    if (location.pathname !== "/" && !location.pathname.startsWith("/film/")) {
+      void navigate("/", { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     if (screen === "detail" && !locationActive && !locationRequested.current) {

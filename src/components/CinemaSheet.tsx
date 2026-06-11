@@ -28,13 +28,14 @@ export default function CinemaSheet({ venue, onClose }: Props) {
     <dialog
       ref={dialogRef}
       className="cinema-dialog"
+      aria-labelledby="cinema-dialog-name"
       onClose={onClose}
       onClick={(e) => { if (e.target === dialogRef.current) onClose(); }}
     >
       <div className="cinema-dialog__inner" onClick={(e) => e.stopPropagation()}>
         <div className="cinema-dialog__header">
           <div>
-            <div className="sheet-cinema-name">{venue?.name}</div>
+            <div className="sheet-cinema-name" id="cinema-dialog-name">{venue?.name}</div>
             {venue?.address && (
               <div className="sheet-cinema-address">{venue.address}</div>
             )}
