@@ -87,7 +87,11 @@ function AppInner() {
               key={selectedFilm.id}
               movie={selectedFilm}
               coords={coords}
-              onBack={() => navigate("/")}
+              onBack={() => {
+                // Preserve list filters + scroll by going back in history when we can
+                if (location.key !== "default") void navigate(-1);
+                else void navigate("/");
+              }}
             />
           </div>
         )}

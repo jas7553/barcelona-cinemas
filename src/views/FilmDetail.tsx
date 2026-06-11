@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import BackdropPlaceholder from "../components/BackdropPlaceholder";
 import PosterPlaceholder from "../components/PosterPlaceholder";
 import DayPicker from "../components/DayPicker";
@@ -14,7 +15,14 @@ interface Props {
 }
 
 export default function FilmDetail({ movie, coords, onBack }: Props) {
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [searchParams] = useSearchParams();
+  // Carry the list's day filter into the detail view (only if this film plays that day)
+  const [selectedDay, setSelectedDay] = useState<number | null>(() => {
+    const raw = searchParams.get("day");
+    if (raw === null || isNaN(Number(raw))) return null;
+    const day = Number(raw);
+    return movie.showtimes.some((s) => s.dayOffset === day) ? day : null;
+  });
   const [scrollY, setScrollY] = useState(0);
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
   // Snapshot at mount — prevents jarring reorder when geolocation resolves after render

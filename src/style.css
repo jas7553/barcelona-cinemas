@@ -151,12 +151,14 @@ img { display: block; }
 
 .header-actions {
   display: flex;
-  gap: 4px;
+  gap: 12px;
   padding-bottom: 4px;
 }
 
 .icon-btn {
-  padding: 4px;
+  /* 44px tap target without growing the visual layout */
+  padding: 12px;
+  margin: -8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -538,6 +540,8 @@ img { display: block; }
   font-size: 16px;
   line-height: 1;
   color: var(--text-mute);
+  padding: 10px;
+  margin: -10px -4px -10px -10px;
 }
 
 .search-cancel {
@@ -578,7 +582,6 @@ img { display: block; }
   height: clamp(200px, 25vw, 300px);
   z-index: 1;
   pointer-events: none;
-  transition: opacity 0.05s linear;
 }
 
 .detail-backdrop-img {
@@ -900,7 +903,8 @@ img { display: block; }
   font-size: 22px;
   line-height: 1;
   color: var(--text-mute);
-  padding: 0 0 0 12px;
+  padding: 10px 10px 10px 14px;
+  margin: -10px -10px 0 0;
   flex-shrink: 0;
   transition: color 0.12s;
 }
@@ -969,7 +973,38 @@ img { display: block; }
   display: block;
 }
 
+/* ── Hover (pointer devices only) ────────────────────────────────────────────── */
+@media (hover: hover) {
+  .film-card:hover { border-color: var(--accent); }
+  .cinema-row__header:hover { background: var(--border-lt); }
+  .cinema-group__film:hover { background: var(--surface2); }
+  .icon-btn:hover,
+  .view-tab:hover { color: var(--text); }
+  .day-chip:not(.day-chip--active):hover { border-color: var(--text-sub); color: var(--text); }
+  .ext-link:hover,
+  .trailer-btn:hover { border-color: var(--accent); color: var(--text); }
+  .empty-state__btn:hover,
+  .sheet-cta-primary:hover { filter: brightness(1.06); }
+  .sheet-cta-secondary:hover { border-color: var(--accent); }
+  .search-cancel:hover,
+  .search-clear:hover { color: var(--text); }
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .app-title__line { animation: none; }
+  .loading-card { animation: none; opacity: 0.5; }
+  .cinema-dialog,
+  .cinema-dialog::backdrop { transition: none; }
+}
+
 /* ── Accessibility ───────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
