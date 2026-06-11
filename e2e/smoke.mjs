@@ -30,12 +30,14 @@ const minDate = new Date(`${allDates.sort()[0]}T00:00:00`);
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 const deltaDays = Math.round((today - minDate) / 86400000);
+const FIXTURE_TAGLINE = "Believe the unbelievable.";
 for (const m of data.movies) {
   for (const s of m.showtimes ?? []) {
     const d = new Date(`${s.date}T00:00:00`);
     d.setDate(d.getDate() + deltaDays);
     s.date = d.toISOString().slice(0, 10);
   }
+  m.tagline ??= FIXTURE_TAGLINE;
 }
 data.fetched_at = new Date().toISOString();
 const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "bmd-e2e-"));
@@ -71,6 +73,17 @@ async function waitFor(url, timeoutMs = 30000) {
     await new Promise((r) => setTimeout(r, 300));
   }
   throw new Error(`timed out waiting for ${url}`);
+}
+
+// A server already on our ports would silently absorb the test traffic
+// (vite --strictPort dies quietly under stdio:ignore) and run the suite
+// against stale code — fail fast instead.
+for (const port of [API_PORT, WEB_PORT]) {
+  const busy = await fetch(`http://localhost:${port}`).then(() => true).catch(() => false);
+  if (busy) {
+    console.error(`e2e: port ${port} is already in use — stop that server first`);
+    process.exit(2);
+  }
 }
 
 start("python3", ["app.py"], { PORT: String(API_PORT), CACHE_DIR: cacheDir });
@@ -128,6 +141,10 @@ check("detail keeps day param", page.url().includes("day=1"), page.url());
 check(
   "detail pre-selects day chip",
   (await page.locator(".detail-screen .day-chip--active").count()) === 1,
+);
+check(
+  "tagline renders on detail",
+  (await page.locator(".tagline").innerText()) === FIXTURE_TAGLINE,
 );
 await page.locator(".detail-back-btn").click();
 await page.waitForSelector(".film-card");

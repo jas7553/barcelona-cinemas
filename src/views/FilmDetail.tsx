@@ -136,6 +136,7 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
 
           {/* Synopsis + external links */}
           <div className="synopsis-card">
+            {movie.tagline && <p className="tagline">{movie.tagline}</p>}
             {movie.synopsis ? (
               <p className="synopsis-text">{movie.synopsis}</p>
             ) : (

@@ -18,6 +18,7 @@ class Movie(TypedDict):
     poster_url: str | None
     backdrop_url: NotRequired[str | None]
     trailer_url: NotRequired[str | None]
+    tagline: NotRequired[str | None]
     synopsis: str | None
     rating: float | None
     runtime_mins: int | None

@@ -145,6 +145,7 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
             "backdrop_url": tmdb_data.get("backdrop_url"),
             "trailer_url": tmdb_data.get("trailer_url"),
             "synopsis": tmdb_data.get("overview"),
+            "tagline": tmdb_data.get("tagline"),
             "rating": tmdb_data.get("vote_average"),
             "runtime_mins": tmdb_data.get("runtime"),
             "genres": genres or None,

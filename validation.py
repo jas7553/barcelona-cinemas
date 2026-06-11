@@ -82,6 +82,9 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     trailer_url = _as_optional_string(data.get("trailer_url"), source=f"{source} trailer_url")
     if trailer_url is not None:
         movie["trailer_url"] = trailer_url
+    tagline = _as_optional_string(data.get("tagline"), source=f"{source} tagline")
+    if tagline is not None:
+        movie["tagline"] = tagline
     return movie
 
 
@@ -143,6 +146,10 @@ def normalize_tmdb_payload(data: object, *, title: str, videos: object = None) -
     overview = _as_optional_string(data.get("overview"), source=f"TMDb overview for {title!r}")
     if overview is not None:
         normalized["overview"] = overview
+
+    tagline = _as_optional_string(data.get("tagline"), source=f"TMDb tagline for {title!r}")
+    if tagline is not None:
+        normalized["tagline"] = tagline
 
     rating = _as_optional_rating(data.get("vote_average"), source=f"TMDb vote_average for {title!r}")
     if rating is not None:
