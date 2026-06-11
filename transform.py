@@ -84,6 +84,7 @@ def _transform_movie(
     backdrop_url: str | None = movie.get("backdrop_url")
     trailer_url: str | None = movie.get("trailer_url")
     synopsis: str | None = movie.get("synopsis")
+    tagline: str | None = movie.get("tagline")
     rating: float | None = movie.get("rating")
     runtime_mins: int | None = movie.get("runtime_mins")
     genres: list[str] = movie.get("genres") or []
@@ -110,6 +111,7 @@ def _transform_movie(
         "genres": genres,
         "rating": rating,
         "synopsis": synopsis or "",
+        "tagline": tagline,
         "links": {
             "imdb": imdb_url,
             "imdb_id": imdb_id,

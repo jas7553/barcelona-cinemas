@@ -109,3 +109,20 @@ def test_normalize_tmdb_payload_discards_malformed_imdb_id() -> None:
     assert payload is not None
     assert "imdb_id" not in payload
     assert "poster_url" not in payload
+
+
+def test_normalize_tmdb_payload_keeps_tagline() -> None:
+    payload = normalize_tmdb_payload(
+        {"id": 42, "tagline": "He who controls the spice controls the universe."},
+        title="Dune: Part Two",
+    )
+
+    assert payload is not None
+    assert payload["tagline"] == "He who controls the spice controls the universe."
+
+
+def test_normalize_tmdb_payload_drops_empty_tagline() -> None:
+    payload = normalize_tmdb_payload({"id": 42, "tagline": "   "}, title="Dune: Part Two")
+
+    assert payload is not None
+    assert "tagline" not in payload

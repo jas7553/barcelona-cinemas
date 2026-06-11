@@ -785,6 +785,15 @@ img { display: block; }
   border: 1px solid var(--border);
 }
 
+.tagline {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--accent);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
 .synopsis-text {
   font-size: 13px;
   color: var(--text-sub);

@@ -33,6 +33,8 @@ export interface Movie {
   trailer_url: string | null;
   genres: string[];
   rating: number | null;
+  /** Optional: older cached API responses predate this field */
+  tagline?: string | null;
   synopsis: string;
   links: MovieLinks;
   showtimes: Showtime[];
