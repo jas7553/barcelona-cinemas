@@ -96,7 +96,9 @@ export function formatDataAge(isoStr: string): string | null {
   const diffH = diffMs / (1000 * 60 * 60);
   if (diffH < 1) return null;
   if (diffH < 2) return "1h ago";
-  return `${Math.floor(diffH)}h ago`;
+  if (diffH < 24) return `${Math.floor(diffH)}h ago`;
+  const diffD = Math.floor(diffH / 24);
+  return `${diffD} day${diffD !== 1 ? "s" : ""} ago`;
 }
 
 // ── Last-chance detection ───────────────────────────────────────────────────

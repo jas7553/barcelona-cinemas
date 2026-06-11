@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import DayPicker from "../components/DayPicker";
 import FilmCard from "../components/FilmCard";
@@ -13,6 +13,7 @@ interface Props {
   loading: boolean;
   error: string | null;
   generatedAt: string | null;
+  stale: boolean;
   coords: { lat: number; lng: number } | null;
   locationResolving: boolean;
   onRetry: () => void;
@@ -23,15 +24,19 @@ export default function MainList({
   loading,
   error,
   generatedAt,
+  stale,
   coords,
   locationResolving,
   onRetry,
 }: Props) {
   const { dark, toggle: toggleDark } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searching, setSearching] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  // Search lives in the URL (?q=) so returning from a film detail restores it
+  const rawQuery = searchParams.get("q");
+  const searching = rawQuery !== null;
+  const searchQuery = rawQuery ?? "";
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const prevSearching = useRef(searching);
 
   // Restore scroll when returning from a film detail; the list unmounts while
   // the detail screen is shown, so the browser can't do this for us.
@@ -98,15 +103,31 @@ export default function MainList({
     }, { replace: true });
   };
 
-  const openSearch = () => {
-    setSearching(true);
-    setTimeout(() => searchInputRef.current?.focus(), 50);
+  const setSearchQuery = (value: string) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("q", value);
+      return next;
+    }, { replace: true });
   };
 
+  const openSearch = () => setSearchQuery("");
+
   const closeSearch = () => {
-    setSearching(false);
-    setSearchQuery("");
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("q");
+      return next;
+    }, { replace: true });
   };
+
+  // Focus the input when search opens via the button — but not when search
+  // state is restored from the URL (back navigation), where a popping
+  // keyboard would be jarring.
+  useEffect(() => {
+    if (searching && !prevSearching.current) searchInputRef.current?.focus();
+    prevSearching.current = searching;
+  }, [searching]);
 
   const dataAge = generatedAt ? formatDataAge(generatedAt) : null;
   const dayLabel = selectedDay == null ? "this week" : (days.find((d) => d.offset === selectedDay)?.fullLabel ?? "");
@@ -199,12 +220,14 @@ export default function MainList({
             <div className="result-count" aria-live="polite">
               {loading ? (
                 "Loading…"
-              ) : error ? (
-                "Could not load listings."
-              ) : (
+              ) : error ? null : (
                 <>
                   {listCount} {listNoun} {showingLabel}
-                  {dataAge && <span className="result-count-age"> · updated {dataAge}</span>}
+                  {dataAge && (
+                    <span className={`result-count-age${stale ? " result-count-age--stale" : ""}`}>
+                      {" "}· updated {dataAge}
+                    </span>
+                  )}
                 </>
               )}
             </div>
@@ -221,7 +244,7 @@ export default function MainList({
           </div>
         ) : searchQuery.trim().length > 0 ? (
           <div className="empty-state">
-            <div className="empty-state__emoji">🎞</div>
+            <div className="empty-state__overline">No results</div>
             <div className="empty-state__heading">Nothing showing</div>
             <div className="empty-state__body">
               No English-language screenings match <em>"{searchQuery}"</em> this week.

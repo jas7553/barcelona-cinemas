@@ -232,6 +232,7 @@ img { display: block; }
 }
 
 .result-count-age { color: var(--text-mute); }
+.result-count-age--stale { color: var(--lc); }
 
 /* ── Film list scroll ────────────────────────────────────────────────────────── */
 .film-list-scroll {
@@ -450,8 +451,6 @@ img { display: block; }
   text-align: center;
   gap: 10px;
 }
-
-.empty-state__emoji { font-size: 36px; }
 
 .empty-state__overline {
   font-size: 13px;

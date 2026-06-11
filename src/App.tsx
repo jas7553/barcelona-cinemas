@@ -17,6 +17,7 @@ function AppInner() {
     : "list";
   const [movies, setMovies] = useState<TransformedMovie[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const locationRequested = useRef(false);
@@ -30,6 +31,7 @@ function AppInner() {
       .then((data) => {
         setMovies(transformResponse(data));
         setGeneratedAt(data.generated_at);
+        setStale(data.stale);
         setLoading(false);
       })
       .catch(() => {
@@ -75,6 +77,7 @@ function AppInner() {
               loading={loading}
               error={error}
               generatedAt={generatedAt}
+              stale={stale}
               coords={coords}
               locationResolving={locationResolving}
               onRetry={load}
