@@ -525,7 +525,8 @@ img { display: block; }
 
 .search-input {
   flex: 1;
-  font-size: 15px;
+  /* ≥16px — iOS Safari auto-zooms the viewport on focus below that */
+  font-size: 16px;
   color: var(--text);
   caret-color: var(--accent);
   outline: none;

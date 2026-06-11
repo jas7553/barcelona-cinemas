@@ -14,7 +14,9 @@ export function useTheme(): ThemeCtx {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [dark, setDark] = useState(() => {
     try {
-      return localStorage.getItem("btw-dark") === "true";
+      const stored = localStorage.getItem("btw-dark");
+      if (stored !== null) return stored === "true";
+      return window.matchMedia("(prefers-color-scheme: dark)").matches;
     } catch {
       return false;
     }
@@ -22,6 +24,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
+    document.documentElement.style.colorScheme = dark ? "dark" : "light";
     const meta = document.getElementById("theme-color-meta") as HTMLMetaElement | null;
     if (meta) meta.content = dark ? "#0f0e0c" : "#faf6ef";
   }, [dark]);

@@ -91,6 +91,28 @@ function AppInner() {
             />
           </div>
         )}
+        {screen === "detail" && !selectedFilm && (
+          <div className="screen">
+            {loading ? (
+              <div className="loading-pulse" role="status" aria-label="Loading film">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="loading-card" />
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-state__overline">Not found</div>
+                <div className="empty-state__heading">This film isn't showing</div>
+                <div className="empty-state__body">
+                  It may have finished its run, or the link is out of date.
+                </div>
+                <button className="empty-state__btn" onClick={() => navigate("/")}>
+                  See what's on
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
