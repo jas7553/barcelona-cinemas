@@ -54,11 +54,11 @@ import shlex, sys, tomllib
 s = tomllib.load(open('samconfig.toml','rb'))['default']['deploy']['parameters'].get('parameter_overrides','')
 # sam joins the argv tokens and re-splits on whitespace, so values containing
 # spaces (e.g. 'rate(12 hours)') must carry their own quotes.
-tokens = []
+# Each token is NUL-terminated (not NUL-joined): bash's 'read -d \"\"' returns
+# nonzero at EOF, so a final token without a trailing NUL would be dropped.
 for tok in shlex.split(s):
     key, _, value = tok.partition('=')
-    tokens.append(f'{key}=\"{value}\"')
-sys.stdout.write('\0'.join(tokens))
+    sys.stdout.write(f'{key}=\"{value}\"\0')
 ")
 [ -n "$CF_DIST_ID" ] && [ "$CF_DIST_ID" != "None" ] && OVERRIDES+=("CloudFrontDistributionId=\"$CF_DIST_ID\"")
 [ -n "$CF_DOMAIN" ] && [ "$CF_DOMAIN" != "None" ] && OVERRIDES+=("CloudFrontDomainName=\"$CF_DOMAIN\"")
