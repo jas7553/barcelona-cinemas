@@ -126,8 +126,7 @@ def _transform_showtimes(
     cutoff: datetime | None,
     seen_theater_ids: set[str],
 ) -> list[dict[str, Any]]:
-    seen: set[tuple[str, str, str, str]] = set()
-    out: list[dict[str, Any]] = []
+    out_by_key: dict[tuple[str, str, str, str], dict[str, Any]] = {}
 
     for st in showtimes:
         if not isinstance(st, Mapping):
@@ -155,22 +154,27 @@ def _transform_showtimes(
         if language not in ("vo", "dub"):
             logger.warning("Unknown language value %r for showtime at %s %s", language, cinema_name, show_date)
 
+        booking_url_value = st.get("booking_url")
+        booking_url = booking_url_value if isinstance(booking_url_value, str) else None
+
         key = (theater_id, show_date, show_time, language)
-        if key in seen:
+        existing = out_by_key.get(key)
+        if existing is not None:
+            # Duplicates can split the booking link across providers — keep it.
+            if existing["booking_url"] is None and booking_url is not None:
+                existing["booking_url"] = booking_url
             continue
-        seen.add(key)
 
         seen_theater_ids.add(theater_id)
-        out.append(
-            {
-                "theater_id": theater_id,
-                "date": show_date,
-                "time": show_time,
-                "language": language,
-            }
-        )
+        out_by_key[key] = {
+            "theater_id": theater_id,
+            "date": show_date,
+            "time": show_time,
+            "language": language,
+            "booking_url": booking_url,
+        }
 
-    return out
+    return list(out_by_key.values())
 
 
 def _build_theaters(

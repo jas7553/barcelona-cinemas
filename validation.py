@@ -127,6 +127,9 @@ def normalize_showtime(data: object, *, source: str) -> Showtime | None:
     language = _as_optional_language(data.get("language"), source=f"{source} language")
     if language is not None:
         showtime["language"] = language
+    booking_url = _as_optional_http_url(data.get("booking_url"), source=f"{source} booking_url")
+    if booking_url is not None:
+        showtime["booking_url"] = booking_url
     return showtime
 
 
@@ -209,6 +212,16 @@ def _as_optional_string(value: object, *, source: str) -> str | None:
         stripped = value.strip()
         return stripped or None
     logger.warning("Discarded %s: expected string or null", source)
+    return None
+
+
+def _as_optional_http_url(value: object, *, source: str) -> str | None:
+    url = _as_optional_string(value, source=source)
+    if url is None:
+        return None
+    if url.startswith(("https://", "http://")):
+        return url
+    logger.warning("Discarded %s: expected http(s) URL", source)
     return None
 
 

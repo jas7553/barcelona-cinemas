@@ -10,16 +10,10 @@ import requests
 
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
 from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
+from providers.common import DEFAULT_HEADERS, base_movie
 
 logger = logging.getLogger(__name__)
 
-_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/122.0.0.0 Safari/537.36"
-    )
-}
 _SECONDARY_LISTINGS_URL = os.environ.get("SECONDARY_LISTINGS_URL", "https://www.moobycinemas.com/cartelera")
 _WINDOW_SHOPS_RE = re.compile(r"window\.shops\s*=\s*(\{.*?\});", re.DOTALL)
 
@@ -50,10 +44,28 @@ def _is_english_screening(event: Mapping[str, object]) -> bool:
     return _includes_english(language) or _includes_english(subtitles)
 
 
+def _booking_url_builder(shop: Mapping[str, object]) -> tuple[str, str] | None:
+    """
+    Validate the shop's ticket URL template once, e.g.
+      https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=%s&language=%s&theatre=%s
+    Returns (template, theatre code) to fill per performance with
+    (performance code, "en", theatre code) — landing on the seat picker for
+    that exact screening, in English.
+    """
+    template = shop.get("shop_url")
+    theatre_code = shop.get("code")
+    if not isinstance(template, str) or template.count("%s") != 3:
+        return None
+    if not isinstance(theatre_code, str) or not theatre_code:
+        return None
+    return template, theatre_code
+
+
 def _parse_showtime(
     performance: Mapping[str, object],
     cinema_key: str,
     cinema: CinemaInfo,
+    booking: tuple[str, str] | None,
 ) -> Showtime | None:
     schedule_date = performance.get("schedule_date")
     raw_time = performance.get("time")
@@ -62,7 +74,7 @@ def _parse_showtime(
     if not isinstance(raw_time, str) or len(raw_time) < 12:
         return None
 
-    return Showtime(
+    showtime = Showtime(
         cinema=cinema_key,
         neighborhood=cinema["neighborhood"],
         address=cinema["address"],
@@ -70,28 +82,18 @@ def _parse_showtime(
         time=f"{raw_time[8:10]}:{raw_time[10:12]}",
         language="vo",
     )
-
-
-def _movie_template(title: str, imdb_id: str | None, showtimes: list[Showtime]) -> Movie:
-    return Movie(
-        title=title,
-        tmdb_id=None,
-        imdb_id=imdb_id,
-        year=None,
-        poster_url=None,
-        synopsis=None,
-        rating=None,
-        runtime_mins=None,
-        genres=None,
-        showtimes=showtimes,
-    )
+    perf_code = performance.get("performance_code")
+    if booking is not None and isinstance(perf_code, str) and perf_code:
+        template, theatre_code = booking
+        showtime["booking_url"] = template % (perf_code, "en", theatre_code)
+    return showtime
 
 
 class SecondaryProvider:
     name = "secondary"
 
     def fetch(self, cinemas: CinemaRegistry) -> list[Movie]:
-        response = requests.get(_SECONDARY_LISTINGS_URL, headers=_HEADERS, timeout=20)
+        response = requests.get(_SECONDARY_LISTINGS_URL, headers=DEFAULT_HEADERS, timeout=20)
         response.raise_for_status()
 
         shops_payload = _extract_shops_payload(response.text)
@@ -124,6 +126,7 @@ class SecondaryProvider:
                 continue
 
             cinema = cinemas[cinema_key]
+            booking = _booking_url_builder(shop)
             events = shop.get("events")
             if not isinstance(events, list):
                 continue
@@ -145,7 +148,7 @@ class SecondaryProvider:
                 for performance in performances:
                     if not isinstance(performance, Mapping):
                         continue
-                    showtime = _parse_showtime(performance, cinema_key, cinema)
+                    showtime = _parse_showtime(performance, cinema_key, cinema, booking)
                     if showtime is not None:
                         showtimes.append(showtime)
                 if not showtimes:
@@ -156,7 +159,7 @@ class SecondaryProvider:
                 movie_key = (imdb_id or "", title.strip().casefold())
                 movie = movies_by_key.get(movie_key)
                 if movie is None:
-                    movies_by_key[movie_key] = _movie_template(title.strip(), imdb_id, showtimes)
+                    movies_by_key[movie_key] = base_movie(title.strip(), imdb_id, showtimes)
                     continue
 
                 movie["showtimes"].extend(showtimes)

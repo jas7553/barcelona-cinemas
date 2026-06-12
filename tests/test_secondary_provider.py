@@ -37,6 +37,7 @@ window.shops = {
     "name": "Aribau",
     "slug": "/aribau",
     "code": "BAL-ARIBAU",
+    "shop_url": "https://example-aribau.tickets.test/?p=tickets&perfCode=%s&language=%s&theatre=%s",
     "events": [
       {
         "name": "Project Hail Mary",
@@ -44,7 +45,7 @@ window.shops = {
         "language": "Anglès",
         "subtitles_lang": "Español",
         "performances": [
-          {"schedule_date": "20260329", "time": "20260329183000"}
+          {"schedule_date": "20260329", "time": "20260329183000", "performance_code": "187518"}
         ]
       },
       {
@@ -114,6 +115,20 @@ def test_fetch_parses_english_audio_and_english_subtitles() -> None:
     subtitled = next(movie for movie in movies if movie["title"] == "Other Language Film")
     assert subtitled["showtimes"][0]["date"] == "2026-03-30"
     assert subtitled["showtimes"][0]["time"] == "21:00"
+
+
+def test_fetch_builds_english_booking_url_from_shop_template() -> None:
+    with patch("providers.secondary_provider.requests.get", return_value=_mock_response(SECONDARY_PROVIDER_HTML)):
+        movies = SecondaryProvider().fetch(CINEMAS)
+
+    hail_mary = next(movie for movie in movies if movie["title"] == "Project Hail Mary")
+    by_cinema = {showtime["cinema"]: showtime for showtime in hail_mary["showtimes"]}
+    assert (
+        by_cinema["Aribau"].get("booking_url")
+        == "https://example-aribau.tickets.test/?p=tickets&perfCode=187518&language=en&theatre=BAL-ARIBAU"
+    )
+    # Bosque's shop has no shop_url template — no booking link.
+    assert "booking_url" not in by_cinema["Bosque"]
 
 
 def test_fetch_skips_non_english_entries() -> None:

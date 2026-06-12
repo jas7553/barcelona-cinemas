@@ -233,15 +233,15 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                     <div className={selectedDay == null ? "cinema-row__times cinema-row__times--grouped" : "cinema-row__times"}>
                       {dayGroups.map((group) =>
                         group.label == null ? (
-                          group.times.map(({ key, t }) => (
-                            <time key={key} className="time-pill time-pill--lg">{t}</time>
+                          group.times.map(({ key, t, bookingUrl }) => (
+                            <TimePill key={key} time={t} bookingUrl={bookingUrl} film={movie.title} cinema={theater.name} />
                           ))
                         ) : (
                           <div key={group.offset} className="cinema-row__day-group">
                             <span className="cinema-row__day-label">{group.label}</span>
                             <div className="cinema-row__day-pills">
-                              {group.times.map(({ key, t }) => (
-                                <time key={key} className="time-pill time-pill--lg">{t}</time>
+                              {group.times.map(({ key, t, bookingUrl }) => (
+                                <TimePill key={key} time={t} bookingUrl={bookingUrl} film={movie.title} cinema={theater.name} />
                               ))}
                             </div>
                           </div>
@@ -259,6 +259,34 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
       </div>
 
     </div>
+  );
+}
+
+function TimePill({
+  time,
+  bookingUrl,
+  film,
+  cinema,
+}: {
+  time: string;
+  bookingUrl?: string;
+  film: string;
+  cinema: string;
+}) {
+  if (!bookingUrl) {
+    return <time className="time-pill time-pill--lg">{time}</time>;
+  }
+  return (
+    <a
+      href={bookingUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="time-pill time-pill--lg time-pill--link"
+      aria-label={`Buy tickets for ${film} at ${cinema}, ${time}`}
+    >
+      <time>{time}</time>
+      <span className="time-pill__ticket" aria-hidden="true">🎟</span>
+    </a>
   );
 }
 
