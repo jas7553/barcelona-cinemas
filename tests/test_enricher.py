@@ -1,11 +1,13 @@
 """Tests for enricher.py — TMDb cache reuse and metadata merging."""
 
+from collections.abc import Iterator
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 import enricher
+import listings_config
 from models import Movie, Showtime
 
 
@@ -44,8 +46,10 @@ TMDB_DETAIL = {
 
 
 @pytest.fixture(autouse=True)
-def reset_api_key_cache() -> None:
-    enricher._cached_api_key = None
+def reset_api_key_cache() -> Iterator[None]:
+    listings_config._resolved_cache.clear()
+    yield
+    listings_config._resolved_cache.clear()
 
 
 @pytest.fixture()

@@ -181,10 +181,6 @@ def _debug_enabled() -> bool:
 _mangum_handler = Mangum(WsgiToAsgi(app), lifespan="off")  # type: ignore[no-untyped-call]
 
 
-def _get_mangum_handler() -> Any:
-    return _mangum_handler
-
-
 def handler(event: dict[str, Any], context: Any) -> Any:
     """
     Lambda entry point.
@@ -214,7 +210,7 @@ def handler(event: dict[str, Any], context: Any) -> Any:
         finally:
             observability.clear_context()
         return {"statusCode": 200}
-    return _get_mangum_handler()(event, context)
+    return _mangum_handler(event, context)
 
 
 if __name__ == "__main__":

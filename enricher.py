@@ -9,11 +9,11 @@ Failures are logged and result in null metadata fields; this module never raises
 """
 
 import logging
-import os
 from typing import Any, NamedTuple, TypedDict, cast
 
 import requests
 
+from listings_config import resolve_env_or_ssm
 from models import Movie
 from observability import emit_metric, log_event
 from validation import normalize_tmdb_payload
@@ -21,7 +21,6 @@ from validation import normalize_tmdb_payload
 logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://api.themoviedb.org/3"
-_cached_api_key: str | None = None
 
 
 class EnrichmentStats(TypedDict):
@@ -37,31 +36,7 @@ class _LookupResult(NamedTuple):
 
 
 def _api_key() -> str:
-    global _cached_api_key
-    if _cached_api_key:
-        return _cached_api_key
-
-    # Local dev: read directly from environment.
-    key = os.environ.get("TMDB_API_KEY", "")
-    if key:
-        _cached_api_key = key
-        return key
-
-    # Lambda: fetch from SSM at runtime (SecureString, decrypted).
-    param_name = os.environ.get("TMDB_SSM_PARAMETER", "")
-    if not param_name:
-        raise OSError("Neither TMDB_API_KEY nor TMDB_SSM_PARAMETER is set")
-
-    import boto3  # type: ignore[import-untyped]  # imported here to avoid overhead in local dev
-
-    ssm: Any = boto3.client("ssm")
-    response = ssm.get_parameter(Name=param_name, WithDecryption=True)
-    parameter = cast(dict[str, Any], response.get("Parameter", {}))
-    key = cast(str, parameter.get("Value", ""))
-    if not key:
-        raise OSError(f"TMDB SSM parameter {param_name!r} did not contain a value")
-    _cached_api_key = key
-    return key
+    return resolve_env_or_ssm("TMDB_API_KEY", "TMDB_SSM_PARAMETER", "TMDB")
 
 
 def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie], EnrichmentStats]:
