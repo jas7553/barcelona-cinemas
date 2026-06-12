@@ -2,7 +2,7 @@ import { memo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { ChevronRightIcon } from "./Icons";
-import { isLastChance, formatDistKm } from "../utils";
+import { isLastChance, formatDistKm, thumbPosterUrl } from "../utils";
 import type { CinemaViewGroup } from "../types";
 
 interface Props {
@@ -37,7 +37,7 @@ function CinemaGroup({ group, onCinemaTap }: Props) {
           >
             {movie.poster_url ? (
               <img
-                src={movie.poster_url}
+                src={thumbPosterUrl(movie.poster_url)!}
                 alt={movie.title}
                 width={36}
                 height={52}

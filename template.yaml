@@ -455,6 +455,7 @@ Resources:
         DefaultCacheBehavior:
           TargetOriginId: FrontendS3
           ViewerProtocolPolicy: redirect-to-https
+          Compress: true
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6    # AWS managed: CachingOptimized
           ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
           AllowedMethods:
@@ -466,6 +467,7 @@ Resources:
           - PathPattern: /api/listings
             TargetOriginId: ApiGateway
             ViewerProtocolPolicy: redirect-to-https
+            Compress: true
             CachePolicyId: !Ref ListingsCachePolicy
             OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader
             ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
@@ -477,6 +479,7 @@ Resources:
           - PathPattern: /api/*
             TargetOriginId: ApiGateway
             ViewerProtocolPolicy: redirect-to-https
+            Compress: true
             CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad         # CachingDisabled
             OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader
             ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy

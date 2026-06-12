@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <!-- Self-hosted fonts (@font-face in src/style.css). Preloading the two
          latin files gets them in before first paint, so text never reflows. -->
+    <!-- Start the listings fetch in parallel with the JS bundle instead of
+         chained behind it. `crossorigin` makes the preload's CORS mode match
+         fetch()'s default, so Safari reuses it rather than downloading twice. -->
+    <link rel="preload" href="/api/listings" as="fetch" crossorigin />
     <link rel="preload" href="/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/playfair-display-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=4" />

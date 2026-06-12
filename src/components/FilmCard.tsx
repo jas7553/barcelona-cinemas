@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
-import { isLastChance, formatMovieMeta } from "../utils";
+import { isLastChance, formatMovieMeta, thumbPosterUrl } from "../utils";
 import type { TransformedMovie } from "../types";
 
 interface Props {
@@ -37,7 +37,7 @@ function FilmCard({ movie, dayOffset }: Props) {
     >
       {movie.poster_url ? (
         <img
-          src={movie.poster_url}
+          src={thumbPosterUrl(movie.poster_url)!}
           alt={movie.title}
           className="film-card__poster"
           width={72}
