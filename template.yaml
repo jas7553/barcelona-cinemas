@@ -46,6 +46,13 @@ Parameters:
       for post-refresh pre-warming. Automatically populated by deploy.sh from stack
       Outputs on re-deploys. Leave blank on first deploy.
 
+  NotificationEmail:
+    Type: String
+    Description: >
+      Email address subscribed to pipeline failure alerts. No default on
+      purpose — set it in samconfig.toml parameter_overrides (gitignored)
+      so the address is never committed.
+
 Conditions:
   HasCloudFrontDistributionId: !Not [!Equals [!Ref CloudFrontDistributionId, ""]]
 
@@ -195,10 +202,28 @@ Resources:
             Input: '{"source": "warmup"}'
             Enabled: true
 
+  # ── Alerting: SNS topic + email subscription ──────────────────────────────
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub "${AWS::StackName}-alerts"
+
+  AlertEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref AlertTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
   LambdaErrorAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Lambda errors detected for the API function
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
       Namespace: AWS/Lambda
       MetricName: Errors
       Dimensions:
@@ -215,6 +240,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Scheduled refresh failures detected
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
       Namespace: BarcelonaMovieDatabase
       MetricName: RefreshFailure
       Dimensions:
@@ -233,6 +262,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Cache age exceeded configured TTL
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
       Namespace: BarcelonaMovieDatabase
       MetricName: CacheAgeHours
       Dimensions:
@@ -249,6 +282,10 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: Stale listings responses are occurring repeatedly
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
       Namespace: BarcelonaMovieDatabase
       MetricName: ListingsStaleResponse
       Dimensions:
@@ -264,6 +301,56 @@ Resources:
       Threshold: 3
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
+
+  # Heartbeat: absence-of-signal alarm. Every other alarm only fires when code
+  # runs; this one fires when nothing runs (schedule disabled, Lambda broken,
+  # EMF logging dead). TreatMissingData MUST stay "breaching" — missing data
+  # is the failure being detected.
+  RefreshHeartbeatAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: No successful scheduled refresh in 24h — pipeline may be dead
+      Namespace: BarcelonaMovieDatabase
+      MetricName: RefreshSuccess
+      Dimensions:
+        - Name: Environment
+          Value: prod
+        - Name: Trigger
+          Value: schedule
+      Statistic: Sum
+      Period: 86400
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+  # Threshold 2 over 24h ≈ same provider failed in both daily runs —
+  # persistent breakage, not a transient timeout.
+  ProviderDegradationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: A listings provider failed in both daily refresh runs — coverage degraded
+      Namespace: BarcelonaMovieDatabase
+      MetricName: ProviderFailure
+      Dimensions:
+        - Name: Environment
+          Value: prod
+        - Name: Trigger
+          Value: schedule
+      Statistic: Sum
+      Period: 86400
+      EvaluationPeriods: 1
+      Threshold: 2
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
 
   # ── CloudFront cache policy: /api/listings (5-min TTL) ──────────────────
 
