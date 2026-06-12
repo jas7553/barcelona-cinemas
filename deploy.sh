@@ -42,15 +42,25 @@ CF_DIST_ID=$(aws cloudformation describe-stacks --stack-name "$STACK" \
 CF_DOMAIN=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='AppUrl'].OutputValue" \
   --output text 2>/dev/null | sed 's|https://||' || true)
-CF_PARAM_OVERRIDES=""
-[ -n "$CF_DIST_ID" ] && [ "$CF_DIST_ID" != "None" ] && CF_PARAM_OVERRIDES="CloudFrontDistributionId=$CF_DIST_ID"
-[ -n "$CF_DOMAIN" ] && [ "$CF_DOMAIN" != "None" ] && CF_PARAM_OVERRIDES="${CF_PARAM_OVERRIDES:+$CF_PARAM_OVERRIDES }CloudFrontDomainName=$CF_DOMAIN"
+# A CLI --parameter-overrides flag REPLACES samconfig.toml's parameter_overrides
+# rather than merging with it, and parameters new to the stack have no previous
+# value to fall back on. So re-read the saved overrides and append the
+# CloudFront values to them.
+OVERRIDES=()
+while IFS= read -r -d '' token; do
+  OVERRIDES+=("$token")
+done < <(python3 -c "
+import shlex, sys, tomllib
+s = tomllib.load(open('samconfig.toml','rb'))['default']['deploy']['parameters'].get('parameter_overrides','')
+sys.stdout.write('\0'.join(shlex.split(s)))
+")
+[ -n "$CF_DIST_ID" ] && [ "$CF_DIST_ID" != "None" ] && OVERRIDES+=("CloudFrontDistributionId=$CF_DIST_ID")
+[ -n "$CF_DOMAIN" ] && [ "$CF_DOMAIN" != "None" ] && OVERRIDES+=("CloudFrontDomainName=$CF_DOMAIN")
 
 if [ "$GUIDED" = "--guided" ]; then
   sam deploy --guided
 else
-  # shellcheck disable=SC2086  # CF_PARAM_OVERRIDES is intentionally word-split
-  sam deploy ${CF_PARAM_OVERRIDES:+--parameter-overrides $CF_PARAM_OVERRIDES}
+  sam deploy --parameter-overrides "${OVERRIDES[@]}"
 fi
 
 echo "==> 4/5 Sync static/ → S3 FrontendBucket"
