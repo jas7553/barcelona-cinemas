@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { ChevronRightIcon } from "./Icons";
@@ -9,7 +10,7 @@ interface Props {
   onCinemaTap: (group: CinemaViewGroup, distLabel: string | null) => void;
 }
 
-export default function CinemaGroup({ group, onCinemaTap }: Props) {
+function CinemaGroup({ group, onCinemaTap }: Props) {
   const location = useLocation();
   const distLabel = formatDistKm(group.distanceKm);
 
@@ -66,3 +67,5 @@ export default function CinemaGroup({ group, onCinemaTap }: Props) {
     </div>
   );
 }
+
+export default memo(CinemaGroup);

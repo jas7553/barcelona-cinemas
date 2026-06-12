@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import DayPicker from "../components/DayPicker";
 import FilmCard from "../components/FilmCard";
@@ -52,7 +52,7 @@ export default function MainList({
   const [warmAnim] = useState(() => sessionStorage.getItem("btw-warmed") === null);
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
 
-  const openCinemaSheet = (group: CinemaViewGroup, distLabel: string | null) => {
+  const openCinemaSheet = useCallback((group: CinemaViewGroup, distLabel: string | null) => {
     const t = group.theater;
     setSheetVenue({
       name: t.name,
@@ -64,7 +64,7 @@ export default function MainList({
       lat: t.lat,
       lng: t.lng,
     });
-  };
+  }, []);
 
   const rawDay = searchParams.get("day");
   const selectedDay: number | null = rawDay !== null && !isNaN(Number(rawDay)) ? Number(rawDay) : null;
