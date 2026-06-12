@@ -52,10 +52,16 @@ while IFS= read -r -d '' token; do
 done < <(python3 -c "
 import shlex, sys, tomllib
 s = tomllib.load(open('samconfig.toml','rb'))['default']['deploy']['parameters'].get('parameter_overrides','')
-sys.stdout.write('\0'.join(shlex.split(s)))
+# sam joins the argv tokens and re-splits on whitespace, so values containing
+# spaces (e.g. 'rate(12 hours)') must carry their own quotes.
+tokens = []
+for tok in shlex.split(s):
+    key, _, value = tok.partition('=')
+    tokens.append(f'{key}=\"{value}\"')
+sys.stdout.write('\0'.join(tokens))
 ")
-[ -n "$CF_DIST_ID" ] && [ "$CF_DIST_ID" != "None" ] && OVERRIDES+=("CloudFrontDistributionId=$CF_DIST_ID")
-[ -n "$CF_DOMAIN" ] && [ "$CF_DOMAIN" != "None" ] && OVERRIDES+=("CloudFrontDomainName=$CF_DOMAIN")
+[ -n "$CF_DIST_ID" ] && [ "$CF_DIST_ID" != "None" ] && OVERRIDES+=("CloudFrontDistributionId=\"$CF_DIST_ID\"")
+[ -n "$CF_DOMAIN" ] && [ "$CF_DOMAIN" != "None" ] && OVERRIDES+=("CloudFrontDomainName=\"$CF_DOMAIN\"")
 
 if [ "$GUIDED" = "--guided" ]; then
   sam deploy --guided
