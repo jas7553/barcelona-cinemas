@@ -112,6 +112,15 @@ export function isLastChance(movie: TransformedMovie): boolean {
   return theaters.size <= 1 || movie.showtimes.length <= 3;
 }
 
+/**
+ * The API serves posters at w342, sized for the detail view. Card thumbnails
+ * render at 36-72px CSS width, so w185 covers them even at 3× DPR. TMDb
+ * encodes size as a path segment, so a swap is enough.
+ */
+export function thumbPosterUrl(posterUrl: string | null): string | null {
+  return posterUrl ? posterUrl.replace("/w342/", "/w185/") : null;
+}
+
 // ── Client-side API response transform ─────────────────────────────────────
 
 export function todayAtMidnight(): Date {
