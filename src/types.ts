@@ -21,6 +21,9 @@ export interface Showtime {
   date: string;       // YYYY-MM-DD
   time: string;       // HH:MM
   language: "vo" | "dub";
+  /** Direct ticket-purchase link for this exact screening, when the cinema exposes one.
+      Optional: older cached API responses predate this field. */
+  booking_url?: string | null;
 }
 
 export interface Movie {

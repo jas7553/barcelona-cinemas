@@ -263,14 +263,17 @@ def _pick_genres(left: list[str] | None, right: list[str] | None) -> list[str] |
 def _merge_movie_pair(left: Movie, right: Movie) -> Movie:
     deduped_showtimes: dict[tuple[str, str, str, str], Showtime] = {}
     for showtime in [*left["showtimes"], *right["showtimes"]]:
-        deduped_showtimes[
-            (
-                showtime["date"],
-                showtime["time"],
-                showtime["cinema"],
-                _canonical_language(showtime),
-            )
-        ] = showtime
+        key = (
+            showtime["date"],
+            showtime["time"],
+            showtime["cinema"],
+            _canonical_language(showtime),
+        )
+        existing = deduped_showtimes.get(key)
+        # Don't let a duplicate without a booking link clobber one that has it.
+        if existing is not None and existing.get("booking_url") and not showtime.get("booking_url"):
+            continue
+        deduped_showtimes[key] = showtime
     merged_showtimes = sorted(
         deduped_showtimes.values(),
         key=lambda showtime: (

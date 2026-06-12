@@ -81,6 +81,43 @@ def test_normalize_movie_keeps_valid_showtime_language() -> None:
     assert movie["showtimes"][0]["language"] == "vo"
 
 
+def _showtime_payload(**extra: object) -> dict[str, object]:
+    return {
+        "cinema": "Verdi",
+        "neighborhood": "Gràcia",
+        "address": "Carrer de Verdi, 32",
+        "date": "2026-03-28",
+        "time": "18:00",
+        **extra,
+    }
+
+
+def test_normalize_movie_keeps_valid_booking_url() -> None:
+    movie = normalize_movie(
+        {
+            "title": "Dune: Part Two",
+            "showtimes": [_showtime_payload(booking_url="https://tickets.example/?perfCode=1")],
+        },
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert movie["showtimes"][0]["booking_url"] == "https://tickets.example/?perfCode=1"
+
+
+def test_normalize_movie_discards_non_http_booking_url() -> None:
+    movie = normalize_movie(
+        {
+            "title": "Dune: Part Two",
+            "showtimes": [_showtime_payload(booking_url="javascript:alert(1)")],
+        },
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert "booking_url" not in movie["showtimes"][0]
+
+
 def test_normalize_tmdb_payload_keeps_valid_imdb_id() -> None:
     payload = normalize_tmdb_payload(
         {

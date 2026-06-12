@@ -169,7 +169,11 @@ export function formatMovieMeta(movie: TransformedMovie, includeRuntime = false)
 
 // ── Cinema row builder (film detail view) ───────────────────────────────────
 
-export type DayGroup = { label: string | null; offset: number; times: { key: string; t: string }[] };
+export type DayGroup = {
+  label: string | null;
+  offset: number;
+  times: { key: string; t: string; bookingUrl?: string }[];
+};
 export type CinemaRow = { theater: TransformedShowtime["theater"]; dayGroups: DayGroup[]; distKm?: number };
 
 export function buildCinemaRows(
@@ -188,16 +192,17 @@ export function buildCinemaRows(
   for (const s of showtimes) {
     const entry = byTheater.get(s.theater.id) ?? { theater: s.theater, groups: new Map<number, DayGroup>() };
     const key = `${s.dayOffset}-${s.time}`;
+    const time = { key, t: s.time, bookingUrl: s.booking_url ?? undefined };
     if (selectedDay != null) {
       const group = entry.groups.get(0) ?? { label: null, offset: 0, times: [] };
-      if (!group.times.some((x) => x.key === key)) group.times.push({ key, t: s.time });
+      if (!group.times.some((x) => x.key === key)) group.times.push(time);
       entry.groups.set(0, group);
     } else {
       const label =
         dayLabelMap.get(s.dayOffset) ??
         new Date(`${s.date}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric" });
       const group = entry.groups.get(s.dayOffset) ?? { label, offset: s.dayOffset, times: [] };
-      if (!group.times.some((x) => x.key === key)) group.times.push({ key, t: s.time });
+      if (!group.times.some((x) => x.key === key)) group.times.push(time);
       entry.groups.set(s.dayOffset, group);
     }
     byTheater.set(s.theater.id, entry);

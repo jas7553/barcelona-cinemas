@@ -274,6 +274,44 @@ def test_collect_movies_deduplicates_missing_and_explicit_vo_language():
     ]
 
 
+def test_collect_movies_keeps_booking_url_when_duplicate_lacks_one():
+    def _movie_with_showtime(showtime: dict[str, object]) -> dict[str, object]:
+        return {
+            "title": "Project Hail Mary",
+            "tmdb_id": None,
+            "imdb_id": None,
+            "year": None,
+            "poster_url": None,
+            "synopsis": None,
+            "rating": None,
+            "runtime_mins": None,
+            "genres": None,
+            "showtimes": [showtime],
+        }
+
+    base = {
+        "cinema": "Verdi",
+        "neighborhood": "Gracia",
+        "address": "Carrer de Verdi, 32",
+        "date": "2026-03-28",
+        "time": "18:00",
+        "language": "vo",
+    }
+    provider_one = MagicMock()
+    provider_one.name = "provider_one"
+    provider_one.fetch.return_value = [_movie_with_showtime({**base, "booking_url": "https://tickets.example/seats/1"})]
+    provider_two = MagicMock()
+    provider_two.name = "provider_two"
+    provider_two.fetch.return_value = [_movie_with_showtime(dict(base))]
+
+    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
+        result = pipeline._collect_movies({})
+
+    assert len(result) == 1
+    assert len(result[0]["showtimes"]) == 1
+    assert result[0]["showtimes"][0].get("booking_url") == "https://tickets.example/seats/1"
+
+
 def test_collect_movies_merges_quoted_and_unquoted_titles_when_identity_matches():
     provider_one = MagicMock()
     provider_one.name = "provider_one"

@@ -159,6 +159,29 @@ def test_deduplicates_showtimes():
     assert len(result["movies"][0]["showtimes"]) == 1
 
 
+def test_showtime_passes_through_booking_url():
+    st_data: Showtime = {**_showtime(cinema="Verdi"), "booking_url": "https://tickets.example/seats/1"}
+    movie = _movie(showtimes=[st_data])
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    assert result["movies"][0]["showtimes"][0]["booking_url"] == "https://tickets.example/seats/1"
+
+
+def test_showtime_booking_url_defaults_to_none():
+    movie = _movie(showtimes=[_showtime(cinema="Verdi")])
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    assert result["movies"][0]["showtimes"][0]["booking_url"] is None
+
+
+def test_duplicate_showtime_backfills_booking_url():
+    bare = _showtime(cinema="Verdi", date=_today_iso(), time="19:00")
+    linked: Showtime = {**bare, "booking_url": "https://tickets.example/seats/2"}
+    movie = _movie(showtimes=[bare, linked])
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    showtimes = result["movies"][0]["showtimes"]
+    assert len(showtimes) == 1
+    assert showtimes[0]["booking_url"] == "https://tickets.example/seats/2"
+
+
 def test_filters_showtimes_beyond_7_days():
     far_future = (datetime.now(UTC) + timedelta(days=8)).date().isoformat()
     movie = _movie(showtimes=[_showtime(cinema="Verdi", date=far_future)])

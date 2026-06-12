@@ -8,6 +8,7 @@ class Showtime(TypedDict):
     date: str  # YYYY-MM-DD
     time: str  # HH:MM
     language: NotRequired[str]
+    booking_url: NotRequired[str | None]
 
 
 class Movie(TypedDict):
