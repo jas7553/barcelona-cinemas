@@ -15,14 +15,25 @@ interface Props {
 }
 
 export default function FilmDetail({ movie, coords, onBack }: Props) {
-  const [searchParams] = useSearchParams();
-  // Carry the list's day filter into the detail view (only if this film plays that day)
-  const [selectedDay, setSelectedDay] = useState<number | null>(() => {
-    const raw = searchParams.get("day");
-    if (raw === null || isNaN(Number(raw))) return null;
-    const day = Number(raw);
-    return movie.showtimes.some((s) => s.dayOffset === day) ? day : null;
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
+  // The day filter lives in the URL (?day=): the list's filter carries over on
+  // entry, and a changed day survives refresh/share. Replace-state keeps the
+  // list's own history entry (and its params) untouched. Only honored if this
+  // film actually plays that day.
+  const rawDay = searchParams.get("day");
+  const parsedDay = rawDay !== null && !isNaN(Number(rawDay)) ? Number(rawDay) : null;
+  const selectedDay =
+    parsedDay != null && movie.showtimes.some((s) => s.dayOffset === parsedDay)
+      ? parsedDay
+      : null;
+  const setSelectedDay = (day: number | null) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (day == null) next.delete("day");
+      else next.set("day", String(day));
+      return next;
+    }, { replace: true });
+  };
   const [scrollY, setScrollY] = useState(0);
   const [backHidden, setBackHidden] = useState(false);
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);

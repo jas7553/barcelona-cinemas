@@ -26,12 +26,6 @@ import { useLocationPin } from "./hooks/useLocationPin";
 import MainList from "./views/MainList";
 import FilmDetail from "./views/FilmDetail";
 
-// The list restores its own scroll position (sessionStorage) — the browser's
-// popstate restoration races it and wins with a stale, clamped value.
-if (typeof window !== "undefined" && "scrollRestoration" in window.history) {
-  window.history.scrollRestoration = "manual";
-}
-
 function AppInner() {
   const { dark } = useTheme();
   const location = useLocation();
@@ -93,12 +87,31 @@ function AppInner() {
     }
   }, [location.pathname, navigate]);
 
+  // Distance labels on the detail screen are a nice-to-have: use location only
+  // if the user already granted permission (e.g. via "Near me") — never raise
+  // the system permission prompt uninvited.
   useEffect(() => {
-    if (screen === "detail" && !locationActive && !locationRequested.current) {
-      locationRequested.current = true;
-      toggleLocation();
-    }
+    if (screen !== "detail" || locationActive || locationRequested.current) return;
+    locationRequested.current = true;
+    navigator.permissions
+      ?.query({ name: "geolocation" })
+      .then((status) => {
+        if (status.state === "granted") toggleLocation();
+      })
+      .catch(() => {});
   }, [screen, locationActive, toggleLocation]);
+
+  // Lock the page behind the detail overlay. The list stays mounted with its
+  // scroll position; overflow:hidden keeps the offset while preventing
+  // wheel/touch scroll from reaching it.
+  useEffect(() => {
+    if (screen !== "detail") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [screen]);
 
   useEffect(() => {
     if (screen === "detail" && selectedFilm) {
@@ -111,25 +124,26 @@ function AppInner() {
   return (
     <div className={`app-wrapper${dark ? " dark" : ""}`}>
       <div className="app-shell">
-        {screen === "list" && (
-          <div className="screen">
-            <MainList
-              movies={movies}
-              loading={loading}
-              error={error}
-              generatedAt={generatedAt}
-              stale={stale}
-              coords={coords}
-              locationActive={locationActive}
-              locationError={locationError}
-              locationResolving={locationResolving}
-              onToggleLocation={toggleLocation}
-              onRetry={load}
-            />
-          </div>
-        )}
+        {/* The list stays mounted while a detail overlay covers it: its scroll
+            position survives untouched, and the page behind iOS Safari's
+            back-swipe gesture is real pixels, not a blank collapsed document. */}
+        <div className="screen" inert={screen === "detail"}>
+          <MainList
+            movies={movies}
+            loading={loading}
+            error={error}
+            generatedAt={generatedAt}
+            stale={stale}
+            coords={coords}
+            locationActive={locationActive}
+            locationError={locationError}
+            locationResolving={locationResolving}
+            onToggleLocation={toggleLocation}
+            onRetry={load}
+          />
+        </div>
         {screen === "detail" && selectedFilm && (
-          <div className="screen">
+          <div className="screen screen--overlay">
             <FilmDetail
               key={selectedFilm.id}
               movie={selectedFilm}
@@ -143,7 +157,7 @@ function AppInner() {
           </div>
         )}
         {screen === "detail" && !selectedFilm && (
-          <div className="screen">
+          <div className="screen screen--overlay">
             {loading ? (
               <div className="loading-pulse" role="status" aria-label="Loading film">
                 {[1, 2, 3, 4].map((i) => (
@@ -151,7 +165,7 @@ function AppInner() {
                 ))}
               </div>
             ) : (
-              <div className="empty-state">
+              <div className="empty-state empty-state--center">
                 <div className="empty-state__overline">Not found</div>
                 <div className="empty-state__heading">This film isn't showing</div>
                 <div className="empty-state__body">

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import DayPicker from "../components/DayPicker";
 import FilmCard from "../components/FilmCard";
@@ -65,32 +65,6 @@ export default function MainList({
       lng: t.lng,
     });
   };
-
-  // Restore scroll when returning from a film detail; the list unmounts while
-  // the detail screen is shown, so the browser can't do this for us. Save on
-  // click capture (before a Link can navigate) — at unmount the list DOM is
-  // already gone and scrollY has collapsed to 0.
-  useLayoutEffect(() => {
-    const saved = sessionStorage.getItem("btw-list-scroll");
-    if (saved) {
-      sessionStorage.removeItem("btw-list-scroll");
-      const target = Number(saved);
-      window.scrollTo(0, target);
-      // The first jump clamps if cards below the fold haven't laid out yet —
-      // keep nudging for a few frames until the page is tall enough.
-      let tries = 0;
-      const settle = () => {
-        if (Math.abs(window.scrollY - target) > 1 && tries++ < 20) {
-          window.scrollTo(0, target);
-          requestAnimationFrame(settle);
-        }
-      };
-      requestAnimationFrame(settle);
-    }
-    const save = () => sessionStorage.setItem("btw-list-scroll", String(window.scrollY));
-    document.addEventListener("click", save, true);
-    return () => document.removeEventListener("click", save, true);
-  }, []);
 
   const rawDay = searchParams.get("day");
   const selectedDay: number | null = rawDay !== null && !isNaN(Number(rawDay)) ? Number(rawDay) : null;
