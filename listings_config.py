@@ -3,32 +3,43 @@
 import os
 from typing import Any, cast
 
-_cached_listings_feed_url: str | None = None
+_resolved_cache: dict[str, str] = {}
 
 
-def listings_feed_url() -> str:
-    """Return the configured listings feed URL."""
-    global _cached_listings_feed_url
-    if _cached_listings_feed_url:
-        return _cached_listings_feed_url
+def resolve_env_or_ssm(env_var: str, ssm_param_env_var: str, description: str) -> str:
+    """
+    Return a config value from the environment, or from the SSM parameter
+    named by `ssm_param_env_var` (SecureString, decrypted).
 
-    url = os.environ.get("LISTINGS_FEED_URL", "").strip()
-    if url:
-        _cached_listings_feed_url = url
-        return url
+    Local dev sets `env_var` directly; Lambda sets `ssm_param_env_var` and the
+    value is fetched on first use, then cached for the process lifetime.
+    """
+    cached = _resolved_cache.get(env_var)
+    if cached:
+        return cached
 
-    param_name = os.environ.get("LISTINGS_FEED_SSM_PARAMETER", "").strip()
+    value = os.environ.get(env_var, "").strip()
+    if value:
+        _resolved_cache[env_var] = value
+        return value
+
+    param_name = os.environ.get(ssm_param_env_var, "").strip()
     if not param_name:
-        raise OSError("Neither LISTINGS_FEED_URL nor LISTINGS_FEED_SSM_PARAMETER is set")
+        raise OSError(f"Neither {env_var} nor {ssm_param_env_var} is set")
 
     import boto3  # type: ignore[import-untyped]  # imported lazily for local dev
 
     ssm: Any = boto3.client("ssm")
     response = ssm.get_parameter(Name=param_name, WithDecryption=True)
     parameter = cast(dict[str, Any], response.get("Parameter", {}))
-    url = cast(str, parameter.get("Value", ""))
-    if not url:
-        raise OSError(f"Listings feed SSM parameter {param_name!r} did not contain a value")
+    value = cast(str, parameter.get("Value", ""))
+    if not value:
+        raise OSError(f"{description} SSM parameter {param_name!r} did not contain a value")
 
-    _cached_listings_feed_url = url
-    return url
+    _resolved_cache[env_var] = value
+    return value
+
+
+def listings_feed_url() -> str:
+    """Return the configured listings feed URL."""
+    return resolve_env_or_ssm("LISTINGS_FEED_URL", "LISTINGS_FEED_SSM_PARAMETER", "Listings feed")

@@ -7,16 +7,9 @@ from bs4 import BeautifulSoup, Tag
 from listings_config import listings_feed_url
 from models import CinemaRegistry, Movie, Showtime
 from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
+from providers.common import DEFAULT_HEADERS, base_movie
 
 logger = logging.getLogger(__name__)
-
-_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/122.0.0.0 Safari/537.36"
-    )
-}
 
 _MONTH_MAP = {
     "Jan": 1,
@@ -91,7 +84,7 @@ class ListingsProvider:
 
     def fetch(self, cinemas: CinemaRegistry) -> list[Movie]:
         """Fetch and parse the current listings feed."""
-        resp = requests.get(listings_feed_url(), headers=_HEADERS, timeout=15)
+        resp = requests.get(listings_feed_url(), headers=DEFAULT_HEADERS, timeout=15)
         resp.raise_for_status()
 
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -165,20 +158,7 @@ class ListingsProvider:
             if not showtimes:
                 continue
 
-            movies.append(
-                Movie(
-                    title=title,
-                    tmdb_id=None,
-                    imdb_id=None,
-                    year=None,
-                    poster_url=None,
-                    synopsis=None,
-                    rating=None,
-                    runtime_mins=None,
-                    genres=None,
-                    showtimes=showtimes,
-                )
-            )
+            movies.append(base_movie(title, None, showtimes))
 
         # Log unrecognized cinema names to help tune cinemas.json.
         unrecognized = {

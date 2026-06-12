@@ -8,8 +8,10 @@ import listings_config
 
 
 @pytest.fixture(autouse=True)
-def reset_cache(monkeypatch):
-    monkeypatch.setattr(listings_config, "_cached_listings_feed_url", None)
+def reset_cache():
+    listings_config._resolved_cache.clear()
+    yield
+    listings_config._resolved_cache.clear()
 
 
 def test_listings_feed_url_reads_direct_env(monkeypatch):
