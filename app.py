@@ -22,7 +22,10 @@ import observability  # noqa: E402
 import pipeline  # noqa: E402
 import transform  # noqa: E402
 
-logging.basicConfig(level=logging.INFO)
+# Lambda's runtime installs a root-logger handler before this module imports,
+# so logging.basicConfig() is a no-op there and INFO logs (incl. EMF metrics)
+# get dropped. Set the root level explicitly instead.
+logging.getLogger().setLevel(logging.INFO)
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 
