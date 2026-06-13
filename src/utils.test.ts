@@ -1,6 +1,22 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Listings, TransformedMovie } from "./types";
-import { formatDayLabel, formatRuntime, relativeTime, transformResponse, haversineKm, smartSort } from "./utils";
+import { formatDayLabel, formatRuntime, relativeTime, transformResponse, haversineKm, smartSort, formatLanguage } from "./utils";
+
+describe("formatLanguage", () => {
+  it("maps ISO codes to English names", () => {
+    expect(formatLanguage("fr")).toBe("French");
+    expect(formatLanguage("en")).toBe("English");
+    expect(formatLanguage("ja")).toBe("Japanese");
+  });
+  it("returns null for missing input", () => {
+    expect(formatLanguage(null)).toBeNull();
+    expect(formatLanguage(undefined)).toBeNull();
+    expect(formatLanguage("")).toBeNull();
+  });
+  it("returns null for unrecognised codes", () => {
+    expect(formatLanguage("zz")).toBeNull();
+  });
+});
 
 describe("formatRuntime", () => {
   it("formats minutes only", () => expect(formatRuntime(45)).toBe("45m"));
@@ -115,6 +131,7 @@ describe("transformResponse", () => {
           poster_url: null, backdrop_url: null, trailer_url: null, genres: [],
           rating: 8.2, synopsis: "", links: { imdb: null, imdb_id: null },
           director: "Denis Villeneuve", cast: ["Timothée Chalamet", "Zendaya"],
+          original_lang: "en",
           showtimes: [{ theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" }],
         },
       ],
@@ -123,6 +140,7 @@ describe("transformResponse", () => {
     const [movie] = transformResponse(listings);
     expect(movie.director).toBe("Denis Villeneuve");
     expect(movie.cast).toEqual(["Timothée Chalamet", "Zendaya"]);
+    expect(movie.original_lang).toBe("en");
   });
 
   it("excludes showtimes whose datetime has already passed", () => {

@@ -85,6 +85,9 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     tagline = _as_optional_string(data.get("tagline"), source=f"{source} tagline")
     if tagline is not None:
         movie["tagline"] = tagline
+    original_lang = _as_optional_string(data.get("original_lang"), source=f"{source} original_lang")
+    if original_lang is not None:
+        movie["original_lang"] = original_lang
     director = _as_optional_string(data.get("director"), source=f"{source} director")
     if director is not None:
         movie["director"] = director
@@ -187,6 +190,10 @@ def normalize_tmdb_payload(
         normalized["backdrop_url"] = backdrop_url
 
     normalized["trailer_url"] = _as_trailer_url(videos, title=title)
+
+    original_lang = _as_language_code(data.get("original_language"), title=title)
+    if original_lang is not None:
+        normalized["original_lang"] = original_lang
 
     director = _as_director_from_credits(credits, title=title)
     if director is not None:
@@ -298,6 +305,19 @@ def _as_trailer_url(videos: object, *, title: str) -> str | None:
 
 
 _MAX_CAST = 5
+_LANG_CODE_RE = re.compile(r"[a-z]{2,3}")
+
+
+def _as_language_code(value: object, *, title: str) -> str | None:
+    """Validate a TMDb original_language value as a lowercase ISO 639-1/2 code."""
+    code = _as_optional_string(value, source=f"TMDb original_language for {title!r}")
+    if code is None:
+        return None
+    code = code.lower()
+    if _LANG_CODE_RE.fullmatch(code):
+        return code
+    logger.warning("Discarded TMDb original_language for %r: expected ISO code", title)
+    return None
 
 
 def _as_director_from_credits(credits: object, *, title: str) -> str | None:

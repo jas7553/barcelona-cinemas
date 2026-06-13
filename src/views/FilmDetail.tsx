@@ -5,7 +5,7 @@ import PosterPlaceholder from "../components/PosterPlaceholder";
 import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
 import { BackIcon, ChevronRightIcon } from "../components/Icons";
-import { formatDistKm, formatMovieMeta, buildCinemaRows, haversineKm } from "../utils";
+import { formatDistKm, formatMovieMeta, formatLanguage, buildCinemaRows, haversineKm } from "../utils";
 import type { TransformedMovie, SheetVenueData } from "../types";
 
 interface Props {
@@ -56,6 +56,7 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
   );
 
   const meta = formatMovieMeta(movie, true);
+  const originalLanguage = formatLanguage(movie.original_lang);
 
   const letterboxdHref = movie.links.imdb_id
     ? `https://letterboxd.com/imdb/${movie.links.imdb_id}/`
@@ -166,7 +167,7 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
             ) : (
               <p className="synopsis-empty">No synopsis available from TMDb.</p>
             )}
-            {(movie.director || (movie.cast && movie.cast.length > 0)) && (
+            {(movie.director || (movie.cast && movie.cast.length > 0) || originalLanguage) && (
               <dl className="credits">
                 {movie.director && (
                   <div className="credits-row">
@@ -178,6 +179,12 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                   <div className="credits-row">
                     <dt className="credits-label">Cast</dt>
                     <dd className="credits-value">{movie.cast.join(", ")}</dd>
+                  </div>
+                )}
+                {originalLanguage && (
+                  <div className="credits-row">
+                    <dt className="credits-label">Language</dt>
+                    <dd className="credits-value">{originalLanguage}</dd>
                   </div>
                 )}
               </dl>

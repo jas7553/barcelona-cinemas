@@ -78,6 +78,18 @@ def _movie(title: str = "Test Film", showtimes: list[Showtime] | None = None, **
     )
 
 
+def test_passes_through_original_lang():
+    movie = _movie(showtimes=[_showtime()])
+    movie["original_lang"] = "fr"
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    assert result["movies"][0]["original_lang"] == "fr"
+
+
+def test_original_lang_defaults_to_none_when_absent():
+    result = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
+    assert result["movies"][0]["original_lang"] is None
+
+
 def test_passes_through_director_and_cast():
     movie = _movie(showtimes=[_showtime()])
     movie["director"] = "Denis Villeneuve"

@@ -89,6 +89,7 @@ def _transform_movie(
     rating: float | None = movie.get("rating")
     runtime_mins: int | None = movie.get("runtime_mins")
     genres: list[str] = movie.get("genres") or []
+    original_lang: str | None = movie.get("original_lang")
     director: str | None = movie.get("director")
     cast: list[str] = movie.get("cast") or []
 
@@ -113,6 +114,7 @@ def _transform_movie(
         "trailer_url": trailer_url,
         "genres": genres,
         "rating": rating,
+        "original_lang": original_lang,
         "director": director,
         "cast": cast,
         "synopsis": synopsis or "",
