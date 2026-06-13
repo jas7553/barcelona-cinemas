@@ -157,9 +157,7 @@ class SecondaryProvider:
                 for performance in performances:
                     if not isinstance(performance, Mapping):
                         continue
-                    showtime = _parse_showtime(
-                        performance, cinema_key, cinema, booking, audio_lang, subtitle_lang
-                    )
+                    showtime = _parse_showtime(performance, cinema_key, cinema, booking, audio_lang, subtitle_lang)
                     if showtime is not None:
                         showtimes.append(showtime)
                 if not showtimes:
