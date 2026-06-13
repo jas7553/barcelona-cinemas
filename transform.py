@@ -13,6 +13,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from models import CinemaInfo, CinemaRegistry, Listings, Movie, Showtime
+from reconcile import dedup_showtimes
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +127,7 @@ def _transform_showtimes(
     cutoff: datetime | None,
     seen_theater_ids: set[str],
 ) -> list[dict[str, Any]]:
-    out_by_key: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    candidates: list[dict[str, Any]] = []
 
     for st in showtimes:
         if not isinstance(st, Mapping):
@@ -147,7 +148,6 @@ def _transform_showtimes(
             except ValueError:
                 pass
 
-        theater_id: str = info["id"]
         language_value = st.get("language", "vo")
         language = language_value if isinstance(language_value, str) else "vo"
 
@@ -157,24 +157,23 @@ def _transform_showtimes(
         booking_url_value = st.get("booking_url")
         booking_url = booking_url_value if isinstance(booking_url_value, str) else None
 
-        key = (theater_id, show_date, show_time, language)
-        existing = out_by_key.get(key)
-        if existing is not None:
-            # Duplicates can split the booking link across providers — keep it.
-            if existing["booking_url"] is None and booking_url is not None:
-                existing["booking_url"] = booking_url
-            continue
+        candidates.append(
+            {
+                "theater_id": info["id"],
+                "date": show_date,
+                "time": show_time,
+                "language": language,
+                "booking_url": booking_url,
+            }
+        )
 
-        seen_theater_ids.add(theater_id)
-        out_by_key[key] = {
-            "theater_id": theater_id,
-            "date": show_date,
-            "time": show_time,
-            "language": language,
-            "booking_url": booking_url,
-        }
-
-    return list(out_by_key.values())
+    out = dedup_showtimes(
+        candidates,
+        key=lambda s: (s["theater_id"], s["date"], s["time"], s["language"]),
+    )
+    for showtime in out:
+        seen_theater_ids.add(showtime["theater_id"])
+    return out
 
 
 def _build_theaters(

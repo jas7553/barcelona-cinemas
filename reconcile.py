@@ -1,0 +1,125 @@
+"""
+Reconciliation: collapse many raw Movies into one per identity.
+
+The single home for "are these the same film, and how do we merge them." Runs
+before enrichment, so it arbitrates only provider-known fields (title, imdb_id)
+plus showtimes; everything else is None on both sides and simply coalesces.
+
+`reconcile` is used both across providers (pipeline) and within a single feed
+(secondary provider). `dedup_showtimes` is reused by the public transform with
+a different key function.
+"""
+
+from __future__ import annotations
+
+import string
+from collections.abc import Callable, Hashable, Iterable, Mapping
+
+from models import Movie, Showtime
+
+_TITLE_EDGE_CHARS = f"{string.whitespace}{string.punctuation}“”‘’`"
+
+
+def normalize_title(title: str) -> str:
+    """Casefold a title and collapse whitespace, stripping edge punctuation."""
+    return " ".join(title.strip(_TITLE_EDGE_CHARS).casefold().split())
+
+
+def same_movie(left: Movie, right: Movie) -> bool:
+    """
+    Identity test: same film if both carry an imdb_id and they are equal,
+    otherwise if normalized titles are equal. A movie with an imdb still
+    matches a same-title movie that lacks one.
+    """
+    left_imdb = left.get("imdb_id")
+    right_imdb = right.get("imdb_id")
+    if left_imdb and right_imdb:
+        return left_imdb == right_imdb
+    return normalize_title(left["title"]) == normalize_title(right["title"])
+
+
+def reconcile(movies: list[Movie]) -> list[Movie]:
+    """
+    Collapse movies that satisfy `same_movie` into one each, in first-seen
+    order. Merges showtimes (deduped, booking links preserved) and coalesces
+    every other field to the first non-null value seen.
+    """
+    merged: list[Movie] = []
+    for movie in movies:
+        for index, existing in enumerate(merged):
+            if same_movie(existing, movie):
+                merged[index] = _merge_pair(existing, movie)
+                break
+        else:
+            merged.append(movie)
+    return merged
+
+
+def dedup_showtimes[S: Mapping[str, object], K: Hashable](showtimes: Iterable[S], key: Callable[[S], K]) -> list[S]:
+    """
+    Drop duplicate showtimes sharing a key, in first-seen order. A duplicate
+    without a booking link never clobbers one that has it. Works on any
+    showtime-shaped mapping with an optional "booking_url": the internal
+    Showtime, or the public API showtime dict produced by transform.py.
+    """
+    deduped: dict[K, S] = {}
+    for showtime in showtimes:
+        showtime_key = key(showtime)
+        existing = deduped.get(showtime_key)
+        if existing is not None and existing.get("booking_url") and not showtime.get("booking_url"):
+            continue
+        deduped[showtime_key] = showtime
+    return list(deduped.values())
+
+
+def _canonical_language(showtime: Showtime) -> str:
+    language = showtime.get("language")
+    return language if language in {"vo", "dub"} else "vo"
+
+
+def _showtime_identity(showtime: Showtime) -> tuple[str, str, str, str]:
+    return (
+        showtime["date"],
+        showtime["time"],
+        showtime["cinema"],
+        _canonical_language(showtime),
+    )
+
+
+def _pick_title(left: str, right: str) -> str:
+    """Deterministic title pick: longest, then casefold-first."""
+    return sorted((left, right), key=lambda value: (-len(value), value.casefold()))[0]
+
+
+def _coalesce[T](left: T | None, right: T | None) -> T | None:
+    """First non-null wins."""
+    return left if left is not None else right
+
+
+def _merge_pair(left: Movie, right: Movie) -> Movie:
+    merged_showtimes = sorted(
+        dedup_showtimes([*left["showtimes"], *right["showtimes"]], key=_showtime_identity),
+        key=_showtime_identity,
+    )
+    merged = Movie(
+        title=_pick_title(left["title"], right["title"]),
+        tmdb_id=_coalesce(left.get("tmdb_id"), right.get("tmdb_id")),
+        imdb_id=_coalesce(left.get("imdb_id"), right.get("imdb_id")),
+        year=_coalesce(left.get("year"), right.get("year")),
+        poster_url=_coalesce(left.get("poster_url"), right.get("poster_url")),
+        synopsis=_coalesce(left.get("synopsis"), right.get("synopsis")),
+        rating=_coalesce(left.get("rating"), right.get("rating")),
+        runtime_mins=_coalesce(left.get("runtime_mins"), right.get("runtime_mins")),
+        genres=_coalesce(left.get("genres"), right.get("genres")),
+        showtimes=merged_showtimes,
+    )
+    backdrop_url = _coalesce(left.get("backdrop_url"), right.get("backdrop_url"))
+    if backdrop_url is not None:
+        merged["backdrop_url"] = backdrop_url
+    trailer_url = _coalesce(left.get("trailer_url"), right.get("trailer_url"))
+    if trailer_url is not None:
+        merged["trailer_url"] = trailer_url
+    tagline = _coalesce(left.get("tagline"), right.get("tagline"))
+    if tagline is not None:
+        merged["tagline"] = tagline
+    return merged
