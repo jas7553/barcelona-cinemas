@@ -128,12 +128,23 @@ Resources:
 
   # ── Lambda ────────────────────────────────────────────────────────────────
 
+  # Explicit log group so retention is bounded (implicit Lambda log groups
+  # never expire). Custom name avoids a collision with the pre-existing
+  # implicit /aws/lambda/<function> group, which CloudFormation cannot adopt.
+  ApiFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-api"
+      RetentionInDays: 30
+
   ApiFunction:
     Type: AWS::Serverless::Function
     Metadata:
       BuildMethod: makefile
     Properties:
       Handler: app.handler
+      LoggingConfig:
+        LogGroup: !Ref ApiFunctionLogGroup
       CodeUri: ./
       Description: Barcelona Movie Database — Flask API via Mangum + EventBridge refresh
       Timeout: 60    # Overrides global 30s; extra headroom for post-refresh CloudFront invalidation + pre-warm
