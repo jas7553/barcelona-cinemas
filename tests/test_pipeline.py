@@ -510,7 +510,7 @@ def test_force_refresh_calls_post_refresh_steps_on_success(tmp_cache):
 
 def test_force_refresh_skips_post_refresh_steps_on_failure(tmp_cache):
     with (
-        patch.object(pipeline, "_refresh", side_effect=RuntimeError("scrape failed")),
+        patch.object(pipeline, "_refresh", side_effect=RuntimeError("refresh failed")),
         patch.object(pipeline, "_invalidate_cloudfront") as mock_invalidate,
         patch.object(pipeline, "_prewarm_cloudfront") as mock_prewarm,
         pytest.raises(RuntimeError),

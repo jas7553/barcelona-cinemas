@@ -43,3 +43,10 @@ def resolve_env_or_ssm(env_var: str, ssm_param_env_var: str, description: str) -
 def listings_feed_url() -> str:
     """Return the configured listings feed URL."""
     return resolve_env_or_ssm("LISTINGS_FEED_URL", "LISTINGS_FEED_SSM_PARAMETER", "Listings feed")
+
+
+def secondary_listings_url() -> str:
+    """Return the configured secondary listings feed URL."""
+    return resolve_env_or_ssm(
+        "SECONDARY_LISTINGS_URL", "SECONDARY_LISTINGS_SSM_PARAMETER", "Secondary listings feed"
+    )

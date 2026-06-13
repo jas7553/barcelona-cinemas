@@ -2,12 +2,11 @@
 
 ## Problem
 
-The app's data pipeline is two scrapers (`providers/`) refreshed every 12h by
-EventBridge. The dominant failure mode is **silent rot**: a source site changes
-layout or moves domains, refresh fails, the cache goes stale, and the app keeps
+The app's data pipeline is two listings providers (`providers/`) refreshed every
+12h by EventBridge. The dominant failure mode is **silent rot**: an upstream feed
+changes shape or moves, refresh fails, the cache goes stale, and the app keeps
 serving old showtimes until the owner notices at the cinema. (This nearly
-happened already: Verdi moved from `cines-verdi.com/barcelona` to
-`barcelona.cines-verdi.com` in 2026.)
+happened already: one provider's feed moved to a different URL in 2026.)
 
 `template.yaml` already defines four CloudWatch alarms — but **none of them has
 `AlarmActions`**, so they flip state silently. Nobody is notified. That is the
@@ -80,7 +79,7 @@ after a deploy, refresh hanging/timing out, EMF logging broken.
 ### 4. (Optional, low severity) Single-provider degradation alarm
 
 A refresh "succeeds" even when one of the two providers fails — coverage
-silently halves (e.g. all Mooby booking links vanish). If implemented:
+silently halves (e.g. all secondary-provider booking links vanish). If implemented:
 
 - Metric: `ProviderFailure`, `Statistic: Sum`, `Period: 86400`,
   `EvaluationPeriods: 1`, `Threshold: 2`,

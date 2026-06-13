@@ -159,7 +159,7 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
       .sort((a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time)),
   }))
   .filter((movie) => movie.showtimes.length > 0)
-  // Scrape order is arbitrary; rating is on every card, so rating-desc gives
+  // Source order is arbitrary; rating is on every card, so rating-desc gives
   // the list a self-explanatory order. Unrated films sink, ties alphabetical.
   .sort(
     (a, b) =>

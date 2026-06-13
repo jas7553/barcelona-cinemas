@@ -153,6 +153,7 @@ Resources:
         Variables:
           TMDB_SSM_PARAMETER: /barcelona-movie-db/tmdb-api-key
           LISTINGS_FEED_SSM_PARAMETER: /barcelona-movie-db/listings-feed-url
+          SECONDARY_LISTINGS_SSM_PARAMETER: /barcelona-movie-db/secondary-listings-url
           CACHE_BACKEND: s3
           S3_BUCKET: !Ref CacheBucket
           S3_KEY: listings.json    # Explicit: must match the /listings.json key in IAM policy
@@ -180,6 +181,11 @@ Resources:
               Action:
                 - ssm:GetParameter
               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/barcelona-movie-db/listings-feed-url"
+            - Sid: SsmSecondaryListingsUrl
+              Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/barcelona-movie-db/secondary-listings-url"
             - Sid: KmsDecryptSsm
               Effect: Allow
               Action:
