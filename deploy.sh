@@ -33,6 +33,13 @@ npm run build
 echo "==> 2/5 SAM build (package Lambda + dependencies)"
 sam build
 
+# Smoke-test the built package before deploying: a missing module in the
+# Makefile copy list breaks `import app` at runtime and takes the Lambda down.
+# Importing from the build artifact catches that here instead of in prod.
+echo "    verifying built package imports app..."
+( cd .aws-sam/build/ApiFunction && python -c "import app" ) \
+  || { echo "ERROR: built Lambda package cannot import app — check Makefile copy list"; exit 1; }
+
 echo "==> 3/5 SAM deploy"
 # Fetch distribution ID + domain from the existing stack so they can be injected
 # into Lambda env vars for post-refresh invalidation/pre-warming. Absent on first deploy.
