@@ -77,7 +77,22 @@ BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK" \
 
 # Upload new assets without --delete: old hashed assets stay in S3 until the CloudFront
 # invalidation has fully propagated (~5 min), preventing 404s on cached pages mid-deploy.
-aws s3 sync static/ "s3://$BUCKET"
+#
+# Two passes set Cache-Control at the origin (CloudFront's StaticAssetsHeadersPolicy
+# also stamps it at the edge — belt and suspenders):
+#   1. Content-hashed bundles (assets/) and frozen fonts (fonts/) → cache for a year,
+#      immutable. Their URLs change when content changes, so this is always safe.
+#      If you ever swap a font, rename the file — the name is not content-hashed.
+#   2. Everything else (index.html, manifest, icons) → no-cache, so a new deploy's
+#      index.html, which points at the new hashed asset names, is always revalidated
+#      rather than served stale from a browser cache.
+aws s3 sync static/ "s3://$BUCKET" \
+  --exclude "*" --include "assets/*" --include "fonts/*" \
+  --cache-control "public, max-age=31536000, immutable"
+
+aws s3 sync static/ "s3://$BUCKET" \
+  --exclude "assets/*" --exclude "fonts/*" \
+  --cache-control "no-cache"
 
 echo "==> 5/6 Invalidate CloudFront cache"
 DIST=$(aws cloudformation describe-stacks --stack-name "$STACK" \

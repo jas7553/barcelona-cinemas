@@ -380,7 +380,7 @@ Resources:
       ResponseHeadersPolicyConfig:
         Name: !Sub "${AWS::StackName}-security-headers"
         Comment: "Security headers for React SPA and API responses (CSP: same-origin only)."
-        SecurityHeadersConfig:
+        SecurityHeadersConfig: &securityHeaders
           ContentSecurityPolicy:
             ContentSecurityPolicy: >-
               default-src 'self';
@@ -409,6 +409,24 @@ Resources:
             IncludeSubdomains: true
             Preload: true
             Override: true
+
+  # Same security headers as above, plus an immutable Cache-Control for the
+  # content-hashed bundles (/assets/*) and frozen font files (/fonts/*).
+  # Override: true so CloudFront stamps the header even though S3 objects may
+  # predate the deploy.sh metadata change. The shared *securityHeaders anchor
+  # keeps the hardening block from drifting between the two policies.
+  StaticAssetsHeadersPolicy:
+    Type: AWS::CloudFront::ResponseHeadersPolicy
+    Properties:
+      ResponseHeadersPolicyConfig:
+        Name: !Sub "${AWS::StackName}-static-assets-headers"
+        Comment: "Security headers + immutable Cache-Control for content-hashed assets."
+        SecurityHeadersConfig: *securityHeaders
+        CustomHeadersConfig:
+          Items:
+            - Header: Cache-Control
+              Value: "public, max-age=31536000, immutable"
+              Override: true
 
   # ── CloudFront OAC ────────────────────────────────────────────────────────
 
@@ -463,6 +481,29 @@ Resources:
             - HEAD
 
         CacheBehaviors:
+          # Content-hashed bundles and frozen fonts — immutable, cache for a year
+          # in the browser and at the edge. Filenames change when content changes
+          # (assets); fonts must be renamed if ever swapped (see deploy.sh).
+          - PathPattern: /assets/*
+            TargetOriginId: FrontendS3
+            ViewerProtocolPolicy: redirect-to-https
+            Compress: true
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6    # CachingOptimized
+            ResponseHeadersPolicyId: !Ref StaticAssetsHeadersPolicy
+            AllowedMethods:
+              - GET
+              - HEAD
+
+          - PathPattern: /fonts/*
+            TargetOriginId: FrontendS3
+            ViewerProtocolPolicy: redirect-to-https
+            Compress: true
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6    # CachingOptimized
+            ResponseHeadersPolicyId: !Ref StaticAssetsHeadersPolicy
+            AllowedMethods:
+              - GET
+              - HEAD
+
           # Cache the public listings endpoint briefly at the edge.
           - PathPattern: /api/listings
             TargetOriginId: ApiGateway
