@@ -65,7 +65,8 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
 
   // Detail scrolls the document body (so iOS Safari pull-to-refresh works);
   // track window scroll for the backdrop fade + Back-pill auto-hide. Reset to
-  // top on mount since the body keeps the list's scroll offset across nav.
+  // top on mount: the body still carries the list's offset at this point
+  // (MainList captures it on unmount, then restores it on the way back).
   useEffect(() => {
     window.scrollTo(0, 0);
     const onScroll = () => {

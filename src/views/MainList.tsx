@@ -23,6 +23,8 @@ interface Props {
   onRetry: () => void;
 }
 
+const SCROLL_KEY = "btw-list-scroll";
+
 export default function MainList({
   movies,
   loading,
@@ -163,6 +165,26 @@ export default function MainList({
 
   useEffect(() => {
     sessionStorage.setItem("btw-warmed", "1");
+  }, []);
+
+  // MainList unmounts when a detail opens, so the scroll offset is persisted to
+  // sessionStorage on every scroll and replayed on remount — Back returns to the
+  // same place. Saving continuously (not on unmount) is robust to StrictMode's
+  // double-invoked effects. The restore retries across frames until the freshly
+  // painted list is tall enough to honor the offset (else it clamps short).
+  useEffect(() => {
+    const saved = Number(sessionStorage.getItem(SCROLL_KEY) ?? 0);
+    if (saved > 0) {
+      let tries = 0;
+      const restore = () => {
+        window.scrollTo(0, saved);
+        if (window.scrollY < saved - 1 && tries++ < 20) requestAnimationFrame(restore);
+      };
+      requestAnimationFrame(restore);
+    }
+    const onScroll = () => sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   const dataAge = generatedAt ? formatDataAge(generatedAt) : null;
