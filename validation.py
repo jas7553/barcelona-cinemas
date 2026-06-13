@@ -136,6 +136,12 @@ def normalize_showtime(data: object, *, source: str) -> Showtime | None:
     language = _as_optional_language(data.get("language"), source=f"{source} language")
     if language is not None:
         showtime["language"] = language
+    audio_lang = _as_enum(data.get("audio_lang"), {"en", "other"}, source=f"{source} audio_lang")
+    if audio_lang is not None:
+        showtime["audio_lang"] = audio_lang
+    subtitle_lang = _as_enum(data.get("subtitle_lang"), {"en", "es", "ca"}, source=f"{source} subtitle_lang")
+    if subtitle_lang is not None:
+        showtime["subtitle_lang"] = subtitle_lang
     booking_url = _as_optional_http_url(data.get("booking_url"), source=f"{source} booking_url")
     if booking_url is not None:
         showtime["booking_url"] = booking_url
@@ -255,6 +261,17 @@ def _as_optional_imdb_id(value: object, *, source: str) -> str | None:
     if _IMDB_ID_RE.fullmatch(imdb_id):
         return imdb_id
     logger.warning("Discarded %s: expected IMDb title id", source)
+    return None
+
+
+def _as_enum(value: object, allowed: set[str], *, source: str) -> str | None:
+    """Return value if it is one of the allowed strings, else None (unknown)."""
+    code = _as_optional_string(value, source=source)
+    if code is None:
+        return None
+    if code in allowed:
+        return code
+    logger.warning("Discarded %s: %r not in %s", source, code, sorted(allowed))
     return None
 
 

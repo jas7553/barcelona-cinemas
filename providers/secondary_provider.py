@@ -10,7 +10,7 @@ import requests
 from listings_config import secondary_listings_url
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
 from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
-from providers.common import DEFAULT_HEADERS, base_movie
+from providers.common import DEFAULT_HEADERS, base_movie, normalize_audio_lang, normalize_subtitle_lang
 from reconcile import reconcile
 
 logger = logging.getLogger(__name__)
@@ -66,6 +66,8 @@ def _parse_showtime(
     cinema_key: str,
     cinema: CinemaInfo,
     booking: tuple[str, str] | None,
+    audio_lang: str | None,
+    subtitle_lang: str | None,
 ) -> Showtime | None:
     schedule_date = performance.get("schedule_date")
     raw_time = performance.get("time")
@@ -82,6 +84,10 @@ def _parse_showtime(
         time=f"{raw_time[8:10]}:{raw_time[10:12]}",
         language="vo",
     )
+    if audio_lang is not None:
+        showtime["audio_lang"] = audio_lang
+    if subtitle_lang is not None:
+        showtime["subtitle_lang"] = subtitle_lang
     perf_code = performance.get("performance_code")
     if booking is not None and isinstance(perf_code, str) and perf_code:
         template, theatre_code = booking
@@ -144,11 +150,16 @@ class SecondaryProvider:
                 if not isinstance(performances, list) or not performances:
                     continue
 
+                audio_lang = normalize_audio_lang(str(event.get("language", "")))
+                subtitle_lang = normalize_subtitle_lang(str(event.get("subtitles_lang", "")))
+
                 showtimes: list[Showtime] = []
                 for performance in performances:
                     if not isinstance(performance, Mapping):
                         continue
-                    showtime = _parse_showtime(performance, cinema_key, cinema, booking)
+                    showtime = _parse_showtime(
+                        performance, cinema_key, cinema, booking, audio_lang, subtitle_lang
+                    )
                     if showtime is not None:
                         showtimes.append(showtime)
                 if not showtimes:

@@ -92,6 +92,34 @@ def _showtime_payload(**extra: object) -> dict[str, object]:
     }
 
 
+def test_normalize_movie_keeps_valid_subtitle_fields() -> None:
+    movie = normalize_movie(
+        {
+            "title": "Anatomy of a Fall",
+            "showtimes": [_showtime_payload(audio_lang="other", subtitle_lang="es")],
+        },
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert movie["showtimes"][0]["audio_lang"] == "other"
+    assert movie["showtimes"][0]["subtitle_lang"] == "es"
+
+
+def test_normalize_movie_discards_invalid_subtitle_fields() -> None:
+    movie = normalize_movie(
+        {
+            "title": "Anatomy of a Fall",
+            "showtimes": [_showtime_payload(audio_lang="klingon", subtitle_lang="fr")],
+        },
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert "audio_lang" not in movie["showtimes"][0]
+    assert "subtitle_lang" not in movie["showtimes"][0]
+
+
 def test_normalize_movie_keeps_valid_booking_url() -> None:
     movie = normalize_movie(
         {

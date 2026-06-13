@@ -55,18 +55,24 @@ def reconcile(movies: list[Movie]) -> list[Movie]:
     return merged
 
 
+def _showtime_info_score(showtime: Mapping[str, object]) -> int:
+    """Rank how much a showtime carries: a booking link and known subtitles each count."""
+    return (1 if showtime.get("booking_url") else 0) + (1 if showtime.get("subtitle_lang") else 0)
+
+
 def dedup_showtimes[S: Mapping[str, object], K: Hashable](showtimes: Iterable[S], key: Callable[[S], K]) -> list[S]:
     """
-    Drop duplicate showtimes sharing a key, in first-seen order. A duplicate
-    without a booking link never clobbers one that has it. Works on any
-    showtime-shaped mapping with an optional "booking_url": the internal
-    Showtime, or the public API showtime dict produced by transform.py.
+    Drop duplicate showtimes sharing a key, in first-seen order. On a collision
+    the more informative copy wins (booking link, known subtitle language), so a
+    bare duplicate never clobbers a richer one regardless of provider order.
+    Works on any showtime-shaped mapping: the internal Showtime, or the public
+    API showtime dict produced by transform.py.
     """
     deduped: dict[K, S] = {}
     for showtime in showtimes:
         showtime_key = key(showtime)
         existing = deduped.get(showtime_key)
-        if existing is not None and existing.get("booking_url") and not showtime.get("booking_url"):
+        if existing is not None and _showtime_info_score(existing) > _showtime_info_score(showtime):
             continue
         deduped[showtime_key] = showtime
     return list(deduped.values())

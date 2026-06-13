@@ -506,6 +506,19 @@ a.time-pill--link {
   flex-shrink: 0;
 }
 
+/* Subtitle/version badge on a showtime (e.g. "Spanish subs"). Hidden when unknown. */
+.subtitle-badge {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+
 /* "Lock it in" — download an .ics for this exact screening. */
 .time-pill__cal {
   display: inline-flex;

@@ -121,6 +121,15 @@ def test_dedup_showtimes_linked_duplicate_replaces_linkless():
     assert kept.get("booking_url") == "https://book"
 
 
+def test_dedup_showtimes_known_subtitle_wins_regardless_of_order():
+    known = _showtime("Verdi", "2026-06-14", "18:00", subtitle_lang="es")
+    unknown = _showtime("Verdi", "2026-06-14", "18:00")
+    [a] = dedup_showtimes([unknown, known], key=_key)
+    assert a.get("subtitle_lang") == "es"
+    [b] = dedup_showtimes([known, unknown], key=_key)
+    assert b.get("subtitle_lang") == "es"
+
+
 def test_dedup_showtimes_preserves_first_seen_order():
     a = _showtime("Verdi", "2026-06-14", "18:00")
     b = _showtime("Malda", "2026-06-14", "20:00")

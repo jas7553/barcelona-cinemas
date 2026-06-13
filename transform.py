@@ -163,12 +163,19 @@ def _transform_showtimes(
         booking_url_value = st.get("booking_url")
         booking_url = booking_url_value if isinstance(booking_url_value, str) else None
 
+        audio_lang_value = st.get("audio_lang")
+        audio_lang = audio_lang_value if audio_lang_value in ("en", "other") else None
+        subtitle_lang_value = st.get("subtitle_lang")
+        subtitle_lang = subtitle_lang_value if subtitle_lang_value in ("en", "es", "ca") else None
+
         candidates.append(
             {
                 "theater_id": info["id"],
                 "date": show_date,
                 "time": show_time,
                 "language": language,
+                "audio_lang": audio_lang,
+                "subtitle_lang": subtitle_lang,
                 "booking_url": booking_url,
             }
         )
