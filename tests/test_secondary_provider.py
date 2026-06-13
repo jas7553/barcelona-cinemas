@@ -114,10 +114,16 @@ def test_fetch_parses_english_audio_and_english_subtitles() -> None:
     assert hail_mary["imdb_id"] == "tt12042730"
     assert len(hail_mary["showtimes"]) == 2
     assert hail_mary["showtimes"][0]["language"] == "vo"
+    # Anglès audio / Español subtitles → English film with Spanish subs.
+    assert hail_mary["showtimes"][0]["audio_lang"] == "en"
+    assert hail_mary["showtimes"][0]["subtitle_lang"] == "es"
 
     subtitled = next(movie for movie in movies if movie["title"] == "Other Language Film")
     assert subtitled["showtimes"][0]["date"] == "2026-03-30"
     assert subtitled["showtimes"][0]["time"] == "21:00"
+    # Japonès audio / English subtitles → foreign film, English subs.
+    assert subtitled["showtimes"][0]["audio_lang"] == "other"
+    assert subtitled["showtimes"][0]["subtitle_lang"] == "en"
 
 
 def test_fetch_builds_english_booking_url_from_shop_template() -> None:

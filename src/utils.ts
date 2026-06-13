@@ -18,6 +18,24 @@ export function formatDistKm(km: number | null | undefined): string | null {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 }
 
+// ── Subtitle badge ──────────────────────────────────────────────────────────
+
+/**
+ * Derive the screening's viewing-language badge from the (audio, subtitle) pair,
+ * for an English speaker. English audio wins outright; otherwise the subtitle
+ * language decides. Unknown → null (no badge shown).
+ */
+export function subtitleBadge(s: {
+  audio_lang?: string | null;
+  subtitle_lang?: string | null;
+}): string | null {
+  if (s.audio_lang === "en") return "English";
+  if (s.subtitle_lang === "en") return "English subs";
+  if (s.subtitle_lang === "es") return "Spanish subs";
+  if (s.subtitle_lang === "ca") return "Catalan subs";
+  return null;
+}
+
 // ── Language display ────────────────────────────────────────────────────────
 
 /** Map an ISO 639-1 code (e.g. "fr") to an English language name ("French"). */
@@ -270,7 +288,7 @@ export function formatMovieMeta(movie: TransformedMovie, includeRuntime = false)
 export type DayGroup = {
   label: string | null;
   offset: number;
-  times: { key: string; t: string; date: string; bookingUrl?: string }[];
+  times: { key: string; t: string; date: string; bookingUrl?: string; badge: string | null }[];
 };
 export type CinemaRow = { theater: TransformedShowtime["theater"]; dayGroups: DayGroup[]; distKm?: number };
 
@@ -290,7 +308,7 @@ export function buildCinemaRows(
   for (const s of showtimes) {
     const entry = byTheater.get(s.theater.id) ?? { theater: s.theater, groups: new Map<number, DayGroup>() };
     const key = `${s.dayOffset}-${s.time}`;
-    const time = { key, t: s.time, date: s.date, bookingUrl: s.booking_url ?? undefined };
+    const time = { key, t: s.time, date: s.date, bookingUrl: s.booking_url ?? undefined, badge: subtitleBadge(s) };
     if (selectedDay != null) {
       const group = entry.groups.get(0) ?? { label: null, offset: 0, times: [] };
       if (!group.times.some((x) => x.key === key)) group.times.push(time);

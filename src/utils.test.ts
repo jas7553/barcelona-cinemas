@@ -1,6 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Listings, TransformedMovie } from "./types";
-import { formatDayLabel, formatRuntime, relativeTime, transformResponse, haversineKm, smartSort, formatLanguage, buildIcs } from "./utils";
+import { formatDayLabel, formatRuntime, relativeTime, transformResponse, haversineKm, smartSort, formatLanguage, buildIcs, subtitleBadge } from "./utils";
+
+describe("subtitleBadge", () => {
+  it("shows English for English audio regardless of subs", () => {
+    expect(subtitleBadge({ audio_lang: "en", subtitle_lang: "es" })).toBe("English");
+    expect(subtitleBadge({ audio_lang: "en" })).toBe("English");
+  });
+  it("shows the subtitle language for foreign audio", () => {
+    expect(subtitleBadge({ audio_lang: "other", subtitle_lang: "en" })).toBe("English subs");
+    expect(subtitleBadge({ audio_lang: "other", subtitle_lang: "es" })).toBe("Spanish subs");
+    expect(subtitleBadge({ subtitle_lang: "ca" })).toBe("Catalan subs");
+  });
+  it("returns null when unknown", () => {
+    expect(subtitleBadge({})).toBeNull();
+    expect(subtitleBadge({ audio_lang: null, subtitle_lang: null })).toBeNull();
+    expect(subtitleBadge({ audio_lang: "other" })).toBeNull();
+  });
+});
 
 describe("buildIcs", () => {
   const base = { title: "Dune", location: "Cinemes Verdi, Carrer de Verdi 32", date: "2026-06-15", time: "21:30" };
@@ -173,7 +190,7 @@ describe("transformResponse", () => {
           rating: 8.2, synopsis: "", links: { imdb: null, imdb_id: null },
           director: "Denis Villeneuve", cast: ["Timothée Chalamet", "Zendaya"],
           original_lang: "en",
-          showtimes: [{ theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" }],
+          showtimes: [{ theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo", audio_lang: "other", subtitle_lang: "es" }],
         },
       ],
     };
@@ -182,6 +199,8 @@ describe("transformResponse", () => {
     expect(movie.director).toBe("Denis Villeneuve");
     expect(movie.cast).toEqual(["Timothée Chalamet", "Zendaya"]);
     expect(movie.original_lang).toBe("en");
+    expect(movie.showtimes[0].audio_lang).toBe("other");
+    expect(movie.showtimes[0].subtitle_lang).toBe("es");
   });
 
   it("excludes showtimes whose datetime has already passed", () => {

@@ -262,15 +262,15 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                     <div className={selectedDay == null ? "cinema-row__times cinema-row__times--grouped" : "cinema-row__times"}>
                       {dayGroups.map((group) =>
                         group.label == null ? (
-                          group.times.map(({ key, t, date, bookingUrl }) => (
-                            <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} />
+                          group.times.map(({ key, t, date, bookingUrl, badge }) => (
+                            <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} badge={badge} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} />
                           ))
                         ) : (
                           <div key={group.offset} className="cinema-row__day-group">
                             <span className="cinema-row__day-label">{group.label}</span>
                             <div className="cinema-row__day-pills">
-                              {group.times.map(({ key, t, date, bookingUrl }) => (
-                                <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} />
+                              {group.times.map(({ key, t, date, bookingUrl, badge }) => (
+                                <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} badge={badge} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} />
                               ))}
                             </div>
                           </div>
@@ -295,6 +295,7 @@ function TimePill({
   time,
   date,
   bookingUrl,
+  badge,
   film,
   cinema,
   address,
@@ -303,6 +304,7 @@ function TimePill({
   time: string;
   date: string;
   bookingUrl?: string;
+  badge: string | null;
   film: string;
   cinema: string;
   address: string;
@@ -341,6 +343,7 @@ function TimePill({
       >
         <span aria-hidden="true">📅</span>
       </a>
+      {badge && <span className="subtitle-badge">{badge}</span>}
     </span>
   );
 }

@@ -11,6 +11,42 @@ DEFAULT_HEADERS = {
 }
 
 
+# Source feeds label audio/subtitle languages in mixed Catalan, Spanish, and
+# English free text (e.g. "Anglès", "Español", "English"). Substring matching
+# tolerates accents and the -s/-és variants without a full locale table.
+def _matches(value: str, needles: tuple[str, ...]) -> bool:
+    return any(needle in value for needle in needles)
+
+
+_ENGLISH = ("english", "ingl", "angl")
+_SPANISH = ("españ", "espan", "castell", "spanish")
+_CATALAN = ("català", "catal")
+
+
+def normalize_audio_lang(raw: str) -> str | None:
+    """Normalize a source audio-language label to "en", "other", or None (unknown)."""
+    value = raw.strip().lower()
+    if not value:
+        return None
+    if _matches(value, _ENGLISH):
+        return "en"
+    return "other"
+
+
+def normalize_subtitle_lang(raw: str) -> str | None:
+    """Normalize a source subtitle-language label to "en"/"es"/"ca", or None (unknown)."""
+    value = raw.strip().lower()
+    if not value:
+        return None
+    if _matches(value, _ENGLISH):
+        return "en"
+    if _matches(value, _CATALAN):  # check Catalan before Spanish: "català" has no Spanish needle
+        return "ca"
+    if _matches(value, _SPANISH):
+        return "es"
+    return None
+
+
 def base_movie(title: str, imdb_id: str | None, showtimes: list[Showtime]) -> Movie:
     """Movie with only provider-known fields set; enrichment fills the rest."""
     return Movie(

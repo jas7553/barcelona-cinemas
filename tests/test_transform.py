@@ -78,6 +78,24 @@ def _movie(title: str = "Test Film", showtimes: list[Showtime] | None = None, **
     )
 
 
+def test_carries_subtitle_fields_without_collapsing():
+    st = _showtime()
+    st["audio_lang"] = "other"
+    st["subtitle_lang"] = "en"
+    movie = _movie(showtimes=[st])
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    out = result["movies"][0]["showtimes"][0]
+    assert out["audio_lang"] == "other"
+    assert out["subtitle_lang"] == "en"
+
+
+def test_subtitle_fields_default_to_none_when_absent():
+    result = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
+    out = result["movies"][0]["showtimes"][0]
+    assert out["audio_lang"] is None
+    assert out["subtitle_lang"] is None
+
+
 def test_passes_through_original_lang():
     movie = _movie(showtimes=[_showtime()])
     movie["original_lang"] = "fr"

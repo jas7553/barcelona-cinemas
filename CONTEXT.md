@@ -14,7 +14,27 @@ One film, identified across feeds by its **canonical key**, carrying its
 
 **Showtime**:
 One screening of a **Movie** at one **Cinema** on a date/time, in a language
-(`vo` | `dub`), optionally with a booking link.
+(`vo` | `dub`), optionally with a booking link and a **Subtitle version**.
+
+**Subtitle version**:
+The viewing-language axis of a **Showtime**, modelled as a normalized
+(`audio_lang`, `subtitle_lang`) pair and surfaced to the SPA as one badge.
+- `audio_lang`: `en` | `other` | absent (unknown).
+- `subtitle_lang`: `en` | `es` | `ca` | absent (unknown).
+
+Taxonomy decision (the HITL gate for this feature):
+- The sources do **not** speak clean VO/VOSE/VOSC; the secondary feed gives a
+  free-text (audio, subtitle) pair in mixed Catalan/Spanish/English (e.g.
+  "Anglès" / "Español"), and the primary feed carries **no** subtitle data at
+  all. So the model is the pair, not a single 3-value code.
+- Badge derivation, for an English speaker: English audio → **"English"**;
+  else English subtitles → **"English subs"**; else Spanish → **"Spanish subs"**;
+  else Catalan → **"Catalan subs"**; else **no badge**.
+- Unknown is never guessed. Empty/unrecognized source values and every
+  primary-feed showtime stay unknown and show no badge — absence of a badge
+  means "we don't know," not "no subtitles."
+- When both feeds report the same screening, **Reconciliation** keeps the copy
+  with the known subtitle (see `_showtime_info_score`).
 
 **Provider**:
 A source of raw **Movies** scraped from one upstream feed. Implements

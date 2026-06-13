@@ -21,6 +21,10 @@ export interface Showtime {
   date: string;       // YYYY-MM-DD
   time: string;       // HH:MM
   language: "vo" | "dub";
+  /** Original audio language: "en" | "other" | null (unknown). Optional: predates older caches. */
+  audio_lang?: "en" | "other" | null;
+  /** Subtitle language: "en" | "es" | "ca" | null (unknown). Optional: predates older caches. */
+  subtitle_lang?: "en" | "es" | "ca" | null;
   /** Direct ticket-purchase link for this exact screening, when the cinema exposes one.
       Optional: older cached API responses predate this field. */
   booking_url?: string | null;
