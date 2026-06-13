@@ -18,6 +18,21 @@ export function formatDistKm(km: number | null | undefined): string | null {
   return km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
 }
 
+// ── Language display ────────────────────────────────────────────────────────
+
+/** Map an ISO 639-1 code (e.g. "fr") to an English language name ("French"). */
+export function formatLanguage(code: string | null | undefined): string | null {
+  if (!code) return null;
+  try {
+    const name = new Intl.DisplayNames(["en"], { type: "language" }).of(code);
+    // DisplayNames echoes the input back for codes it doesn't recognise.
+    if (!name || name.toLowerCase() === code.toLowerCase()) return null;
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  } catch {
+    return null;
+  }
+}
+
 // ── Runtime formatting ──────────────────────────────────────────────────────
 
 export function formatRuntime(mins: number): string {

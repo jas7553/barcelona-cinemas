@@ -199,6 +199,30 @@ def test_normalize_tmdb_payload_omits_credits_when_absent() -> None:
     assert "cast" not in payload
 
 
+def test_normalize_tmdb_payload_extracts_original_language() -> None:
+    payload = normalize_tmdb_payload({"id": 42, "original_language": "FR"}, title="Anatomy of a Fall")
+
+    assert payload is not None
+    assert payload["original_lang"] == "fr"  # lowercased
+
+
+def test_normalize_tmdb_payload_discards_malformed_original_language() -> None:
+    payload = normalize_tmdb_payload({"id": 42, "original_language": "français"}, title="Film")
+
+    assert payload is not None
+    assert "original_lang" not in payload
+
+
+def test_normalize_movie_keeps_cached_original_lang() -> None:
+    movie = normalize_movie(
+        {"title": "Anatomy of a Fall", "original_lang": "fr", "showtimes": []},
+        source="cache",
+    )
+
+    assert movie is not None
+    assert movie["original_lang"] == "fr"
+
+
 def test_normalize_movie_keeps_cached_director_and_cast() -> None:
     movie = normalize_movie(
         {

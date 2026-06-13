@@ -24,6 +24,7 @@ class Movie(TypedDict):
     rating: float | None
     runtime_mins: int | None
     genres: list[str] | None
+    original_lang: NotRequired[str | None]  # ISO 639-1 code, e.g. "fr"
     director: NotRequired[str | None]
     cast: NotRequired[list[str] | None]
     showtimes: list[Showtime]
