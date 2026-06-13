@@ -1,6 +1,47 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Listings, TransformedMovie } from "./types";
-import { formatDayLabel, formatRuntime, relativeTime, transformResponse, haversineKm, smartSort, formatLanguage } from "./utils";
+import { formatDayLabel, formatRuntime, relativeTime, transformResponse, haversineKm, smartSort, formatLanguage, buildIcs } from "./utils";
+
+describe("buildIcs", () => {
+  const base = { title: "Dune", location: "Cinemes Verdi, Carrer de Verdi 32", date: "2026-06-15", time: "21:30" };
+
+  it("emits a valid single-event VCALENDAR with the core fields", () => {
+    const ics = buildIcs({ ...base, runtimeMinutes: 90 });
+    expect(ics).toContain("BEGIN:VCALENDAR");
+    expect(ics).toContain("BEGIN:VEVENT");
+    expect(ics).toContain("END:VEVENT");
+    expect(ics).toContain("END:VCALENDAR");
+    expect(ics).toContain("SUMMARY:Dune");
+    expect(ics).toMatch(/UID:.+@barcelona-movie-database/);
+    expect(ics).toMatch(/DTSTAMP:\d{8}T\d{6}Z/);
+    // CRLF line endings per RFC 5545.
+    expect(ics).toContain("\r\n");
+  });
+
+  it("sets DTEND to start + runtime", () => {
+    const ics = buildIcs({ ...base, runtimeMinutes: 90 });
+    expect(ics).toContain("DTSTART:20260615T213000");
+    expect(ics).toContain("DTEND:20260615T230000"); // 21:30 + 90m = 23:00
+  });
+
+  it("falls back to a 120-minute event when runtime is null", () => {
+    const ics = buildIcs({ ...base, runtimeMinutes: null });
+    expect(ics).toContain("DTSTART:20260615T213000");
+    expect(ics).toContain("DTEND:20260615T233000"); // 21:30 + 120m = 23:30
+  });
+
+  it("rolls the end date over midnight", () => {
+    const ics = buildIcs({ ...base, time: "23:30", runtimeMinutes: 120 });
+    expect(ics).toContain("DTSTART:20260615T233000");
+    expect(ics).toContain("DTEND:20260616T013000");
+  });
+
+  it("escapes commas in TEXT fields", () => {
+    const ics = buildIcs({ ...base, title: "Dune, Part Two", runtimeMinutes: 90 });
+    expect(ics).toContain("SUMMARY:Dune\\, Part Two");
+    expect(ics).toContain("LOCATION:Cinemes Verdi\\, Carrer de Verdi 32");
+  });
+});
 
 describe("formatLanguage", () => {
   it("maps ISO codes to English names", () => {
