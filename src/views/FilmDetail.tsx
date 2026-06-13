@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import BackdropPlaceholder from "../components/BackdropPlaceholder";
 import PosterPlaceholder from "../components/PosterPlaceholder";
@@ -39,7 +39,6 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
   // Snapshot at mount — prevents jarring reorder when geolocation resolves after render
   const [sortCoords] = useState(coords);
-  const contentRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastScrollTop = useRef(0);
 
@@ -64,19 +63,30 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
   const rtHref = `https://www.rottentomatoes.com/search?search=${encodeURIComponent(movie.title)}`;
   const metacriticHref = `https://www.metacritic.com/search/${encodeURIComponent(movie.title)}/`;
 
-  const onScroll = useCallback(() => {
-    if (rafRef.current != null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      const y = contentRef.current?.scrollTop ?? 0;
-      setScrollY(y);
-      // Tuck the floating Back pill away while scrolling down so it doesn't
-      // sit on top of the showtime grid; bring it back on any upward scroll.
-      const last = lastScrollTop.current;
-      lastScrollTop.current = y;
-      if (y > last && y > 160) setBackHidden(true);
-      else if (y < last || y <= 160) setBackHidden(false);
-      rafRef.current = null;
-    });
+  // Detail scrolls the document body (so iOS Safari pull-to-refresh works);
+  // track window scroll for the backdrop fade + Back-pill auto-hide. Reset to
+  // top on mount since the body keeps the list's scroll offset across nav.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const onScroll = () => {
+      if (rafRef.current != null) return;
+      rafRef.current = requestAnimationFrame(() => {
+        const y = window.scrollY;
+        setScrollY(y);
+        // Tuck the floating Back pill away while scrolling down so it doesn't
+        // sit on top of the showtime grid; bring it back on any upward scroll.
+        const last = lastScrollTop.current;
+        lastScrollTop.current = y;
+        if (y > last && y > 160) setBackHidden(true);
+        else if (y < last || y <= 160) setBackHidden(false);
+        rafRef.current = null;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
   }, []);
 
   return (
@@ -113,11 +123,7 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
       </button>
 
       {/* Scrollable content */}
-      <div
-        ref={contentRef}
-        className="detail-content"
-        onScroll={onScroll}
-      >
+      <div className="detail-content">
         <div className="detail-spacer" />
 
         <div className="detail-body">

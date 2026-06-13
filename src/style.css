@@ -160,18 +160,6 @@ img { display: block; }
   min-height: 100dvh;
 }
 
-/* Detail renders as a fixed overlay above the always-mounted list, so the
-   list's scroll position and painted pixels survive underneath (iOS Safari's
-   back-swipe preview shows them instead of a blank collapsed document). */
-.screen--overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  margin: 0 auto;
-  max-width: 840px;
-  min-height: 0;
-}
-
 /* ── Animations ──────────────────────────────────────────────────────────────── */
 @keyframes projectorWarm {
   0%   { opacity: 0;   filter: brightness(3); }
@@ -750,11 +738,10 @@ a.time-pill--link {
 /* ── Film detail ─────────────────────────────────────────────────────────────── */
 .detail-screen {
   position: relative;
-  height: 100dvh;
+  min-height: 100dvh;
   background: var(--bg);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   /* Entry only — back to the list stays instant, like a native pop */
   animation: detailIn 0.22s ease-out;
 }
@@ -782,7 +769,7 @@ a.time-pill--link {
 }
 
 .detail-back-btn {
-  position: absolute;
+  position: fixed;
   top: max(52px, calc(env(safe-area-inset-top, 0px) + 8px));
   left: 12px;
   z-index: 20;
@@ -818,9 +805,6 @@ a.time-pill--link {
   position: relative;
   z-index: 2;
   flex: 1;
-  overflow-y: auto;
-  /* Don't chain scrolling to the list behind the overlay at the edges */
-  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
 }
