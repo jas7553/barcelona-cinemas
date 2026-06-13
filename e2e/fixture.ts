@@ -17,9 +17,14 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url)) + "/..";
  * Returns the directory path. Throws if the source cache is missing.
  */
 export function buildFixtureCache(): string {
-  const cachePath = path.join(ROOT, "cache", "listings.json");
+  // Prefer the live local cache (freshest); fall back to the committed snapshot
+  // so CI, which can't reach TMDb, still has data. Date-shifting below makes the
+  // snapshot's age irrelevant.
+  const livePath = path.join(ROOT, "cache", "listings.json");
+  const snapshotPath = path.join(ROOT, "e2e", "fixtures", "listings.json");
+  const cachePath = fs.existsSync(livePath) ? livePath : snapshotPath;
   if (!fs.existsSync(cachePath)) {
-    throw new Error("e2e: cache/listings.json not found — run `npm run refresh-cache` first");
+    throw new Error("e2e: no listings cache — run `npm run refresh-cache` or restore e2e/fixtures/listings.json");
   }
 
   const data = JSON.parse(fs.readFileSync(cachePath, "utf8"));
