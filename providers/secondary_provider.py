@@ -2,19 +2,18 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import re
 from collections.abc import Mapping
 
 import requests
 
+from listings_config import secondary_listings_url
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
 from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
 from providers.common import DEFAULT_HEADERS, base_movie
 
 logger = logging.getLogger(__name__)
 
-_SECONDARY_LISTINGS_URL = os.environ.get("SECONDARY_LISTINGS_URL", "https://www.moobycinemas.com/cartelera")
 _WINDOW_SHOPS_RE = re.compile(r"window\.shops\s*=\s*(\{.*?\});", re.DOTALL)
 
 
@@ -47,7 +46,7 @@ def _is_english_screening(event: Mapping[str, object]) -> bool:
 def _booking_url_builder(shop: Mapping[str, object]) -> tuple[str, str] | None:
     """
     Validate the shop's ticket URL template once, e.g.
-      https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=%s&language=%s&theatre=%s
+      https://example-theatre.tickets.test/?p=tickets&perfCode=%s&language=%s&theatre=%s
     Returns (template, theatre code) to fill per performance with
     (performance code, "en", theatre code) — landing on the seat picker for
     that exact screening, in English.
@@ -93,7 +92,7 @@ class SecondaryProvider:
     name = "secondary"
 
     def fetch(self, cinemas: CinemaRegistry) -> list[Movie]:
-        response = requests.get(_SECONDARY_LISTINGS_URL, headers=DEFAULT_HEADERS, timeout=20)
+        response = requests.get(secondary_listings_url(), headers=DEFAULT_HEADERS, timeout=20)
         response.raise_for_status()
 
         shops_payload = _extract_shops_payload(response.text)

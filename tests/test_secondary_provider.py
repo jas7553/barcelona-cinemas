@@ -103,7 +103,10 @@ def test_extract_shops_payload_raises_for_missing_blob() -> None:
 
 
 def test_fetch_parses_english_audio_and_english_subtitles() -> None:
-    with patch("providers.secondary_provider.requests.get", return_value=_mock_response(SECONDARY_PROVIDER_HTML)):
+    with (
+        patch("providers.secondary_provider.secondary_listings_url", return_value="https://example.com/listings"),
+        patch("providers.secondary_provider.requests.get", return_value=_mock_response(SECONDARY_PROVIDER_HTML)),
+    ):
         movies = SecondaryProvider().fetch(CINEMAS)
 
     assert len(movies) == 2
@@ -118,7 +121,10 @@ def test_fetch_parses_english_audio_and_english_subtitles() -> None:
 
 
 def test_fetch_builds_english_booking_url_from_shop_template() -> None:
-    with patch("providers.secondary_provider.requests.get", return_value=_mock_response(SECONDARY_PROVIDER_HTML)):
+    with (
+        patch("providers.secondary_provider.secondary_listings_url", return_value="https://example.com/listings"),
+        patch("providers.secondary_provider.requests.get", return_value=_mock_response(SECONDARY_PROVIDER_HTML)),
+    ):
         movies = SecondaryProvider().fetch(CINEMAS)
 
     hail_mary = next(movie for movie in movies if movie["title"] == "Project Hail Mary")
@@ -132,7 +138,10 @@ def test_fetch_builds_english_booking_url_from_shop_template() -> None:
 
 
 def test_fetch_skips_non_english_entries() -> None:
-    with patch("providers.secondary_provider.requests.get", return_value=_mock_response(SECONDARY_PROVIDER_HTML)):
+    with (
+        patch("providers.secondary_provider.secondary_listings_url", return_value="https://example.com/listings"),
+        patch("providers.secondary_provider.requests.get", return_value=_mock_response(SECONDARY_PROVIDER_HTML)),
+    ):
         movies = SecondaryProvider().fetch(CINEMAS)
 
     titles = {movie["title"] for movie in movies}
@@ -164,7 +173,10 @@ def test_fetch_maps_slug_and_code_aliases_without_branded_names() -> None:
     </script></head></html>
     """
 
-    with patch("providers.secondary_provider.requests.get", return_value=_mock_response(html)):
+    with (
+        patch("providers.secondary_provider.secondary_listings_url", return_value="https://example.com/listings"),
+        patch("providers.secondary_provider.requests.get", return_value=_mock_response(html)),
+    ):
         movies = SecondaryProvider().fetch(CINEMAS)
 
     assert len(movies) == 1

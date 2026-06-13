@@ -92,6 +92,8 @@ Local development works without TMDb credentials, but enrichment is skipped and 
 | `TMDB_SSM_PARAMETER` | none | Optional parameter name for AWS-hosted deployments. |
 | `LISTINGS_FEED_URL` | none | Optional local override for the listings feed URL. |
 | `LISTINGS_FEED_SSM_PARAMETER` | none | Optional parameter name for the listings feed URL in AWS-hosted deployments. |
+| `SECONDARY_LISTINGS_URL` | none | Optional local override for the secondary listings feed URL. |
+| `SECONDARY_LISTINGS_SSM_PARAMETER` | none | Optional parameter name for the secondary listings feed URL in AWS-hosted deployments. |
 | `ORIGIN_VERIFY_TOKEN` | none | Optional locally; when set, API requests must include the matching `X-Origin-Verify` header. |
 | `APP_DEBUG` | none | Optional local-only flag to enable Flask debug mode outside Lambda. |
 
@@ -167,7 +169,7 @@ Requirements:
 Notes:
 
 - The template configures the Lambda to read its TMDb key from SSM at runtime instead of storing the secret in the repo.
-- The template also configures the listings feed URL to come from SSM at runtime, while local development can set `LISTINGS_FEED_URL` directly.
+- The template also configures the listings feed URLs (primary and secondary) to come from SSM at runtime, while local development can set `LISTINGS_FEED_URL` / `SECONDARY_LISTINGS_URL` directly.
 - `ApiOriginVerifyToken` is still required after removing WAF. It is what lets CloudFront identify itself to the API origin so direct origin requests can be rejected.
 - `deploy.sh` expects a `samconfig.toml` with a configured `stack_name` and a saved `ApiOriginVerifyToken`; if you are starting from a fresh clone, create that first with `sam deploy --guided`.
 - `NotificationEmail` is required and has no default: it is the address that receives CloudWatch alarm emails via SNS. Set it in `samconfig.toml` `parameter_overrides` (gitignored) — do not commit it. After the first deploy, AWS sends a subscription confirmation email that must be clicked before any alerts are delivered.
