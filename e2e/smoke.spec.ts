@@ -101,18 +101,19 @@ test("core mobile journey", async ({ page }) => {
   await stalePaintWithApiDown(page);
 });
 
-// KNOWN REGRESSION: commit 97bfb9a made the detail view scroll the document and
-// FilmDetail resets window.scrollY to 0 on open, so the list's scroll position
-// is no longer restored on back (the main.tsx "stays mounted" comment is stale).
-// Marked test.fail so it stays tracked and auto-flips green once fixed.
+// MainList unmounts when a detail opens, so it persists its scroll offset and
+// restores it on the way back (regressed by 97bfb9a, fixed by the module-scoped
+// savedScrollY in MainList).
 test("back restores list scroll position", async ({ page }) => {
-  test.fail();
   await page.goto("/");
   await expect(page.locator(".film-card").first()).toBeVisible();
   await page.locator(".day-chip").nth(2).click();
   await expect(page).toHaveURL(/day=1/);
 
   await page.evaluate(() => window.scrollTo(0, 800));
+  // The scroll listener persists the offset on the (async) scroll event; wait
+  // for that before navigating away, as a real drag would have flushed it.
+  await page.waitForFunction(() => sessionStorage.getItem("btw-list-scroll") !== null);
   const scrollBefore = await page.evaluate(() => window.scrollY); // may clamp short
   expect(scrollBefore).toBeGreaterThan(0);
 

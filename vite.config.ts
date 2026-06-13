@@ -18,7 +18,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test-setup.ts"],
-    exclude: [...configDefaults.exclude, ".aws-sam/**"],
+    exclude: [...configDefaults.exclude, ".aws-sam/**", "e2e/**"],
     coverage: {
       provider: "v8",
       include: ["src/**"],
