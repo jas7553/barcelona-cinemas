@@ -65,8 +65,8 @@ The Vite dev server runs on `http://localhost:5173`.
 
 Important:
 
-- In the current repo config, Vite proxies `/api` to `http://localhost:5001`.
-- If you run the backend with its default `PORT=5000`, either update [`vite.config.ts`](vite.config.ts) or start Flask on port `5001`.
+- Vite proxies `/api` to `http://localhost:5000` by default, matching Flask's default `PORT`, so the standard setup works with no changes.
+- To point the proxy elsewhere, set `API_PROXY_TARGET` (see [`vite.config.ts`](vite.config.ts)).
 
 Refreshing the local cache:
 
@@ -127,7 +127,6 @@ npm run test:run
 npm run typecheck
 npm run lint
 npm run build
-npm run favicons
 ```
 
 ## Favicons
