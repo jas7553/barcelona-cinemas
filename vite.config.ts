@@ -19,5 +19,11 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test-setup.ts"],
     exclude: [...configDefaults.exclude, ".aws-sam/**"],
+    coverage: {
+      provider: "v8",
+      include: ["src/**"],
+      exclude: ["src/**/*.test.{ts,tsx}", "src/test-setup.ts"],
+      reporter: ["text", "html"],
+    },
   },
 });

@@ -9,6 +9,13 @@ ignore = ["E501"]
 [tool.ruff.lint.isort]
 known-first-party = ["models", "cache", "pipeline", "enricher", "observability", "providers", "validation", "listings_config"]
 
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*", "scripts/*", "e2e/*", ".venv/*", ".aws-sam/*"]
+
+[tool.coverage.report]
+show_missing = true
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
