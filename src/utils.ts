@@ -33,6 +33,80 @@ export function formatLanguage(code: string | null | undefined): string | null {
   }
 }
 
+// ── Calendar (.ics) generation ──────────────────────────────────────────────
+
+/** Default event length when a film's runtime is unknown. */
+const ICS_FALLBACK_RUNTIME = 120;
+
+function pad2(n: number): string {
+  return n.toString().padStart(2, "0");
+}
+
+/** Escape a value for an iCalendar TEXT field (RFC 5545 §3.3.11). */
+function escapeIcsText(s: string): string {
+  return s
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
+}
+
+/** Floating local datetime stamp "YYYYMMDDTHHMMSS" — calendar reads it in the device's zone. */
+function icsLocalStamp(dt: Date): string {
+  return (
+    `${dt.getFullYear()}${pad2(dt.getMonth() + 1)}${pad2(dt.getDate())}` +
+    `T${pad2(dt.getHours())}${pad2(dt.getMinutes())}${pad2(dt.getSeconds())}`
+  );
+}
+
+/** UTC stamp "YYYYMMDDTHHMMSSZ" for DTSTAMP. */
+function icsUtcStamp(dt: Date): string {
+  return (
+    `${dt.getUTCFullYear()}${pad2(dt.getUTCMonth() + 1)}${pad2(dt.getUTCDate())}` +
+    `T${pad2(dt.getUTCHours())}${pad2(dt.getUTCMinutes())}${pad2(dt.getUTCSeconds())}Z`
+  );
+}
+
+/**
+ * Build a single-event VCALENDAR string for one screening. Times are emitted as
+ * floating local time so the user's device interprets them in Barcelona's zone.
+ * DTEND = start + runtime (falls back to a sane default when runtime is null).
+ */
+export function buildIcs(opts: {
+  title: string;
+  location: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:MM
+  runtimeMinutes: number | null;
+}): string {
+  const [y, mo, d] = opts.date.split("-").map(Number);
+  const [h, mi] = opts.time.split(":").map(Number);
+  const start = new Date(y, mo - 1, d, h, mi, 0);
+  const minutes = opts.runtimeMinutes && opts.runtimeMinutes > 0 ? opts.runtimeMinutes : ICS_FALLBACK_RUNTIME;
+  const end = new Date(start.getTime() + minutes * 60000);
+  const uid = `${icsLocalStamp(start)}-${opts.title.replace(/\s+/g, "-").toLowerCase()}@barcelona-movie-database`;
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Barcelona Movie Database//Showtime//EN",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${icsUtcStamp(new Date())}`,
+    `DTSTART:${icsLocalStamp(start)}`,
+    `DTEND:${icsLocalStamp(end)}`,
+    `SUMMARY:${escapeIcsText(opts.title)}`,
+    `LOCATION:${escapeIcsText(opts.location)}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+
+/** Build a data-URI href for an .ics string — opens cleanly in Apple Calendar on iOS Safari. */
+export function icsHref(ics: string): string {
+  return `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}`;
+}
+
 // ── Runtime formatting ──────────────────────────────────────────────────────
 
 export function formatRuntime(mins: number): string {
@@ -196,7 +270,7 @@ export function formatMovieMeta(movie: TransformedMovie, includeRuntime = false)
 export type DayGroup = {
   label: string | null;
   offset: number;
-  times: { key: string; t: string; bookingUrl?: string }[];
+  times: { key: string; t: string; date: string; bookingUrl?: string }[];
 };
 export type CinemaRow = { theater: TransformedShowtime["theater"]; dayGroups: DayGroup[]; distKm?: number };
 
@@ -216,7 +290,7 @@ export function buildCinemaRows(
   for (const s of showtimes) {
     const entry = byTheater.get(s.theater.id) ?? { theater: s.theater, groups: new Map<number, DayGroup>() };
     const key = `${s.dayOffset}-${s.time}`;
-    const time = { key, t: s.time, bookingUrl: s.booking_url ?? undefined };
+    const time = { key, t: s.time, date: s.date, bookingUrl: s.booking_url ?? undefined };
     if (selectedDay != null) {
       const group = entry.groups.get(0) ?? { label: null, offset: 0, times: [] };
       if (!group.times.some((x) => x.key === key)) group.times.push(time);

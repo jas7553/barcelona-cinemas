@@ -5,7 +5,7 @@ import PosterPlaceholder from "../components/PosterPlaceholder";
 import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
 import { BackIcon, ChevronRightIcon } from "../components/Icons";
-import { formatDistKm, formatMovieMeta, formatLanguage, buildCinemaRows, haversineKm } from "../utils";
+import { formatDistKm, formatMovieMeta, formatLanguage, buildCinemaRows, haversineKm, buildIcs, icsHref } from "../utils";
 import type { TransformedMovie, SheetVenueData } from "../types";
 
 interface Props {
@@ -256,15 +256,15 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                     <div className={selectedDay == null ? "cinema-row__times cinema-row__times--grouped" : "cinema-row__times"}>
                       {dayGroups.map((group) =>
                         group.label == null ? (
-                          group.times.map(({ key, t, bookingUrl }) => (
-                            <TimePill key={key} time={t} bookingUrl={bookingUrl} film={movie.title} cinema={theater.name} />
+                          group.times.map(({ key, t, date, bookingUrl }) => (
+                            <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} />
                           ))
                         ) : (
                           <div key={group.offset} className="cinema-row__day-group">
                             <span className="cinema-row__day-label">{group.label}</span>
                             <div className="cinema-row__day-pills">
-                              {group.times.map(({ key, t, bookingUrl }) => (
-                                <TimePill key={key} time={t} bookingUrl={bookingUrl} film={movie.title} cinema={theater.name} />
+                              {group.times.map(({ key, t, date, bookingUrl }) => (
+                                <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} />
                               ))}
                             </div>
                           </div>
@@ -287,29 +287,55 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
 
 function TimePill({
   time,
+  date,
   bookingUrl,
   film,
   cinema,
+  address,
+  runtimeMinutes,
 }: {
   time: string;
+  date: string;
   bookingUrl?: string;
   film: string;
   cinema: string;
+  address: string;
+  runtimeMinutes: number | null;
 }) {
-  if (!bookingUrl) {
-    return <time className="time-pill time-pill--lg">{time}</time>;
-  }
+  const ics = buildIcs({
+    title: film,
+    location: [cinema, address].filter(Boolean).join(", "),
+    date,
+    time,
+    runtimeMinutes,
+  });
+  const calName = `${film.replace(/\s+/g, "-").toLowerCase()}-${date}-${time.replace(":", "")}.ics`;
+
   return (
-    <a
-      href={bookingUrl}
-      target="_blank"
-      rel="noreferrer"
-      className="time-pill time-pill--lg time-pill--link"
-      aria-label={`Buy tickets for ${film} at ${cinema}, ${time}`}
-    >
-      <time>{time}</time>
-      <span className="time-pill__ticket" aria-hidden="true">🎟</span>
-    </a>
+    <span className="time-pill-group">
+      {bookingUrl ? (
+        <a
+          href={bookingUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="time-pill time-pill--lg time-pill--link"
+          aria-label={`Buy tickets for ${film} at ${cinema}, ${time}`}
+        >
+          <time>{time}</time>
+          <span className="time-pill__ticket" aria-hidden="true">🎟</span>
+        </a>
+      ) : (
+        <time className="time-pill time-pill--lg">{time}</time>
+      )}
+      <a
+        href={icsHref(ics)}
+        download={calName}
+        className="time-pill__cal"
+        aria-label={`Add ${film} at ${cinema}, ${date} ${time} to calendar`}
+      >
+        <span aria-hidden="true">📅</span>
+      </a>
+    </span>
   );
 }
 

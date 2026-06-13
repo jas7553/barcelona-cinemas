@@ -510,6 +510,28 @@ a.time-pill--link {
   line-height: 1;
 }
 
+/* Showtime + its calendar action travel together so flex wrapping keeps them paired. */
+.time-pill-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* "Lock it in" — download an .ics for this exact screening. */
+.time-pill__cal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 12px;
+  line-height: 1;
+  text-decoration: none;
+  color: var(--text-sub);
+}
+
 /* ── Cinema group (By Cinema) ────────────────────────────────────────────────── */
 .cinema-group {
   background: var(--surface);
