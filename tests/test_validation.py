@@ -163,3 +163,53 @@ def test_normalize_tmdb_payload_drops_empty_tagline() -> None:
 
     assert payload is not None
     assert "tagline" not in payload
+
+
+def test_normalize_tmdb_payload_extracts_director_and_cast() -> None:
+    credits = {
+        "cast": [{"name": "A"}, {"name": "B"}, {"name": "C"}, {"name": "D"}, {"name": "E"}, {"name": "F"}],
+        "crew": [{"name": "Dir One", "job": "Director"}, {"name": "Comp", "job": "Composer"}],
+    }
+    payload = normalize_tmdb_payload({"id": 42}, title="Film", credits=credits)
+
+    assert payload is not None
+    assert payload["director"] == "Dir One"
+    # Capped at top 5 billing order.
+    assert payload["cast"] == ["A", "B", "C", "D", "E"]
+
+
+def test_normalize_tmdb_payload_joins_multiple_directors() -> None:
+    credits = {
+        "crew": [
+            {"name": "Joel Coen", "job": "Director"},
+            {"name": "Ethan Coen", "job": "Director"},
+        ],
+    }
+    payload = normalize_tmdb_payload({"id": 42}, title="Film", credits=credits)
+
+    assert payload is not None
+    assert payload["director"] == "Joel Coen, Ethan Coen"
+
+
+def test_normalize_tmdb_payload_omits_credits_when_absent() -> None:
+    payload = normalize_tmdb_payload({"id": 42}, title="Film")
+
+    assert payload is not None
+    assert "director" not in payload
+    assert "cast" not in payload
+
+
+def test_normalize_movie_keeps_cached_director_and_cast() -> None:
+    movie = normalize_movie(
+        {
+            "title": "Dune: Part Two",
+            "director": "Denis Villeneuve",
+            "cast": ["Timothée Chalamet", "Zendaya"],
+            "showtimes": [],
+        },
+        source="cache",
+    )
+
+    assert movie is not None
+    assert movie["director"] == "Denis Villeneuve"
+    assert movie["cast"] == ["Timothée Chalamet", "Zendaya"]

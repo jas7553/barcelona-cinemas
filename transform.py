@@ -89,6 +89,8 @@ def _transform_movie(
     rating: float | None = movie.get("rating")
     runtime_mins: int | None = movie.get("runtime_mins")
     genres: list[str] = movie.get("genres") or []
+    director: str | None = movie.get("director")
+    cast: list[str] = movie.get("cast") or []
 
     imdb_url: str | None = f"https://www.imdb.com/title/{imdb_id}" if imdb_id else None
 
@@ -111,6 +113,8 @@ def _transform_movie(
         "trailer_url": trailer_url,
         "genres": genres,
         "rating": rating,
+        "director": director,
+        "cast": cast,
         "synopsis": synopsis or "",
         "tagline": tagline,
         "links": {

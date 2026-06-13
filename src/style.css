@@ -908,6 +908,34 @@ a.time-pill--link {
   font-style: italic;
 }
 
+.credits {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.credits-row {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.credits-label {
+  flex-shrink: 0;
+  width: 56px;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding-top: 1px;
+}
+
+.credits-value {
+  color: var(--text-sub);
+}
+
 .external-links {
   display: flex;
   gap: 6px;

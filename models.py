@@ -24,6 +24,8 @@ class Movie(TypedDict):
     rating: float | None
     runtime_mins: int | None
     genres: list[str] | None
+    director: NotRequired[str | None]
+    cast: NotRequired[list[str] | None]
     showtimes: list[Showtime]
 
 

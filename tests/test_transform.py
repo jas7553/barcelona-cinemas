@@ -78,6 +78,23 @@ def _movie(title: str = "Test Film", showtimes: list[Showtime] | None = None, **
     )
 
 
+def test_passes_through_director_and_cast():
+    movie = _movie(showtimes=[_showtime()])
+    movie["director"] = "Denis Villeneuve"
+    movie["cast"] = ["Timothée Chalamet", "Zendaya"]
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    out = result["movies"][0]
+    assert out["director"] == "Denis Villeneuve"
+    assert out["cast"] == ["Timothée Chalamet", "Zendaya"]
+
+
+def test_director_and_cast_default_when_absent():
+    result = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
+    out = result["movies"][0]
+    assert out["director"] is None
+    assert out["cast"] == []
+
+
 # ── Top-level shape ───────────────────────────────────────────────────────────
 
 
