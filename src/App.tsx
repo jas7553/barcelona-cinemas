@@ -101,18 +101,6 @@ function AppInner() {
       .catch(() => {});
   }, [screen, locationActive, toggleLocation]);
 
-  // Lock the page behind the detail overlay. The list stays mounted with its
-  // scroll position; overflow:hidden keeps the offset while preventing
-  // wheel/touch scroll from reaching it.
-  useEffect(() => {
-    if (screen !== "detail") return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [screen]);
-
   useEffect(() => {
     if (screen === "detail" && selectedFilm) {
       document.title = `${selectedFilm.title} · Barcelona This Week`;
@@ -124,26 +112,25 @@ function AppInner() {
   return (
     <div className={`app-wrapper${dark ? " dark" : ""}`}>
       <div className="app-shell">
-        {/* The list stays mounted while a detail overlay covers it: its scroll
-            position survives untouched, and the page behind iOS Safari's
-            back-swipe gesture is real pixels, not a blank collapsed document. */}
-        <div className="screen" inert={screen === "detail"}>
-          <MainList
-            movies={movies}
-            loading={loading}
-            error={error}
-            generatedAt={generatedAt}
-            stale={stale}
-            coords={coords}
-            locationActive={locationActive}
-            locationError={locationError}
-            locationResolving={locationResolving}
-            onToggleLocation={toggleLocation}
-            onRetry={load}
-          />
-        </div>
+        {screen === "list" && (
+          <div className="screen">
+            <MainList
+              movies={movies}
+              loading={loading}
+              error={error}
+              generatedAt={generatedAt}
+              stale={stale}
+              coords={coords}
+              locationActive={locationActive}
+              locationError={locationError}
+              locationResolving={locationResolving}
+              onToggleLocation={toggleLocation}
+              onRetry={load}
+            />
+          </div>
+        )}
         {screen === "detail" && selectedFilm && (
-          <div className="screen screen--overlay">
+          <div className="screen">
             <FilmDetail
               key={selectedFilm.id}
               movie={selectedFilm}
@@ -157,7 +144,7 @@ function AppInner() {
           </div>
         )}
         {screen === "detail" && !selectedFilm && (
-          <div className="screen screen--overlay">
+          <div className="screen">
             {loading ? (
               <div className="loading-pulse" role="status" aria-label="Loading film">
                 {[1, 2, 3, 4].map((i) => (
