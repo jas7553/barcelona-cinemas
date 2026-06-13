@@ -11,6 +11,7 @@ from listings_config import secondary_listings_url
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
 from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
 from providers.common import DEFAULT_HEADERS, base_movie
+from reconcile import reconcile
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ class SecondaryProvider:
         shops_payload = _extract_shops_payload(response.text)
         alias_lookup = build_cinema_alias_lookup(cinemas, self.name)
 
-        movies_by_key: dict[tuple[str, str], Movie] = {}
+        movies: list[Movie] = []
         unrecognized_shop_values: set[str] = set()
 
         for shop in shops_payload.values():
@@ -155,15 +156,7 @@ class SecondaryProvider:
 
                 imdb_id_value = event.get("imdbid")
                 imdb_id = (imdb_id_value.strip() or None) if isinstance(imdb_id_value, str) else None
-                movie_key = (imdb_id or "", title.strip().casefold())
-                movie = movies_by_key.get(movie_key)
-                if movie is None:
-                    movies_by_key[movie_key] = base_movie(title.strip(), imdb_id, showtimes)
-                    continue
-
-                movie["showtimes"].extend(showtimes)
-                if movie["imdb_id"] is None:
-                    movie["imdb_id"] = imdb_id
+                movies.append(base_movie(title.strip(), imdb_id, showtimes))
 
         if unrecognized_shop_values:
             logger.warning(
@@ -171,4 +164,4 @@ class SecondaryProvider:
                 sorted(unrecognized_shop_values),
             )
 
-        return list(movies_by_key.values())
+        return reconcile(movies)

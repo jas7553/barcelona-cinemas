@@ -8,7 +8,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import string
 import time
 import urllib.request
 from datetime import UTC, datetime
@@ -16,8 +15,9 @@ from itertools import chain
 from typing import TYPE_CHECKING, Any, cast
 
 import cache
-from models import CinemaRegistry, Listings, Movie, Showtime
+from models import CinemaRegistry, Listings, Movie
 from observability import emit_metric, log_event, now_ms
+from reconcile import reconcile
 from validation import normalize_movies
 
 if TYPE_CHECKING:
@@ -170,7 +170,7 @@ def _collect_movies(cinemas: CinemaRegistry) -> list[Movie]:
         emit_metric("CollectionFailure", 1)
         raise RuntimeError("All providers failed to return listings")
 
-    movies = _merge_movies(list(chain.from_iterable(provider_results)))
+    movies = reconcile(list(chain.from_iterable(provider_results)))
     if not movies:
         emit_metric("CollectionFailure", 1)
         raise RuntimeError("Providers returned data but merge produced no movies")
@@ -205,96 +205,3 @@ def _fetch_provider_movies(provider: ListingsSource, cinemas: CinemaRegistry) ->
         showtime_count=sum(len(movie["showtimes"]) for movie in movies),
     )
     return movies
-
-
-def _merge_movies(movies: list[Movie]) -> list[Movie]:
-    merged: list[Movie] = []
-    for movie in movies:
-        for index, existing in enumerate(merged):
-            if _movies_are_compatible(existing, movie):
-                merged[index] = _merge_movie_pair(existing, movie)
-                break
-        else:
-            merged.append(movie)
-    return merged
-
-
-def _normalize_title(title: str) -> str:
-    return " ".join(title.strip(_TITLE_EDGE_CHARS).casefold().split())
-
-
-_TITLE_EDGE_CHARS = f"{string.whitespace}{string.punctuation}“”‘’`"
-
-
-def _canonical_language(showtime: Showtime) -> str:
-    language = showtime.get("language")
-    return language if language in {"vo", "dub"} else "vo"
-
-
-def _movies_are_compatible(left: Movie, right: Movie) -> bool:
-    left_imdb = left.get("imdb_id")
-    right_imdb = right.get("imdb_id")
-    if left_imdb and right_imdb:
-        return left_imdb == right_imdb
-    return _normalize_title(left["title"]) == _normalize_title(right["title"])
-
-
-def _pick_string(left: str | None, right: str | None) -> str | None:
-    candidates = [value for value in (left, right) if value]
-    if not candidates:
-        return None
-    return sorted(candidates, key=lambda value: (-len(value), value.casefold()))[0]
-
-
-def _pick_numeric[N: (int, float)](left: N | None, right: N | None) -> N | None:
-    candidates = [value for value in (left, right) if value is not None]
-    if not candidates:
-        return None
-    return max(candidates)
-
-
-def _pick_genres(left: list[str] | None, right: list[str] | None) -> list[str] | None:
-    candidates = [value for value in (left, right) if value]
-    if not candidates:
-        return None
-    return sorted(candidates, key=lambda value: (-len(value), tuple(item.casefold() for item in value)))[0]
-
-
-def _merge_movie_pair(left: Movie, right: Movie) -> Movie:
-    deduped_showtimes: dict[tuple[str, str, str, str], Showtime] = {}
-    for showtime in [*left["showtimes"], *right["showtimes"]]:
-        key = (
-            showtime["date"],
-            showtime["time"],
-            showtime["cinema"],
-            _canonical_language(showtime),
-        )
-        existing = deduped_showtimes.get(key)
-        # Don't let a duplicate without a booking link clobber one that has it.
-        if existing is not None and existing.get("booking_url") and not showtime.get("booking_url"):
-            continue
-        deduped_showtimes[key] = showtime
-    merged_showtimes = sorted(
-        deduped_showtimes.values(),
-        key=lambda showtime: (
-            showtime["date"],
-            showtime["time"],
-            showtime["cinema"],
-            _canonical_language(showtime),
-        ),
-    )
-    merged_title = _pick_string(left["title"], right["title"])
-    if merged_title is None:
-        raise RuntimeError(f"_pick_string returned None for non-empty titles {left['title']!r} and {right['title']!r}")
-    return Movie(
-        title=merged_title,
-        tmdb_id=_pick_numeric(left.get("tmdb_id"), right.get("tmdb_id")),
-        imdb_id=_pick_string(left.get("imdb_id"), right.get("imdb_id")),
-        year=_pick_numeric(left.get("year"), right.get("year")),
-        poster_url=_pick_string(left.get("poster_url"), right.get("poster_url")),
-        synopsis=_pick_string(left.get("synopsis"), right.get("synopsis")),
-        rating=_pick_numeric(left.get("rating"), right.get("rating")),
-        runtime_mins=_pick_numeric(left.get("runtime_mins"), right.get("runtime_mins")),
-        genres=_pick_genres(left.get("genres"), right.get("genres")),
-        showtimes=merged_showtimes,
-    )
