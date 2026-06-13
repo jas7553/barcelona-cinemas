@@ -44,6 +44,20 @@ TMDB_DETAIL = {
     "genres": [{"id": 878, "name": "Science Fiction"}, {"id": 12, "name": "Adventure"}],
 }
 
+TMDB_VIDEOS: dict[str, Any] = {"results": []}
+
+TMDB_CREDITS = {
+    "cast": [
+        {"name": "Timothée Chalamet", "order": 0},
+        {"name": "Zendaya", "order": 1},
+        {"name": "Rebecca Ferguson", "order": 2},
+    ],
+    "crew": [
+        {"name": "Denis Villeneuve", "job": "Director"},
+        {"name": "Hans Zimmer", "job": "Original Music Composer"},
+    ],
+}
+
 
 @pytest.fixture(autouse=True)
 def reset_api_key_cache() -> Iterator[None]:
@@ -106,6 +120,51 @@ def test_fetches_tmdb_for_new_title(mock_env):
     assert result[0]["runtime_mins"] == 166
     assert result[0]["genres"] == ["Science Fiction", "Adventure"]
     assert stats["tmdb_enriched_count"] == 1
+
+
+def test_fetches_director_and_cast_from_credits(mock_env):
+    """Credits call populates director and top-billed cast."""
+    movie = _movie("Dune: Part Two", showtimes=[_showtime()])
+
+    mock_session = MagicMock()
+    mock_session.__enter__ = MagicMock(return_value=mock_session)
+    mock_session.__exit__ = MagicMock(return_value=False)
+    mock_session.get.side_effect = [
+        MagicMock(status_code=200, json=lambda: TMDB_SEARCH, raise_for_status=lambda: None),
+        MagicMock(status_code=200, json=lambda: TMDB_DETAIL, raise_for_status=lambda: None),
+        MagicMock(status_code=200, json=lambda: TMDB_VIDEOS, raise_for_status=lambda: None),
+        MagicMock(status_code=200, json=lambda: TMDB_CREDITS, raise_for_status=lambda: None),
+    ]
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([movie], [])
+
+    assert result[0]["director"] == "Denis Villeneuve"
+    assert result[0]["cast"] == ["Timothée Chalamet", "Zendaya", "Rebecca Ferguson"]
+
+
+def test_credits_fetch_failure_is_non_fatal(mock_env):
+    """A failing credits call still enriches the rest; director/cast fall back to None."""
+    movie = _movie("Dune: Part Two", showtimes=[_showtime()])
+
+    mock_session = MagicMock()
+    mock_session.__enter__ = MagicMock(return_value=mock_session)
+    mock_session.__exit__ = MagicMock(return_value=False)
+    mock_session.get.side_effect = [
+        MagicMock(status_code=200, json=lambda: TMDB_SEARCH, raise_for_status=lambda: None),
+        MagicMock(status_code=200, json=lambda: TMDB_DETAIL, raise_for_status=lambda: None),
+        MagicMock(status_code=200, json=lambda: TMDB_VIDEOS, raise_for_status=lambda: None),
+        ConnectionError("credits down"),
+    ]
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, stats = enricher.enrich([movie], [])
+
+    assert result[0]["tmdb_id"] == 42
+    assert result[0]["director"] is None
+    assert result[0]["cast"] is None
+    assert stats["tmdb_enriched_count"] == 1
+    assert stats["tmdb_failure_count"] == 0
 
 
 def test_lookup_failure_returns_movie_without_metadata(mock_env):

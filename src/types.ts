@@ -36,6 +36,10 @@ export interface Movie {
   trailer_url: string | null;
   genres: string[];
   rating: number | null;
+  /** Director name(s), joined for multi-director films. Optional: older cached responses predate it. */
+  director?: string | null;
+  /** Top-billed cast names. Optional: older cached responses predate it. */
+  cast?: string[];
   /** Optional: older cached API responses predate this field */
   tagline?: string | null;
   synopsis: string;

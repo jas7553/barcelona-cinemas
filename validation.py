@@ -85,6 +85,12 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     tagline = _as_optional_string(data.get("tagline"), source=f"{source} tagline")
     if tagline is not None:
         movie["tagline"] = tagline
+    director = _as_optional_string(data.get("director"), source=f"{source} director")
+    if director is not None:
+        movie["director"] = director
+    cast = _as_optional_genres(data.get("cast"), source=f"{source} cast")
+    if cast is not None:
+        movie["cast"] = cast
     return movie
 
 
@@ -133,7 +139,9 @@ def normalize_showtime(data: object, *, source: str) -> Showtime | None:
     return showtime
 
 
-def normalize_tmdb_payload(data: object, *, title: str, videos: object = None) -> dict[str, Any] | None:
+def normalize_tmdb_payload(
+    data: object, *, title: str, videos: object = None, credits: object = None
+) -> dict[str, Any] | None:
     """Validate TMDb detail payload fields we merge into the app model."""
     if not isinstance(data, Mapping):
         logger.warning("Rejected TMDb payload for %r: detail payload is not an object", title)
@@ -179,6 +187,14 @@ def normalize_tmdb_payload(data: object, *, title: str, videos: object = None) -
         normalized["backdrop_url"] = backdrop_url
 
     normalized["trailer_url"] = _as_trailer_url(videos, title=title)
+
+    director = _as_director_from_credits(credits, title=title)
+    if director is not None:
+        normalized["director"] = director
+
+    movie_cast = _as_cast_from_credits(credits, title=title)
+    if movie_cast is not None:
+        normalized["cast"] = movie_cast
 
     # release_date is "YYYY-MM-DD"; extract the 4-digit year as int.
     release_date = data.get("release_date")
@@ -279,6 +295,45 @@ def _as_trailer_url(videos: object, *, title: str) -> str | None:
         logger.warning("Discarded TMDb trailer for %r: missing key", title)
         return None
     return f"https://www.youtube.com/watch?v={key}"
+
+
+_MAX_CAST = 5
+
+
+def _as_director_from_credits(credits: object, *, title: str) -> str | None:
+    """Extract director name(s) from a TMDb /credits payload, joined for multi-director films."""
+    if not isinstance(credits, Mapping):
+        return None
+    crew = credits.get("crew")
+    if not isinstance(crew, list):
+        return None
+    names: list[str] = []
+    for member in crew:
+        if not isinstance(member, Mapping) or member.get("job") != "Director":
+            continue
+        name = _as_non_empty_string(member.get("name"))
+        if name is not None and name not in names:
+            names.append(name)
+    return ", ".join(names) if names else None
+
+
+def _as_cast_from_credits(credits: object, *, title: str) -> list[str] | None:
+    """Extract the top-billed cast names from a TMDb /credits payload (already billing-ordered)."""
+    if not isinstance(credits, Mapping):
+        return None
+    cast = credits.get("cast")
+    if not isinstance(cast, list):
+        return None
+    names: list[str] = []
+    for member in cast:
+        if not isinstance(member, Mapping):
+            continue
+        name = _as_non_empty_string(member.get("name"))
+        if name is not None:
+            names.append(name)
+        if len(names) >= _MAX_CAST:
+            break
+    return names or None
 
 
 def _as_optional_int(value: object, *, source: str) -> int | None:

@@ -1,9 +1,11 @@
 """
 TMDb enrichment: adds synopsis, rating, runtime, and genres to collected movies.
 
-For each movie title not already in the cache, two TMDb calls are made:
-  1. /3/search/movie  — find best match and retrieve the TMDb ID
-  2. /3/movie/{id}    — retrieve runtime and named genres (search only returns IDs)
+For each movie title not already in the cache, TMDb is queried:
+  1. /3/search/movie       — find best match and retrieve the TMDb ID
+  2. /3/movie/{id}         — retrieve runtime and named genres (search only returns IDs)
+  3. /3/movie/{id}/videos  — retrieve trailer URL (non-fatal on failure)
+  4. /3/movie/{id}/credits — retrieve director + top cast (non-fatal on failure)
 
 Failures are logged and result in null metadata fields; this module never raises.
 """
@@ -97,13 +99,15 @@ def _find_cached_movie(
 def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> _LookupResult:
     """Look up a movie on TMDb and merge metadata into the Movie dict."""
     try:
-        raw_detail, raw_videos = _fetch_tmdb(movie["title"], session, api_key)
+        raw_detail, raw_videos, raw_credits = _fetch_tmdb(movie["title"], session, api_key)
     except Exception as exc:
         logger.warning("TMDb lookup failed for %r: %s", movie["title"], exc)
         return _LookupResult(movie, enriched=False, failed=True)
 
     tmdb_data = (
-        normalize_tmdb_payload(raw_detail, title=movie["title"], videos=raw_videos) if raw_detail is not None else None
+        normalize_tmdb_payload(raw_detail, title=movie["title"], videos=raw_videos, credits=raw_credits)
+        if raw_detail is not None
+        else None
     )
 
     if tmdb_data is None:
@@ -124,6 +128,8 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
             "rating": tmdb_data.get("vote_average"),
             "runtime_mins": tmdb_data.get("runtime"),
             "genres": genres or None,
+            "director": tmdb_data.get("director"),
+            "cast": tmdb_data.get("cast"),
         },
         enriched=True,
         failed=False,
@@ -132,9 +138,9 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
 
 def _fetch_tmdb(
     title: str, session: requests.Session, api_key: str
-) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
     """
-    Search TMDb for a title and return (detail, videos) dicts, or (None, None) on failure.
+    Search TMDb for a title and return (detail, videos, credits) dicts, or all None on failure.
     Prefers an exact title match; falls back to the first (most popular) result.
     """
     search_resp = session.get(
@@ -147,7 +153,7 @@ def _fetch_tmdb(
 
     if not results:
         logger.debug("No TMDb results for %r", title)
-        return None, None
+        return None, None, None
 
     # Prefer exact title match (case-insensitive); otherwise take first by popularity.
     title_lower = title.lower()
@@ -178,4 +184,17 @@ def _fetch_tmdb(
     except Exception as exc:
         logger.warning("TMDb videos fetch failed for %r: %s", title, exc)
 
-    return detail_data, videos_data
+    # Fetch credits to get director + top cast; failure is non-fatal.
+    credits_data: dict[str, Any] | None = None
+    try:
+        credits_resp = session.get(
+            f"{_BASE_URL}/movie/{match['id']}/credits",
+            params={"language": "en-US", "api_key": api_key},
+            timeout=10,
+        )
+        credits_resp.raise_for_status()
+        credits_data = cast(dict[str, Any], credits_resp.json())
+    except Exception as exc:
+        logger.warning("TMDb credits fetch failed for %r: %s", title, exc)
+
+    return detail_data, videos_data, credits_data

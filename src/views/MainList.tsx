@@ -105,7 +105,9 @@ export default function MainList({
     return movies.filter(
       (m) =>
         normalizeForSearch(m.title).includes(q) ||
-        m.genres.some((g) => normalizeForSearch(g).includes(q)),
+        m.genres.some((g) => normalizeForSearch(g).includes(q)) ||
+        (m.director != null && normalizeForSearch(m.director).includes(q)) ||
+        (m.cast?.some((c) => normalizeForSearch(c).includes(q)) ?? false),
     );
   }, [movies, searchInput]);
 

@@ -166,6 +166,22 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
             ) : (
               <p className="synopsis-empty">No synopsis available from TMDb.</p>
             )}
+            {(movie.director || (movie.cast && movie.cast.length > 0)) && (
+              <dl className="credits">
+                {movie.director && (
+                  <div className="credits-row">
+                    <dt className="credits-label">Director</dt>
+                    <dd className="credits-value">{movie.director}</dd>
+                  </div>
+                )}
+                {movie.cast && movie.cast.length > 0 && (
+                  <div className="credits-row">
+                    <dt className="credits-label">Cast</dt>
+                    <dd className="credits-value">{movie.cast.join(", ")}</dd>
+                  </div>
+                )}
+              </dl>
+            )}
             <div className="external-links">
               {movie.links.imdb && (
                 <FaviconLink icon="/imdb-favicon.png" label="IMDb" href={movie.links.imdb} />
