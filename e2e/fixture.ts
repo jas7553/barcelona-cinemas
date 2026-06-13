@@ -1,0 +1,47 @@
+// Shared e2e fixture: a date-shifted copy of the local listings cache so that
+// showtimes always land on upcoming days regardless of when the suite runs.
+// Used by both playwright.config.ts (to point the Flask app at it) and the spec
+// (to assert on the injected tagline).
+
+import fs from "fs";
+import os from "os";
+import path from "path";
+import { fileURLToPath } from "url";
+
+export const FIXTURE_TAGLINE = "Believe the unbelievable.";
+
+const ROOT = path.dirname(fileURLToPath(import.meta.url)) + "/..";
+
+/**
+ * Build a temp CACHE_DIR holding a forward-shifted copy of cache/listings.json.
+ * Returns the directory path. Throws if the source cache is missing.
+ */
+export function buildFixtureCache(): string {
+  const cachePath = path.join(ROOT, "cache", "listings.json");
+  if (!fs.existsSync(cachePath)) {
+    throw new Error("e2e: cache/listings.json not found — run `npm run refresh-cache` first");
+  }
+
+  const data = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+  const allDates: string[] = data.movies.flatMap((m: { showtimes?: { date: string }[] }) =>
+    (m.showtimes ?? []).map((s) => s.date),
+  );
+  const minDate = new Date(`${allDates.sort()[0]}T00:00:00`);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const deltaDays = Math.round((today.getTime() - minDate.getTime()) / 86400000);
+
+  for (const m of data.movies) {
+    for (const s of m.showtimes ?? []) {
+      const d = new Date(`${s.date}T00:00:00`);
+      d.setDate(d.getDate() + deltaDays);
+      s.date = d.toISOString().slice(0, 10);
+    }
+    m.tagline ??= FIXTURE_TAGLINE;
+  }
+  data.fetched_at = new Date().toISOString();
+
+  const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "bmd-e2e-"));
+  fs.writeFileSync(path.join(cacheDir, "listings.json"), JSON.stringify(data));
+  return cacheDir;
+}

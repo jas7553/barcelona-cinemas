@@ -40,3 +40,7 @@ graphify-out/
 coverage.xml
 htmlcov/
 coverage/
+
+# Playwright
+playwright-report/
+test-results/
