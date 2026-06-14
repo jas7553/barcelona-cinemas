@@ -454,7 +454,10 @@ def test_publish_static_site_uploads_public_json_and_invokes_renderer(monkeypatc
         lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
     )
     mock_s3, mock_lambda = MagicMock(), MagicMock()
-    with patch.object(pipeline, "_s3", return_value=mock_s3), patch.object(pipeline, "_lambda", return_value=mock_lambda):
+    with (
+        patch.object(pipeline, "_s3", return_value=mock_s3),
+        patch.object(pipeline, "_lambda", return_value=mock_lambda),
+    ):
         pipeline._publish_static_site(_listings())
 
     mock_s3.put_object.assert_called_once()
@@ -477,7 +480,10 @@ def test_publish_static_site_skips_invoke_when_function_unset(monkeypatch):
         lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
     )
     mock_s3, mock_lambda = MagicMock(), MagicMock()
-    with patch.object(pipeline, "_s3", return_value=mock_s3), patch.object(pipeline, "_lambda", return_value=mock_lambda):
+    with (
+        patch.object(pipeline, "_s3", return_value=mock_s3),
+        patch.object(pipeline, "_lambda", return_value=mock_lambda),
+    ):
         pipeline._publish_static_site(_listings())
     mock_s3.put_object.assert_called_once()
     mock_lambda.invoke.assert_not_called()
