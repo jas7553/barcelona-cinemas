@@ -142,7 +142,7 @@ export default function FilmDetail({ movie, coords, now, onBack }: Props) {
                   width={76}
                   height={112}
                   decoding="async"
-                  style={{ objectFit: "cover", viewTransitionName: `poster-${movie.id}` }}
+                  style={{ objectFit: "cover" }}
                 />
               ) : (
                 <PosterPlaceholder w={76} h={112} id={movie.id} />
