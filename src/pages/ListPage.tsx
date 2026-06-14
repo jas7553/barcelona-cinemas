@@ -25,7 +25,7 @@ export default function ListPage({ data }: { data: ListPageData }) {
     <ThemeProvider>
       <div className="app-wrapper">
         <div className="app-shell">
-          <div className="screen">
+          <main className="screen">
             <MainList
               movies={movies}
               generatedAt={data.listings.generated_at}
@@ -37,7 +37,7 @@ export default function ListPage({ data }: { data: ListPageData }) {
               locationResolving={resolving}
               onToggleLocation={toggle}
             />
-          </div>
+          </main>
         </div>
       </div>
     </ThemeProvider>

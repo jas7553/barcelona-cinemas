@@ -54,7 +54,7 @@ export default function FilmPage({ data }: { data: FilmPageData }) {
     <ThemeProvider>
       <div className="app-wrapper">
         <div className="app-shell">
-          <div className="screen">
+          <main className="screen">
             {movie ? (
               <FilmDetail movie={movie} coords={coords} now={now} onBack={onBack} />
             ) : (
@@ -71,7 +71,7 @@ export default function FilmPage({ data }: { data: FilmPageData }) {
                 </div>
               </div>
             )}
-          </div>
+          </main>
         </div>
       </div>
     </ThemeProvider>
