@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Full deployment: build frontend → package Lambda → deploy stack → sync S3 → invalidate CF → warm Lambda
+# Full deployment: build frontend → package Lambda → deploy stack → sync S3 → invalidate CF → force-refresh Lambda
 #
 # First deploy:   ./deploy.sh --guided
 # Subsequent:     ./deploy.sh
@@ -18,16 +18,11 @@ sam validate
 echo "==> 1/6 Build frontend (npm run build → static/ bundles + dist-ssr/ SSR bundle)"
 npm run build
 
-# Verify the build produced an index.html before touching S3
+# Verify the build produced the client entry before touching S3
 [ -f static/index.html ] || { echo "ERROR: static/index.html not found — build may have failed"; exit 1; }
 
-# Render the static pages from real listings (build alone emits an empty list).
-# The same render runs in production via the SSG Lambda on every 12h refresh.
-echo "    export public listings + render static pages"
-npm run export-data
-node scripts/render.mjs
-
 # Stage the built artifacts the SSG Lambda ships (see ssg-lambda/Makefile).
+# HTML pages and data/listings.json are owned by the Lambda refresh path — not synced here.
 echo "    stage SSG Lambda artifacts"
 cp dist-ssr/entry-server.js ssg-lambda/entry-server.js
 cp scripts/render-core.mjs ssg-lambda/render-core.mjs
@@ -98,15 +93,15 @@ BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK" \
 #   1. Content-hashed bundles (assets/) and frozen fonts (fonts/) → cache for a year,
 #      immutable. Their URLs change when content changes, so this is always safe.
 #      If you ever swap a font, rename the file — the name is not content-hashed.
-#   2. Everything else (index.html, manifest, icons) → no-cache, so a new deploy's
-#      index.html, which points at the new hashed asset names, is always revalidated
-#      rather than served stale from a browser cache.
+#   2. Everything else (icons, manifests, etc.) → no-cache.
+#      HTML pages and data/listings.json are excluded — owned by the Lambda refresh path.
 aws s3 sync static/ "s3://$BUCKET" \
   --exclude "*" --include "assets/*" --include "fonts/*" \
   --cache-control "public, max-age=31536000, immutable"
 
 aws s3 sync static/ "s3://$BUCKET" \
   --exclude "assets/*" --exclude "fonts/*" --exclude ".vite/*" \
+  --exclude "*.html" --exclude "data/*" \
   --cache-control "no-cache"
 
 echo "==> 5/6 Invalidate CloudFront cache"
@@ -116,7 +111,7 @@ DIST=$(aws cloudformation describe-stacks --stack-name "$STACK" \
 [ -z "$DIST" ] && { echo "ERROR: DistributionId not found in stack outputs"; exit 1; }
 aws cloudfront create-invalidation --distribution-id "$DIST" --paths "/*"
 
-echo "==> 6/6 Warm Lambda (reduce first cold start)"
+echo "==> 6/6 Force-refresh listings (fetch providers → publish data/listings.json → trigger SSG render)"
 FUNC=$(aws cloudformation describe-stack-resource --stack-name "$STACK" \
   --logical-resource-id ApiFunction \
   --query "StackResourceDetail.PhysicalResourceId" \
@@ -124,12 +119,20 @@ FUNC=$(aws cloudformation describe-stack-resource --stack-name "$STACK" \
 if [ -n "$FUNC" ] && [ "$FUNC" != "None" ]; then
   aws lambda invoke \
     --function-name "$FUNC" \
-    --payload '{"source":"warmup"}' \
+    --payload '{"source":"aws.events"}' \
     --cli-binary-format raw-in-base64-out \
-    /dev/null > /dev/null
-  echo "Lambda warmed."
+    /tmp/barcelona-refresh-response.json > /dev/null
+  # On first deploy S3 is empty; poll until SSG renderer writes index.html (up to 60s).
+  echo "    waiting for SSG render to write index.html..."
+  for i in $(seq 1 30); do
+    aws s3 ls "s3://$BUCKET/index.html" > /dev/null 2>&1 && break
+    sleep 2
+  done
+  aws s3 ls "s3://$BUCKET/index.html" > /dev/null 2>&1 \
+    && echo "    SSG render complete." \
+    || echo "    WARNING: index.html not found after 60s — SSG render may still be in progress."
 else
-  echo "Could not resolve function name — skipping warmup."
+  echo "Could not resolve function name — skipping refresh."
 fi
 
 echo ""
