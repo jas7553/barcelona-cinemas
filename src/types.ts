@@ -85,11 +85,7 @@ export interface SheetVenueData {
 
 export interface CinemaViewGroup {
   theaterId: string;
-  theaterName: string;
   theater: Theater;
-  lat: number | null;
-  lng: number | null;
-  mapsUrl: string;
   films: Array<{
     movie: TransformedMovie;
     times: string[];

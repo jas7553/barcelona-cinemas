@@ -32,19 +32,17 @@ def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegis
 
     cutoff = _parse_cutoff(generated_at)
 
-    cinema_lookup = cinemas
-
     seen_theater_ids: set[str] = set()
 
     movies_out: list[dict[str, Any]] = []
     for movie in raw_movies:
         if not isinstance(movie, Mapping):
             continue
-        transformed = _transform_movie(movie, cinema_lookup, cutoff, seen_theater_ids)
+        transformed = _transform_movie(movie, cinemas, cutoff, seen_theater_ids)
         if transformed is not None:
             movies_out.append(transformed)
 
-    theaters_out = _build_theaters(cinema_lookup, seen_theater_ids)
+    theaters_out = _build_theaters(cinemas, seen_theater_ids)
 
     return {
         "generated_at": generated_at,

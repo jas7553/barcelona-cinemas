@@ -20,7 +20,7 @@ function CinemaGroup({ group, onCinemaTap, search = "" }: Props) {
         className="cinema-group__header"
         onClick={() => onCinemaTap(group, distLabel)}
       >
-        <span className="cinema-group__name">{group.theaterName}</span>
+        <span className="cinema-group__name">{group.theater.name}</span>
         <span className="cinema-group__right">
           {distLabel && <span className="cinema-group__dist">{distLabel}</span>}
           <ChevronRightIcon />
