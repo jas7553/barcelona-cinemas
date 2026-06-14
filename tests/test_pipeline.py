@@ -7,6 +7,7 @@ import pytest
 
 import cache
 import pipeline
+import transform
 from models import Listings
 
 
@@ -432,93 +433,93 @@ def test_collect_movies_keeps_conflicting_imdb_ids_split_even_when_titles_normal
     assert imdb_ids == {"tt32897959", "tt0104181"}
 
 
-# ── _invalidate_cloudfront ────────────────────────────────────────────────────
+# ── _publish_static_site ──────────────────────────────────────────────────────
 
 
-def test_invalidate_cloudfront_noop_when_env_var_absent(monkeypatch):
-    monkeypatch.delenv("CLOUDFRONT_DISTRIBUTION_ID", raising=False)
-    with patch.object(pipeline, "_cf") as mock_cf:
-        pipeline._invalidate_cloudfront()
-    mock_cf.assert_not_called()
+def test_publish_static_site_noop_when_bucket_absent(monkeypatch):
+    monkeypatch.delenv("FRONTEND_BUCKET", raising=False)
+    with patch.object(pipeline, "_s3") as mock_s3, patch.object(pipeline, "_lambda") as mock_lambda:
+        pipeline._publish_static_site(_listings())
+    mock_s3.assert_not_called()
+    mock_lambda.assert_not_called()
 
 
-def test_invalidate_cloudfront_calls_create_invalidation(monkeypatch):
-    monkeypatch.setenv("CLOUDFRONT_DISTRIBUTION_ID", "EDFDVBD6EXAMPLE")
-    mock_client = MagicMock()
-    with patch.object(pipeline, "_cf", return_value=mock_client):
-        pipeline._invalidate_cloudfront()
-    mock_client.create_invalidation.assert_called_once()
-    args = mock_client.create_invalidation.call_args
-    assert args.kwargs["DistributionId"] == "EDFDVBD6EXAMPLE"
-    paths = args.kwargs["InvalidationBatch"]["Paths"]
-    assert paths["Quantity"] == 1
-    assert paths["Items"] == ["/api/listings"]
+def test_publish_static_site_uploads_public_json_and_invokes_renderer(monkeypatch):
+    monkeypatch.setenv("FRONTEND_BUCKET", "frontend-bucket")
+    monkeypatch.setenv("SSG_FUNCTION_NAME", "ssg-renderer")
+    monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
+    monkeypatch.setattr(
+        transform,
+        "to_api_response",
+        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+    )
+    mock_s3, mock_lambda = MagicMock(), MagicMock()
+    with patch.object(pipeline, "_s3", return_value=mock_s3), patch.object(pipeline, "_lambda", return_value=mock_lambda):
+        pipeline._publish_static_site(_listings())
+
+    mock_s3.put_object.assert_called_once()
+    put = mock_s3.put_object.call_args.kwargs
+    assert put["Bucket"] == "frontend-bucket"
+    assert put["Key"] == "data/listings.json"
+    mock_lambda.invoke.assert_called_once()
+    invoke = mock_lambda.invoke.call_args.kwargs
+    assert invoke["FunctionName"] == "ssg-renderer"
+    assert invoke["InvocationType"] == "Event"
 
 
-def test_invalidate_cloudfront_swallows_exceptions(monkeypatch):
-    monkeypatch.setenv("CLOUDFRONT_DISTRIBUTION_ID", "EDFDVBD6EXAMPLE")
-    mock_client = MagicMock()
-    mock_client.create_invalidation.side_effect = RuntimeError("API error")
-    with patch.object(pipeline, "_cf", return_value=mock_client):
-        pipeline._invalidate_cloudfront()  # must not raise
+def test_publish_static_site_skips_invoke_when_function_unset(monkeypatch):
+    monkeypatch.setenv("FRONTEND_BUCKET", "frontend-bucket")
+    monkeypatch.delenv("SSG_FUNCTION_NAME", raising=False)
+    monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
+    monkeypatch.setattr(
+        transform,
+        "to_api_response",
+        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+    )
+    mock_s3, mock_lambda = MagicMock(), MagicMock()
+    with patch.object(pipeline, "_s3", return_value=mock_s3), patch.object(pipeline, "_lambda", return_value=mock_lambda):
+        pipeline._publish_static_site(_listings())
+    mock_s3.put_object.assert_called_once()
+    mock_lambda.invoke.assert_not_called()
 
 
-# ── _prewarm_cloudfront ───────────────────────────────────────────────────────
-
-
-def test_prewarm_cloudfront_noop_when_env_var_absent(monkeypatch):
-    monkeypatch.delenv("CLOUDFRONT_URL", raising=False)
-    with patch("urllib.request.urlopen") as mock_urlopen:
-        pipeline._prewarm_cloudfront()
-    mock_urlopen.assert_not_called()
-
-
-def test_prewarm_cloudfront_fetches_listings_url(monkeypatch):
-    monkeypatch.setenv("CLOUDFRONT_URL", "https://example.cloudfront.net")
-    mock_response = MagicMock()
-    mock_response.__enter__ = lambda s: s
-    mock_response.__exit__ = MagicMock(return_value=False)
-    mock_response.status = 200
-    with patch("urllib.request.urlopen", return_value=mock_response) as mock_urlopen:
-        pipeline._prewarm_cloudfront()
-    mock_urlopen.assert_called_once()
-    req = mock_urlopen.call_args.args[0]
-    assert req.full_url == "https://example.cloudfront.net/api/listings"
-
-
-def test_prewarm_cloudfront_swallows_exceptions(monkeypatch):
-    monkeypatch.setenv("CLOUDFRONT_URL", "https://example.cloudfront.net")
-    with patch("urllib.request.urlopen", side_effect=OSError("timeout")):
-        pipeline._prewarm_cloudfront()  # must not raise
+def test_publish_static_site_swallows_exceptions(monkeypatch):
+    monkeypatch.setenv("FRONTEND_BUCKET", "frontend-bucket")
+    monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
+    monkeypatch.setattr(
+        transform,
+        "to_api_response",
+        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+    )
+    mock_s3 = MagicMock()
+    mock_s3.put_object.side_effect = RuntimeError("S3 down")
+    with patch.object(pipeline, "_s3", return_value=mock_s3):
+        pipeline._publish_static_site(_listings())  # must not raise
 
 
 # ── force_refresh integration ─────────────────────────────────────────────────
 
 
-def test_force_refresh_calls_post_refresh_steps_on_success(tmp_cache):
+def test_force_refresh_publishes_site_on_success(tmp_cache):
     fresh = _listings()
     with (
         patch.object(pipeline, "_refresh", return_value=fresh),
-        patch.object(pipeline, "_invalidate_cloudfront") as mock_invalidate,
-        patch.object(pipeline, "_prewarm_cloudfront") as mock_prewarm,
+        patch.object(pipeline, "_publish_static_site") as mock_publish,
     ):
         pipeline.force_refresh()
 
-    mock_invalidate.assert_called_once()
-    mock_prewarm.assert_called_once()
+    mock_publish.assert_called_once_with(fresh)
 
 
-def test_force_refresh_skips_post_refresh_steps_on_failure(tmp_cache):
+def test_force_refresh_skips_publish_on_failure(tmp_cache):
     with (
         patch.object(pipeline, "_refresh", side_effect=RuntimeError("refresh failed")),
-        patch.object(pipeline, "_invalidate_cloudfront") as mock_invalidate,
-        patch.object(pipeline, "_prewarm_cloudfront") as mock_prewarm,
+        patch.object(pipeline, "_publish_static_site") as mock_publish,
         pytest.raises(RuntimeError),
     ):
         pipeline.force_refresh()
 
-    mock_invalidate.assert_not_called()
-    mock_prewarm.assert_not_called()
+    mock_publish.assert_not_called()
 
 
 def test_collect_movies_returns_data_when_one_provider_fails():
