@@ -454,7 +454,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-UJ7YuwH97313GFUbDC38zVD8DwXulidM0MT7PafMtC0=' 'inline-speculation-rules';
+              script-src 'self' 'sha256-UJ7YuwH97313GFUbDC38zVD8DwXulidM0MT7PafMtC0=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true
