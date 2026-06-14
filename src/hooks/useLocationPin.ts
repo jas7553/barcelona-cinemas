@@ -20,7 +20,10 @@ export function useLocationPin(): LocationPin {
   const [coords, setCoords] = useState<Coords | null>(null);
   const [error, setError] = useState(false);
   const [resolving, setResolving] = useState(
-    () => localStorage.getItem(STORAGE_KEY) === "true" && !!navigator.geolocation,
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem(STORAGE_KEY) === "true" &&
+      !!navigator.geolocation,
   );
   const errorTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialized = useRef(false);

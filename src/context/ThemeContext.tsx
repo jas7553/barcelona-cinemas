@@ -12,15 +12,23 @@ export function useTheme(): ThemeCtx {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [dark, setDark] = useState(() => {
+  // Start light on both server and the first client render so the SSG markup and
+  // hydration agree. The inline <head> script (index.html) has already applied
+  // the real theme to <html> pre-paint, so there is no colour FOUC; we read the
+  // stored preference after mount to sync React state (may flip the header icon).
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
     try {
       const stored = localStorage.getItem("btw-dark");
-      if (stored !== null) return stored === "true";
-      return window.matchMedia("(prefers-color-scheme: dark)").matches;
+      // Post-hydration sync: first render is light (matches SSG); read the real
+      // preference after mount. The inline <head> script already set colours.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDark(stored !== null ? stored === "true" : window.matchMedia("(prefers-color-scheme: dark)").matches);
     } catch {
-      return false;
+      // storage/matchMedia unavailable — stay light
     }
-  });
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);

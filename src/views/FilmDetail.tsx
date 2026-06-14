@@ -1,21 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import BackdropPlaceholder from "../components/BackdropPlaceholder";
 import PosterPlaceholder from "../components/PosterPlaceholder";
 import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
 import { BackIcon, ChevronRightIcon } from "../components/Icons";
-import { formatDistKm, formatMovieMeta, formatLanguage, buildCinemaRows, haversineKm, buildIcs, icsHref } from "../utils";
+import { useUrlParams } from "../hooks/useClient";
+import { formatDistKm, formatMovieMeta, formatLanguage, generateDays, buildCinemaRows, haversineKm, buildIcs, icsHref } from "../utils";
 import type { TransformedMovie, SheetVenueData } from "../types";
 
 interface Props {
   movie: TransformedMovie;
   coords: { lat: number; lng: number } | null;
+  now: Date;
   onBack: () => void;
 }
 
-export default function FilmDetail({ movie, coords, onBack }: Props) {
-  const [searchParams, setSearchParams] = useSearchParams();
+export default function FilmDetail({ movie, coords, now, onBack }: Props) {
+  const { params: searchParams, setParams } = useUrlParams();
   // The day filter lives in the URL (?day=): the list's filter carries over on
   // entry, and a changed day survives refresh/share. Replace-state keeps the
   // list's own history entry (and its params) untouched. Only honored if this
@@ -27,12 +28,10 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
       ? parsedDay
       : null;
   const setSelectedDay = (day: number | null) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
+    setParams((next) => {
       if (day == null) next.delete("day");
       else next.set("day", String(day));
-      return next;
-    }, { replace: true });
+    });
   };
   const [scrollY, setScrollY] = useState(0);
   const [backHidden, setBackHidden] = useState(false);
@@ -49,10 +48,16 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
     [movie.showtimes],
   );
 
+  const days = useMemo(() => generateDays(now), [now]);
+
   const cinemaRows = useMemo(
-    () => buildCinemaRows(movie, selectedDay, sortCoords),
-    [movie, selectedDay, sortCoords],
+    () => buildCinemaRows(movie, selectedDay, sortCoords, now),
+    [movie, selectedDay, sortCoords, now],
   );
+
+  const showtimeCount = movie.showtimes.filter(
+    (s) => selectedDay == null || s.dayOffset === selectedDay,
+  ).length;
 
   const meta = formatMovieMeta(movie, true);
   const originalLanguage = formatLanguage(movie.original_lang);
@@ -64,11 +69,10 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
   const metacriticHref = `https://www.metacritic.com/search/${encodeURIComponent(movie.title)}/`;
 
   // Detail scrolls the document body (so iOS Safari pull-to-refresh works);
-  // track window scroll for the backdrop fade + Back-pill auto-hide. Reset to
-  // top on mount: the body still carries the list's offset at this point
-  // (MainList captures it on unmount, then restores it on the way back).
+  // track window scroll for the backdrop fade + Back-pill auto-hide. No manual
+  // scroll reset: this is its own document, loaded at the top on forward nav and
+  // restored natively (bfcache) on back.
   useEffect(() => {
-    window.scrollTo(0, 0);
     const onScroll = () => {
       if (rafRef.current != null) return;
       rafRef.current = requestAnimationFrame(() => {
@@ -138,7 +142,7 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                   width={76}
                   height={112}
                   decoding="async"
-                  style={{ objectFit: "cover" }}
+                  style={{ objectFit: "cover", viewTransitionName: `poster-${movie.id}` }}
                 />
               ) : (
                 <PosterPlaceholder w={76} h={112} id={movie.id} />
@@ -210,16 +214,11 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
           <div className="detail-showtimes">
             <div className="showtimes-heading">Showtimes</div>
 
-            <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} />
+            <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} days={days} />
 
             {cinemaRows.length > 0 && (
               <div className="cinema-count">
-                {(() => {
-                  const n = movie.showtimes.filter(
-                    (s) => selectedDay == null || s.dayOffset === selectedDay,
-                  ).length;
-                  return `${n} showtime${n !== 1 ? "s" : ""} · ${cinemaRows.length} cinema${cinemaRows.length !== 1 ? "s" : ""}`;
-                })()}
+                {`${showtimeCount} showtime${showtimeCount !== 1 ? "s" : ""} · ${cinemaRows.length} cinema${cinemaRows.length !== 1 ? "s" : ""}`}
               </div>
             )}
 
@@ -260,7 +259,7 @@ export default function FilmDetail({ movie, coords, onBack }: Props) {
                         <ChevronRightIcon />
                       </div>
                     </button>
-                    <div className={selectedDay == null ? "cinema-row__times cinema-row__times--grouped" : "cinema-row__times"}>
+                    <div className={`cinema-row__times${selectedDay == null ? " cinema-row__times--grouped" : ""}`}>
                       {dayGroups.map((group) =>
                         group.label == null ? (
                           group.times.map(({ key, t, date, bookingUrl, badge }) => (

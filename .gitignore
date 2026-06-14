@@ -20,6 +20,14 @@ node_modules/
 static/
 static/assets/
 static/index.html
+dist-ssr/
+
+# SSG Lambda artifacts copied in by deploy.sh (built by `npm run build`)
+ssg-lambda/entry-server.js
+ssg-lambda/render-core.mjs
+ssg-lambda/template.mjs
+ssg-lambda/manifest.json
+ssg-lambda/node_modules/
 
 # AWS SAM
 .aws-sam/

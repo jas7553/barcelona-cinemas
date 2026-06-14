@@ -1,0 +1,8 @@
+{
+  "name": "barcelona-movie-database-ssg",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless Node SSG renderer Lambda. AWS SDK v3 is runtime-provided; built artifacts are copied in by deploy.sh.",
+  "dependencies": {}
+}
