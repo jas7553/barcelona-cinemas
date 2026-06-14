@@ -108,6 +108,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
       else next.set("day", String(day));
     });
   };
+  const [selectedPillKey, setSelectedPillKey] = useState<string | null>(null);
   const [scrollY, setScrollY] = useState(0);
   const [backHidden, setBackHidden] = useState(false);
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
@@ -154,6 +155,21 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
   // track window scroll for the backdrop fade + Back-pill auto-hide. No manual
   // scroll reset: this is its own document, loaded at the top on forward nav and
   // restored natively (bfcache) on back.
+  useEffect(() => {
+    if (selectedPillKey == null) return;
+    const handler = () => setSelectedPillKey(null);
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, [selectedPillKey]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedPillKey(null);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+
   useEffect(() => {
     const onScroll = () => {
       if (rafRef.current != null) return;
@@ -322,6 +338,25 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
                     ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
                     : distKm;
                 const dl = formatDistKm(liveKm);
+
+                // Change 3: bookability signal in cinema header.
+                const isBookable = dayGroups.some((g) => g.times.some((t) => t.bookingUrl));
+
+                // Change 1: badge hoisting — compute uniform badge per day-group.
+                const groupBadgeResults = dayGroups.map((g) => {
+                  const set = new Set(g.times.map((t) => t.badge));
+                  const isUniform = set.size === 1;
+                  return { isUniform, value: isUniform ? [...set][0] : null };
+                });
+                // Promote to cinema header when ALL day-groups share the same non-null badge.
+                const cinemaHeaderBadge: string | null =
+                  groupBadgeResults.length > 0 &&
+                  groupBadgeResults.every(
+                    (r) => r.isUniform && r.value !== null && r.value === groupBadgeResults[0].value,
+                  )
+                    ? groupBadgeResults[0].value
+                    : null;
+
                 return (
                   <div key={theater.id} className="cinema-row">
                     <button
@@ -341,27 +376,64 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
                     >
                       <span className="cinema-row__name">{theater.name}</span>
                       <div className="cinema-row__right">
+                        {isBookable && <span className="cinema-row__book-badge">Book online</span>}
+                        {cinemaHeaderBadge && (
+                          <span className="cinema-row__header-badge">{cinemaHeaderBadge}</span>
+                        )}
                         {dl && <span className="cinema-row__dist">{dl}</span>}
                         <ChevronRightIcon />
                       </div>
                     </button>
                     <div className={`cinema-row__times${selectedDay == null ? " cinema-row__times--grouped" : ""}`}>
-                      {dayGroups.map((group) =>
-                        group.label == null ? (
+                      {dayGroups.map((group, gi) => {
+                        const { isUniform, value: groupHoistedBadge } = groupBadgeResults[gi];
+                        const showDayBadge = !cinemaHeaderBadge && isUniform && groupHoistedBadge !== null;
+                        return group.label == null ? (
                           group.times.map(({ key, t, date, bookingUrl, badge }) => (
-                            <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} badge={badge} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} now={now} />
+                            <TimePill
+                              key={key}
+                              pillKey={key}
+                              selectedKey={selectedPillKey}
+                              onSelect={setSelectedPillKey}
+                              time={t}
+                              date={date}
+                              bookingUrl={bookingUrl}
+                              badge={isUniform ? null : badge}
+                              film={movie.title}
+                              cinema={theater.name}
+                              address={theater.address}
+                              runtimeMinutes={movie.runtime_minutes}
+                              now={now}
+                            />
                           ))
                         ) : (
                           <div key={group.offset} className="cinema-row__day-group">
                             <span className="cinema-row__day-label">{group.label}</span>
+                            {showDayBadge && (
+                              <span className="cinema-row__day-badge">{groupHoistedBadge}</span>
+                            )}
                             <div className="cinema-row__day-pills">
                               {group.times.map(({ key, t, date, bookingUrl, badge }) => (
-                                <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} badge={badge} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} now={now} />
+                                <TimePill
+                                  key={key}
+                                  pillKey={key}
+                                  selectedKey={selectedPillKey}
+                                  onSelect={setSelectedPillKey}
+                                  time={t}
+                                  date={date}
+                                  bookingUrl={bookingUrl}
+                                  badge={isUniform ? null : badge}
+                                  film={movie.title}
+                                  cinema={theater.name}
+                                  address={theater.address}
+                                  runtimeMinutes={movie.runtime_minutes}
+                                  now={now}
+                                />
                               ))}
                             </div>
                           </div>
-                        )
-                      )}
+                        );
+                      })}
                     </div>
                   </div>
                 );
@@ -387,6 +459,9 @@ function TimePill({
   address,
   runtimeMinutes,
   now,
+  pillKey,
+  selectedKey,
+  onSelect,
 }: {
   time: string;
   date: string;
@@ -397,7 +472,11 @@ function TimePill({
   address: string;
   runtimeMinutes: number | null;
   now: Date;
+  pillKey: string;
+  selectedKey: string | null;
+  onSelect: (key: string | null) => void;
 }) {
+  const isSelected = pillKey === selectedKey;
   const ics = buildIcs(
     {
       title: film,
@@ -410,32 +489,71 @@ function TimePill({
   );
   const calName = `${film.replace(/\s+/g, "-").toLowerCase()}-${date}-${time.replace(":", "")}.ics`;
 
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelect(isSelected ? null : pillKey);
+  };
+
   return (
-    <span className="time-pill-group">
-      {bookingUrl ? (
-        <a
-          href={bookingUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="time-pill time-pill--lg time-pill--link"
-          aria-label={`Buy tickets for ${film} at ${cinema}, ${time}`}
-        >
-          <time>{time}</time>
-          <span className="time-pill__ticket" aria-hidden="true">🎟</span>
-        </a>
-      ) : (
-        <time className="time-pill time-pill--lg">{time}</time>
+    <div className="time-pill-group">
+      <div className="time-pill-group__row">
+        {bookingUrl ? (
+          <>
+            <a
+              href={bookingUrl}
+              target="_blank"
+              rel="noreferrer"
+              className={`time-pill time-pill--lg time-pill--link${isSelected ? " time-pill--selected" : ""}`}
+              aria-label={`Buy tickets for ${film} at ${cinema}, ${time}`}
+            >
+              <time>{time}</time>
+              <span className="time-pill__ticket" aria-hidden="true">🎟</span>
+            </a>
+            <button
+              className="time-pill__chevron"
+              onClick={handleToggle}
+              aria-expanded={isSelected}
+              aria-label="Show showtime options"
+            >
+              ▾
+            </button>
+          </>
+        ) : (
+          <button
+            className={`time-pill time-pill--lg${isSelected ? " time-pill--selected" : ""}`}
+            onClick={handleToggle}
+            aria-expanded={isSelected}
+            aria-label={`${time} at ${cinema}`}
+          >
+            <time>{time}</time>
+          </button>
+        )}
+        {badge && <span className="subtitle-badge">{badge}</span>}
+      </div>
+      {isSelected && (
+        <div className="time-pill__actions" role="group" aria-label="Showtime options">
+          {bookingUrl && (
+            <a
+              href={bookingUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="time-pill__action-book"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Book tickets ↗
+            </a>
+          )}
+          <a
+            href={icsHref(ics)}
+            download={calName}
+            className="time-pill__action-cal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Add to calendar
+          </a>
+        </div>
       )}
-      <a
-        href={icsHref(ics)}
-        download={calName}
-        className="time-pill__cal"
-        aria-label={`Add ${film} at ${cinema}, ${date} ${time} to calendar`}
-      >
-        <span aria-hidden="true">📅</span>
-      </a>
-      {badge && <span className="subtitle-badge">{badge}</span>}
-    </span>
+    </div>
   );
 }
 
