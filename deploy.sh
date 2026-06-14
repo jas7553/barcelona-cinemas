@@ -12,25 +12,29 @@ STACK=$(python3 -c "import tomllib; d=tomllib.load(open('samconfig.toml','rb'));
   || { echo "ERROR: could not read stack_name from samconfig.toml"; exit 1; })
 GUIDED=${1:-""}
 
-if [ "$GUIDED" != "--guided" ]; then
-  HAS_ORIGIN_TOKEN=$(python3 -c "import tomllib; d=tomllib.load(open('samconfig.toml','rb')); s=d['default']['deploy']['parameters'].get('parameter_overrides',''); print('yes' if 'ApiOriginVerifyToken=' in s else 'no')" 2>/dev/null || echo "no")
-  if [ "$HAS_ORIGIN_TOKEN" != "yes" ]; then
-    echo "ERROR: samconfig.toml does not include ApiOriginVerifyToken in deploy.parameter_overrides."
-    echo "Run './deploy.sh --guided' once to set the origin verification secret, then use './deploy.sh' for later deploys."
-    exit 1
-  fi
-fi
-
-echo "==> 0/5 Validate SAM template"
+echo "==> 0/6 Validate SAM template"
 sam validate
 
-echo "==> 1/5 Build React frontend (npm run build → static/)"
+echo "==> 1/6 Build frontend (npm run build → static/ bundles + dist-ssr/ SSR bundle)"
 npm run build
 
 # Verify the build produced an index.html before touching S3
 [ -f static/index.html ] || { echo "ERROR: static/index.html not found — build may have failed"; exit 1; }
 
-echo "==> 2/5 SAM build (package Lambda + dependencies)"
+# Render the static pages from real listings (build alone emits an empty list).
+# The same render runs in production via the SSG Lambda on every 12h refresh.
+echo "    export public listings + render static pages"
+npm run export-data
+node scripts/render.mjs
+
+# Stage the built artifacts the SSG Lambda ships (see ssg-lambda/Makefile).
+echo "    stage SSG Lambda artifacts"
+cp dist-ssr/entry-server.js ssg-lambda/entry-server.js
+cp scripts/render-core.mjs ssg-lambda/render-core.mjs
+cp scripts/template.mjs ssg-lambda/template.mjs
+cp static/.vite/manifest.json ssg-lambda/manifest.json
+
+echo "==> 2/6 SAM build (package Lambdas)"
 sam build
 
 # Smoke-test the built package before deploying: a missing module in the
@@ -40,9 +44,9 @@ echo "    verifying built package imports app..."
 ( cd .aws-sam/build/ApiFunction && python -c "import app" ) \
   || { echo "ERROR: built Lambda package cannot import app — check Makefile copy list"; exit 1; }
 
-echo "==> 3/5 SAM deploy"
+echo "==> 3/6 SAM deploy"
 # Fetch distribution ID + domain from the existing stack so they can be injected
-# into Lambda env vars for post-refresh invalidation/pre-warming. Absent on first deploy.
+# into the SSG Lambda for post-refresh invalidation + OpenGraph og:url. Absent on first deploy.
 CF_DIST_ID=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
   --output text 2>/dev/null || true)
@@ -65,6 +69,10 @@ s = tomllib.load(open('samconfig.toml','rb'))['default']['deploy']['parameters']
 # nonzero at EOF, so a final token without a trailing NUL would be dropped.
 for tok in shlex.split(s):
     key, _, value = tok.partition('=')
+    # ApiOriginVerifyToken was retired with the public API — skip it so a stale
+    # samconfig.toml entry doesn't fail the deploy with an unknown parameter.
+    if key == 'ApiOriginVerifyToken':
+        continue
     sys.stdout.write(f'{key}=\"{value}\"\0')
 ")
 [ -n "$CF_DIST_ID" ] && [ "$CF_DIST_ID" != "None" ] && OVERRIDES+=("CloudFrontDistributionId=\"$CF_DIST_ID\"")
@@ -76,7 +84,7 @@ else
   sam deploy --parameter-overrides "${OVERRIDES[@]}"
 fi
 
-echo "==> 4/5 Sync static/ → S3 FrontendBucket"
+echo "==> 4/6 Sync static/ → S3 FrontendBucket"
 BUCKET=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='FrontendBucketName'].OutputValue" \
   --output text)
@@ -98,7 +106,7 @@ aws s3 sync static/ "s3://$BUCKET" \
   --cache-control "public, max-age=31536000, immutable"
 
 aws s3 sync static/ "s3://$BUCKET" \
-  --exclude "assets/*" --exclude "fonts/*" \
+  --exclude "assets/*" --exclude "fonts/*" --exclude ".vite/*" \
   --cache-control "no-cache"
 
 echo "==> 5/6 Invalidate CloudFront cache"
