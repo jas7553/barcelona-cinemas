@@ -35,9 +35,9 @@ def test_template_includes_observability_resources() -> None:
     template = Path("template.yaml").read_text()
 
     assert "LambdaErrorAlarm" in template
+    assert "SsgErrorAlarm" in template
     assert "RefreshFailureAlarm" in template
     assert "CacheAgeAlarm" in template
-    assert "ListingsStaleResponseAlarm" in template
     assert "RefreshHeartbeatAlarm" in template
     assert "ProviderDegradationAlarm" in template
 
