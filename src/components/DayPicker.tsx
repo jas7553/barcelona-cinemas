@@ -1,14 +1,14 @@
 import { useEffect, useRef } from "react";
-import { generateDays } from "../utils";
 
 interface Props {
   selectedDay: number | null;
   onSelect: (day: number | null) => void;
   activeDays?: Set<number>;
+  /** Day chips, computed by the page from its shared `now` (SSG/hydration parity). */
+  days: Array<{ label: string; fullLabel: string; offset: number }>;
 }
 
-export default function DayPicker({ selectedDay, onSelect, activeDays }: Props) {
-  const days = generateDays();
+export default function DayPicker({ selectedDay, onSelect, activeDays, days }: Props) {
   const activeRef = useRef<HTMLButtonElement>(null);
 
   // Deep links like /?day=5 select a chip that sits offscreen in the

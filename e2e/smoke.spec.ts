@@ -1,25 +1,34 @@
-// End-to-end smoke test driving the core flows on a mobile viewport. Servers,
-// fixture cache, and teardown are handled by playwright.config.ts.
+// End-to-end smoke test driving the core flows on a mobile viewport. The app is
+// now an MPA: list (/) and detail (/film/<id>) are separate static documents, so
+// navigation is real (back/forward via the browser, scroll restored natively).
+// Servers + date-shifted fixture data are handled by playwright.config.ts.
 //
 //   npm run e2e                  # all
 //   npx playwright test --ui     # interactive
 
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { FIXTURE_TAGLINE } from "./fixture";
 
-// Collected across the run; asserted empty before the deliberate API-down section.
+// Collected across the run; asserted empty at the end.
 let consoleErrors: string[] = [];
+
+// Cross-document View Transitions reject their internal promise when a
+// transition is skipped (e.g. rapid navigation). The browser owns that promise
+// — app code can't catch it — and it's harmless, so ignore it.
+const isBenign = (msg: string) => /Transition was skipped|AbortError/.test(msg);
 
 test.beforeEach(({ page }) => {
   consoleErrors = [];
   page.on("console", (m) => {
-    if (m.type() === "error") consoleErrors.push(m.text());
+    if (m.type() === "error" && !isBenign(m.text())) consoleErrors.push(m.text());
   });
-  page.on("pageerror", (e) => consoleErrors.push(String(e)));
+  page.on("pageerror", (e) => {
+    if (!isBenign(String(e))) consoleErrors.push(String(e));
+  });
 });
 
-// One stateful journey: filter → detail → back (scroll restore) → search →
-// cinema view → venue dialog → deep link → offline cached paint.
+// One stateful journey: filter → detail (real nav) → back → search → cinema view
+// → venue dialog → deep link.
 test("core mobile journey", async ({ page }) => {
   await test.step("list renders film cards", async () => {
     await page.goto("/");
@@ -32,21 +41,21 @@ test("core mobile journey", async ({ page }) => {
     await expect(page).toHaveURL(/day=1/);
   });
 
-  await test.step("open a card, keep day param", async () => {
+  await test.step("open a card — real nav, day param carried in the URL", async () => {
     await page.locator(".film-card").first().click();
+    await expect(page).toHaveURL(/\/film\/.+day=1/);
     await expect(page.locator(".detail-film-title")).toBeVisible();
-    await expect(page).toHaveURL(/day=1/);
     await expect(page.locator(".detail-screen .day-chip--active")).toHaveCount(1);
     await expect(page.locator(".tagline")).toHaveText(FIXTURE_TAGLINE);
   });
 
-  await test.step("back restores filters", async () => {
-    await page.locator(".detail-back-btn").click();
+  await test.step("back returns to the list with its filter", async () => {
+    await page.goBack();
     await expect(page.locator(".film-card").first()).toBeVisible();
     await expect(page).toHaveURL(/day=1/);
   });
 
-  await test.step("search survives a detail round-trip", async () => {
+  await test.step("search survives a detail round-trip (bfcache)", async () => {
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.locator('button[aria-label="Search films"]').click();
     await page.locator(".search-input").fill("a");
@@ -94,26 +103,31 @@ test("core mobile journey", async ({ page }) => {
     expect(chipVisible).toBe(true);
   });
 
-  await test.step("no console errors so far", () => {
+  await test.step("no console errors", () => {
     expect(consoleErrors, consoleErrors.join(" | ")).toHaveLength(0);
   });
-
-  await stalePaintWithApiDown(page);
 });
 
-// MainList unmounts when a detail opens, so it persists its scroll offset and
-// restores it on the way back (regressed by 97bfb9a, fixed by the module-scoped
-// savedScrollY in MainList).
+// Deep link straight to a film page: SSG content paints with the real title and
+// data embedded — no list visit, no fetch.
+test("film deep link renders standalone", async ({ page }) => {
+  await page.goto("/");
+  const href = await page.locator(".film-card").first().getAttribute("href");
+  expect(href).toMatch(/^\/film\//);
+
+  await page.goto(href!);
+  await expect(page.locator(".detail-film-title")).toBeVisible();
+  await expect(page.locator(".detail-showtimes")).toBeVisible();
+  expect(consoleErrors, consoleErrors.join(" | ")).toHaveLength(0);
+});
+
+// Back navigation restores list scroll natively (the whole point of the MPA
+// refactor — no manual save/restore). Cross-document back uses bfcache.
 test("back restores list scroll position", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".film-card").first()).toBeVisible();
-  await page.locator(".day-chip").nth(2).click();
-  await expect(page).toHaveURL(/day=1/);
 
   await page.evaluate(() => window.scrollTo(0, 800));
-  // The scroll listener persists the offset on the (async) scroll event; wait
-  // for that before navigating away, as a real drag would have flushed it.
-  await page.waitForFunction(() => sessionStorage.getItem("btw-list-scroll") !== null);
   const scrollBefore = await page.evaluate(() => window.scrollY); // may clamp short
   expect(scrollBefore).toBeGreaterThan(0);
 
@@ -128,24 +142,9 @@ test("back restores list scroll position", async ({ page }) => {
   await page.locator(".film-card").nth(visibleIdx).click();
   await expect(page.locator(".detail-film-title")).toBeVisible();
 
-  await page.locator(".detail-back-btn").click();
+  await page.goBack();
   await expect(page.locator(".film-card").first()).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => window.scrollY), { timeout: 3000 })
     .toBeCloseTo(scrollBefore, -2); // within ~50px
 });
-
-// Stale-while-revalidate: with the API dead, a repeat visit must still paint
-// from the localStorage cache (the aborted fetch logs expected errors, so this
-// runs after the no-console-errors assertion).
-async function stalePaintWithApiDown(page: Page) {
-  await test.step("listings cached locally", async () => {
-    expect(await page.evaluate(() => localStorage.getItem("btw-listings"))).not.toBeNull();
-  });
-  await test.step("cached paint with API down", async () => {
-    await page.route("**/api/listings", (route) => route.abort());
-    await page.goto("/");
-    await expect(page.locator(".film-card").first()).toBeVisible({ timeout: 5000 });
-    expect(await page.locator(".film-card").count()).toBeGreaterThan(0);
-  });
-}

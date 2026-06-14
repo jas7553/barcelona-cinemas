@@ -152,13 +152,18 @@ export function formatDaySubLabel(date: Date): string {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-/** Generate 7-day array of chip labels for the day picker. */
-export function generateDays(): Array<{ label: string; fullLabel: string; offset: number }> {
-  const hour = new Date().getHours();
+/**
+ * Generate 7-day array of chip labels for the day picker.
+ * `now` is injectable so SSG render and client hydration agree on the same
+ * reference instant (avoids a hydration mismatch); the client swaps to the
+ * live clock after mount.
+ */
+export function generateDays(now: Date = new Date()): Array<{ label: string; fullLabel: string; offset: number }> {
+  const hour = now.getHours();
   const result: Array<{ label: string; fullLabel: string; offset: number }> = [];
 
   for (let i = 0; i < 7; i++) {
-    const d = new Date();
+    const d = new Date(now);
     d.setDate(d.getDate() + i);
 
     if (i === 0) {
@@ -186,8 +191,8 @@ export function normalizeForSearch(s: string): string {
 
 // ── Relative time ───────────────────────────────────────────────────────────
 
-export function relativeTime(isoStr: string): string {
-  const diffMs = Date.now() - new Date(isoStr).getTime();
+export function relativeTime(isoStr: string, now: Date = new Date()): string {
+  const diffMs = now.getTime() - new Date(isoStr).getTime();
   const diffMins = Math.round(diffMs / 60000);
   if (diffMins < 1) return "just now";
   if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
@@ -198,8 +203,8 @@ export function relativeTime(isoStr: string): string {
 }
 
 /** Returns a compact age string for the data freshness note, or null if under 1h old. */
-export function formatDataAge(isoStr: string): string | null {
-  const diffMs = Date.now() - new Date(isoStr).getTime();
+export function formatDataAge(isoStr: string, now: Date = new Date()): string | null {
+  const diffMs = now.getTime() - new Date(isoStr).getTime();
   const diffH = diffMs / (1000 * 60 * 60);
   if (diffH < 1) return null;
   if (diffH < 2) return "1h ago";
@@ -230,14 +235,19 @@ export function thumbPosterUrl(posterUrl: string | null): string | null {
 
 // ── Client-side API response transform ─────────────────────────────────────
 
-export function todayAtMidnight(): Date {
-  const d = new Date();
+export function todayAtMidnight(now: Date = new Date()): Date {
+  const d = new Date(now);
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-export function transformResponse(apiResponse: Listings): TransformedMovie[] {
-  const today = todayAtMidnight();
+/**
+ * `now` is injectable so the SSG render and the first client (hydration) render
+ * compute identical markup from the same instant. After mount the client passes
+ * the live clock, which re-filters past showtimes the stale snapshot still showed.
+ */
+export function transformResponse(apiResponse: Listings, now: Date = new Date()): TransformedMovie[] {
+  const today = todayAtMidnight(now);
 
   const theaterMap: Record<string, Theater> = Object.fromEntries(
     apiResponse.theaters.map((t) => [t.id, t])
@@ -261,7 +271,7 @@ export function transformResponse(apiResponse: Listings): TransformedMovie[] {
         if (s.dayOffset < 0 || s.dayOffset > 13) return false;
         const [sy, smo, sd] = s.date.split("-").map(Number);
         const [sh, sm] = s.time.split(":").map(Number);
-        return new Date(sy, smo - 1, sd, sh, sm) > new Date();
+        return new Date(sy, smo - 1, sd, sh, sm) > now;
       })
       .sort((a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time)),
   }))
@@ -296,13 +306,14 @@ export function buildCinemaRows(
   movie: TransformedMovie,
   selectedDay: number | null,
   coords: { lat: number; lng: number } | null,
+  now: Date = new Date(),
 ): CinemaRow[] {
   const showtimes =
     selectedDay != null
       ? movie.showtimes.filter((s) => s.dayOffset === selectedDay)
       : movie.showtimes;
 
-  const dayLabelMap = new Map(generateDays().map((d) => [d.offset, d.label]));
+  const dayLabelMap = new Map(generateDays(now).map((d) => [d.offset, d.label]));
   const byTheater = new Map<string, { theater: TransformedShowtime["theater"]; groups: Map<number, DayGroup> }>();
 
   for (const s of showtimes) {
