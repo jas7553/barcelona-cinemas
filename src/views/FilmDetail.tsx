@@ -263,14 +263,14 @@ export default function FilmDetail({ movie, coords, now, onBack }: Props) {
                       {dayGroups.map((group) =>
                         group.label == null ? (
                           group.times.map(({ key, t, date, bookingUrl, badge }) => (
-                            <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} badge={badge} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} />
+                            <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} badge={badge} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} now={now} />
                           ))
                         ) : (
                           <div key={group.offset} className="cinema-row__day-group">
                             <span className="cinema-row__day-label">{group.label}</span>
                             <div className="cinema-row__day-pills">
                               {group.times.map(({ key, t, date, bookingUrl, badge }) => (
-                                <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} badge={badge} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} />
+                                <TimePill key={key} time={t} date={date} bookingUrl={bookingUrl} badge={badge} film={movie.title} cinema={theater.name} address={theater.address} runtimeMinutes={movie.runtime_minutes} now={now} />
                               ))}
                             </div>
                           </div>
@@ -300,6 +300,7 @@ function TimePill({
   cinema,
   address,
   runtimeMinutes,
+  now,
 }: {
   time: string;
   date: string;
@@ -309,14 +310,18 @@ function TimePill({
   cinema: string;
   address: string;
   runtimeMinutes: number | null;
+  now: Date;
 }) {
-  const ics = buildIcs({
-    title: film,
-    location: [cinema, address].filter(Boolean).join(", "),
-    date,
-    time,
-    runtimeMinutes,
-  });
+  const ics = buildIcs(
+    {
+      title: film,
+      location: [cinema, address].filter(Boolean).join(", "),
+      date,
+      time,
+      runtimeMinutes,
+    },
+    now,
+  );
   const calName = `${film.replace(/\s+/g, "-").toLowerCase()}-${date}-${time.replace(":", "")}.ics`;
 
   return (

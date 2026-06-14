@@ -89,14 +89,18 @@ function icsUtcStamp(dt: Date): string {
  * Build a single-event VCALENDAR string for one screening. Times are emitted as
  * floating local time so the user's device interprets them in Barcelona's zone.
  * DTEND = start + runtime (falls back to a sane default when runtime is null).
+ * `now` is injectable so SSR and hydration use the same instant and produce identical URLs.
  */
-export function buildIcs(opts: {
-  title: string;
-  location: string;
-  date: string; // YYYY-MM-DD
-  time: string; // HH:MM
-  runtimeMinutes: number | null;
-}): string {
+export function buildIcs(
+  opts: {
+    title: string;
+    location: string;
+    date: string; // YYYY-MM-DD
+    time: string; // HH:MM
+    runtimeMinutes: number | null;
+  },
+  now: Date = new Date(),
+): string {
   const [y, mo, d] = opts.date.split("-").map(Number);
   const [h, mi] = opts.time.split(":").map(Number);
   const start = new Date(y, mo - 1, d, h, mi, 0);
@@ -110,7 +114,7 @@ export function buildIcs(opts: {
     "PRODID:-//Barcelona Movie Database//Showtime//EN",
     "BEGIN:VEVENT",
     `UID:${uid}`,
-    `DTSTAMP:${icsUtcStamp(new Date())}`,
+    `DTSTAMP:${icsUtcStamp(now)}`,
     `DTSTART:${icsLocalStamp(start)}`,
     `DTEND:${icsLocalStamp(end)}`,
     `SUMMARY:${escapeIcsText(opts.title)}`,
