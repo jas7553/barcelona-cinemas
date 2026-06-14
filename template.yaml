@@ -234,7 +234,7 @@ Resources:
       LoggingConfig:
         LogGroup: !Ref SsgFunctionLogGroup
       Timeout: 120    # Render all pages + S3 puts + CloudFront invalidation
-      MemorySize: 2048
+      MemorySize: 512    # Max observed: ~200 MB; 512 has headroom without waste
       ReservedConcurrentExecutions: 2
       Environment:
         Variables:
