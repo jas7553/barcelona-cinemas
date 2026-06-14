@@ -38,9 +38,9 @@ test("core mobile journey", async ({ page }) => {
 
   await test.step("stylesheet is linked and actually applied", async () => {
     // An unstyled page still has every element "visible" (default block flow),
-    // so element presence can't prove CSS loaded. Assert a real stylesheet link
-    // exists and that styled.css took effect (cards are not the UA default).
-    await expect(page.locator('link[rel="stylesheet"]')).not.toHaveCount(0);
+    // so element presence can't prove CSS loaded. Assert computed style took
+    // effect (cards are not the UA default). The unit test in render-core.test.mjs
+    // guards that the stylesheet href survives SSG manifest resolution.
     const styled = await page.evaluate(() => {
       const card = document.querySelector(".film-card");
       if (!card) return false;
