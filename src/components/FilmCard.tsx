@@ -44,7 +44,6 @@ function FilmCard({ movie, dayOffset, search = "" }: Props) {
           height={106}
           loading="lazy"
           decoding="async"
-          style={{ viewTransitionName: `poster-${movie.id}` }}
         />
       ) : (
         <div className="film-card__poster-wrap">
