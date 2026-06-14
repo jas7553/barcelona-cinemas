@@ -104,6 +104,9 @@ aws s3 sync static/ "s3://$BUCKET" \
   --exclude "*.html" --exclude "data/*" \
   --cache-control "no-cache"
 
+# 404 page: public/ static HTML, not owned by the SSG Lambda render path
+aws s3 cp static/404.html "s3://$BUCKET/404.html" --cache-control "no-cache"
+
 echo "==> 5/6 Invalidate CloudFront cache"
 DIST=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
@@ -133,6 +136,11 @@ if [ -n "$FUNC" ] && [ "$FUNC" != "None" ]; then
   done
   if $found; then
     echo "    SSG render complete."
+    # Safe to delete stale hashed bundles now: SSG has re-rendered all HTML with
+    # the new asset references, and CF cache is already invalidated.
+    echo "    cleaning up stale assets..."
+    aws s3 sync static/assets/ "s3://$BUCKET/assets/" --delete --size-only
+    aws s3 sync static/fonts/  "s3://$BUCKET/fonts/"  --delete --size-only
   else
     echo "ERROR: index.html not found after 60s — SSG render did not complete"; exit 1
   fi
