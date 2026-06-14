@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { Listings, TransformedMovie } from "./types";
-import { formatDayLabel, formatRuntime, relativeTime, transformResponse, haversineKm, smartSort, formatLanguage, buildIcs, subtitleBadge } from "./utils";
+import type { Listings } from "./types";
+import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, subtitleBadge } from "./utils";
 
 describe("subtitleBadge", () => {
   it("shows English for English audio regardless of subs", () => {
@@ -80,36 +80,6 @@ describe("formatRuntime", () => {
   it("formats minutes only", () => expect(formatRuntime(45)).toBe("45m"));
   it("formats hours only", () => expect(formatRuntime(120)).toBe("2h"));
   it("formats hours and minutes", () => expect(formatRuntime(157)).toBe("2h 37m"));
-});
-
-describe("relativeTime", () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
-
-  it("returns 'just now' for under 1 minute", () => {
-    vi.setSystemTime(new Date("2026-03-28T10:00:00Z"));
-    expect(relativeTime("2026-03-28T09:59:45Z")).toBe("just now");
-  });
-
-  it("returns minutes ago", () => {
-    vi.setSystemTime(new Date("2026-03-28T10:05:00Z"));
-    expect(relativeTime("2026-03-28T10:00:00Z")).toBe("5 minutes ago");
-  });
-
-  it("uses singular for 1 minute", () => {
-    vi.setSystemTime(new Date("2026-03-28T10:01:00Z"));
-    expect(relativeTime("2026-03-28T10:00:00Z")).toBe("1 minute ago");
-  });
-
-  it("returns hours ago", () => {
-    vi.setSystemTime(new Date("2026-03-28T13:00:00Z"));
-    expect(relativeTime("2026-03-28T10:00:00Z")).toBe("3 hours ago");
-  });
-
-  it("returns days ago", () => {
-    vi.setSystemTime(new Date("2026-03-30T10:00:00Z"));
-    expect(relativeTime("2026-03-28T10:00:00Z")).toBe("2 days ago");
-  });
 });
 
 describe("formatDayLabel", () => {
@@ -289,23 +259,6 @@ describe("transformResponse", () => {
   });
 });
 
-function makeMovie(overrides: Partial<TransformedMovie> & { id: string; showtimes: TransformedMovie["showtimes"] }): TransformedMovie {
-  return {
-    title: "Test Film",
-    year: 2026,
-    runtime_minutes: 90,
-    runtimeLabel: "1h 30m",
-    poster_url: null,
-    backdrop_url: null,
-    trailer_url: null,
-    genres: [],
-    rating: 7.0,
-    synopsis: "",
-    links: { imdb: null, imdb_id: null },
-    ...overrides,
-  };
-}
-
 describe("haversineKm", () => {
   it("returns 0 for identical coordinates", () => {
     expect(haversineKm(41.4035, 2.1580, 41.4035, 2.1580)).toBeCloseTo(0, 3);
@@ -326,57 +279,3 @@ describe("haversineKm", () => {
   });
 });
 
-describe("smartSort", () => {
-  const theater = {
-    id: "t1", name: "T1", address: "", neighborhood: "A",
-    website_url: "", maps_url: "", lat: null, lng: null,
-  };
-  const showtime = (date = "2099-01-01", dayOffset = 1) => ({
-    theater_id: "t1", theater, date, time: "20:00", language: "vo" as const, dayOffset,
-  });
-
-  it("excludes hidden film IDs", () => {
-    const movies = [
-      makeMovie({ id: "a", showtimes: [showtime(), showtime(), showtime()] }),
-      makeMovie({ id: "b", showtimes: [showtime()] }),
-    ];
-    const result = smartSort(movies, new Set(["a"]));
-    expect(result.map(m => m.id)).toEqual(["b"]);
-  });
-
-  it("places last-chance (only today/tomorrow screenings) films first when groupLastChance=true", () => {
-    const movies = [
-      makeMovie({ id: "popular", rating: 8.0, showtimes: [showtime("2099-01-01", 3), showtime("2099-01-01", 4)] }),
-      makeMovie({ id: "last-chance", rating: 5.0, showtimes: [showtime("2099-01-01", 0)] }),
-    ];
-    const result = smartSort(movies, new Set(), true);
-    expect(result[0].id).toBe("last-chance");
-  });
-
-  it("does not group last-chance films first by default", () => {
-    const movies = [
-      makeMovie({ id: "popular", rating: 8.0, showtimes: [showtime(), showtime(), showtime(), showtime()] }),
-      makeMovie({ id: "last-chance", rating: 5.0, showtimes: [showtime()] }),
-    ];
-    const result = smartSort(movies, new Set());
-    expect(result[0].id).toBe("popular");
-  });
-
-  it("places highly-rated (≥7.5) films before widely-screened", () => {
-    const movies = [
-      makeMovie({ id: "wide", rating: 6.0, showtimes: [showtime(), showtime(), showtime(), showtime(), showtime()] }),
-      makeMovie({ id: "rated", rating: 8.0, showtimes: [showtime(), showtime(), showtime()] }),
-    ];
-    const result = smartSort(movies, new Set());
-    expect(result[0].id).toBe("rated");
-  });
-
-  it("breaks ties within tier by rating descending", () => {
-    const movies = [
-      makeMovie({ id: "lower", rating: 7.0, showtimes: [showtime()] }),
-      makeMovie({ id: "higher", rating: 8.0, showtimes: [showtime()] }),
-    ];
-    const result = smartSort(movies, new Set());
-    expect(result[0].id).toBe("higher");
-  });
-});

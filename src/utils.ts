@@ -151,11 +151,6 @@ export function formatDayLabel(offset: number, date: Date): string {
   return date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
 
-/** Short sub-label for days beyond Tomorrow: "28 Mar" */
-export function formatDaySubLabel(date: Date): string {
-  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
-
 /**
  * Generate 7-day array of chip labels for the day picker.
  * `now` is injectable so SSG render and client hydration agree on the same
@@ -191,19 +186,6 @@ export function generateDays(now: Date = new Date()): Array<{ label: string; ful
 
 export function normalizeForSearch(s: string): string {
   return s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
-}
-
-// ── Relative time ───────────────────────────────────────────────────────────
-
-export function relativeTime(isoStr: string, now: Date = new Date()): string {
-  const diffMs = now.getTime() - new Date(isoStr).getTime();
-  const diffMins = Math.round(diffMs / 60000);
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
-  const diffHrs = Math.round(diffMins / 60);
-  if (diffHrs < 24) return `${diffHrs} hour${diffHrs !== 1 ? "s" : ""} ago`;
-  const diffDays = Math.round(diffHrs / 24);
-  return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
 }
 
 /** Returns a compact age string for the data freshness note, or null if under 1h old. */
@@ -366,14 +348,7 @@ export function buildCinemaGroups(
 ): CinemaViewGroup[] {
   const theaterMap = new Map<
     string,
-    {
-      theaterName: string;
-      theater: TransformedShowtime["theater"];
-      lat: number | null;
-      lng: number | null;
-      mapsUrl: string;
-      films: CinemaViewGroup["films"];
-    }
+    { theater: TransformedShowtime["theater"]; films: CinemaViewGroup["films"] }
   >();
 
   for (const movie of movies) {
@@ -389,25 +364,19 @@ export function buildCinemaGroups(
     }
 
     for (const [theaterId, { theater, times }] of byTheater) {
-      const existing = theaterMap.get(theaterId) ?? {
-        theaterName: theater.name,
-        theater,
-        lat: theater.lat ?? null,
-        lng: theater.lng ?? null,
-        mapsUrl: theater.maps_url,
-        films: [],
-      };
+      const existing = theaterMap.get(theaterId) ?? { theater, films: [] };
       existing.films.push({ movie, times: [...times].sort() });
       theaterMap.set(theaterId, existing);
     }
   }
 
-  const groups: CinemaViewGroup[] = [...theaterMap.entries()].map(([id, g]) => ({
+  const groups: CinemaViewGroup[] = [...theaterMap.entries()].map(([id, { theater, films }]) => ({
     theaterId: id,
-    ...g,
+    theater,
+    films,
     distanceKm:
-      coords && g.lat != null && g.lng != null
-        ? haversineKm(coords.lat, coords.lng, g.lat, g.lng)
+      coords && theater.lat != null && theater.lng != null
+        ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
         : undefined,
   }));
 
@@ -415,41 +384,7 @@ export function buildCinemaGroups(
     if (a.distanceKm !== undefined && b.distanceKm !== undefined) {
       return a.distanceKm - b.distanceKm;
     }
-    return a.theaterName.localeCompare(b.theaterName);
+    return a.theater.name.localeCompare(b.theater.name);
   });
 }
 
-// ── Smart sort ──────────────────────────────────────────────────────────────
-
-/**
- * Sort films into priority tiers:
- *   0 = last chance (1 remaining screening) — only when groupLastChance is true
- *   1 = highly rated (TMDb ≥ 7.5)
- *   2 = widely screened (above-median screening count)
- *   3 = everything else
- * Within each tier, sort by rating descending.
- * Films in hiddenIds are excluded entirely.
- */
-export function smartSort(
-  movies: TransformedMovie[],
-  hiddenIds: Set<string>,
-  groupLastChance = false,
-): TransformedMovie[] {
-  const visible = movies.filter((m) => !hiddenIds.has(m.id));
-
-  const counts = visible.map((m) => m.showtimes.length).sort((a, b) => a - b);
-  const median = counts.length === 0 ? 0 : counts[Math.floor(counts.length / 2)];
-
-  const tier = (m: TransformedMovie): number => {
-    if (groupLastChance && m.showtimes.every((s) => s.dayOffset <= 1)) return 0;
-    if ((m.rating ?? 0) >= 7.5) return 1;
-    if (m.showtimes.length > median) return 2;
-    return 3;
-  };
-
-  return [...visible].sort((a, b) => {
-    const diff = tier(a) - tier(b);
-    if (diff !== 0) return diff;
-    return (b.rating ?? 0) - (a.rating ?? 0);
-  });
-}
