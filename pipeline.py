@@ -8,13 +8,12 @@ from __future__ import annotations
 import json
 import logging
 import os
-import time
-import urllib.request
 from datetime import UTC, datetime
 from itertools import chain
 from typing import TYPE_CHECKING, Any, cast
 
 import cache
+import transform
 from models import CinemaRegistry, Listings, Movie
 from observability import emit_metric, log_event, now_ms
 from reconcile import reconcile
@@ -29,10 +28,16 @@ _CINEMAS_FILE = "cinemas.json"
 _CACHE_TTL_HOURS = int(os.environ.get("CACHE_TTL_HOURS", 12))
 
 
-def _cf() -> Any:
+def _s3() -> Any:
     import boto3  # type: ignore[import-untyped]
 
-    return boto3.client("cloudfront")
+    return boto3.client("s3")
+
+
+def _lambda() -> Any:
+    import boto3
+
+    return boto3.client("lambda")
 
 
 _cinemas_cache: CinemaRegistry | None = None
@@ -81,53 +86,48 @@ def force_refresh() -> Listings:
     emit_metric("RefreshDurationMs", duration_ms, unit="Milliseconds")
     emit_metric("CacheAgeHours", 0, unit="None")
     log_event("refresh_summary", trigger="schedule", duration_ms=duration_ms, success=True)
-    _invalidate_cloudfront()
-    _prewarm_cloudfront()
+    _publish_static_site(result)
     return result
 
 
-def _invalidate_cloudfront() -> None:
-    """Create a CloudFront invalidation for /api/listings after a cache refresh.
+def _publish_static_site(listings: Listings) -> None:
+    """Regenerate the static SSG site from fresh listings (Option A).
 
-    No-ops silently in local dev (env var absent) and swallows all exceptions
-    so a CloudFront API failure never masks a successful refresh.
+    Writes the public listings JSON to the frontend bucket, then asynchronously
+    invokes the Node SSG renderer Lambda, which re-renders every page and
+    invalidates CloudFront. No-ops in local dev (env vars absent) and swallows
+    all exceptions so a publish failure never masks a successful refresh — the
+    old static pages keep serving and the age-based "out of date" banner appears
+    naturally (reproducing the old stale-while-revalidate behaviour).
     """
-    dist_id = os.environ.get("CLOUDFRONT_DISTRIBUTION_ID")
-    if not dist_id:
+    bucket = os.environ.get("FRONTEND_BUCKET")
+    if not bucket:
         return
+
     try:
-        _cf().create_invalidation(
-            DistributionId=dist_id,
-            InvalidationBatch={
-                "Paths": {"Quantity": 1, "Items": ["/api/listings"]},
-                "CallerReference": str(int(time.time())),
-            },
+        public = transform.to_api_response(listings, load_cinemas())
+        _s3().put_object(
+            Bucket=bucket,
+            Key="data/listings.json",
+            Body=json.dumps(public).encode("utf-8"),
+            ContentType="application/json",
+            CacheControl="no-cache",
         )
-        log_event("cloudfront_invalidation_created", distribution_id=dist_id)
+        log_event("ssg_data_published", bucket=bucket, movies=len(public["movies"]))
     except Exception:
-        logger.warning("CloudFront invalidation failed", exc_info=True)
+        logger.warning("Failed to publish SSG data to frontend bucket", exc_info=True)
+        return
 
-
-def _prewarm_cloudfront() -> None:
-    """Fetch /api/listings through CloudFront to repopulate the edge cache.
-
-    Called after invalidation. CloudFront injects X-Origin-Verify when
-    forwarding the cache-miss to the origin, so the auth check passes.
-    If invalidation hasn't propagated yet (~30s), CloudFront may serve the
-    previous cached response — acceptable; the next real user request will
-    miss and fetch fresh data.
-
-    No-ops silently in local dev (env var absent) and swallows all exceptions.
-    """
-    url = os.environ.get("CLOUDFRONT_URL")
-    if not url:
+    function_name = os.environ.get("SSG_FUNCTION_NAME")
+    if not function_name:
         return
     try:
-        req = urllib.request.Request(f"{url}/api/listings")
-        with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310
-            log_event("cloudfront_prewarm_complete", status=resp.status)
+        # Async (Event): the renderer regenerates pages + invalidates CloudFront
+        # on its own; the refresh need not block on it.
+        _lambda().invoke(FunctionName=function_name, InvocationType="Event")
+        log_event("ssg_render_invoked", function=function_name)
     except Exception:
-        logger.warning("CloudFront pre-warm request failed", exc_info=True)
+        logger.warning("Failed to invoke SSG renderer Lambda", exc_info=True)
 
 
 def _refresh() -> Listings:

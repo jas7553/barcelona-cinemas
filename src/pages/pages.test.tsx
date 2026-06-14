@@ -1,0 +1,115 @@
+import { describe, it, expect, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import ListPage from "./ListPage";
+import FilmPage from "./FilmPage";
+import { renderList, renderFilm, filmListings } from "../entry-server";
+import type { Listings } from "../types";
+
+function futureDate(offsetDays: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+}
+
+function sampleListings(): Listings {
+  return {
+    generated_at: new Date().toISOString(),
+    stale: false,
+    theaters: [
+      {
+        id: "verdi",
+        name: "Cinemes Verdi",
+        address: "Carrer de Verdi, 32",
+        neighborhood: "Gràcia",
+        website_url: "https://example.com",
+        maps_url: "https://maps.google.com/?q=Verdi",
+        lat: null,
+        lng: null,
+      },
+    ],
+    movies: [
+      {
+        id: "1",
+        title: "Project Hail Mary",
+        year: 2025,
+        runtime_minutes: 157,
+        poster_url: null,
+        backdrop_url: null,
+        trailer_url: null,
+        genres: ["Sci-Fi"],
+        rating: 8.2,
+        synopsis: "A lone astronaut must save humanity.",
+        links: { imdb: null, imdb_id: null },
+        showtimes: [
+          { theater_id: "verdi", date: futureDate(2), time: "18:00", language: "vo" },
+          { theater_id: "verdi", date: futureDate(2), time: "20:30", language: "vo" },
+        ],
+      },
+    ],
+  };
+}
+
+const renderedAt = new Date().toISOString();
+
+describe("ListPage", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("renders film cards from embedded data with no fetch", () => {
+    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
+    expect(screen.getByText("Project Hail Mary")).toBeInTheDocument();
+  });
+
+  it("links each card to its film page", () => {
+    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
+    const link = screen.getByRole("link", { name: /Project Hail Mary/ });
+    expect(link.getAttribute("href")).toBe("/film/1");
+  });
+});
+
+describe("FilmPage", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    window.history.replaceState({}, "", "/film/1");
+  });
+
+  it("renders the detail view from embedded single-film data", () => {
+    const full = sampleListings();
+    const narrowed = filmListings(full, "1")!;
+    render(<FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />);
+    expect(screen.getByRole("heading", { name: "Project Hail Mary" })).toBeInTheDocument();
+    expect(screen.getByText(/Showtimes/)).toBeInTheDocument();
+  });
+
+  it("shows a not-found state when the film is absent", () => {
+    const empty: Listings = { generated_at: renderedAt, stale: false, theaters: [], movies: [] };
+    render(<FilmPage data={{ renderedAt, listings: empty, filmId: "999" }} />);
+    expect(screen.getByText(/isn't showing/)).toBeInTheDocument();
+  });
+});
+
+describe("entry-server (SSG)", () => {
+  it("renderList produces real markup + site title", () => {
+    const out = renderList({ renderedAt, listings: sampleListings() });
+    expect(out.title).toBe("Barcelona This Week");
+    expect(out.html).toContain("Project Hail Mary");
+  });
+
+  it("renderFilm produces a per-film title + OpenGraph", () => {
+    const narrowed = filmListings(sampleListings(), "1")!;
+    const out = renderFilm({ renderedAt, listings: narrowed, filmId: "1" }, "https://example.com");
+    expect(out.title).toBe("Project Hail Mary · Barcelona This Week");
+    expect(out.headExtra).toContain('property="og:url"');
+    expect(out.html).toContain("Project Hail Mary");
+  });
+
+  it("filmListings narrows movies to one and keeps only used theaters", () => {
+    const narrowed = filmListings(sampleListings(), "1")!;
+    expect(narrowed.movies).toHaveLength(1);
+    expect(narrowed.theaters).toHaveLength(1);
+    expect(narrowed.theaters[0].id).toBe("verdi");
+    expect(filmListings(sampleListings(), "nope")).toBeNull();
+  });
+});

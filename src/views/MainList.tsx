@@ -1,45 +1,39 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import DayPicker from "../components/DayPicker";
 import FilmCard from "../components/FilmCard";
 import CinemaGroup from "../components/CinemaGroup";
 import CinemaSheet from "../components/CinemaSheet";
 import { MoonIcon, SunIcon, SearchIcon, PinIcon } from "../components/Icons";
 import { useTheme } from "../context/ThemeContext";
+import { useUrlParams } from "../hooks/useClient";
 import { generateDays, formatDataAge, buildCinemaGroups, normalizeForSearch } from "../utils";
 import type { CinemaViewGroup, SheetVenueData, TransformedMovie } from "../types";
 
 interface Props {
   movies: TransformedMovie[];
-  loading: boolean;
-  error: string | null;
   generatedAt: string | null;
   stale: boolean;
+  now: Date;
   coords: { lat: number; lng: number } | null;
   locationActive: boolean;
   locationError: boolean;
   locationResolving: boolean;
   onToggleLocation: () => void;
-  onRetry: () => void;
 }
-
-const SCROLL_KEY = "btw-list-scroll";
 
 export default function MainList({
   movies,
-  loading,
-  error,
   generatedAt,
   stale,
+  now,
   coords,
   locationActive,
   locationError,
   locationResolving,
   onToggleLocation,
-  onRetry,
 }: Props) {
   const { dark, toggle: toggleDark } = useTheme();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { params: searchParams, setParams } = useUrlParams();
   // Search lives in the URL (?q=) so returning from a film detail restores it
   const rawQuery = searchParams.get("q");
   const searching = rawQuery !== null;
@@ -50,8 +44,10 @@ export default function MainList({
   const [searchInput, setSearchInput] = useState(searchQuery);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const prevSearching = useRef(searching);
-  // Projector warm-up plays once per session, not on every return to the list
-  const [warmAnim] = useState(() => sessionStorage.getItem("btw-warmed") === null);
+  // Projector warm-up plays once per session, not on every return to the list.
+  // Must start false so SSG and the first client render agree; the effect below
+  // turns it on (and records the session flag) after hydration if not yet warmed.
+  const [warmAnim, setWarmAnim] = useState(false);
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
 
   const openCinemaSheet = useCallback((group: CinemaViewGroup, distLabel: string | null) => {
@@ -73,15 +69,17 @@ export default function MainList({
   const view: "film" | "cinema" = searchParams.get("view") === "cinema" ? "cinema" : "film";
 
   const setSelectedDay = (day: number | null) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
+    setParams((next) => {
       if (day == null) next.delete("day");
       else next.set("day", String(day));
-      return next;
-    }, { replace: true });
+    });
   };
 
-  const days = generateDays();
+  const days = generateDays(now);
+
+  // Carry the current list filters into the detail URL (matches the old Link
+  // behaviour). Flows from useUrlParams state, so SSG (empty) and hydration agree.
+  const search = searchParams.toString() ? `?${searchParams.toString()}` : "";
 
   const dayMovies = useMemo(
     () =>
@@ -114,23 +112,16 @@ export default function MainList({
   }, [movies, searchInput]);
 
   const handleSetView = (v: "film" | "cinema") => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (v === "cinema") {
-        next.set("view", "cinema");
-      } else {
-        next.delete("view");
-      }
-      return next;
-    }, { replace: true });
+    setParams((next) => {
+      if (v === "cinema") next.set("view", "cinema");
+      else next.delete("view");
+    });
   };
 
   const setSearchQuery = (value: string) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
+    setParams((next) => {
       next.set("q", value);
-      return next;
-    }, { replace: true });
+    });
   };
 
   const openSearch = () => {
@@ -140,12 +131,21 @@ export default function MainList({
 
   const closeSearch = () => {
     setSearchInput("");
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
+    setParams((next) => {
       next.delete("q");
-      return next;
-    }, { replace: true });
+    });
   };
+
+  // Seed the input from the URL ?q= when it arrives (deep link, reload, or a
+  // back-nav that didn't hit bfcache) — the SPA got this synchronously from the
+  // router; here the query is applied post-hydration by useUrlParams.
+  useEffect(() => {
+    if (searchQuery && searchQuery !== searchInput) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSearchInput(searchQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   // Sync the typed query into the URL once typing pauses
   useEffect(() => {
@@ -164,49 +164,19 @@ export default function MainList({
   }, [searching]);
 
   useEffect(() => {
-    sessionStorage.setItem("btw-warmed", "1");
-  }, []);
-
-  // MainList unmounts when a detail opens, so the scroll offset is persisted to
-  // sessionStorage on every scroll and replayed on remount — Back returns to the
-  // same place. Saving continuously (not on unmount) is robust to StrictMode's
-  // double-invoked effects. The restore retries across frames until the freshly
-  // painted list is tall enough to honor the offset (else it clamps short).
-  useEffect(() => {
-    const saved = Number(sessionStorage.getItem(SCROLL_KEY) ?? 0);
-    // While restoring we both (a) ignore scroll events — otherwise the restore's
-    // own scrollTo, and iOS Safari's swipe-back transition frames, write garbage
-    // offsets over the real one — and (b) hold the rAF id so unmount can cancel
-    // it. Without the cancel, a quick tap into a detail before restore finishes
-    // leaves the loop running and yanks the *detail* page to the list's offset.
-    let raf: number | null = null;
-    let restoring = false;
-    if (saved > 0) {
-      restoring = true;
-      let tries = 0;
-      const restore = () => {
-        window.scrollTo(0, saved);
-        if (window.scrollY < saved - 1 && tries++ < 20) {
-          raf = requestAnimationFrame(restore);
-        } else {
-          raf = null;
-          restoring = false;
-        }
-      };
-      raf = requestAnimationFrame(restore);
+    // First list view of the session: play the projector warm-up once, post-
+    // hydration (keeping it out of the SSG markup avoids a mismatch).
+    if (sessionStorage.getItem("btw-warmed") === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWarmAnim(true);
+      sessionStorage.setItem("btw-warmed", "1");
     }
-    const onScroll = () => {
-      if (restoring) return;
-      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      if (raf != null) cancelAnimationFrame(raf);
-    };
   }, []);
 
-  const dataAge = generatedAt ? formatDataAge(generatedAt) : null;
+  // No manual scroll save/restore: list↔detail are now separate documents, so
+  // the browser restores list scroll natively on back/swipe-back (bfcache).
+
+  const dataAge = generatedAt ? formatDataAge(generatedAt, now) : null;
   const dayLabel = selectedDay == null ? "this week" : (days.find((d) => d.offset === selectedDay)?.fullLabel ?? "");
 
   const listCount = view === "film" ? dayMovies.length : cinemaGroups.length;
@@ -299,7 +269,7 @@ export default function MainList({
               </div>
             </div>
 
-            <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} />
+            <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} days={days} />
 
             <div className="view-tabs">
               {(["film", "cinema"] as const).map((v) => (
@@ -316,17 +286,11 @@ export default function MainList({
 
             <div className="result-row">
               <div className="result-count" aria-live="polite">
-                {loading ? (
-                  "Loading…"
-                ) : error ? null : (
-                  <>
-                    {listCount} {listNoun}{atCinemas} {showingLabel}
-                    {(dataAge || stale) && (
-                      <span className={`result-count-age${stale ? " result-count-age--stale" : ""}`}>
-                        {" "}· {dataAge ? `updated ${dataAge}` : "may be out of date"}
-                      </span>
-                    )}
-                  </>
+                {listCount} {listNoun}{atCinemas} {showingLabel}
+                {(dataAge || stale) && (
+                  <span className={`result-count-age${stale ? " result-count-age--stale" : ""}`}>
+                    {" "}· {dataAge ? `updated ${dataAge}` : "may be out of date"}
+                  </span>
                 )}
               </div>
               {view === "cinema" && (
@@ -349,7 +313,7 @@ export default function MainList({
         searchResults.length > 0 ? (
           <div className="film-list">
             {searchResults.map((m) => (
-              <FilmCard key={m.id} movie={m} />
+              <FilmCard key={m.id} movie={m} search={search} />
             ))}
           </div>
         ) : searchInput.trim().length > 0 ? (
@@ -360,21 +324,6 @@ export default function MainList({
             </div>
           </div>
         ) : null
-      ) : loading ? (
-        <div className="loading-pulse" role="status" aria-label="Loading films">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="loading-card" />
-          ))}
-        </div>
-      ) : error ? (
-        <div className="empty-state">
-          <div className="empty-state__overline">Error</div>
-          <div className="empty-state__heading">Could not load listings</div>
-          <div className="empty-state__body">Check your connection and try again.</div>
-          <button className="empty-state__btn" onClick={onRetry}>
-            Try again
-          </button>
-        </div>
       ) : view === "film" ? (
         dayMovies.length === 0 ? (
           <div className="empty-state">
@@ -402,7 +351,7 @@ export default function MainList({
         ) : (
           <div className="film-list">
             {dayMovies.map((m) => (
-              <FilmCard key={m.id} movie={m} dayOffset={selectedDay ?? undefined} />
+              <FilmCard key={m.id} movie={m} dayOffset={selectedDay ?? undefined} search={search} />
             ))}
           </div>
         )
@@ -434,12 +383,12 @@ export default function MainList({
       ) : (
         <div className="film-list">
           {cinemaGroups.map((g) => (
-            <CinemaGroup key={g.theaterId} group={g} onCinemaTap={openCinemaSheet} />
+            <CinemaGroup key={g.theaterId} group={g} onCinemaTap={openCinemaSheet} search={search} />
           ))}
         </div>
       )}
 
-      {!searching && !loading && !error && listCount > 0 && (
+      {!searching && listCount > 0 && (
         <div className="list-footnote">
           All listings are original-version (VO) screenings — English audio
           unless the film itself isn't in English.

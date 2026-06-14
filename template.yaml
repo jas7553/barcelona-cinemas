@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Barcelona Movie Database — Flask API on Lambda + React SPA on CloudFront
+Description: Barcelona Movie Database — headless refresh Lambda + Node SSG renderer + static MPA on CloudFront
 
 Parameters:
 
@@ -21,14 +21,6 @@ Parameters:
       EventBridge schedule for proactive cache warming. Must be kept in sync
       with CacheTtlHours. Examples: "rate(6 hours)", "cron(0 6 * * ? *)".
       If you change CacheTtlHours, change this too.
-
-  ApiOriginVerifyToken:
-    Type: String
-    NoEcho: true
-    MinLength: 32
-    Description: >
-      Shared secret CloudFront sends to the API origin in X-Origin-Verify.
-      Use a long random value.
 
   CloudFrontDistributionId:
     Type: String
@@ -146,8 +138,8 @@ Resources:
       LoggingConfig:
         LogGroup: !Ref ApiFunctionLogGroup
       CodeUri: ./
-      Description: Barcelona Movie Database — Flask API via Mangum + EventBridge refresh
-      Timeout: 60    # Overrides global 30s; extra headroom for post-refresh CloudFront invalidation + pre-warm
+      Description: Barcelona Movie Database — headless EventBridge refresh + SSG trigger
+      Timeout: 60    # Overrides global 30s; headroom for the scrape/enrich pipeline
       ReservedConcurrentExecutions: 5    # Guards against runaway invocations / bill spikes
       Environment:
         Variables:
@@ -159,9 +151,10 @@ Resources:
           S3_KEY: listings.json    # Explicit: must match the /listings.json key in IAM policy
           # Lambda env vars are strings, so stringify the numeric parameter explicitly.
           CACHE_TTL_HOURS: !Sub "${CacheTtlHours}"
-          ORIGIN_VERIFY_TOKEN: !Ref ApiOriginVerifyToken
-          CLOUDFRONT_DISTRIBUTION_ID: !Ref CloudFrontDistributionId
-          CLOUDFRONT_URL: !Sub "https://${CloudFrontDomainName}"
+          # After a refresh, publish the public listings JSON here and invoke the
+          # Node SSG renderer to regenerate the static site.
+          FRONTEND_BUCKET: !Ref FrontendBucket
+          SSG_FUNCTION_NAME: !Ref SsgFunction
       Policies:
         - Statement:
             - Sid: CacheBucketReadWrite
@@ -171,6 +164,16 @@ Resources:
                 - s3:PutObject
               Resource: !Sub "${CacheBucket.Arn}/listings.json"
               # Least-privilege: DeleteObject and ListBucket are not needed
+            - Sid: PublishPublicListings
+              Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource: !Sub "${FrontendBucket.Arn}/data/listings.json"
+            - Sid: InvokeSsgRenderer
+              Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: !GetAtt SsgFunction.Arn
             - Sid: SsmTmdbApiKey
               Effect: Allow
               Action:
@@ -191,20 +194,7 @@ Resources:
               Action:
                 - kms:Decrypt
               Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm"
-            - Sid: CloudFrontInvalidate
-              Effect: Allow
-              Action:
-                - cloudfront:CreateInvalidation
-              Resource: !If
-                - HasCloudFrontDistributionId
-                - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistributionId}"
-                - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/*"
       Events:
-        HttpApi:
-          Type: HttpApi
-          Properties:
-            Path: /api/{proxy+}
-            Method: ANY
         ScheduledRefresh:
           Type: Schedule
           Properties:
@@ -218,6 +208,81 @@ Resources:
             Description: "Keep Lambda container warm between scheduled refreshes"
             Input: '{"source": "warmup"}'
             Enabled: true
+
+  # ── Node SSG renderer Lambda ──────────────────────────────────────────────
+
+  SsgFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-ssg"
+      RetentionInDays: 30
+
+  # Headless Node renderer. Invoked (async) by ApiFunction after each refresh:
+  # reads data/listings.json from the frontend bucket, re-renders every page +
+  # per-film JSON back into the bucket, then invalidates CloudFront. Built files
+  # (entry-server.js, render-core.mjs, template.mjs, manifest.json) are copied
+  # into ssg-lambda/ by deploy.sh after `npm run build` — see its Makefile.
+  SsgFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+    Properties:
+      Runtime: nodejs22.x
+      Handler: index.handler
+      CodeUri: ssg-lambda/
+      Description: Barcelona Movie Database — Node SSG renderer (regenerates static pages)
+      LoggingConfig:
+        LogGroup: !Ref SsgFunctionLogGroup
+      Timeout: 120    # Render all pages + S3 puts + CloudFront invalidation
+      MemorySize: 2048
+      ReservedConcurrentExecutions: 2
+      Environment:
+        Variables:
+          FRONTEND_BUCKET: !Ref FrontendBucket
+          CLOUDFRONT_DISTRIBUTION_ID: !Ref CloudFrontDistributionId
+          SITE_URL: !Sub "https://${CloudFrontDomainName}"
+      Policies:
+        - Statement:
+            - Sid: ReadWriteFrontendBucket
+              Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+              Resource: !Sub "${FrontendBucket.Arn}/*"
+            - Sid: CloudFrontInvalidate
+              Effect: Allow
+              Action:
+                - cloudfront:CreateInvalidation
+              Resource: !If
+                - HasCloudFrontDistributionId
+                - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistributionId}"
+                - !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/*"
+
+  # ── CloudFront Function: clean URLs (free tier, not Lambda@Edge) ───────────
+
+  UrlRewriteFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub "${AWS::StackName}-url-rewrite"
+      AutoPublish: true
+      FunctionConfig:
+        Comment: "Rewrite clean URLs to the static keys (/ -> /index.html, /film/<id> -> /film/<id>.html)"
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          var uri = request.uri;
+          if (uri === '/' || uri === '') {
+            request.uri = '/index.html';
+            return request;
+          }
+          if (uri.startsWith('/film/') && !uri.endsWith('.html')) {
+            // strip a trailing slash, then map to the per-film file
+            request.uri = uri.replace(/\/$/, '') + '.html';
+            return request;
+          }
+          return request;
+        }
 
   # ── Alerting: SNS topic + email subscription ──────────────────────────────
 
@@ -246,6 +311,26 @@ Resources:
       Dimensions:
         - Name: FunctionName
           Value: !Ref ApiFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+  SsgErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Node SSG renderer errors detected — static site may be stale
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SsgFunction
       Statistic: Sum
       Period: 300
       EvaluationPeriods: 1
@@ -293,30 +378,6 @@ Resources:
       EvaluationPeriods: 2
       Threshold: !Ref CacheTtlHours
       ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
-
-  ListingsStaleResponseAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmDescription: Stale listings responses are occurring repeatedly
-      AlarmActions:
-        - !Ref AlertTopic
-      OKActions:
-        - !Ref AlertTopic
-      Namespace: BarcelonaMovieDatabase
-      MetricName: ListingsStaleResponse
-      Dimensions:
-        - Name: Environment
-          Value: prod
-        - Name: Route
-          Value: /api/listings
-        - Name: Trigger
-          Value: http
-      Statistic: Sum
-      Period: 300
-      EvaluationPeriods: 2
-      Threshold: 3
-      ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
 
   # Heartbeat: absence-of-signal alarm. Every other alarm only fires when code
@@ -369,36 +430,20 @@ Resources:
       OKActions:
         - !Ref AlertTopic
 
-  # ── CloudFront cache policy: /api/listings (5-min TTL) ──────────────────
-
-  ListingsCachePolicy:
-    Type: AWS::CloudFront::CachePolicy
-    Properties:
-      CachePolicyConfig:
-        Name: !Sub "${AWS::StackName}-listings-12h"
-        DefaultTTL: 43200
-        MinTTL: 0
-        MaxTTL: 43200
-        ParametersInCacheKeyAndForwardedToOrigin:
-          EnableAcceptEncodingGzip: true
-          EnableAcceptEncodingBrotli: true
-          CookiesConfig:
-            CookieBehavior: none
-          HeadersConfig:
-            HeaderBehavior: none
-          QueryStringsConfig:
-            QueryStringBehavior: none
-
-  # ── CloudFront response headers: browser hardening for SPA/API ───────────
+  # ── CloudFront response headers: browser hardening for the static MPA ─────
 
   SecurityHeadersPolicy:
     Type: AWS::CloudFront::ResponseHeadersPolicy
     Properties:
       ResponseHeadersPolicyConfig:
         Name: !Sub "${AWS::StackName}-security-headers"
-        Comment: "Security headers for React SPA and API responses (CSP: same-origin only)."
+        Comment: "Security headers for the static MPA (CSP: same-origin only)."
         SecurityHeadersConfig: &securityHeaders
           ContentSecurityPolicy:
+            # script-src allows: bundled JS ('self'); the inline pre-paint theme
+            # script (sha256 — regenerate if scripts/template.mjs THEME_SCRIPT
+            # changes); and inline speculation rules. The hydration payload is
+            # inert JSON, so it needs no allowance.
             ContentSecurityPolicy: >-
               default-src 'self';
               base-uri 'self';
@@ -409,7 +454,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self';
+              script-src 'self' 'sha256-UJ7YuwH97313GFUbDC38zVD8DwXulidM0MT7PafMtC0=' 'inline-speculation-rules';
               style-src 'self';
               upgrade-insecure-requests
             Override: true
@@ -463,7 +508,7 @@ Resources:
     Properties:
       DistributionConfig:
         Enabled: true
-        Comment: !Sub "${AWS::StackName} — SPA + API"
+        Comment: !Sub "${AWS::StackName} — static MPA"
         DefaultRootObject: index.html
         HttpVersion: http2and3
         PriceClass: PriceClass_100    # US/EU/CA only — appropriate for Barcelona audience
@@ -475,24 +520,17 @@ Resources:
               OriginAccessIdentity: ""    # Required by CFN schema even when using OAC
             OriginAccessControlId: !GetAtt CloudFrontOAC.Id
 
-          - Id: ApiGateway
-            DomainName: !Sub "${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
-            OriginCustomHeaders:
-              - HeaderName: X-Origin-Verify
-                HeaderValue: !Ref ApiOriginVerifyToken
-            CustomOriginConfig:
-              HTTPSPort: 443
-              OriginProtocolPolicy: https-only
-              OriginSSLProtocols:
-                - TLSv1.2
-
-        # Default: serve the React SPA from S3 (cached)
+        # Default: serve the static pages from S3. The CloudFront Function rewrites
+        # clean URLs (/ → /index.html, /film/<id> → /film/<id>.html) at the edge.
         DefaultCacheBehavior:
           TargetOriginId: FrontendS3
           ViewerProtocolPolicy: redirect-to-https
           Compress: true
           CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6    # AWS managed: CachingOptimized
           ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt UrlRewriteFunction.FunctionMetadata.FunctionARN
           AllowedMethods:
             - GET
             - HEAD
@@ -521,46 +559,8 @@ Resources:
               - GET
               - HEAD
 
-          # Cache the public listings endpoint briefly at the edge.
-          - PathPattern: /api/listings
-            TargetOriginId: ApiGateway
-            ViewerProtocolPolicy: redirect-to-https
-            Compress: true
-            CachePolicyId: !Ref ListingsCachePolicy
-            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader
-            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
-            AllowedMethods:
-              - GET
-              - HEAD
-
-          # Forward the rest of /api/* without caching.
-          - PathPattern: /api/*
-            TargetOriginId: ApiGateway
-            ViewerProtocolPolicy: redirect-to-https
-            Compress: true
-            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad         # CachingDisabled
-            OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader
-            ResponseHeadersPolicyId: !Ref SecurityHeadersPolicy
-            AllowedMethods:
-              - GET
-              - HEAD
-              - OPTIONS
-              - PUT
-              - PATCH
-              - POST
-              - DELETE
-
-        # React Router deep links: S3 returns 403 for missing keys (bucket is private,
-        # not 404). CloudFront rewrites to 200 + index.html so React Router handles routing.
-        CustomErrorResponses:
-          - ErrorCode: 403
-            ResponsePagePath: /index.html
-            ResponseCode: 200
-            ErrorCachingMinTTL: 0
-          - ErrorCode: 404
-            ResponsePagePath: /index.html
-            ResponseCode: 200
-            ErrorCachingMinTTL: 0
+        # No CustomErrorResponses SPA fallback: real per-film files exist, so a
+        # missing film must surface a real 404 (not a 200 index.html).
 
 Outputs:
   AppUrl:
