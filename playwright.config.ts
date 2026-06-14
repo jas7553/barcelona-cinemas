@@ -2,20 +2,19 @@ import { defineConfig, devices } from "@playwright/test";
 import fs from "fs";
 import { buildFixtureCache } from "./e2e/fixture";
 
-const API_PORT = 5005;
 const WEB_PORT = 5180;
 const BASE = `http://localhost:${WEB_PORT}`;
 
-// Built at config load — guaranteed before the webServers start, so the Flask
-// app can be pointed at the date-shifted cache via CACHE_DIR.
+// Built at config load — a date-shifted internal cache. The webServer command
+// exports it to the public listings JSON the dev SSG server renders pages from.
 const cacheDir = buildFixtureCache();
 process.on("exit", () => fs.rmSync(cacheDir, { recursive: true, force: true }));
 
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.spec.ts",
-  // The flows are stateful (scroll restoration, SWR cache) — keep them serial
-  // and on a single worker rather than racing parallel browsers.
+  // The flows are stateful (filters, native scroll restoration) — keep them
+  // serial and on a single worker rather than racing parallel browsers.
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
@@ -33,21 +32,14 @@ export default defineConfig({
     { name: "mobile-chromium", use: { ...devices["iPhone 13"], browserName: "chromium" } },
   ],
 
-  webServer: [
-    {
-      command: "python3 app.py",
-      url: `http://localhost:${API_PORT}/api/listings`,
-      env: { PORT: String(API_PORT), CACHE_DIR: cacheDir },
-      // Never reuse a pre-existing server — that risks testing stale code.
-      reuseExistingServer: false,
-      timeout: 30_000,
-    },
-    {
-      command: `npx vite --port ${WEB_PORT} --strictPort`,
-      url: BASE,
-      env: { API_PROXY_TARGET: `http://localhost:${API_PORT}` },
-      reuseExistingServer: false,
-      timeout: 30_000,
-    },
-  ],
+  // Export the date-shifted fixture to the public listings JSON, then serve the
+  // MPA via the dev SSG server (renders / and /film/<id> on the fly from it).
+  // No API server — the data is embedded in each static document.
+  webServer: {
+    command: `python3 scripts/export_listings.py && npx vite --port ${WEB_PORT} --strictPort`,
+    url: BASE,
+    env: { CACHE_DIR: cacheDir },
+    reuseExistingServer: false,
+    timeout: 60_000,
+  },
 });
