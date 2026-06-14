@@ -13,10 +13,11 @@ function assets(manifest, entryKey) {
   for (const imp of entry.imports || []) {
     const chunk = manifest[imp];
     if (!chunk) continue;
-    // Skip preloading hydration-only hooks (useLocationPin).
+    // Always collect a chunk's CSS (Vite may hoist global style.css into a
+    // shared chunk), but skip preloading hydration-only hooks (useLocationPin).
+    for (const c of chunk.css || []) css.add("/" + c);
     if (chunk.file.includes("useLocationPin")) continue;
     preload.add("/" + chunk.file);
-    for (const c of chunk.css || []) css.add("/" + c);
   }
   return { js: "/" + entry.file, css: [...css], preload: [...preload] };
 }
