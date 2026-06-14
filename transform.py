@@ -32,8 +32,7 @@ def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegis
 
     cutoff = _parse_cutoff(generated_at)
 
-    # Only include cinemas that have the new metadata fields (id, website_url, maps_url).
-    cinema_lookup: dict[str, CinemaInfo] = {k: v for k, v in cinemas.items() if "id" in v}
+    cinema_lookup = cinemas
 
     seen_theater_ids: set[str] = set()
 
@@ -80,22 +79,6 @@ def _transform_movie(
 
     tmdb_id: int | None = movie.get("tmdb_id")
     imdb_id: str | None = movie.get("imdb_id")
-    year: int | None = movie.get("year")
-    poster_url: str | None = movie.get("poster_url")
-    backdrop_url: str | None = movie.get("backdrop_url")
-    trailer_url: str | None = movie.get("trailer_url")
-    synopsis: str | None = movie.get("synopsis")
-    tagline: str | None = movie.get("tagline")
-    rating: float | None = movie.get("rating")
-    runtime_mins: int | None = movie.get("runtime_mins")
-    genres: list[str] = movie.get("genres") or []
-    original_lang: str | None = movie.get("original_lang")
-    director: str | None = movie.get("director")
-    cast: list[str] = movie.get("cast") or []
-
-    imdb_url: str | None = f"https://www.imdb.com/title/{imdb_id}" if imdb_id else None
-
-    movie_id: str = str(tmdb_id) if tmdb_id is not None else title.lower().replace(" ", "-")
 
     showtimes_out = _transform_showtimes(
         movie.get("showtimes") or [],
@@ -105,22 +88,22 @@ def _transform_movie(
     )
 
     return {
-        "id": movie_id,
+        "id": str(tmdb_id) if tmdb_id is not None else title.lower().replace(" ", "-"),
         "title": title,
-        "year": year,
-        "runtime_minutes": runtime_mins,
-        "poster_url": poster_url,
-        "backdrop_url": backdrop_url,
-        "trailer_url": trailer_url,
-        "genres": genres,
-        "rating": rating,
-        "original_lang": original_lang,
-        "director": director,
-        "cast": cast,
-        "synopsis": synopsis or "",
-        "tagline": tagline,
+        "year": movie.get("year"),
+        "runtime_minutes": movie.get("runtime_mins"),
+        "poster_url": movie.get("poster_url"),
+        "backdrop_url": movie.get("backdrop_url"),
+        "trailer_url": movie.get("trailer_url"),
+        "genres": movie.get("genres") or [],
+        "rating": movie.get("rating"),
+        "original_lang": movie.get("original_lang"),
+        "director": movie.get("director"),
+        "cast": movie.get("cast") or [],
+        "synopsis": movie.get("synopsis") or "",
+        "tagline": movie.get("tagline"),
         "links": {
-            "imdb": imdb_url,
+            "imdb": f"https://www.imdb.com/title/{imdb_id}" if imdb_id else None,
             "imdb_id": imdb_id,
         },
         "showtimes": showtimes_out,
@@ -154,19 +137,15 @@ def _transform_showtimes(
             except ValueError:
                 pass
 
-        language_value = st.get("language", "vo")
-        language = language_value if isinstance(language_value, str) else "vo"
+        lang_raw = st.get("language", "vo")
+        language = lang_raw if isinstance(lang_raw, str) else "vo"
 
         if language not in ("vo", "dub"):
             logger.warning("Unknown language value %r for showtime at %s %s", language, cinema_name, show_date)
 
-        booking_url_value = st.get("booking_url")
-        booking_url = booking_url_value if isinstance(booking_url_value, str) else None
-
-        audio_lang_value = st.get("audio_lang")
-        audio_lang = audio_lang_value if audio_lang_value in ("en", "other") else None
-        subtitle_lang_value = st.get("subtitle_lang")
-        subtitle_lang = subtitle_lang_value if subtitle_lang_value in ("en", "es", "ca") else None
+        booking_url = v if isinstance(v := st.get("booking_url"), str) else None
+        audio_lang = v if (v := st.get("audio_lang")) in ("en", "other") else None
+        subtitle_lang = v if (v := st.get("subtitle_lang")) in ("en", "es", "ca") else None
 
         candidates.append(
             {

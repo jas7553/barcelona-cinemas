@@ -93,8 +93,7 @@ def _showtime_identity(showtime: Showtime) -> tuple[str, str, str, str]:
 
 
 def _pick_title(left: str, right: str) -> str:
-    """Deterministic title pick: longest, then casefold-first."""
-    return sorted((left, right), key=lambda value: (-len(value), value.casefold()))[0]
+    return min(left, right, key=lambda v: (-len(v), v.casefold()))
 
 
 def _coalesce[T](left: T | None, right: T | None) -> T | None:
