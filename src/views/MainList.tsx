@@ -174,17 +174,36 @@ export default function MainList({
   // painted list is tall enough to honor the offset (else it clamps short).
   useEffect(() => {
     const saved = Number(sessionStorage.getItem(SCROLL_KEY) ?? 0);
+    // While restoring we both (a) ignore scroll events — otherwise the restore's
+    // own scrollTo, and iOS Safari's swipe-back transition frames, write garbage
+    // offsets over the real one — and (b) hold the rAF id so unmount can cancel
+    // it. Without the cancel, a quick tap into a detail before restore finishes
+    // leaves the loop running and yanks the *detail* page to the list's offset.
+    let raf: number | null = null;
+    let restoring = false;
     if (saved > 0) {
+      restoring = true;
       let tries = 0;
       const restore = () => {
         window.scrollTo(0, saved);
-        if (window.scrollY < saved - 1 && tries++ < 20) requestAnimationFrame(restore);
+        if (window.scrollY < saved - 1 && tries++ < 20) {
+          raf = requestAnimationFrame(restore);
+        } else {
+          raf = null;
+          restoring = false;
+        }
       };
-      requestAnimationFrame(restore);
+      raf = requestAnimationFrame(restore);
     }
-    const onScroll = () => sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    const onScroll = () => {
+      if (restoring) return;
+      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (raf != null) cancelAnimationFrame(raf);
+    };
   }, []);
 
   const dataAge = generatedAt ? formatDataAge(generatedAt) : null;

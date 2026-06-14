@@ -107,4 +107,33 @@ describe("App", () => {
       expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument()
     );
   });
+
+  // Regression: MainList's scroll-restore rAF loop must be cancelled when the
+  // list unmounts. Without the cancel, tapping into a detail before the loop
+  // finishes left it running and yanked the *detail* page to the list's saved
+  // offset. Assert no scrollTo fires from the leaked loop after detail mounts.
+  it("stops restoring list scroll after navigating to a detail", async () => {
+    sessionStorage.setItem("btw-list-scroll", "500");
+    const scrollSpy = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      render(<App />);
+      await waitFor(() =>
+        expect(screen.getByText("Project Hail Mary")).toBeInTheDocument()
+      );
+      const card = screen.getByText("Project Hail Mary").closest("a");
+      await user.click(card!);
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument()
+      );
+      // Detail has mounted (and reset its own scroll once). Let several animation
+      // frames pass: a leaked restore loop would keep calling scrollTo here.
+      const after = scrollSpy.mock.calls.length;
+      await new Promise((r) => setTimeout(r, 200));
+      expect(scrollSpy.mock.calls.length).toBe(after);
+    } finally {
+      scrollSpy.mockRestore();
+      sessionStorage.clear();
+    }
+  });
 });
