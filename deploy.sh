@@ -124,13 +124,18 @@ if [ -n "$FUNC" ] && [ "$FUNC" != "None" ]; then
     /tmp/barcelona-refresh-response.json > /dev/null
   # On first deploy S3 is empty; poll until SSG renderer writes index.html (up to 60s).
   echo "    waiting for SSG render to write index.html..."
+  found=false
   for i in $(seq 1 30); do
-    aws s3 ls "s3://$BUCKET/index.html" > /dev/null 2>&1 && break
-    sleep 2
+    if aws s3 ls "s3://$BUCKET/index.html" > /dev/null 2>&1; then
+      found=true; break
+    fi
+    [ "$i" -lt 30 ] && sleep 2
   done
-  aws s3 ls "s3://$BUCKET/index.html" > /dev/null 2>&1 \
-    && echo "    SSG render complete." \
-    || echo "    WARNING: index.html not found after 60s — SSG render may still be in progress."
+  if $found; then
+    echo "    SSG render complete."
+  else
+    echo "ERROR: index.html not found after 60s — SSG render did not complete"; exit 1
+  fi
 else
   echo "Could not resolve function name — skipping refresh."
 fi
