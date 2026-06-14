@@ -5,7 +5,7 @@
 import { renderDocument } from "./template.mjs";
 
 /** Resolve a manifest entry's JS file, CSS hrefs, and module-preload chunks. */
-function assets(manifest, entryKey) {
+export function assets(manifest, entryKey) {
   const entry = manifest[entryKey];
   if (!entry) throw new Error(`manifest missing entry ${entryKey} — did vite build run?`);
   const css = new Set((entry.css || []).map((f) => "/" + f));
