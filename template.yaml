@@ -559,8 +559,17 @@ Resources:
               - GET
               - HEAD
 
-        # No CustomErrorResponses SPA fallback: real per-film files exist, so a
-        # missing film must surface a real 404 (not a 200 index.html).
+        # S3 returns 403 (not 404) for missing objects behind OAC. Map both to
+        # /404.html with a 404 response so users get a useful error page.
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+            ErrorCachingMinTTL: 300
 
 Outputs:
   AppUrl:
