@@ -499,12 +499,19 @@ a.time-pill--link {
   line-height: 1;
 }
 
-/* Showtime + its calendar action travel together so flex wrapping keeps them paired. */
+/* Showtime pill group — column so the action panel can expand below the pill. */
 .time-pill-group {
   display: inline-flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
   flex-shrink: 0;
+}
+
+.time-pill-group__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Subtitle/version badge on a showtime (e.g. "Spanish subs"). Hidden when unknown. */
@@ -520,18 +527,53 @@ a.time-pill--link {
   white-space: nowrap;
 }
 
-/* "Lock it in" — download an .ics for this exact screening. */
-.time-pill__cal {
+/* Selected state — outline replaces the old always-visible cal button. */
+.time-pill--selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Chevron toggle for bookable pills (primary tap = navigate; this tap = reveal options). */
+.time-pill__chevron {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 3px 6px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
-  text-decoration: none;
   color: var(--text-sub);
+}
+
+/* Action panel revealed after selecting a pill. */
+.time-pill__actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.time-pill__action-book {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: var(--accent);
+  color: var(--bg);
+  border-radius: var(--r-md);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.time-pill__action-cal {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 12px;
+  color: var(--text-sub);
+  text-decoration: none;
 }
 
 /* ── Cinema group (By Cinema) ────────────────────────────────────────────────── */
@@ -1076,6 +1118,41 @@ a.time-pill--link {
   gap: 6px;
 }
 
+/* Hoisted language badge shown once per day-group or cinema header. */
+.cinema-row__day-badge {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+
+/* Smaller badge in the cinema header right slot (same look as day-badge). */
+.cinema-row__header-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+  white-space: nowrap;
+}
+
+/* Bookability signal in the cinema header. */
+.cinema-row__book-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--bg);
+  white-space: nowrap;
+}
 
 .detail-bottom-spacer { height: calc(24px + env(safe-area-inset-bottom, 0px)); }
 
