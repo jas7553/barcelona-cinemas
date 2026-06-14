@@ -61,12 +61,6 @@ class _FileBackend:
             json.dump(listings, f, indent=2, ensure_ascii=False)
 
 
-def _is_s3_missing(exc: Exception) -> bool:
-    response = getattr(exc, "response", None)
-    error = response.get("Error", {}) if isinstance(response, dict) else {}
-    return error.get("Code") in {"NoSuchKey", "404"}
-
-
 class _S3Backend:
     def __init__(self, client: Any, bucket: str, key: str) -> None:
         self._client = client
@@ -82,7 +76,9 @@ class _S3Backend:
                 return None
             return listings
         except Exception as exc:
-            if _is_s3_missing(exc):
+            response = getattr(exc, "response", None)
+            error = response.get("Error", {}) if isinstance(response, dict) else {}
+            if error.get("Code") in {"NoSuchKey", "404"}:
                 log_event("cache_missing", backend="s3", bucket=self._bucket, key=self._key)
                 return None
             log_event(

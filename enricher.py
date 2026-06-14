@@ -136,16 +136,26 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
     )
 
 
+def _optional_get(
+    session: requests.Session, url: str, params: dict[str, str], title: str, label: str
+) -> dict[str, Any] | None:
+    try:
+        resp = session.get(url, params=params, timeout=10)
+        resp.raise_for_status()
+        return cast(dict[str, Any], resp.json())
+    except Exception as exc:
+        logger.warning("TMDb %s fetch failed for %r: %s", label, title, exc)
+        return None
+
+
 def _fetch_tmdb(
     title: str, session: requests.Session, api_key: str
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
-    """
-    Search TMDb for a title and return (detail, videos, credits) dicts, or all None on failure.
-    Prefers an exact title match; falls back to the first (most popular) result.
-    """
+    """Search TMDb for a title; return (detail, videos, credits), or all None on no results."""
+    common = {"language": "en-US", "api_key": api_key}
     search_resp = session.get(
         f"{_BASE_URL}/search/movie",
-        params={"query": title, "language": "en-US", "api_key": api_key},
+        params={"query": title, **common},
         timeout=10,
     )
     search_resp.raise_for_status()
@@ -155,46 +165,18 @@ def _fetch_tmdb(
         logger.debug("No TMDb results for %r", title)
         return None, None, None
 
-    # Prefer exact title match (case-insensitive); otherwise take first by popularity.
     title_lower = title.lower()
     match = next(
         (r for r in results if r.get("title", "").lower() == title_lower),
         results[0],
     )
 
-    # Fetch full details to get runtime and named genres.
-    detail_resp = session.get(
-        f"{_BASE_URL}/movie/{match['id']}",
-        params={"language": "en-US", "api_key": api_key},
-        timeout=10,
-    )
+    movie_url = f"{_BASE_URL}/movie/{match['id']}"
+    detail_resp = session.get(movie_url, params=common, timeout=10)
     detail_resp.raise_for_status()
     detail_data = cast(dict[str, Any], detail_resp.json())
 
-    # Fetch videos to get trailer URL; failure is non-fatal.
-    videos_data: dict[str, Any] | None = None
-    try:
-        videos_resp = session.get(
-            f"{_BASE_URL}/movie/{match['id']}/videos",
-            params={"language": "en-US", "api_key": api_key},
-            timeout=10,
-        )
-        videos_resp.raise_for_status()
-        videos_data = cast(dict[str, Any], videos_resp.json())
-    except Exception as exc:
-        logger.warning("TMDb videos fetch failed for %r: %s", title, exc)
-
-    # Fetch credits to get director + top cast; failure is non-fatal.
-    credits_data: dict[str, Any] | None = None
-    try:
-        credits_resp = session.get(
-            f"{_BASE_URL}/movie/{match['id']}/credits",
-            params={"language": "en-US", "api_key": api_key},
-            timeout=10,
-        )
-        credits_resp.raise_for_status()
-        credits_data = cast(dict[str, Any], credits_resp.json())
-    except Exception as exc:
-        logger.warning("TMDb credits fetch failed for %r: %s", title, exc)
+    videos_data = _optional_get(session, f"{movie_url}/videos", common, title, "videos")
+    credits_data = _optional_get(session, f"{movie_url}/credits", common, title, "credits")
 
     return detail_data, videos_data, credits_data
