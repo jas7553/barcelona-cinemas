@@ -13,6 +13,8 @@ function assets(manifest, entryKey) {
   for (const imp of entry.imports || []) {
     const chunk = manifest[imp];
     if (!chunk) continue;
+    // Skip preloading hydration-only hooks (useLocationPin).
+    if (chunk.file.includes("useLocationPin")) continue;
     preload.add("/" + chunk.file);
     for (const c of chunk.css || []) css.add("/" + c);
   }
