@@ -1,5 +1,4 @@
 import { memo } from "react";
-import { Link, useLocation } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { isLastChance, formatMovieMeta, thumbPosterUrl } from "../utils";
 import type { TransformedMovie } from "../types";
@@ -7,10 +6,11 @@ import type { TransformedMovie } from "../types";
 interface Props {
   movie: TransformedMovie;
   dayOffset?: number;
+  /** Current list query string (e.g. "?day=2"), carried into the detail URL. */
+  search?: string;
 }
 
-function FilmCard({ movie, dayOffset }: Props) {
-  const location = useLocation();
+function FilmCard({ movie, dayOffset, search = "" }: Props) {
   const lc = isLastChance(movie);
 
   const filtered =
@@ -31,8 +31,8 @@ function FilmCard({ movie, dayOffset }: Props) {
   const showTimes = dayOffset !== undefined && dayTimes.length > 0;
 
   return (
-    <Link
-      to={{ pathname: `/film/${movie.id}`, search: location.search }}
+    <a
+      href={`/film/${movie.id}${search}`}
       className={`film-card${lc ? " film-card--lc" : ""}${showTimes ? " film-card--with-times" : ""}`}
     >
       {movie.poster_url ? (
@@ -44,6 +44,7 @@ function FilmCard({ movie, dayOffset }: Props) {
           height={106}
           loading="lazy"
           decoding="async"
+          style={{ viewTransitionName: `poster-${movie.id}` }}
         />
       ) : (
         <div className="film-card__poster-wrap">
@@ -76,7 +77,7 @@ function FilmCard({ movie, dayOffset }: Props) {
           </div>
         )}
       </div>
-    </Link>
+    </a>
   );
 }
 

@@ -1,5 +1,4 @@
 import { memo } from "react";
-import { Link, useLocation } from "react-router-dom";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { ChevronRightIcon } from "./Icons";
 import { isLastChance, formatDistKm, thumbPosterUrl } from "../utils";
@@ -8,10 +7,11 @@ import type { CinemaViewGroup } from "../types";
 interface Props {
   group: CinemaViewGroup;
   onCinemaTap: (group: CinemaViewGroup, distLabel: string | null) => void;
+  /** Current list query string (e.g. "?day=2"), carried into the detail URL. */
+  search?: string;
 }
 
-function CinemaGroup({ group, onCinemaTap }: Props) {
-  const location = useLocation();
+function CinemaGroup({ group, onCinemaTap, search = "" }: Props) {
   const distLabel = formatDistKm(group.distanceKm);
 
   return (
@@ -30,9 +30,9 @@ function CinemaGroup({ group, onCinemaTap }: Props) {
       {group.films.map(({ movie, times }) => {
         const lc = isLastChance(movie);
         return (
-          <Link
+          <a
             key={movie.id}
-            to={{ pathname: `/film/${movie.id}`, search: location.search }}
+            href={`/film/${movie.id}${search}`}
             className="cinema-group__film"
           >
             {movie.poster_url ? (
@@ -61,7 +61,7 @@ function CinemaGroup({ group, onCinemaTap }: Props) {
                 ))}
               </div>
             </div>
-          </Link>
+          </a>
         );
       })}
     </div>

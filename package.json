@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr --emptyOutDir && node scripts/render.mjs",
+    "export-data": "python3 scripts/export_listings.py",
     "favicons": "./scripts/generate-favicons.sh",
     "refresh-cache": "python3 scripts/refresh_cache.py",
     "typecheck": "tsc -b",
@@ -20,8 +21,7 @@
   },
   "dependencies": {
     "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "react-router-dom": "^7.17.0"
+    "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
