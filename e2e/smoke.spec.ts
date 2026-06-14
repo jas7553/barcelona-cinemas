@@ -36,6 +36,22 @@ test("core mobile journey", async ({ page }) => {
     expect(await page.locator(".film-card").count()).toBeGreaterThan(0);
   });
 
+  await test.step("stylesheet is linked and actually applied", async () => {
+    // An unstyled page still has every element "visible" (default block flow),
+    // so element presence can't prove CSS loaded. Assert a real stylesheet link
+    // exists and that styled.css took effect (cards are not the UA default).
+    await expect(page.locator('link[rel="stylesheet"]')).not.toHaveCount(0);
+    const styled = await page.evaluate(() => {
+      const card = document.querySelector(".film-card");
+      if (!card) return false;
+      // A bare <a>/<div> defaults to display:inline/block with no padding;
+      // our CSS gives film cards a non-default box. Any of these proves styling.
+      const s = getComputedStyle(card);
+      return s.display === "flex" || s.display === "grid" || parseFloat(s.paddingTop) > 0;
+    });
+    expect(styled, "film-card has no applied CSS — stylesheet not loaded").toBe(true);
+  });
+
   await test.step("day filter reflects in URL", async () => {
     await page.locator(".day-chip").nth(2).click();
     await expect(page).toHaveURL(/day=1/);
