@@ -1161,15 +1161,15 @@ a.time-pill--link {
   border: none;
   border-radius: 16px;
   padding: 0;
-  margin: 0;
+  margin: auto;
   position: fixed;
-  top: 50%;
-  left: 50%;
+  inset: 0;
   width: min(420px, calc(100vw - 32px));
+  height: fit-content;
   background: var(--surface);
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.18);
   opacity: 0;
-  transform: translate3d(-50%, -50%, 0) scale(0.96);
+  transform: scale(0.96);
   transition: opacity 0.18s ease, transform 0.18s ease,
     overlay 0.18s ease allow-discrete,
     display 0.18s ease allow-discrete;
@@ -1177,11 +1177,11 @@ a.time-pill--link {
 
 .cinema-dialog[open] {
   opacity: 1;
-  transform: translate3d(-50%, -50%, 0) scale(1);
+  transform: none;
 }
 
 @starting-style {
-  .cinema-dialog[open] { opacity: 0; transform: translate3d(-50%, -50%, 0) scale(0.96); }
+  .cinema-dialog[open] { opacity: 0; transform: scale(0.96); }
 }
 
 .cinema-dialog::backdrop {
