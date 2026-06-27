@@ -101,7 +101,9 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
     try:
         raw_detail, raw_videos, raw_credits = _fetch_tmdb(movie["title"], session, api_key)
     except Exception as exc:
-        logger.warning("TMDb lookup failed for %r: %s", movie["title"], exc)
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        detail = f"HTTP {status}" if status else type(exc).__name__
+        logger.warning("TMDb lookup failed for %r: %s", movie["title"], detail)
         return _LookupResult(movie, enriched=False, failed=True)
 
     tmdb_data = (
@@ -144,7 +146,9 @@ def _optional_get(
         resp.raise_for_status()
         return cast(dict[str, Any], resp.json())
     except Exception as exc:
-        logger.warning("TMDb %s fetch failed for %r: %s", label, title, exc)
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        detail = f"HTTP {status}" if status else type(exc).__name__
+        logger.warning("TMDb %s fetch failed for %r: %s", label, title, detail)
         return None
 
 
