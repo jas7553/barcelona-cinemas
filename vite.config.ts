@@ -37,7 +37,8 @@ function ssgDevServer(): Plugin {
         const url = (req.url || "/").split("?")[0];
         const isList = url === "/" || url === "/index.html";
         const filmMatch = url.match(/^\/film\/([^/]+?)(?:\.html)?$/);
-        if (!isList && !filmMatch) return next();
+        const isPrivacy = url === "/privacy" || url === "/privacy.html";
+        if (!isList && !filmMatch && !isPrivacy) return next();
 
         try {
           const mod = await server.ssrLoadModule("/src/entry-server.tsx");
@@ -54,6 +55,15 @@ function ssgDevServer(): Plugin {
               bodyHtml: page.html,
               data,
               entrySrc: "/src/entry-list.tsx",
+            });
+          } else if (isPrivacy) {
+            const page = mod.renderPrivacy();
+            html = renderDocument({
+              title: page.title,
+              headExtra: page.headExtra,
+              bodyHtml: page.html,
+              data: null,
+              entrySrc: "/src/entry-privacy.tsx",
             });
           } else {
             const filmId = decodeURIComponent(filmMatch![1]);
@@ -99,6 +109,7 @@ export default defineConfig(({ command }) => ({
       input: {
         "entry-list": path.resolve(__dirname, "src/entry-list.tsx"),
         "entry-film": path.resolve(__dirname, "src/entry-film.tsx"),
+        "entry-privacy": path.resolve(__dirname, "src/entry-privacy.tsx"),
       },
     },
   },

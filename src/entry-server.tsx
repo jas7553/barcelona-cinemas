@@ -1,6 +1,7 @@
 import { renderToString } from "react-dom/server";
 import ListPage, { type ListPageData } from "./pages/ListPage";
 import FilmPage, { type FilmPageData } from "./pages/FilmPage";
+import PrivacyPage from "./pages/PrivacyPage";
 import type { Listings, Movie, Theater } from "./types";
 
 const SITE_NAME = "Barcelona This Week";
@@ -169,6 +170,22 @@ export function renderFilm(data: FilmPageData, siteUrl?: string): RenderedPage {
     html: renderToString(<FilmPage data={data} />),
     title,
     headExtra: meta + jsonLd,
+  };
+}
+
+export function renderPrivacy(siteUrl?: string): RenderedPage {
+  const title = `Privacy · ${SITE_NAME}`;
+  const description =
+    "No cookies, no analytics, no tracking. Barcelona This Week is a static site — it sets no cookies and collects no personal data.";
+  return {
+    html: renderToString(<PrivacyPage />),
+    title,
+    headExtra: metaTags({
+      title,
+      description,
+      url: siteUrl ? `${siteUrl}/privacy` : undefined,
+      canonical: siteUrl ? `${siteUrl}/privacy` : undefined,
+    }),
   };
 }
 

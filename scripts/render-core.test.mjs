@@ -47,10 +47,12 @@ describe("renderAll() sitemap", () => {
   const manifest = {
     "src/entry-list.tsx": { file: "assets/list.js", isEntry: true },
     "src/entry-film.tsx": { file: "assets/film.js", isEntry: true },
+    "src/entry-privacy.tsx": { file: "assets/privacy.js", isEntry: true },
   };
   const server = {
     renderList: () => ({ html: "<main></main>", title: "T", headExtra: "" }),
     renderFilm: () => ({ html: "<main></main>", title: "F", headExtra: "" }),
+    renderPrivacy: () => ({ html: "<main></main>", title: "P", headExtra: "" }),
     filmListings: (full, id) => {
       const movie = full.movies.find((m) => m.id === id);
       return movie ? { ...full, movies: [movie] } : null;
@@ -79,6 +81,18 @@ describe("renderAll() sitemap", () => {
     expect(sm).toContain("<loc>https://x.test/film/1</loc>");
     expect(sm).not.toContain("/film/2"); // zero-showtime film is noindex, not in the sitemap
     expect(sm).toContain("<lastmod>2026-06-27</lastmod>");
+  });
+
+  it("includes /privacy in the sitemap with low priority and yearly changefreq", async () => {
+    const sm = (await run("https://x.test")).get("sitemap.xml");
+    expect(sm).toContain("<loc>https://x.test/privacy</loc>");
+    expect(sm).toContain("<priority>0.3</priority>");
+    expect(sm).toContain("<changefreq>yearly</changefreq>");
+  });
+
+  it("renders privacy.html", async () => {
+    const writes = await run("https://x.test");
+    expect(writes.has("privacy.html")).toBe(true);
   });
 
   it("omits the sitemap for a local build with no SITE_URL", async () => {
