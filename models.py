@@ -24,6 +24,7 @@ class Movie(TypedDict):
     tagline: NotRequired[str | None]
     synopsis: str | None
     rating: float | None
+    vote_count: NotRequired[int | None]  # TMDb vote count; absent in caches predating this field
     runtime_mins: int | None
     genres: list[str] | None
     original_lang: NotRequired[str | None]  # ISO 639-1 code, e.g. "fr"

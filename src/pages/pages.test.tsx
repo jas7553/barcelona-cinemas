@@ -38,6 +38,7 @@ function sampleListings(): Listings {
         trailer_url: null,
         genres: ["Sci-Fi"],
         rating: 8.2,
+        vote_count: 4129,
         synopsis: "A lone astronaut must save humanity.",
         links: { imdb: null, imdb_id: null },
         showtimes: [
@@ -120,6 +121,34 @@ describe("entry-server (SSG)", () => {
     expect(out.headExtra).toContain('"@type":"ScreeningEvent"');
     expect(out.headExtra).toContain('"@type":"Movie"');
     expect(out.headExtra).not.toContain("noindex");
+  });
+
+  it("renderFilm JSON-LD includes aggregateRating when rating and vote_count are present", () => {
+    const narrowed = filmListings(sampleListings(), "1")!;
+    const out = renderFilm({ renderedAt, listings: narrowed, filmId: "1" }, "https://example.com");
+    expect(out.headExtra).toContain('"@type":"AggregateRating"');
+    expect(out.headExtra).toContain('"ratingCount":4129');
+    expect(out.headExtra).toContain('"ratingValue":8.2');
+  });
+
+  it("renderFilm JSON-LD omits aggregateRating when vote_count is absent", () => {
+    const listings = sampleListings();
+    const { vote_count: _removed, ...movieWithoutVoteCount } = listings.movies[0] as typeof listings.movies[0] & { vote_count?: number | null };
+    void _removed;
+    listings.movies[0] = { ...movieWithoutVoteCount };
+    const narrowed = filmListings(listings, "1")!;
+    const out = renderFilm({ renderedAt, listings: narrowed, filmId: "1" }, "https://example.com");
+    expect(out.headExtra).not.toContain("aggregateRating");
+    expect(out.headExtra).not.toContain("AggregateRating");
+  });
+
+  it("renderFilm JSON-LD omits aggregateRating when vote_count is 0", () => {
+    const listings = sampleListings();
+    listings.movies[0] = { ...listings.movies[0], vote_count: 0 };
+    const narrowed = filmListings(listings, "1")!;
+    const out = renderFilm({ renderedAt, listings: narrowed, filmId: "1" }, "https://example.com");
+    expect(out.headExtra).not.toContain("aggregateRating");
+    expect(out.headExtra).not.toContain("AggregateRating");
   });
 
   it("renderFilm of a film with no showtimes is noindex, no canonical, no JSON-LD", () => {

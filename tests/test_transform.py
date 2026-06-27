@@ -125,6 +125,18 @@ def test_director_and_cast_default_when_absent():
     assert out["cast"] == []
 
 
+def test_passes_through_vote_count():
+    movie = _movie(showtimes=[_showtime()])
+    movie["vote_count"] = 12345
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    assert result["movies"][0]["vote_count"] == 12345
+
+
+def test_vote_count_defaults_to_none_when_absent():
+    result = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
+    assert result["movies"][0]["vote_count"] is None
+
+
 # ── Top-level shape ───────────────────────────────────────────────────────────
 
 

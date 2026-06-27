@@ -94,6 +94,9 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     cast = _as_optional_genres(data.get("cast"), source=f"{source} cast")
     if cast is not None:
         movie["cast"] = cast
+    vote_count = _as_optional_positive_int(data.get("vote_count"), source=f"{source} vote_count")
+    if vote_count is not None:
+        movie["vote_count"] = vote_count
     return movie
 
 
@@ -174,6 +177,10 @@ def normalize_tmdb_payload(
     rating = _as_optional_rating(data.get("vote_average"), source=f"TMDb vote_average for {title!r}")
     if rating is not None:
         normalized["vote_average"] = rating
+
+    vote_count = _as_optional_positive_int(data.get("vote_count"), source=f"TMDb vote_count for {title!r}")
+    if vote_count is not None:
+        normalized["vote_count"] = vote_count
 
     runtime = _as_optional_positive_int(data.get("runtime"), source=f"TMDb runtime for {title!r}")
     if runtime is not None:
