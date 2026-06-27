@@ -139,6 +139,7 @@ def _refresh() -> Listings:
 
     movies = _collect_movies(cinemas)
     enriched, enrichment_stats = enricher.enrich(movies, cached_movies)
+    enriched = reconcile(enriched)
 
     emit_metric("MoviesCollected", len(movies))
     emit_metric("MoviesEnriched", enrichment_stats["tmdb_enriched_count"])

@@ -1,13 +1,11 @@
 """
 Reconciliation: collapse many raw Movies into one per identity.
 
-The single home for "are these the same film, and how do we merge them." Runs
-before enrichment, so it arbitrates only provider-known fields (title, imdb_id)
-plus showtimes; everything else is None on both sides and simply coalesces.
+The single home for "are these the same film, and how do we merge them."
+Called twice in pipeline.py: once pre-enrichment (title-based matching) and
+once post-enrichment (imdb_id-based matching to catch title-variant duplicates).
 
-`reconcile` is used both across providers (pipeline) and within a single feed
-(secondary provider). `dedup_showtimes` is reused by the public transform with
-a different key function.
+`dedup_showtimes` is reused by the public transform with a different key function.
 """
 
 from __future__ import annotations
@@ -127,4 +125,13 @@ def _merge_pair(left: Movie, right: Movie) -> Movie:
     tagline = _coalesce(left.get("tagline"), right.get("tagline"))
     if tagline is not None:
         merged["tagline"] = tagline
+    original_lang = _coalesce(left.get("original_lang"), right.get("original_lang"))
+    if original_lang is not None:
+        merged["original_lang"] = original_lang
+    director = _coalesce(left.get("director"), right.get("director"))
+    if director is not None:
+        merged["director"] = director
+    cast = _coalesce(left.get("cast"), right.get("cast"))
+    if cast is not None:
+        merged["cast"] = cast
     return merged
