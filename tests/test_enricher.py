@@ -12,7 +12,7 @@ from models import Movie, Showtime
 
 
 def _movie(title: str, showtimes: list[Showtime] | None = None, **kwargs: Any) -> Movie:
-    return Movie(
+    m = Movie(
         title=title,
         tmdb_id=kwargs.get("tmdb_id"),
         imdb_id=kwargs.get("imdb_id"),
@@ -24,6 +24,9 @@ def _movie(title: str, showtimes: list[Showtime] | None = None, **kwargs: Any) -
         genres=kwargs.get("genres"),
         showtimes=showtimes or [],
     )
+    if "enriched_at" in kwargs:
+        m["enriched_at"] = kwargs["enriched_at"]
+    return m
 
 
 def _showtime(date: str = "2026-03-28") -> Showtime:
@@ -80,6 +83,7 @@ def test_reuses_cached_metadata(mock_env):
         poster_url="https://image.tmdb.org/t/p/w342/poster.jpg",
         synopsis="Old synopsis",
         rating=8.5,
+        enriched_at="2026-06-27T12:00:00+00:00",
         showtimes=[_showtime("2026-03-27")],
     )
     fresh = _movie("Dune: Part Two", showtimes=[_showtime("2026-03-28")])

@@ -29,6 +29,7 @@ class Movie(TypedDict):
     original_lang: NotRequired[str | None]  # ISO 639-1 code, e.g. "fr"
     director: NotRequired[str | None]
     cast: NotRequired[list[str] | None]
+    enriched_at: NotRequired[str]  # ISO 8601; when TMDb metadata was last fetched
     showtimes: list[Showtime]
 
 
