@@ -141,7 +141,7 @@ def _refresh() -> Listings:
     enriched, _ = enricher.enrich(movies, cached_movies)
     enriched = reconcile(enriched)
 
-    emit_metric("MoviesCollected", len(movies))
+    emit_metric("MoviesCollected", len(enriched))
 
     result: Listings = {
         "fetched_at": datetime.now(UTC).isoformat(),
