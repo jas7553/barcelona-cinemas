@@ -11,6 +11,8 @@ Failures are logged and result in null metadata fields; this module never raises
 """
 
 import logging
+import os
+from datetime import UTC, datetime, timedelta
 from typing import Any, NamedTuple, TypedDict, cast
 
 import requests
@@ -25,10 +27,12 @@ from validation import normalize_tmdb_payload
 logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://api.themoviedb.org/3"
+_ENRICH_TTL_DAYS = int(os.environ.get("ENRICH_TTL_DAYS", "7"))
 
 
 class EnrichmentStats(TypedDict):
     tmdb_enriched_count: int
+    tmdb_reenriched_count: int
     tmdb_cache_hit_count: int
     tmdb_failure_count: int
 
@@ -50,6 +54,7 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
     """
     stats: EnrichmentStats = {
         "tmdb_enriched_count": 0,
+        "tmdb_reenriched_count": 0,
         "tmdb_cache_hit_count": 0,
         "tmdb_failure_count": 0,
     }
@@ -76,10 +81,12 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         enriched: list[Movie] = []
         for movie in movies:
             cached = _find_cached_movie(movie, cached_by_imdb, cached_by_title)
-            if cached and cached.get("tmdb_id") is not None:
+            if cached and cached.get("tmdb_id") is not None and not _needs_reenrichment(cached):
                 stats["tmdb_cache_hit_count"] += 1
                 enriched.append({**cached, "showtimes": movie["showtimes"]})
             else:
+                if cached and cached.get("tmdb_id") is not None:
+                    stats["tmdb_reenriched_count"] += 1
                 result = _lookup_and_merge(movie, session, key)
                 if result.enriched:
                     stats["tmdb_enriched_count"] += 1
@@ -91,6 +98,19 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         emit_metric("MoviesEnriched", stats["tmdb_enriched_count"])
         log_event("tmdb_enrichment_summary", movie_count=len(movies), **stats)
         return enriched, stats
+
+
+def _needs_reenrichment(cached: Movie) -> bool:
+    enriched_at_str = cached.get("enriched_at")
+    if not enriched_at_str:
+        return True
+    try:
+        enriched_at = datetime.fromisoformat(enriched_at_str)
+        if enriched_at.tzinfo is None:
+            enriched_at = enriched_at.replace(tzinfo=UTC)
+        return datetime.now(UTC) - enriched_at > timedelta(days=_ENRICH_TTL_DAYS)
+    except ValueError:
+        return True
 
 
 def _find_cached_movie(
@@ -129,6 +149,7 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
     return _LookupResult(
         {
             **movie,
+            "enriched_at": datetime.now(UTC).isoformat(),
             "tmdb_id": tmdb_data.get("id"),
             "imdb_id": tmdb_data.get("imdb_id"),
             "year": tmdb_data.get("year"),
