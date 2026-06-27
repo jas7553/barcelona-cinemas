@@ -266,7 +266,7 @@ Resources:
       Name: !Sub "${AWS::StackName}-url-rewrite"
       AutoPublish: true
       FunctionConfig:
-        Comment: "Rewrite clean URLs to the static keys (/ -> /index.html, /film/<id> -> /film/<id>.html)"
+        Comment: "Rewrite clean URLs to static .html keys (/ -> /index.html, /privacy -> /privacy.html, /film/<id> -> /film/<id>.html)"
         Runtime: cloudfront-js-2.0
       FunctionCode: |
         function handler(event) {
@@ -276,10 +276,14 @@ Resources:
             request.uri = '/index.html';
             return request;
           }
-          if (uri.startsWith('/film/') && !uri.endsWith('.html')) {
-            // strip a trailing slash, then map to the per-film file
-            request.uri = uri.replace(/\/$/, '') + '.html';
-            return request;
+          // Map any extensionless clean URL to its static .html key:
+          // /privacy -> /privacy.html, /film/<id> -> /film/<id>.html. Requests
+          // that already name a file (.html/.js/.css/.json/.xml/.png/.woff2/…)
+          // pass through untouched, as does the SPA-style 404 fallthrough.
+          var clean = uri.replace(/\/$/, '');
+          var lastSegment = clean.substring(clean.lastIndexOf('/') + 1);
+          if (lastSegment.indexOf('.') === -1) {
+            request.uri = clean + '.html';
           }
           return request;
         }
@@ -521,7 +525,7 @@ Resources:
             OriginAccessControlId: !GetAtt CloudFrontOAC.Id
 
         # Default: serve the static pages from S3. The CloudFront Function rewrites
-        # clean URLs (/ → /index.html, /film/<id> → /film/<id>.html) at the edge.
+        # clean URLs (/ → /index.html, any extensionless path → <path>.html) at the edge.
         DefaultCacheBehavior:
           TargetOriginId: FrontendS3
           ViewerProtocolPolicy: redirect-to-https
