@@ -35,6 +35,7 @@ export function renderDocument(o) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="google-site-verification" content="8TY-GdWfEzMusHB1CLdFZYqlrJIE-p0LsmxkoAeuK7M" />
     <script>${THEME_SCRIPT}</script>
     <link rel="prefetch" href="/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="prefetch" href="/fonts/playfair-display-latin.woff2" as="font" type="font/woff2" crossorigin />
