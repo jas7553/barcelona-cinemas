@@ -2,7 +2,7 @@
 
 Small weekend project for tracking English-language movie showings in Barcelona.
 
-It aggregates local showtimes from tracked listings providers, enriches them with TMDb metadata, and serves the result through a React frontend with a Flask API running on AWS Lambda.
+It aggregates local showtimes from tracked listings providers, enriches them with TMDb metadata, and serves the result as a pre-rendered static MPA (one HTML page per route on S3 + CloudFront). A headless Lambda refreshes the data on a timer; there is no runtime read API.
 
 ## What It Does
 
@@ -14,25 +14,24 @@ It aggregates local showtimes from tracked listings providers, enriches them wit
 ## Architecture
 
 ```text
-React SPA (src/) -> Flask API (app.py) -> pipeline.py
-                                          |- providers/listings_provider.py
-                                          |- enricher.py
-                                          |- validation.py
-                                          `- cache.py
+EventBridge (12h) -> ApiFunction (app.py) -> pipeline.py -> cache + data/listings.json (S3)
+                                             |- providers/listings_provider.py    |
+                                             |- enricher.py                       v
+                                             |- validation.py            SsgFunction (Node) re-renders
+                                             `- cache.py                 every HTML page + invalidates CF
 ```
 
-Request flow:
+Refresh flow (no runtime read API — pages are pre-rendered):
 
-- `GET /api/cinemas` returns the tracked cinema registry used by the frontend filters.
-- `GET /api/listings` returns cached listings only.
-- If the cache is older than the TTL, the API responds with `"stale": true`.
-- If the listings path fails and any cache exists, stale cache is returned instead of an in-band refresh.
-- A scheduled EventBridge refresh updates the cache in the background.
+- A scheduled EventBridge rule (every 12h) invokes the headless `ApiFunction`, which runs `pipeline.force_refresh()`.
+- The refresh writes the cache, publishes the public `data/listings.json` to the frontend bucket, and invokes `SsgFunction` to re-render every page and invalidate CloudFront.
+- Each page embeds its own data as inert JSON, so normal page loads never fetch — first paint shows real content.
+- A failed refresh leaves the previously rendered pages serving (stale-while-revalidate); listings carry `"stale": true` past the TTL, surfaced as an age banner.
 
 Production hardening:
 
-- In AWS, CloudFront sends a shared-secret header to the API origin and direct origin requests are rejected.
-- Local development leaves that protection disabled unless `ORIGIN_VERIFY_TOKEN` is explicitly set.
+- The frontend S3 bucket is private; only CloudFront (via OAC) can read it, and CloudFront stamps the security headers (CSP, HSTS, etc.).
+- `SsgFunction` is invoked only by the refresh path; there is no public origin that serves listings on demand.
 
 ## Local Setup
 

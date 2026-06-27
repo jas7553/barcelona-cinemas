@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { assets } from "./render-core.mjs";
+import { assets, renderAll } from "./render-core.mjs";
 
 // Regression guard: Vite hoists the global style.css (imported by both entries)
 // into a shared chunk — here the useLocationPin chunk, whose JS we deliberately
@@ -40,5 +40,48 @@ describe("assets()", () => {
 
   it("throws a build-hint error for a missing entry", () => {
     expect(() => assets({}, "src/entry-list.tsx")).toThrow(/manifest missing entry/);
+  });
+});
+
+describe("renderAll() sitemap", () => {
+  const manifest = {
+    "src/entry-list.tsx": { file: "assets/list.js", isEntry: true },
+    "src/entry-film.tsx": { file: "assets/film.js", isEntry: true },
+  };
+  const server = {
+    renderList: () => ({ html: "<main></main>", title: "T", headExtra: "" }),
+    renderFilm: () => ({ html: "<main></main>", title: "F", headExtra: "" }),
+    filmListings: (full, id) => {
+      const movie = full.movies.find((m) => m.id === id);
+      return movie ? { ...full, movies: [movie] } : null;
+    },
+  };
+  function listings() {
+    return {
+      generated_at: "2026-06-27T20:39:37+00:00",
+      stale: false,
+      theaters: [],
+      movies: [
+        { id: "1", title: "Showing", showtimes: [{ theater_id: "x", date: "2026-06-28", time: "20:00", language: "vo" }] },
+        { id: "2", title: "Ended run", showtimes: [] },
+      ],
+    };
+  }
+  async function run(siteUrl) {
+    const writes = new Map();
+    await renderAll({ listings: listings(), manifest, server, siteUrl, write: (p, c) => writes.set(p, c) });
+    return writes;
+  }
+
+  it("lists the index + only films with showtimes, using absolute URLs", async () => {
+    const sm = (await run("https://x.test")).get("sitemap.xml");
+    expect(sm).toContain("<loc>https://x.test/</loc>");
+    expect(sm).toContain("<loc>https://x.test/film/1</loc>");
+    expect(sm).not.toContain("/film/2"); // zero-showtime film is noindex, not in the sitemap
+    expect(sm).toContain("<lastmod>2026-06-27</lastmod>");
+  });
+
+  it("omits the sitemap for a local build with no SITE_URL", async () => {
+    expect((await run("")).has("sitemap.xml")).toBe(false);
   });
 });

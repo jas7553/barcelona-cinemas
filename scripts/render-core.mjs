@@ -40,7 +40,7 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
 
   // List page
   const listData = { renderedAt, listings };
-  const listPage = server.renderList(listData);
+  const listPage = server.renderList(listData, siteUrl);
   await write(
     "index.html",
     renderDocument({
@@ -78,6 +78,29 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
     ]);
   });
   await Promise.all(filmJobs);
+
+  // sitemap.xml — absolute URLs require a siteUrl, so skip it for local builds
+  // that don't set SITE_URL. List only films actually screening: the rest render
+  // a noindex "not showing" page (see renderFilm) and don't belong in the index.
+  if (siteUrl) {
+    const showing = listings.movies.filter((m) => m.showtimes && m.showtimes.length > 0);
+    const lastmod = (listings.generated_at || renderedAt).slice(0, 10);
+    const entries = [
+      { loc: `${siteUrl}/`, priority: "1.0" },
+      ...showing.map((m) => ({ loc: `${siteUrl}/film/${m.id}`, priority: "0.7" })),
+    ];
+    const urls = entries
+      .map(
+        (e) =>
+          `  <url>\n    <loc>${e.loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n` +
+          `    <changefreq>daily</changefreq>\n    <priority>${e.priority}</priority>\n  </url>`,
+      )
+      .join("\n");
+    const xml =
+      `<?xml version="1.0" encoding="UTF-8"?>\n` +
+      `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
+    await write("sitemap.xml", xml, "application/xml");
+  }
 
   return { filmCount: listings.movies.length };
 }
