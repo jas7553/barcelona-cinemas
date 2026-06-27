@@ -95,6 +95,7 @@ def _transform_movie(
         "trailer_url": movie.get("trailer_url"),
         "genres": movie.get("genres") or [],
         "rating": movie.get("rating"),
+        "vote_count": movie.get("vote_count"),
         "original_lang": movie.get("original_lang"),
         "director": movie.get("director"),
         "cast": movie.get("cast") or [],

@@ -94,8 +94,14 @@ function filmJsonLd(movie: Movie, theaters: Theater[], url: string | undefined):
   if (movie.cast?.length) movieNode.actor = movie.cast.map((name) => ({ "@type": "Person", name }));
   if (movie.runtime_minutes) movieNode.duration = `PT${movie.runtime_minutes}M`;
   if (movie.synopsis) movieNode.description = movie.synopsis;
-  // aggregateRating is intentionally omitted: the public payload carries no vote
-  // count, and schema.org/Google require ratingCount for a valid AggregateRating.
+  if (movie.rating != null && movie.vote_count && movie.vote_count > 0) {
+    movieNode.aggregateRating = {
+      "@type": "AggregateRating",
+      ratingValue: Math.round(movie.rating * 10) / 10,
+      bestRating: 10,
+      ratingCount: movie.vote_count,
+    };
+  }
 
   const events = movie.showtimes.map((s) => {
     const theater = byId.get(s.theater_id);

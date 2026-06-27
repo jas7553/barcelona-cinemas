@@ -43,6 +43,7 @@ TMDB_DETAIL = {
     "poster_path": "/poster.jpg",
     "overview": "A hero's journey continues.",
     "vote_average": 8.5,
+    "vote_count": 12345,
     "runtime": 166,
     "genres": [{"id": 878, "name": "Science Fiction"}, {"id": 12, "name": "Adventure"}],
 }
@@ -121,6 +122,7 @@ def test_fetches_tmdb_for_new_title(mock_env):
     assert result[0]["poster_url"] == "https://image.tmdb.org/t/p/w342/poster.jpg"
     assert result[0]["synopsis"] == "A hero's journey continues."
     assert result[0]["rating"] == 8.5
+    assert result[0]["vote_count"] == 12345
     assert result[0]["runtime_mins"] == 166
     assert result[0]["genres"] == ["Science Fiction", "Adventure"]
     assert stats["tmdb_enriched_count"] == 1
@@ -267,6 +269,25 @@ def test_cache_reuse_does_not_cross_exact_title_variants(mock_env):
     assert result[0]["imdb_id"] == "tt32897959"
     assert result[0]["synopsis"] == "New adaptation"
     assert stats["tmdb_cache_hit_count"] == 0
+
+
+def test_vote_count_absent_when_tmdb_omits_it(mock_env):
+    """vote_count is absent (not None) when TMDb detail response omits the field."""
+    movie = _movie("Dune: Part Two", showtimes=[_showtime()])
+    detail_without_count = {k: v for k, v in TMDB_DETAIL.items() if k != "vote_count"}
+
+    mock_session = MagicMock()
+    mock_session.__enter__ = MagicMock(return_value=mock_session)
+    mock_session.__exit__ = MagicMock(return_value=False)
+    mock_session.get.side_effect = [
+        MagicMock(status_code=200, json=lambda: TMDB_SEARCH, raise_for_status=lambda: None),
+        MagicMock(status_code=200, json=lambda: detail_without_count, raise_for_status=lambda: None),
+    ]
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([movie], [])
+
+    assert result[0]["vote_count"] is None
 
 
 def test_invalid_tmdb_fields_are_safely_discarded(mock_env):

@@ -40,6 +40,8 @@ export interface Movie {
   trailer_url: string | null;
   genres: string[];
   rating: number | null;
+  /** TMDb vote count for aggregateRating. Optional: older cached responses predate it. */
+  vote_count?: number | null;
   /** Original-language ISO 639-1 code (e.g. "fr"). Optional: older cached responses predate it. */
   original_lang?: string | null;
   /** Director name(s), joined for multi-director films. Optional: older cached responses predate it. */
