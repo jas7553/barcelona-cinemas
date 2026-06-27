@@ -14,6 +14,8 @@ import logging
 from typing import Any, NamedTuple, TypedDict, cast
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from listings_config import resolve_env_or_ssm
 from models import Movie
@@ -62,7 +64,15 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
     cached_by_imdb: dict[str, Movie] = {imdb_id: m for m in cached_movies if (imdb_id := m.get("imdb_id"))}
     cached_by_title: dict[str, Movie] = {m["title"].lower(): m for m in cached_movies}
 
+    _retry = Retry(
+        total=2,
+        backoff_factor=1,
+        status_forcelist={500, 502, 503, 504},
+        allowed_methods={"GET"},
+        raise_on_status=False,
+    )
     with requests.Session() as session:
+        session.mount("https://", HTTPAdapter(max_retries=_retry))
         enriched: list[Movie] = []
         for movie in movies:
             cached = _find_cached_movie(movie, cached_by_imdb, cached_by_title)
