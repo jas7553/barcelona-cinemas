@@ -3,6 +3,7 @@ import DayPicker from "../components/DayPicker";
 import FilmCard from "../components/FilmCard";
 import CinemaGroup from "../components/CinemaGroup";
 import CinemaSheet from "../components/CinemaSheet";
+import SiteFooter from "../components/Footer";
 import { MoonIcon, SunIcon, SearchIcon, PinIcon } from "../components/Icons";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useNow, useUrlParams } from "../hooks/useClient";
@@ -441,6 +442,7 @@ function ListView({
       )}
 
       <CinemaSheet venue={sheetVenue} onClose={() => setSheetVenue(null)} />
+      <SiteFooter />
     </>
   );
 }

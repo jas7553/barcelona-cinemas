@@ -28,7 +28,7 @@ export function assets(manifest, entryKey) {
  * @param {object} o
  * @param {object} o.listings   Public listings payload ({generated_at, stale, theaters, movies}).
  * @param {object} o.manifest   Vite client build manifest.
- * @param {object} o.server     The entry-server module (renderList/renderFilm/filmListings).
+ * @param {object} o.server     The entry-server module (renderList/renderFilm/renderPrivacy/filmListings).
  * @param {string} [o.siteUrl]  Absolute origin for OpenGraph og:url.
  * @param {(relPath: string, contents: string, contentType: string) => (void|Promise<void>)} o.write
  * @returns {Promise<{filmCount: number}>}
@@ -37,6 +37,7 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
   const renderedAt = new Date().toISOString();
   const listAssets = assets(manifest, "src/entry-list.tsx");
   const filmAssets = assets(manifest, "src/entry-film.tsx");
+  const privacyAssets = assets(manifest, "src/entry-privacy.tsx");
 
   // List page
   const listData = { renderedAt, listings };
@@ -55,6 +56,22 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
     "text/html; charset=utf-8",
   );
   await write("data/listings.json", JSON.stringify(listings), "application/json");
+
+  // Privacy page (static prose — no per-render data, always present)
+  const privacyPage = server.renderPrivacy(siteUrl);
+  await write(
+    "privacy.html",
+    renderDocument({
+      title: privacyPage.title,
+      headExtra: privacyPage.headExtra,
+      bodyHtml: privacyPage.html,
+      data: null,
+      entrySrc: privacyAssets.js,
+      cssHrefs: privacyAssets.css,
+      preload: privacyAssets.preload,
+    }),
+    "text/html; charset=utf-8",
+  );
 
   // Film pages — render all synchronously then flush all writes in parallel.
   const filmJobs = listings.movies.map((movie) => {
@@ -86,14 +103,15 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
     const showing = listings.movies.filter((m) => m.showtimes && m.showtimes.length > 0);
     const lastmod = (listings.generated_at || renderedAt).slice(0, 10);
     const entries = [
-      { loc: `${siteUrl}/`, priority: "1.0" },
-      ...showing.map((m) => ({ loc: `${siteUrl}/film/${m.id}`, priority: "0.7" })),
+      { loc: `${siteUrl}/`, priority: "1.0", changefreq: "daily" },
+      ...showing.map((m) => ({ loc: `${siteUrl}/film/${m.id}`, priority: "0.7", changefreq: "daily" })),
+      { loc: `${siteUrl}/privacy`, priority: "0.3", changefreq: "yearly" },
     ];
     const urls = entries
       .map(
         (e) =>
           `  <url>\n    <loc>${e.loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n` +
-          `    <changefreq>daily</changefreq>\n    <priority>${e.priority}</priority>\n  </url>`,
+          `    <changefreq>${e.changefreq}</changefreq>\n    <priority>${e.priority}</priority>\n  </url>`,
       )
       .join("\n");
     const xml =

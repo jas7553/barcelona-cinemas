@@ -3,6 +3,7 @@ import BackdropPlaceholder from "../components/BackdropPlaceholder";
 import PosterPlaceholder from "../components/PosterPlaceholder";
 import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
+import SiteFooter from "../components/Footer";
 import { BackIcon, ChevronRightIcon } from "../components/Icons";
 import { ThemeProvider } from "../context/ThemeContext";
 import { useNow, useUrlParams } from "../hooks/useClient";
@@ -445,6 +446,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
         </div>
       </div>
 
+      <SiteFooter />
     </div>
   );
 }
