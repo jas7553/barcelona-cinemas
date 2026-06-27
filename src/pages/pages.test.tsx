@@ -97,12 +97,42 @@ describe("entry-server (SSG)", () => {
     expect(out.html).toContain("Project Hail Mary");
   });
 
+  it("renderList emits canonical + social cards when given a siteUrl", () => {
+    const out = renderList({ renderedAt, listings: sampleListings() }, "https://example.com");
+    expect(out.headExtra).toContain('rel="canonical" href="https://example.com/"');
+    expect(out.headExtra).toContain('property="og:image" content="https://example.com/apple-touch-icon.png"');
+    expect(out.headExtra).toContain('name="twitter:card" content="summary"');
+  });
+
   it("renderFilm produces a per-film title + OpenGraph", () => {
     const narrowed = filmListings(sampleListings(), "1")!;
     const out = renderFilm({ renderedAt, listings: narrowed, filmId: "1" }, "https://example.com");
     expect(out.title).toBe("Project Hail Mary · Barcelona This Week");
     expect(out.headExtra).toContain('property="og:url"');
     expect(out.html).toContain("Project Hail Mary");
+  });
+
+  it("renderFilm of a screening film: canonical + ScreeningEvent JSON-LD, no noindex", () => {
+    const narrowed = filmListings(sampleListings(), "1")!;
+    const out = renderFilm({ renderedAt, listings: narrowed, filmId: "1" }, "https://example.com");
+    expect(out.headExtra).toContain('rel="canonical" href="https://example.com/film/1"');
+    expect(out.headExtra).toContain('type="application/ld+json"');
+    expect(out.headExtra).toContain('"@type":"ScreeningEvent"');
+    expect(out.headExtra).toContain('"@type":"Movie"');
+    expect(out.headExtra).not.toContain("noindex");
+  });
+
+  it("renderFilm of a film with no showtimes is noindex, no canonical, no JSON-LD", () => {
+    const noShow: Listings = {
+      generated_at: renderedAt,
+      stale: false,
+      theaters: [],
+      movies: [{ ...sampleListings().movies[0], id: "2", showtimes: [] }],
+    };
+    const out = renderFilm({ renderedAt, listings: noShow, filmId: "2" }, "https://example.com");
+    expect(out.headExtra).toContain('name="robots" content="noindex"');
+    expect(out.headExtra).not.toContain('rel="canonical"');
+    expect(out.headExtra).not.toContain("application/ld+json");
   });
 
   it("filmListings narrows movies to one and keeps only used theaters", () => {
