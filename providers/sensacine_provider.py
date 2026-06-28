@@ -34,6 +34,7 @@ _SENSACINE_IDS: dict[str, str] = {
     "RenFlo": "E0581",
     "EspaiTexas": "E0873",
     "Zumzeig": "E0850",
+    "Phenomena": "E0544",
 }
 
 _DAYS_AHEAD = int(os.environ.get("SENSACINE_DAYS_AHEAD", "7"))
