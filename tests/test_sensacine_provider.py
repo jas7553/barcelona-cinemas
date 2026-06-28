@@ -1,12 +1,17 @@
+import json
+import pathlib
 from collections.abc import Mapping
 from unittest.mock import MagicMock, patch
 
 from models import CinemaInfo, CinemaRegistry
 from providers.sensacine_provider import (
+    _SENSACINE_IDS,
     SensacineProvider,
     _booking_url,
     _subtitle_lang,
 )
+
+_CINEMAS_PATH = pathlib.Path(__file__).parent.parent / "cinemas.json"
 
 CINEMAS: CinemaRegistry = {
     "CinDiag": CinemaInfo(
@@ -266,3 +271,44 @@ class TestSensacineProvider:
         # Supergirl should appear once even across multiple date fetches
         supergirl_entries = [m for m in movies if m["title"] == "Supergirl"]
         assert len(supergirl_entries) == 1
+
+
+class TestMeliesRegistry:
+    """Cinemes Méliès is in cinemas.json but not on SensaCine."""
+
+    def test_melies_registry_entry(self) -> None:
+        registry = json.loads(_CINEMAS_PATH.read_text())
+        assert "Méliès" in registry
+        entry = registry["Méliès"]
+        assert entry["id"] == "melies"
+        assert isinstance(entry["address"], str) and entry["address"]
+        assert isinstance(entry["neighborhood"], str) and entry["neighborhood"]
+        assert isinstance(entry["lat"], float)
+        assert isinstance(entry["lng"], float)
+
+    def test_melies_absent_from_sensacine_ids(self) -> None:
+        # Cinemes Méliès is not listed on SensaCine; no ID to map.
+        assert "Méliès" not in _SENSACINE_IDS
+
+    def test_sensacine_provider_ignores_melies_entry(self) -> None:
+        # A registry that includes Méliès should not cause warnings or failures —
+        # the provider simply skips registry keys absent from _SENSACINE_IDS.
+        cinemas_with_melies: CinemaRegistry = {
+            **CINEMAS,
+            "Méliès": CinemaInfo(
+                id="melies",
+                name="Cinemes Méliès",
+                address="Carrer de Villarroel, 102",
+                neighborhood="Eixample",
+                website_url="https://www.meliescinemes.com",
+                maps_url="https://maps.google.com/?q=Cinemes+M%C3%A9li%C3%A8s",
+            ),
+        }
+        with patch(
+            "providers.sensacine_provider.requests.get",
+            return_value=_mock_response(_API_RESPONSE),
+        ):
+            movies = SensacineProvider().fetch(cinemas_with_melies)
+
+        cinema_keys = {s["cinema"] for m in movies for s in m["showtimes"]}
+        assert "Méliès" not in cinema_keys
