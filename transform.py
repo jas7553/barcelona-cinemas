@@ -85,6 +85,9 @@ def _transform_movie(
         seen_theater_ids,
     )
 
+    if not showtimes_out:
+        return None
+
     return {
         "id": str(tmdb_id) if tmdb_id is not None else title.lower().replace(" ", "-"),
         "title": title,
