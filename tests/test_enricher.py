@@ -290,6 +290,49 @@ def test_vote_count_absent_when_tmdb_omits_it(mock_env):
     assert result[0]["vote_count"] is None
 
 
+def test_uses_tmdb_english_title_as_display_title(mock_env):
+    """TMDb English title replaces provider's localized title."""
+    movie = _movie("Encuentros en la tercera fase", showtimes=[_showtime()])
+    search = {"results": [{"id": 42, "title": "Close Encounters of the Third Kind"}]}
+    detail = {
+        **TMDB_DETAIL,
+        "title": "Close Encounters of the Third Kind",
+        "original_language": "en",
+    }
+
+    mock_session = MagicMock()
+    mock_session.__enter__ = MagicMock(return_value=mock_session)
+    mock_session.__exit__ = MagicMock(return_value=False)
+    mock_session.get.side_effect = [
+        MagicMock(status_code=200, json=lambda: search, raise_for_status=lambda: None),
+        MagicMock(status_code=200, json=lambda: detail, raise_for_status=lambda: None),
+    ]
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([movie], [])
+
+    assert result[0]["title"] == "Close Encounters of the Third Kind"
+
+
+def test_populates_original_lang_from_tmdb(mock_env):
+    """original_lang is populated from TMDb original_language."""
+    movie = _movie("Anatomy of a Fall", showtimes=[_showtime()])
+    detail = {**TMDB_DETAIL, "original_language": "fr"}
+
+    mock_session = MagicMock()
+    mock_session.__enter__ = MagicMock(return_value=mock_session)
+    mock_session.__exit__ = MagicMock(return_value=False)
+    mock_session.get.side_effect = [
+        MagicMock(status_code=200, json=lambda: TMDB_SEARCH, raise_for_status=lambda: None),
+        MagicMock(status_code=200, json=lambda: detail, raise_for_status=lambda: None),
+    ]
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([movie], [])
+
+    assert result[0].get("original_lang") == "fr"
+
+
 def test_invalid_tmdb_fields_are_safely_discarded(mock_env):
     """Malformed TMDb detail fields degrade to null instead of leaking bad data."""
     movie = _movie("Dune: Part Two", showtimes=[_showtime()])

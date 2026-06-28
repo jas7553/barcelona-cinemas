@@ -150,6 +150,7 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
         {
             **movie,
             "enriched_at": datetime.now(UTC).isoformat(),
+            "title": tmdb_data.get("title") or movie["title"],
             "tmdb_id": tmdb_data.get("id"),
             "imdb_id": tmdb_data.get("imdb_id"),
             "year": tmdb_data.get("year"),
@@ -162,6 +163,7 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
             "vote_count": tmdb_data.get("vote_count"),
             "runtime_mins": tmdb_data.get("runtime"),
             "genres": genres or None,
+            "original_lang": tmdb_data.get("original_lang"),
             "director": tmdb_data.get("director"),
             "cast": tmdb_data.get("cast"),
         },
