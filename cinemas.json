@@ -256,5 +256,16 @@
     "maps_url": "https://maps.google.com/?q=Sala+Phenomena+Experience,+Carrer+de+Sant+Antoni+Maria+Claret+168,+Barcelona",
     "lat": 41.4091,
     "lng": 2.1718
+  },
+  "Méliès": {
+    "id": "melies",
+    "name": "Cinemes Méliès",
+    "address": "Carrer de Villarroel, 102",
+    "neighborhood": "Eixample",
+    "website_url": "https://www.meliescinemes.com",
+    "maps_url": "https://maps.google.com/?q=Cinemes+Méliès,+Carrer+de+Villarroel+102,+Barcelona",
+    "lat": 41.3852,
+    "lng": 2.1570,
+    "aliases": {}
   }
 }

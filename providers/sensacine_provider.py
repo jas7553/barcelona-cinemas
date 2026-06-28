@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 _BASE_URL = "https://www.sensacine.com"
 
 # Maps cinemas.json registry keys to SensaCine theater IDs.
-# Cinemas absent here (Maquinista, FdC, Filmax) are not listed on SensaCine.
+# Cinemas absent here (Maquinista, FdC, Filmax, Méliès) are not listed on SensaCine.
 _SENSACINE_IDS: dict[str, str] = {
     "CinDiag": "E0381",
     "CinDigMar": "E0382",
