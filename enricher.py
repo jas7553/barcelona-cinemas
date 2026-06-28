@@ -164,6 +164,7 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
             "genres": genres or None,
             "director": tmdb_data.get("director"),
             "cast": tmdb_data.get("cast"),
+            "original_lang": tmdb_data.get("original_lang"),
         },
         enriched=True,
         failed=False,
