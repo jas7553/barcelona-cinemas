@@ -62,22 +62,20 @@ _FILM_HTML = (
 )
 
 # Minimal seat page for a Verdi main cinema session (numeric sala).
-_SEAT_PAGE_VERDI = """
-<p>Cines Verdi Barcelona | Sala 3</p>
-<p>Cines Verdi Barcelona | Sala 3</p>
-"""
+_SEAT_PAGE_VERDI = "<p>Cines Verdi Barcelona | Sala 3</p>"
 
 # Minimal seat page for a Verdi Park session (letter sala + V.Park suffix).
-_SEAT_PAGE_VP = """
-<p>Cines Verdi Barcelona | Sala D V.Park</p>
-<p>Cines Verdi Barcelona | Sala D V.Park</p>
-"""
+_SEAT_PAGE_VP = "<p>Cines Verdi Barcelona | Sala D V.Park</p>"
 
 # Cartellera page with two film slugs.
 _CARTELLERA_HTML = """
 <a href="/obsession" class="group"><figure></figure></a>
 <a href="/toy-story-5" class="group"><figure></figure></a>
 """
+
+
+def _film_html_with_sessions(sessions: str) -> str:
+    return _LDJSON_BLOCK + sessions
 
 
 def _mock_response(text: str) -> MagicMock:
@@ -219,11 +217,8 @@ def test_fetch_returns_vo_movie_with_booking_url() -> None:
 
 
 def test_fetch_assigns_vp_cinema_key_for_letter_sala() -> None:
-    film_html = (
-        _LDJSON_BLOCK
-        + """
-<a href="https://verdibcn.admit-one.eu/seats/200001/" x-show="!isPast(&#039;20260628203000&#039;)" x-cloak target="_blank"><time>20:30</time><small>V.O. SUB. CASTELLÀ</small></a>
-"""
+    film_html = _film_html_with_sessions(
+        '\n<a href="https://verdibcn.admit-one.eu/seats/200001/" x-show="!isPast(&#039;20260628203000&#039;)" x-cloak target="_blank"><time>20:30</time><small>V.O. SUB. CASTELLÀ</small></a>\n'
     )
     responses = {
         "https://barcelona.cines-verdi.com/cartellera": '<a href="/obsession" class="group"></a>',
@@ -238,11 +233,8 @@ def test_fetch_assigns_vp_cinema_key_for_letter_sala() -> None:
 
 
 def test_fetch_skips_showtime_when_sala_lookup_fails() -> None:
-    film_html = (
-        _LDJSON_BLOCK
-        + """
-<a href="https://verdibcn.admit-one.eu/seats/300001/" x-show="!isPast(&#039;20260628183000&#039;)" x-cloak target="_blank"><time>18:30</time><small>V.O. SUB. CASTELLÀ</small></a>
-"""
+    film_html = _film_html_with_sessions(
+        '\n<a href="https://verdibcn.admit-one.eu/seats/300001/" x-show="!isPast(&#039;20260628183000&#039;)" x-cloak target="_blank"><time>18:30</time><small>V.O. SUB. CASTELLÀ</small></a>\n'
     )
     responses = {
         "https://barcelona.cines-verdi.com/cartellera": '<a href="/obsession" class="group"></a>',
@@ -278,14 +270,11 @@ def test_fetch_skips_film_when_film_page_fails() -> None:
 
 def test_fetch_deduplicates_same_time_slot_sala_lookup() -> None:
     """Only one sala request per unique time slot, not one per session."""
-    film_html = (
-        _LDJSON_BLOCK
-        + """
+    film_html = _film_html_with_sessions("""
 <a href="https://verdibcn.admit-one.eu/seats/400001/" x-show="!isPast(&#039;20260628203000&#039;)" x-cloak target="_blank"><time>20:30</time><small>V.O. SUB. CASTELLÀ</small></a>
 <a href="https://verdibcn.admit-one.eu/seats/400002/" x-show="!isPast(&#039;20260629203000&#039;)" x-cloak target="_blank"><time>20:30</time><small>V.O. SUB. CASTELLÀ</small></a>
 <a href="https://verdibcn.admit-one.eu/seats/400003/" x-show="!isPast(&#039;20260630203000&#039;)" x-cloak target="_blank"><time>20:30</time><small>V.O. SUB. CASTELLÀ</small></a>
-"""
-    )
+""")
     seat_urls_fetched: list[str] = []
 
     def _get(url: str, **kwargs: object) -> MagicMock:
