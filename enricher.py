@@ -146,30 +146,29 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
         return _LookupResult(movie, enriched=False, failed=False)
 
     genres: list[str] = tmdb_data.get("genres") or []
-    return _LookupResult(
-        {
-            **movie,
-            "enriched_at": datetime.now(UTC).isoformat(),
-            "title": tmdb_data.get("title") or movie["title"],
-            "tmdb_id": tmdb_data.get("id"),
-            "imdb_id": tmdb_data.get("imdb_id"),
-            "year": tmdb_data.get("year"),
-            "poster_url": tmdb_data.get("poster_url"),
-            "backdrop_url": tmdb_data.get("backdrop_url"),
-            "trailer_url": tmdb_data.get("trailer_url"),
-            "synopsis": tmdb_data.get("overview"),
-            "tagline": tmdb_data.get("tagline"),
-            "rating": tmdb_data.get("vote_average"),
-            "vote_count": tmdb_data.get("vote_count"),
-            "runtime_mins": tmdb_data.get("runtime"),
-            "genres": genres or None,
-            "original_lang": tmdb_data.get("original_lang"),
-            "director": tmdb_data.get("director"),
-            "cast": tmdb_data.get("cast"),
-        },
-        enriched=True,
-        failed=False,
-    )
+    merged: Movie = {
+        **movie,
+        "enriched_at": datetime.now(UTC).isoformat(),
+        "title": tmdb_data.get("title") or movie["title"],
+        "tmdb_id": tmdb_data.get("id"),
+        "imdb_id": tmdb_data.get("imdb_id"),
+        "year": tmdb_data.get("year"),
+        "poster_url": tmdb_data.get("poster_url"),
+        "backdrop_url": tmdb_data.get("backdrop_url"),
+        "trailer_url": tmdb_data.get("trailer_url"),
+        "synopsis": tmdb_data.get("overview"),
+        "tagline": tmdb_data.get("tagline"),
+        "rating": tmdb_data.get("vote_average"),
+        "vote_count": tmdb_data.get("vote_count"),
+        "runtime_mins": tmdb_data.get("runtime"),
+        "genres": genres or None,
+        "director": tmdb_data.get("director"),
+        "cast": tmdb_data.get("cast"),
+    }
+    original_lang = tmdb_data.get("original_lang")
+    if original_lang is not None:
+        merged["original_lang"] = original_lang
+    return _LookupResult(merged, enriched=True, failed=False)
 
 
 def _optional_get(
