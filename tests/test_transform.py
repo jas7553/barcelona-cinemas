@@ -245,7 +245,7 @@ def test_filters_showtimes_beyond_7_days():
     far_future = (datetime.now(UTC) + timedelta(days=8)).date().isoformat()
     movie = _movie(showtimes=[_showtime(cinema="Verdi", date=far_future)])
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
-    assert result["movies"][0]["showtimes"] == []
+    assert result["movies"] == []
 
 
 def test_keeps_showtimes_within_7_days():
@@ -259,7 +259,7 @@ def test_ignores_unknown_cinema_names():
     unknown_st = _showtime(cinema="UnknownCinema")
     movie = _movie(showtimes=[unknown_st])
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
-    assert result["movies"][0]["showtimes"] == []
+    assert result["movies"] == []
 
 
 # ── Movie field mapping ───────────────────────────────────────────────────────
@@ -276,6 +276,7 @@ def test_movie_fields_mapped_correctly():
         rating=8.1,
         runtime_mins=166,
         genres=["Action", "Sci-Fi"],
+        showtimes=[_showtime()],
     )
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     m = result["movies"][0]
@@ -289,29 +290,45 @@ def test_movie_fields_mapped_correctly():
 
 
 def test_imdb_link_constructed_from_imdb_id():
-    movie = _movie(imdb_id="tt15239678")
+    movie = _movie(imdb_id="tt15239678", showtimes=[_showtime()])
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     assert result["movies"][0]["links"]["imdb"] == "https://www.imdb.com/title/tt15239678"
 
 
 def test_no_imdb_link_when_imdb_id_missing():
-    movie = _movie(imdb_id=None)
+    movie = _movie(imdb_id=None, showtimes=[_showtime()])
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     assert result["movies"][0]["links"]["imdb"] is None
 
 
 def test_no_imdb_link_when_imdb_id_is_absent():
-    movie = _movie(imdb_id=None)
+    movie = _movie(imdb_id=None, showtimes=[_showtime()])
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     assert result["movies"][0]["links"]["imdb"] is None
 
 
 def test_links_contains_only_imdb():
-    result = to_api_response(_listings(movies=[_movie()]), CINEMAS)
+    result = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
     links = result["movies"][0]["links"]
     assert set(links.keys()) == {"imdb", "imdb_id"}
 
 
 def test_empty_movies_returned_when_no_movies():
     result = to_api_response(_listings(movies=[]), CINEMAS)
+    assert result["movies"] == []
+
+
+# ── Zero-showtime filtering ───────────────────────────────────────────────────
+
+
+def test_excludes_movies_with_no_showtimes_from_cache():
+    movie = _movie(title="Ghost Film")
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    assert result["movies"] == []
+
+
+def test_excludes_movies_whose_all_showtimes_are_filtered_out():
+    far_future = (datetime.now(UTC) + timedelta(days=8)).date().isoformat()
+    movie = _movie(showtimes=[_showtime(cinema="Verdi", date=far_future)])
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
     assert result["movies"] == []
