@@ -166,6 +166,10 @@ def normalize_tmdb_payload(
 
     normalized: dict[str, Any] = {"id": tmdb_id}
 
+    tmdb_title = _as_optional_string(data.get("title"), source=f"TMDb title for {title!r}")
+    if tmdb_title is not None:
+        normalized["title"] = tmdb_title
+
     overview = _as_optional_string(data.get("overview"), source=f"TMDb overview for {title!r}")
     if overview is not None:
         normalized["overview"] = overview
