@@ -251,6 +251,23 @@ def test_normalize_movie_keeps_cached_original_lang() -> None:
     assert movie["original_lang"] == "fr"
 
 
+def test_normalize_tmdb_payload_extracts_english_title() -> None:
+    payload = normalize_tmdb_payload(
+        {"id": 42, "title": "Close Encounters of the Third Kind"},
+        title="Encuentros en la tercera fase",
+    )
+
+    assert payload is not None
+    assert payload["title"] == "Close Encounters of the Third Kind"
+
+
+def test_normalize_tmdb_payload_omits_title_when_absent() -> None:
+    payload = normalize_tmdb_payload({"id": 42}, title="Some Film")
+
+    assert payload is not None
+    assert "title" not in payload
+
+
 def test_normalize_movie_keeps_cached_director_and_cast() -> None:
     movie = normalize_movie(
         {

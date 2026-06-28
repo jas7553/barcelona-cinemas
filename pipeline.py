@@ -131,6 +131,22 @@ def _publish_static_site(listings: Listings) -> None:
         logger.warning("Failed to invoke SSG renderer Lambda", exc_info=True)
 
 
+def _filter_english(movies: list[Movie]) -> list[Movie]:
+    """Drop movies with a confirmed non-English original language."""
+    kept: list[Movie] = []
+    dropped: list[str] = []
+    for movie in movies:
+        original_lang = movie.get("original_lang")
+        if original_lang is None or original_lang == "en":
+            kept.append(movie)
+        else:
+            dropped.append(movie["title"])
+    if dropped:
+        logger.info("Excluded %d non-English-original film(s): %s", len(dropped), ", ".join(dropped))
+        emit_metric("NonEnglishFiltered", len(dropped))
+    return kept
+
+
 def _refresh() -> Listings:
     import enricher  # noqa: PLC0415
 
@@ -141,8 +157,8 @@ def _refresh() -> Listings:
     movies = _collect_movies(cinemas)
     enriched, _ = enricher.enrich(movies, cached_movies)
     enriched = reconcile(enriched)
-
     emit_metric("MoviesCollected", len(enriched))
+    enriched = _filter_english(enriched)
 
     result: Listings = {
         "fetched_at": datetime.now(UTC).isoformat(),

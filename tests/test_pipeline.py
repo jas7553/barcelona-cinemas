@@ -9,7 +9,7 @@ import pytest
 import cache
 import pipeline
 import transform
-from models import Listings
+from models import Listings, Movie
 
 
 def _listings() -> Listings:
@@ -597,6 +597,50 @@ def test_collect_movies_result_order_follows_provider_order_not_completion_order
     assert len(result) == 2
     assert result[0]["imdb_id"] == "tt0000001"
     assert result[1]["imdb_id"] == "tt0000002"
+
+
+def _bare_movie(title: str, original_lang: str | None = None) -> Movie:
+    m = Movie(
+        title=title,
+        tmdb_id=None,
+        imdb_id=None,
+        year=None,
+        poster_url=None,
+        synopsis=None,
+        rating=None,
+        runtime_mins=None,
+        genres=None,
+        showtimes=[],
+    )
+    if original_lang is not None:
+        m["original_lang"] = original_lang
+    return m
+
+
+def test_filter_english_keeps_english_original():
+    movies = [_bare_movie("Dune: Part Two", "en")]
+    assert pipeline._filter_english(movies) == movies
+
+
+def test_filter_english_keeps_unknown_original_lang():
+    movies = [_bare_movie("Mystery Film")]  # original_lang absent → trust provider
+    assert pipeline._filter_english(movies) == movies
+
+
+def test_filter_english_excludes_non_english_original():
+    english = _bare_movie("Dune: Part Two", "en")
+    foreign = _bare_movie("El drama", "es")
+    result = pipeline._filter_english([english, foreign])
+    assert result == [english]
+
+
+def test_filter_english_excludes_various_non_english_langs():
+    movies = [
+        _bare_movie("Anatomie d'une chute", "fr"),
+        _bare_movie("Parasite", "ko"),
+        _bare_movie("El drama", "es"),
+    ]
+    assert pipeline._filter_english(movies) == []
 
 
 def test_collect_movies_returns_data_when_one_provider_fails():
