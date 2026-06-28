@@ -5,6 +5,7 @@ from typing import Protocol
 from models import CinemaRegistry, Movie
 from providers.listings_provider import ListingsProvider as ListingsProvider
 from providers.secondary_provider import SecondaryProvider as SecondaryProvider
+from providers.verdi_provider import VerdiProvider as VerdiProvider
 
 
 class ListingsSource(Protocol):
@@ -14,4 +15,4 @@ class ListingsSource(Protocol):
 
 
 def all_providers() -> list[ListingsSource]:
-    return [ListingsProvider(), SecondaryProvider()]
+    return [ListingsProvider(), SecondaryProvider(), VerdiProvider()]
