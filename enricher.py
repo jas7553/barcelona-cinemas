@@ -165,9 +165,7 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
         "director": tmdb_data.get("director"),
         "cast": tmdb_data.get("cast"),
     }
-    original_lang = tmdb_data.get("original_lang")
-    if original_lang is not None:
-        merged["original_lang"] = original_lang
+    merged["original_lang"] = tmdb_data.get("original_lang")
     return _LookupResult(merged, enriched=True, failed=False)
 
 
