@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from itertools import chain
 from typing import TYPE_CHECKING, Any, cast
@@ -159,8 +160,12 @@ def _collect_movies(cinemas: CinemaRegistry) -> list[Movie]:
     provider_results: list[list[Movie]] = []
     failed_provider_count = 0
 
-    for provider in all_providers():
-        movies = _fetch_provider_movies(provider, cinemas)
+    providers = list(all_providers())
+    with ThreadPoolExecutor(max_workers=len(providers) or 1) as executor:
+        futures = [executor.submit(_fetch_provider_movies, provider, cinemas) for provider in providers]
+
+    for future in futures:
+        movies = future.result()
         if movies is None:
             failed_provider_count += 1
             continue
