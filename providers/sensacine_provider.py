@@ -8,7 +8,7 @@ from datetime import date, timedelta
 import requests
 
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
-from providers.common import DEFAULT_HEADERS, base_movie
+from providers.common import DEFAULT_HEADERS, base_movie, normalize_subtitle_lang
 from reconcile import reconcile
 
 logger = logging.getLogger(__name__)
@@ -36,13 +36,9 @@ _SENSACINE_IDS: dict[str, str] = {
     "Zumzeig": "E0850",
 }
 
-_SUBTITLE_TAG_MAP: dict[str, str] = {
-    "Localization.Subtitle.Spanish": "es",
-    "Localization.Subtitle.Catalan": "ca",
-    "Localization.Subtitle.English": "en",
-}
-
 _DAYS_AHEAD = int(os.environ.get("SENSACINE_DAYS_AHEAD", "7"))
+
+_SUBTITLE_TAG_PREFIX = "Localization.Subtitle."
 
 
 def _fetch_dates() -> list[date]:
@@ -75,24 +71,8 @@ def _booking_url(ticketing: list[Mapping[str, object]]) -> str | None:
 
 def _subtitle_lang(tags: list[str]) -> str | None:
     for tag in tags:
-        lang = _SUBTITLE_TAG_MAP.get(tag)
-        if lang is not None:
-            return lang
-    return None
-
-
-def _is_english_or_unknown(languages: list[str]) -> bool:
-    """True if the film's original audio is English or unknown."""
-    if not languages:
-        return True
-    return "ENGLISH" in languages
-
-
-def _audio_lang(languages: list[str]) -> str | None:
-    if not languages:
-        return None
-    if "ENGLISH" in languages:
-        return "en"
+        if tag.startswith(_SUBTITLE_TAG_PREFIX):
+            return normalize_subtitle_lang(tag[len(_SUBTITLE_TAG_PREFIX) :])
     return None
 
 
@@ -124,10 +104,11 @@ def _fetch_showtimes_for_cinema_date(
             continue
 
         languages = [str(lang) for lang in (movie_info.get("languages") or [])]
-        if not _is_english_or_unknown(languages):
+        english = "ENGLISH" in languages
+        if languages and not english:
             continue
 
-        audio = _audio_lang(languages)
+        audio = "en" if english else None
 
         showtimes_by_version = entry.get("showtimes") or {}
         original_sts = showtimes_by_version.get("original") or []

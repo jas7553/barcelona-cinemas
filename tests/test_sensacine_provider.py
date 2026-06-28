@@ -4,9 +4,7 @@ from unittest.mock import MagicMock, patch
 from models import CinemaInfo, CinemaRegistry
 from providers.sensacine_provider import (
     SensacineProvider,
-    _audio_lang,
     _booking_url,
-    _is_english_or_unknown,
     _subtitle_lang,
 )
 
@@ -135,24 +133,6 @@ def _mock_response(data: object) -> MagicMock:
 
 
 class TestHelpers:
-    def test_is_english_or_unknown_empty(self) -> None:
-        assert _is_english_or_unknown([]) is True
-
-    def test_is_english_or_unknown_english(self) -> None:
-        assert _is_english_or_unknown(["ENGLISH"]) is True
-
-    def test_is_english_or_unknown_mixed(self) -> None:
-        assert _is_english_or_unknown(["ENGLISH", "SPANISH"]) is True
-
-    def test_is_english_or_unknown_spanish_only(self) -> None:
-        assert _is_english_or_unknown(["SPANISH"]) is False
-
-    def test_audio_lang_english(self) -> None:
-        assert _audio_lang(["ENGLISH"]) == "en"
-
-    def test_audio_lang_unknown(self) -> None:
-        assert _audio_lang([]) is None
-
     def test_subtitle_lang_spanish(self) -> None:
         assert _subtitle_lang(["Localization.Subtitle.Spanish"]) == "es"
 
