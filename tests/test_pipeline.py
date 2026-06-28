@@ -1,5 +1,6 @@
 """Tests for pipeline.py — cache TTL logic and collection error handling."""
 
+import threading
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
@@ -526,6 +527,76 @@ def test_force_refresh_skips_publish_on_failure(tmp_cache):
         pipeline.force_refresh()
 
     mock_publish.assert_not_called()
+
+
+def test_collect_movies_result_order_follows_provider_order_not_completion_order():
+    """Results are ordered by provider list position, not by which provider finishes first."""
+    gate = threading.Event()
+
+    def _slow_fetch(_cinemas):
+        gate.wait()  # provider_one blocks until provider_two has already finished
+        return [
+            {
+                "title": "From Provider One",
+                "tmdb_id": None,
+                "imdb_id": "tt0000001",
+                "year": None,
+                "poster_url": None,
+                "synopsis": None,
+                "rating": None,
+                "runtime_mins": None,
+                "genres": None,
+                "showtimes": [
+                    {
+                        "cinema": "Verdi",
+                        "neighborhood": "Gracia",
+                        "address": "Carrer de Verdi, 32",
+                        "date": "2026-03-28",
+                        "time": "18:00",
+                    }
+                ],
+            }
+        ]
+
+    def _fast_fetch(_cinemas):
+        gate.set()  # unblock provider_one after provider_two has completed
+        return [
+            {
+                "title": "From Provider Two",
+                "tmdb_id": None,
+                "imdb_id": "tt0000002",
+                "year": None,
+                "poster_url": None,
+                "synopsis": None,
+                "rating": None,
+                "runtime_mins": None,
+                "genres": None,
+                "showtimes": [
+                    {
+                        "cinema": "Balmes",
+                        "neighborhood": "Gracia",
+                        "address": "Carrer de Balmes, 422-424",
+                        "date": "2026-03-29",
+                        "time": "20:00",
+                    }
+                ],
+            }
+        ]
+
+    provider_one = MagicMock()
+    provider_one.name = "provider_one"
+    provider_one.fetch.side_effect = _slow_fetch
+    provider_two = MagicMock()
+    provider_two.name = "provider_two"
+    provider_two.fetch.side_effect = _fast_fetch
+
+    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
+        result = pipeline._collect_movies({})
+
+    # provider_two finished first, but provider_one's movie must appear first
+    assert len(result) == 2
+    assert result[0]["imdb_id"] == "tt0000001"
+    assert result[1]["imdb_id"] == "tt0000002"
 
 
 def test_collect_movies_returns_data_when_one_provider_fails():
