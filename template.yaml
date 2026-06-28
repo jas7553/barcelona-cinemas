@@ -139,7 +139,7 @@ Resources:
         LogGroup: !Ref ApiFunctionLogGroup
       CodeUri: ./
       Description: Barcelona Movie Database — headless EventBridge refresh + SSG trigger
-      Timeout: 60    # Overrides global 30s; headroom for the scrape/enrich pipeline
+      Timeout: 120    # Verdi scrape dominates; observed p100 ~90s with 3 providers
       ReservedConcurrentExecutions: 5    # Guards against runaway invocations / bill spikes
       Environment:
         Variables:
