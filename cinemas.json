@@ -246,5 +246,15 @@
     "aliases": {
       "english_cinema_bcn": ["Zumzeig"]
     }
+  },
+  "Phenomena": {
+    "id": "phenomena",
+    "name": "Sala Phenomena Experience",
+    "address": "Carrer de Sant Antoni Maria Claret, 168",
+    "neighborhood": "Sagrada Família",
+    "website_url": "https://phenomena-experience.com",
+    "maps_url": "https://maps.google.com/?q=Sala+Phenomena+Experience,+Carrer+de+Sant+Antoni+Maria+Claret+168,+Barcelona",
+    "lat": 41.4091,
+    "lng": 2.1718
   }
 }
