@@ -27,6 +27,7 @@ class Movie(TypedDict):
     vote_count: NotRequired[int | None]  # TMDb vote count; absent in caches predating this field
     runtime_mins: int | None
     genres: list[str] | None
+    english_title: NotRequired[str | None]  # TMDb English title; absent when same as scraper title or unknown
     original_lang: NotRequired[str | None]  # ISO 639-1 code, e.g. "fr"
     director: NotRequired[str | None]
     cast: NotRequired[list[str] | None]

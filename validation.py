@@ -85,6 +85,9 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     tagline = _as_optional_string(data.get("tagline"), source=f"{source} tagline")
     if tagline is not None:
         movie["tagline"] = tagline
+    english_title = _as_optional_string(data.get("english_title"), source=f"{source} english_title")
+    if english_title is not None:
+        movie["english_title"] = english_title
     original_lang = _as_optional_string(data.get("original_lang"), source=f"{source} original_lang")
     if original_lang is not None:
         movie["original_lang"] = original_lang

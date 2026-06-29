@@ -268,6 +268,28 @@ def test_normalize_tmdb_payload_omits_title_when_absent() -> None:
     assert "title" not in payload
 
 
+def test_normalize_movie_round_trips_english_title() -> None:
+    movie = normalize_movie(
+        {
+            "title": "Encuentros en la tercera fase",
+            "english_title": "Close Encounters of the Third Kind",
+            "showtimes": [],
+        },
+        source="cache",
+    )
+
+    assert movie is not None
+    assert movie["title"] == "Encuentros en la tercera fase"
+    assert movie.get("english_title") == "Close Encounters of the Third Kind"
+
+
+def test_normalize_movie_english_title_absent_when_not_provided() -> None:
+    movie = normalize_movie({"title": "Some Film", "showtimes": []}, source="cache")
+
+    assert movie is not None
+    assert "english_title" not in movie
+
+
 def test_normalize_movie_keeps_cached_director_and_cast() -> None:
     movie = normalize_movie(
         {
