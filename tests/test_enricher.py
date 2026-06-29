@@ -295,8 +295,8 @@ def test_vote_count_absent_when_tmdb_omits_it(mock_env):
     assert result[0]["vote_count"] is None
 
 
-def test_uses_tmdb_english_title_as_display_title(mock_env):
-    """TMDb English title replaces provider's localized title."""
+def test_scraper_title_preserved_as_cache_key_and_english_title_set(mock_env):
+    """Scraper title stays in 'title' (stable cache key); TMDb English title goes into 'english_title'."""
     movie = _movie("Encuentros en la tercera fase", showtimes=[_showtime()])
     search = {"results": [{"id": 42, "title": "Close Encounters of the Third Kind"}]}
     detail = {
@@ -316,7 +316,30 @@ def test_uses_tmdb_english_title_as_display_title(mock_env):
     with patch("enricher.requests.Session", return_value=mock_session):
         result, _ = enricher.enrich([movie], [])
 
-    assert result[0]["title"] == "Close Encounters of the Third Kind"
+    assert result[0]["title"] == "Encuentros en la tercera fase"
+    assert result[0]["english_title"] == "Close Encounters of the Third Kind"
+
+
+def test_cache_hit_when_scraper_title_matches_cached_scraper_title(mock_env):
+    """Cache lookup uses scraper title so localized-title movies hit cache after enrichment."""
+    cached = _movie(
+        "Encuentros en la tercera fase",
+        tmdb_id=42,
+        imdb_id="tt0075860",
+        synopsis="A UFO story.",
+        enriched_at="2026-06-27T12:00:00+00:00",
+        showtimes=[_showtime("2026-03-27")],
+    )
+    cached["english_title"] = "Close Encounters of the Third Kind"
+    fresh = _movie("Encuentros en la tercera fase", showtimes=[_showtime("2026-03-28")])
+
+    with patch("enricher.requests.Session") as MockSession:
+        result, stats = enricher.enrich([fresh], [cached])
+
+    assert stats["tmdb_cache_hit_count"] == 1
+    assert result[0]["synopsis"] == "A UFO story."
+    assert result[0]["english_title"] == "Close Encounters of the Third Kind"
+    MockSession.return_value.get.assert_not_called()
 
 
 def test_populates_original_lang_from_tmdb(mock_env):

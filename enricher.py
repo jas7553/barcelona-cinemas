@@ -87,7 +87,12 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
             else:
                 if cached and cached.get("tmdb_id") is not None:
                     stats["tmdb_reenriched_count"] += 1
-                result = _lookup_and_merge(movie, session, key)
+                result = _lookup_and_merge(
+                    movie,
+                    session,
+                    key,
+                    search_title=cached.get("english_title") if cached else None,
+                )
                 if result.enriched:
                     stats["tmdb_enriched_count"] += 1
                 if result.failed:
@@ -126,10 +131,13 @@ def _find_cached_movie(
     return cached_by_title.get(movie["title"].lower())
 
 
-def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> _LookupResult:
+def _lookup_and_merge(
+    movie: Movie, session: requests.Session, api_key: str, *, search_title: str | None = None
+) -> _LookupResult:
     """Look up a movie on TMDb and merge metadata into the Movie dict."""
+    query = search_title or movie["title"]
     try:
-        raw_detail, raw_videos, raw_credits = _fetch_tmdb(movie["title"], session, api_key)
+        raw_detail, raw_videos, raw_credits = _fetch_tmdb(query, session, api_key)
     except Exception as exc:
         status = getattr(getattr(exc, "response", None), "status_code", None)
         detail = f"HTTP {status}" if status else type(exc).__name__
@@ -149,7 +157,6 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
     merged: Movie = {
         **movie,
         "enriched_at": datetime.now(UTC).isoformat(),
-        "title": tmdb_data.get("title") or movie["title"],
         "tmdb_id": tmdb_data.get("id"),
         "imdb_id": tmdb_data.get("imdb_id"),
         "year": tmdb_data.get("year"),
@@ -165,6 +172,9 @@ def _lookup_and_merge(movie: Movie, session: requests.Session, api_key: str) -> 
         "director": tmdb_data.get("director"),
         "cast": tmdb_data.get("cast"),
     }
+    english_title = tmdb_data.get("title")
+    if english_title is not None:
+        merged["english_title"] = english_title
     merged["original_lang"] = tmdb_data.get("original_lang")
     return _LookupResult(merged, enriched=True, failed=False)
 

@@ -71,7 +71,7 @@ def _transform_movie(
     cutoff: datetime | None,
     seen_theater_ids: set[str],
 ) -> dict[str, Any] | None:
-    title: str = movie.get("title", "")
+    title: str = movie.get("english_title") or movie.get("title", "")
     if not title:
         return None
 
