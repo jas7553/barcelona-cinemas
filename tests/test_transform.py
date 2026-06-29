@@ -332,3 +332,19 @@ def test_excludes_movies_whose_all_showtimes_are_filtered_out():
     movie = _movie(showtimes=[_showtime(cinema="Verdi", date=far_future)])
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     assert result["movies"] == []
+
+
+# ── english_title display ─────────────────────────────────────────────────────
+
+
+def test_uses_english_title_as_display_title_when_present():
+    movie = _movie(title="Encuentros en la tercera fase", showtimes=[_showtime()])
+    movie["english_title"] = "Close Encounters of the Third Kind"
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    assert result["movies"][0]["title"] == "Close Encounters of the Third Kind"
+
+
+def test_falls_back_to_scraper_title_when_english_title_absent():
+    movie = _movie(title="Anatomie d'une chute", showtimes=[_showtime()])
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    assert result["movies"][0]["title"] == "Anatomie d'une chute"

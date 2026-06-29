@@ -78,6 +78,21 @@ def test_reconcile_keeps_distinct_films_separate():
     assert {m["title"] for m in out} == {"Dune", "Oppenheimer"}
 
 
+def test_merge_pair_coalesces_english_title():
+    a = _movie("Encuentros en la tercera fase", imdb_id="tt0075860")
+    a["english_title"] = "Close Encounters of the Third Kind"
+    b = _movie("Encuentros en la tercera fase", imdb_id="tt0075860")
+    [merged] = reconcile([a, b])
+    assert merged.get("english_title") == "Close Encounters of the Third Kind"
+
+
+def test_merge_pair_english_title_absent_when_neither_side_has_it():
+    a = _movie("Dune", imdb_id="tt1")
+    b = _movie("Dune", imdb_id="tt1")
+    [merged] = reconcile([a, b])
+    assert "english_title" not in merged
+
+
 def test_reconcile_picks_longest_title():
     a = _movie("Dune", imdb_id="tt1")
     b = _movie("Dune: Part One", imdb_id="tt1")

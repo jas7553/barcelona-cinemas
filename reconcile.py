@@ -116,6 +116,9 @@ def _merge_pair(left: Movie, right: Movie) -> Movie:
         genres=_coalesce(left.get("genres"), right.get("genres")),
         showtimes=merged_showtimes,
     )
+    english_title = _coalesce(left.get("english_title"), right.get("english_title"))
+    if english_title is not None:
+        merged["english_title"] = english_title
     backdrop_url = _coalesce(left.get("backdrop_url"), right.get("backdrop_url"))
     if backdrop_url is not None:
         merged["backdrop_url"] = backdrop_url
