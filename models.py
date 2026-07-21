@@ -11,6 +11,7 @@ class Showtime(TypedDict):
     audio_lang: NotRequired[str | None]  # "en" | "other" | None (unknown)
     subtitle_lang: NotRequired[str | None]  # "en" | "es" | "ca" | None (unknown)
     booking_url: NotRequired[str | None]
+    premium_format: NotRequired[str | None]  # "imax" | None; absent in caches predating this field
 
 
 class Movie(TypedDict):

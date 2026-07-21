@@ -145,6 +145,25 @@ def test_dedup_showtimes_known_subtitle_wins_regardless_of_order():
     assert b.get("subtitle_lang") == "es"
 
 
+def test_dedup_showtimes_premium_format_wins_regardless_of_order():
+    premium = _showtime("Cinesa Diagonal", "2026-06-14", "21:40", premium_format="imax")
+    plain = _showtime("Cinesa Diagonal", "2026-06-14", "21:40")
+    [a] = dedup_showtimes([plain, premium], key=_key)
+    assert a.get("premium_format") == "imax"
+    [b] = dedup_showtimes([premium, plain], key=_key)
+    assert b.get("premium_format") == "imax"
+
+
+def test_dedup_showtimes_premium_format_does_not_outrank_booking_link():
+    """Score is lexicographic, not summed: a link-bearing copy always wins."""
+    premium = _showtime("Cinesa Diagonal", "2026-06-14", "21:40", premium_format="imax")
+    linked = _showtime("Cinesa Diagonal", "2026-06-14", "21:40", booking_url="https://book")
+    [a] = dedup_showtimes([premium, linked], key=_key)
+    assert a.get("booking_url") == "https://book"
+    [b] = dedup_showtimes([linked, premium], key=_key)
+    assert b.get("booking_url") == "https://book"
+
+
 def test_dedup_showtimes_preserves_first_seen_order():
     a = _showtime("Verdi", "2026-06-14", "18:00")
     b = _showtime("Malda", "2026-06-14", "20:00")

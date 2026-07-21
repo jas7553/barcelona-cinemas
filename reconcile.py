@@ -53,9 +53,19 @@ def reconcile(movies: list[Movie]) -> list[Movie]:
     return merged
 
 
-def _showtime_info_score(showtime: Mapping[str, object]) -> int:
-    """Rank how much a showtime carries: a booking link and known subtitles each count."""
-    return (1 if showtime.get("booking_url") else 0) + (1 if showtime.get("subtitle_lang") else 0)
+def _showtime_info_score(showtime: Mapping[str, object]) -> tuple[int, int, int]:
+    """
+    Rank how much a showtime carries: booking link, known subtitles, premium format.
+
+    Compared lexicographically, so the dimensions are ranked, not summed: a
+    premium-format-only copy never outranks one carrying a booking link. Format
+    breaks only what would otherwise be ties.
+    """
+    return (
+        1 if showtime.get("booking_url") else 0,
+        1 if showtime.get("subtitle_lang") else 0,
+        1 if showtime.get("premium_format") else 0,
+    )
 
 
 def dedup_showtimes[S: Mapping[str, object], K: Hashable](showtimes: Iterable[S], key: Callable[[S], K]) -> list[S]:
