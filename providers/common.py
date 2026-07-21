@@ -21,6 +21,7 @@ def _matches(value: str, needles: tuple[str, ...]) -> bool:
 _ENGLISH = ("english", "ingl", "angl")
 _SPANISH = ("españ", "espan", "castell", "spanish")
 _CATALAN = ("català", "catal")
+_IMAX = ("imax",)
 
 
 def normalize_audio_lang(raw: str) -> str | None:
@@ -44,6 +45,20 @@ def normalize_subtitle_lang(raw: str) -> str | None:
         return "ca"
     if _matches(value, _SPANISH):
         return "es"
+    return None
+
+
+def normalize_premium_format(raw: str) -> str | None:
+    """
+    Normalize a source premium-format label to "imax", or None (not premium).
+
+    Substring-matched: the upstream labels are human-authored ("IMAX 3D",
+    "Sala IMAX"), and premium brand names are distinctive enough that a
+    false positive is implausible. Never raises.
+    """
+    value = raw.casefold()
+    if _matches(value, _IMAX):
+        return "imax"
     return None
 
 

@@ -8,7 +8,7 @@ from datetime import date, timedelta
 import requests
 
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
-from providers.common import DEFAULT_HEADERS, base_movie, normalize_subtitle_lang
+from providers.common import DEFAULT_HEADERS, base_movie, normalize_premium_format, normalize_subtitle_lang
 from reconcile import reconcile
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ _SENSACINE_IDS: dict[str, str] = {
 _DAYS_AHEAD = int(os.environ.get("SENSACINE_DAYS_AHEAD", "7"))
 
 _SUBTITLE_TAG_PREFIX = "Localization.Subtitle."
+_FORMAT_TAG_PREFIX = "Format.Projection."
 
 
 def _fetch_dates() -> list[date]:
@@ -74,6 +75,13 @@ def _subtitle_lang(tags: list[str]) -> str | None:
     for tag in tags:
         if tag.startswith(_SUBTITLE_TAG_PREFIX):
             return normalize_subtitle_lang(tag[len(_SUBTITLE_TAG_PREFIX) :])
+    return None
+
+
+def _premium_format(tags: list[str]) -> str | None:
+    for tag in tags:
+        if tag.startswith(_FORMAT_TAG_PREFIX):
+            return normalize_premium_format(tag[len(_FORMAT_TAG_PREFIX) :])
     return None
 
 
@@ -128,6 +136,7 @@ def _fetch_showtimes_for_cinema_date(
 
             tags: list[str] = [str(t) for t in (st.get("tags") or [])]
             sub_lang = _subtitle_lang(tags)
+            premium_format = _premium_format(tags)
 
             ticketing_entries = (st.get("data") or {}).get("ticketing") or []
             booking = _booking_url(ticketing_entries)
@@ -146,6 +155,8 @@ def _fetch_showtimes_for_cinema_date(
                 showtime["subtitle_lang"] = sub_lang
             if booking is not None:
                 showtime["booking_url"] = booking
+            if premium_format is not None:
+                showtime["premium_format"] = premium_format
             showtimes.append(showtime)
 
         if not showtimes:

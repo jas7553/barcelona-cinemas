@@ -2,7 +2,7 @@
 
 import pytest
 
-from providers.common import normalize_audio_lang, normalize_subtitle_lang
+from providers.common import normalize_audio_lang, normalize_premium_format, normalize_subtitle_lang
 
 
 @pytest.mark.parametrize(
@@ -37,3 +37,21 @@ def test_normalize_audio_lang(raw: str, expected: str | None) -> None:
 )
 def test_normalize_subtitle_lang(raw: str, expected: str | None) -> None:
     assert normalize_subtitle_lang(raw) == expected
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("Imax", "imax"),
+        ("IMAX", "imax"),
+        ("IMAX 3D", "imax"),
+        ("Sala IMAX", "imax"),
+        ("The IMAX Experience", "imax"),
+        ("Digital", None),
+        ("DIGITAL", None),
+        ("ScreenX", None),  # unmapped premium format → unknown, never raises
+        ("", None),
+    ],
+)
+def test_normalize_premium_format(raw: str, expected: str | None) -> None:
+    assert normalize_premium_format(raw) == expected

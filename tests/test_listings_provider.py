@@ -10,6 +10,7 @@ from providers.listings_provider import (
     ListingsProvider,
     _extract_cinema_name,
     _parse_date,
+    _premium_format,
 )
 
 # ── _parse_date ───────────────────────────────────────────────────────────────
@@ -57,6 +58,36 @@ def test_extract_cinema_name_strips_imax_span():
     badge = BeautifulSoup(html, "html.parser").find("a")
     assert isinstance(badge, Tag)
     assert _extract_cinema_name(badge) == "Glòries"
+
+
+# ── _premium_format ───────────────────────────────────────────────────────────
+
+
+def test_premium_format_reads_badge_span():
+    from bs4 import BeautifulSoup
+
+    html = '<a><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>'
+    badge = BeautifulSoup(html, "html.parser").find("a")
+    assert isinstance(badge, Tag)
+    assert _premium_format(badge) == "imax"
+
+
+def test_premium_format_absent_span():
+    from bs4 import BeautifulSoup
+
+    html = "<a><strong>18:00</strong> Verdi</a>"
+    badge = BeautifulSoup(html, "html.parser").find("a")
+    assert isinstance(badge, Tag)
+    assert _premium_format(badge) is None
+
+
+def test_premium_format_unmapped_badge():
+    from bs4 import BeautifulSoup
+
+    html = '<a><strong>18:00</strong> Verdi<span class="badge">VOSE</span></a>'
+    badge = BeautifulSoup(html, "html.parser").find("a")
+    assert isinstance(badge, Tag)
+    assert _premium_format(badge) is None
 
 
 # ── ListingsProvider.fetch ────────────────────────────────────────────────────

@@ -120,6 +120,32 @@ def test_normalize_movie_discards_invalid_subtitle_fields() -> None:
     assert "subtitle_lang" not in movie["showtimes"][0]
 
 
+def test_normalize_movie_keeps_valid_premium_format() -> None:
+    movie = normalize_movie(
+        {
+            "title": "Odyssey",
+            "showtimes": [_showtime_payload(premium_format="imax")],
+        },
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert movie["showtimes"][0]["premium_format"] == "imax"
+
+
+def test_normalize_movie_discards_unknown_premium_format() -> None:
+    movie = normalize_movie(
+        {
+            "title": "Odyssey",
+            "showtimes": [_showtime_payload(premium_format="4dx")],
+        },
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert "premium_format" not in movie["showtimes"][0]
+
+
 def test_normalize_movie_keeps_valid_booking_url() -> None:
     movie = normalize_movie(
         {

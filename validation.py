@@ -151,6 +151,9 @@ def normalize_showtime(data: object, *, source: str) -> Showtime | None:
     booking_url = _as_optional_http_url(data.get("booking_url"), source=f"{source} booking_url")
     if booking_url is not None:
         showtime["booking_url"] = booking_url
+    premium_format = _as_enum(data.get("premium_format"), {"imax"}, source=f"{source} premium_format")
+    if premium_format is not None:
+        showtime["premium_format"] = premium_format
     return showtime
 
 

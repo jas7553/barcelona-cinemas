@@ -8,6 +8,7 @@ from providers.sensacine_provider import (
     _SENSACINE_IDS,
     SensacineProvider,
     _booking_url,
+    _premium_format,
     _subtitle_lang,
 )
 
@@ -67,7 +68,7 @@ _SUPERGIRL_ENGLISH = {
                 "tags": [
                     "Localization.Version.Original",
                     "Localization.Subtitle.Spanish",
-                    "Format.Projection.Digital",
+                    "Format.Projection.Imax",
                 ],
                 "data": {
                     "ticketing": [
@@ -150,6 +151,15 @@ class TestHelpers:
     def test_subtitle_lang_absent(self) -> None:
         assert _subtitle_lang(["Format.Projection.Digital"]) is None
 
+    def test_premium_format_imax(self) -> None:
+        assert _premium_format(["Localization.Version.Original", "Format.Projection.Imax"]) == "imax"
+
+    def test_premium_format_non_premium(self) -> None:
+        assert _premium_format(["Format.Projection.Digital"]) is None
+
+    def test_premium_format_absent(self) -> None:
+        assert _premium_format(["Localization.Subtitle.Spanish"]) is None
+
     def test_booking_url_prefers_default_provider(self) -> None:
         ticketing: list[Mapping[str, object]] = [
             {"provider": "relay", "urls": ["https://relay.example.com/x"]},
@@ -200,6 +210,19 @@ class TestSensacineProvider:
 
         supergirl = next(m for m in movies if m["title"] == "Supergirl")
         assert all(s.get("subtitle_lang") == "es" for s in supergirl["showtimes"])
+
+    def test_fetch_sets_premium_format_from_tags(self) -> None:
+        with patch(
+            "providers.sensacine_provider.requests.get",
+            return_value=_mock_response(_API_RESPONSE),
+        ):
+            movies = SensacineProvider().fetch(CINEMAS)
+
+        supergirl = next(m for m in movies if m["title"] == "Supergirl")
+        st_16 = next(s for s in supergirl["showtimes"] if s["time"] == "16:00")
+        st_21 = next(s for s in supergirl["showtimes"] if s["time"] == "21:10")
+        assert "premium_format" not in st_16  # Format.Projection.Digital
+        assert st_21["premium_format"] == "imax"
 
     def test_fetch_sets_audio_lang_english_for_english_film(self) -> None:
         with patch(

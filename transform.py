@@ -148,6 +148,7 @@ def _transform_showtimes(
         booking_url = v if isinstance(v := st.get("booking_url"), str) else None
         audio_lang = v if (v := st.get("audio_lang")) in ("en", "other") else None
         subtitle_lang = v if (v := st.get("subtitle_lang")) in ("en", "es", "ca") else None
+        premium_format = v if (v := st.get("premium_format")) == "imax" else None
 
         candidates.append(
             {
@@ -158,6 +159,7 @@ def _transform_showtimes(
                 "audio_lang": audio_lang,
                 "subtitle_lang": subtitle_lang,
                 "booking_url": booking_url,
+                "premium_format": premium_format,
             }
         )
 
