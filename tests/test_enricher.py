@@ -1,6 +1,7 @@
 """Tests for enricher.py — TMDb cache reuse and metadata merging."""
 
 from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -27,6 +28,11 @@ def _movie(title: str, showtimes: list[Showtime] | None = None, **kwargs: Any) -
     if "enriched_at" in kwargs:
         m["enriched_at"] = kwargs["enriched_at"]
     return m
+
+
+def _fresh_enriched_at() -> str:
+    """An `enriched_at` inside the re-enrichment TTL, whenever the suite runs."""
+    return (datetime.now(UTC) - timedelta(hours=1)).isoformat()
 
 
 def _showtime(date: str = "2026-03-28") -> Showtime:
@@ -85,7 +91,7 @@ def test_reuses_cached_metadata(mock_env):
         poster_url="https://image.tmdb.org/t/p/w342/poster.jpg",
         synopsis="Old synopsis",
         rating=8.5,
-        enriched_at="2026-06-27T12:00:00+00:00",
+        enriched_at=_fresh_enriched_at(),
         showtimes=[_showtime("2026-03-27")],
     )
     fresh = _movie("Dune: Part Two", showtimes=[_showtime("2026-03-28")])
@@ -327,7 +333,7 @@ def test_cache_hit_when_scraper_title_matches_cached_scraper_title(mock_env):
         tmdb_id=42,
         imdb_id="tt0075860",
         synopsis="A UFO story.",
-        enriched_at="2026-06-27T12:00:00+00:00",
+        enriched_at=_fresh_enriched_at(),
         showtimes=[_showtime("2026-03-27")],
     )
     cached["english_title"] = "Close Encounters of the Third Kind"
