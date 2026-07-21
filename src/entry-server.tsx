@@ -3,6 +3,7 @@ import ListPage, { type ListPageData } from "./pages/ListPage";
 import FilmPage, { type FilmPageData } from "./pages/FilmPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import type { Listings, Movie, Theater } from "./types";
+import { premiumFormatLabel } from "./utils";
 
 const SITE_NAME = "Barcelona This Week";
 const DEFAULT_DESC =
@@ -127,6 +128,8 @@ function filmJsonLd(movie: Movie, theaters: Theater[], url: string | undefined):
     }
     if (s.audio_lang === "en") node.inLanguage = "en";
     if (s.subtitle_lang) node.subtitleLanguage = s.subtitle_lang;
+    const fmt = premiumFormatLabel(s.premium_format);
+    if (fmt) node.videoFormat = fmt;
     return node;
   });
 

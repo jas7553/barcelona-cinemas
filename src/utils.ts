@@ -36,6 +36,22 @@ export function subtitleBadge(s: {
   return null;
 }
 
+/** The premium format for a set of showtimes, if any carries one. Vocab: "imax". */
+export function premiumFormat(
+  showtimes: Array<{ premium_format?: string | null }>,
+): string | null {
+  for (const s of showtimes) if (s.premium_format) return s.premium_format;
+  return null;
+}
+
+const PREMIUM_FORMAT_LABELS: Record<string, string> = { imax: "IMAX" };
+
+/** Display label for a premium-format slug. Unknown or absent → null (render nothing). */
+export function premiumFormatLabel(slug: string | null | undefined): string | null {
+  if (!slug) return null;
+  return PREMIUM_FORMAT_LABELS[slug] ?? null;
+}
+
 // ── Language display ────────────────────────────────────────────────────────
 
 /** Map an ISO 639-1 code (e.g. "fr") to an English language name ("French"). */
@@ -284,7 +300,14 @@ export function formatMovieMeta(movie: TransformedMovie, includeRuntime = false)
 export type DayGroup = {
   label: string | null;
   offset: number;
-  times: { key: string; t: string; date: string; bookingUrl?: string; badge: string | null }[];
+  times: {
+    key: string;
+    t: string;
+    date: string;
+    bookingUrl?: string;
+    badge: string | null;
+    formatBadge: string | null;
+  }[];
 };
 export type CinemaRow = { theater: TransformedShowtime["theater"]; dayGroups: DayGroup[]; distKm?: number };
 
@@ -305,7 +328,14 @@ export function buildCinemaRows(
   for (const s of showtimes) {
     const entry = byTheater.get(s.theater.id) ?? { theater: s.theater, groups: new Map<number, DayGroup>() };
     const key = `${s.dayOffset}-${s.time}`;
-    const time = { key, t: s.time, date: s.date, bookingUrl: s.booking_url ?? undefined, badge: subtitleBadge(s) };
+    const time = {
+      key,
+      t: s.time,
+      date: s.date,
+      bookingUrl: s.booking_url ?? undefined,
+      badge: subtitleBadge(s),
+      formatBadge: premiumFormatLabel(s.premium_format),
+    };
     if (selectedDay != null) {
       const group = entry.groups.get(0) ?? { label: null, offset: 0, times: [] };
       if (!group.times.some((x) => x.key === key)) group.times.push(time);

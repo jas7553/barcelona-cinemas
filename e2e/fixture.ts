@@ -44,6 +44,15 @@ export function buildFixtureCache(): string {
     }
     m.tagline ??= FIXTURE_TAGLINE;
   }
+  // Real English-VO IMAX volume is event-driven (one film, one week), so the
+  // committed snapshot usually carries none — inject one so the chip's coverage
+  // is deterministic. The spec finds it back via the published listings JSON.
+  // Mark the last showtime of the first film: the date-shift lands the earliest
+  // showtimes on today, which the app filters out once their time has passed.
+  const showtimes: { date: string; time: string; premium_format?: string }[] =
+    data.movies[0].showtimes;
+  const latest = showtimes.reduce((a, b) => (`${b.date}${b.time}` > `${a.date}${a.time}` ? b : a));
+  latest.premium_format ??= "imax";
   data.fetched_at = new Date().toISOString();
 
   const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "bmd-e2e-"));

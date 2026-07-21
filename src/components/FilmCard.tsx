@@ -1,6 +1,12 @@
 import { memo } from "react";
 import PosterPlaceholder from "./PosterPlaceholder";
-import { isLastChance, formatMovieMeta, thumbPosterUrl } from "../utils";
+import {
+  isLastChance,
+  formatMovieMeta,
+  premiumFormat,
+  premiumFormatLabel,
+  thumbPosterUrl,
+} from "../utils";
 import type { TransformedMovie } from "../types";
 
 interface Props {
@@ -26,6 +32,9 @@ function FilmCard({ movie, dayOffset, search = "" }: Props) {
   const MAX_PILLS = 6;
   const shownTimes = dayTimes.slice(0, MAX_PILLS);
   const extraTimes = dayTimes.length - shownTimes.length;
+
+  // Day-scoped for free: `filtered` is already the selected day's showtimes.
+  const fmt = premiumFormatLabel(premiumFormat(filtered));
 
   const meta = formatMovieMeta(movie);
   const showTimes = dayOffset !== undefined && dayTimes.length > 0;
@@ -73,6 +82,7 @@ function FilmCard({ movie, dayOffset, search = "" }: Props) {
             {extraTimes > 0 && (
               <span className="time-pill time-pill--more">+{extraTimes} more</span>
             )}
+            {fmt && <span className="format-badge">{fmt}</span>}
           </div>
         )}
       </div>

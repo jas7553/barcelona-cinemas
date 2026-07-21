@@ -390,7 +390,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
                         const { isUniform, value: groupHoistedBadge } = groupBadgeResults[gi];
                         const showDayBadge = !cinemaHeaderBadge && isUniform && groupHoistedBadge !== null;
                         return group.label == null ? (
-                          group.times.map(({ key, t, date, bookingUrl, badge }) => (
+                          group.times.map(({ key, t, date, bookingUrl, badge, formatBadge }) => (
                             <TimePill
                               key={key}
                               pillKey={key}
@@ -400,6 +400,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
                               date={date}
                               bookingUrl={bookingUrl}
                               badge={isUniform ? null : badge}
+                              formatBadge={formatBadge}
                               film={movie.title}
                               cinema={theater.name}
                               address={theater.address}
@@ -414,7 +415,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
                               <span className="cinema-row__day-badge">{groupHoistedBadge}</span>
                             )}
                             <div className="cinema-row__day-pills">
-                              {group.times.map(({ key, t, date, bookingUrl, badge }) => (
+                              {group.times.map(({ key, t, date, bookingUrl, badge, formatBadge }) => (
                                 <TimePill
                                   key={key}
                                   pillKey={key}
@@ -424,6 +425,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
                                   date={date}
                                   bookingUrl={bookingUrl}
                                   badge={isUniform ? null : badge}
+                                  formatBadge={formatBadge}
                                   film={movie.title}
                                   cinema={theater.name}
                                   address={theater.address}
@@ -456,6 +458,7 @@ function TimePill({
   date,
   bookingUrl,
   badge,
+  formatBadge,
   film,
   cinema,
   address,
@@ -469,6 +472,7 @@ function TimePill({
   date: string;
   bookingUrl?: string;
   badge: string | null;
+  formatBadge: string | null;
   film: string;
   cinema: string;
   address: string;
@@ -531,6 +535,7 @@ function TimePill({
           </button>
         )}
         {badge && <span className="subtitle-badge">{badge}</span>}
+        {formatBadge && <span className="format-badge">{formatBadge}</span>}
       </div>
       {isSelected && (
         <div className="time-pill__actions" role="group" aria-label="Showtime options">

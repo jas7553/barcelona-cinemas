@@ -6,6 +6,9 @@
 //   npm run e2e                  # all
 //   npx playwright test --ui     # interactive
 
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import { test, expect } from "@playwright/test";
 import { FIXTURE_TAGLINE } from "./fixture";
 
@@ -134,6 +137,28 @@ test("film deep link renders standalone", async ({ page }) => {
   await page.goto(href!);
   await expect(page.locator(".detail-film-title")).toBeVisible();
   await expect(page.locator(".detail-showtimes")).toBeVisible();
+  expect(consoleErrors, consoleErrors.join(" | ")).toHaveLength(0);
+});
+
+// The one test exercising the whole premium-format chain: the fixture is a
+// cache-shape file, so the injected value flows validation → transform →
+// listings.json → SSG render → DOM.
+test("premium format chip renders on the film page", async ({ page }) => {
+  // The published shape the dev SSG server renders from (written by
+  // `export_listings.py` in the webServer command).
+  const listings = JSON.parse(
+    fs.readFileSync(
+      path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "static", "data", "listings.json"),
+      "utf8",
+    ),
+  );
+  const film = listings.movies.find((m: { showtimes: { premium_format?: string }[] }) =>
+    m.showtimes.some((s) => s.premium_format === "imax"),
+  );
+  expect(film, "fixture should carry an injected IMAX showtime").toBeTruthy();
+
+  await page.goto(`/film/${film.id}`);
+  await expect(page.locator(".format-badge").first()).toHaveText("IMAX");
   expect(consoleErrors, consoleErrors.join(" | ")).toHaveLength(0);
 });
 

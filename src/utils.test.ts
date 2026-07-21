@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Listings } from "./types";
-import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, subtitleBadge } from "./utils";
+import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, subtitleBadge, premiumFormat, premiumFormatLabel, buildCinemaRows } from "./utils";
 
 describe("subtitleBadge", () => {
   it("shows English for English audio regardless of subs", () => {
@@ -16,6 +16,85 @@ describe("subtitleBadge", () => {
     expect(subtitleBadge({})).toBeNull();
     expect(subtitleBadge({ audio_lang: null, subtitle_lang: null })).toBeNull();
     expect(subtitleBadge({ audio_lang: "other" })).toBeNull();
+  });
+});
+
+describe("premiumFormat", () => {
+  it("returns the first non-null format in the set", () => {
+    expect(premiumFormat([{}, { premium_format: null }, { premium_format: "imax" }])).toBe("imax");
+  });
+  it("returns null when no showtime carries one", () => {
+    expect(premiumFormat([])).toBeNull();
+    expect(premiumFormat([{}, { premium_format: null }])).toBeNull();
+  });
+});
+
+describe("premiumFormatLabel", () => {
+  it("maps a known slug to its display label", () => {
+    expect(premiumFormatLabel("imax")).toBe("IMAX");
+  });
+  it("renders nothing for absent or unknown slugs", () => {
+    expect(premiumFormatLabel(null)).toBeNull();
+    expect(premiumFormatLabel(undefined)).toBeNull();
+    expect(premiumFormatLabel("")).toBeNull();
+    // Rollback safety: a slug written by a newer deploy gets no chip, not "DOLBY".
+    expect(premiumFormatLabel("dolby")).toBeNull();
+  });
+});
+
+describe("buildCinemaRows premium format", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("emits the resolved formatBadge label per time", () => {
+    vi.setSystemTime(new Date("2026-03-29T10:00:00"));
+    const listings: Listings = {
+      generated_at: "2026-03-29T09:00:00Z",
+      stale: false,
+      theaters: [
+        {
+          id: "verdi",
+          name: "Cinemes Verdi",
+          address: "Carrer de Verdi, 32",
+          neighborhood: "Gracia",
+          website_url: "https://cinesesverdi.com",
+          maps_url: "https://maps.google.com/?q=Verdi",
+          lat: null,
+          lng: null,
+        },
+      ],
+      movies: [
+        {
+          id: "movie-1",
+          title: "Project Hail Mary",
+          year: 2025,
+          runtime_minutes: 157,
+          poster_url: null,
+          backdrop_url: null,
+          trailer_url: null,
+          genres: ["Sci-Fi"],
+          rating: 8.2,
+          synopsis: "A lone astronaut races to save humanity.",
+          links: { imdb: null, imdb_id: null },
+          showtimes: [
+            { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
+            {
+              theater_id: "verdi",
+              date: "2026-03-29",
+              time: "21:40",
+              language: "vo",
+              premium_format: "imax",
+            },
+          ],
+        },
+      ],
+    };
+
+    const now = new Date("2026-03-29T10:00:00");
+    const [movie] = transformResponse(listings, now);
+    const [row] = buildCinemaRows(movie, null, null, now);
+    const times = row.dayGroups.flatMap((g) => g.times);
+    expect(times.map((t) => t.formatBadge)).toEqual([null, "IMAX"]);
   });
 });
 
