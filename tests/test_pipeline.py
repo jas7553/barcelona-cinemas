@@ -1,5 +1,7 @@
 """Tests for pipeline.py — cache TTL logic and collection error handling."""
 
+import json
+import logging
 import threading
 from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
@@ -7,6 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import cache
+import observability
 import pipeline
 import transform
 from models import Listings, Movie
@@ -677,3 +680,69 @@ def test_collect_movies_returns_data_when_one_provider_fails():
 
     assert len(result) == 1
     assert result[0]["title"] == "Valid Film"
+
+
+def test_publish_static_site_forwards_the_refresh_id_to_the_renderer(monkeypatch):
+    """Nothing else joins the renderer's log group back to the refresh that triggered it."""
+    monkeypatch.setenv("FRONTEND_BUCKET", "frontend-bucket")
+    monkeypatch.setenv("SSG_FUNCTION_NAME", "ssg-renderer")
+    monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
+    monkeypatch.setattr(
+        transform,
+        "to_api_response",
+        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+    )
+    mock_s3, mock_lambda = MagicMock(), MagicMock()
+    observability.set_context(refresh_id="refresh-abc123")
+    try:
+        with (
+            patch.object(pipeline, "_s3", return_value=mock_s3),
+            patch.object(pipeline, "_lambda", return_value=mock_lambda),
+        ):
+            pipeline._publish_static_site(_listings())
+    finally:
+        observability.clear_context()
+
+    payload = json.loads(mock_lambda.invoke.call_args.kwargs["Payload"])
+    assert payload["refresh_id"] == "refresh-abc123"
+
+
+def test_publish_static_site_emits_a_metric_when_the_upload_fails(monkeypatch, caplog):
+    """The refresh still reports success, so this metric is the only alarm signal."""
+    caplog.set_level(logging.INFO, logger="observability")
+    monkeypatch.setenv("FRONTEND_BUCKET", "frontend-bucket")
+    monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
+    monkeypatch.setattr(
+        transform,
+        "to_api_response",
+        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+    )
+    mock_s3 = MagicMock()
+    mock_s3.put_object.side_effect = RuntimeError("S3 down")
+    with patch.object(pipeline, "_s3", return_value=mock_s3):
+        pipeline._publish_static_site(_listings())
+
+    assert '"SsgPublishFailure": 1' in caplog.text
+    assert '"event": "ssg_publish_failure"' in caplog.text
+
+
+def test_publish_static_site_emits_a_metric_when_the_renderer_invoke_fails(monkeypatch, caplog):
+    caplog.set_level(logging.INFO, logger="observability")
+    monkeypatch.setenv("FRONTEND_BUCKET", "frontend-bucket")
+    monkeypatch.setenv("SSG_FUNCTION_NAME", "ssg-renderer")
+    monkeypatch.setattr(pipeline, "load_cinemas", lambda: {})
+    monkeypatch.setattr(
+        transform,
+        "to_api_response",
+        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+    )
+    mock_lambda = MagicMock()
+    mock_lambda.invoke.side_effect = RuntimeError("Lambda down")
+    with (
+        patch.object(pipeline, "_s3", return_value=MagicMock()),
+        patch.object(pipeline, "_lambda", return_value=mock_lambda),
+    ):
+        pipeline._publish_static_site(_listings())  # must not raise
+
+    assert '"SsgInvokeFailure": 1' in caplog.text
+    assert '"event": "ssg_invoke_failure"' in caplog.text
