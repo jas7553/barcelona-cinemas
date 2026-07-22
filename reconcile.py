@@ -15,8 +15,12 @@ from collections.abc import Callable, Hashable, Iterable, Mapping
 from typing import cast
 
 from models import Movie, Showtime
+from observability import log_event
 
 _TITLE_EDGE_CHARS = f"{string.whitespace}{string.punctuation}“”‘’`"
+
+# Cap the merge list so one pathological run cannot balloon a log line.
+_MAX_LOGGED_MERGES = 25
 
 
 def normalize_title(title: str) -> str:
@@ -37,21 +41,63 @@ def same_movie(left: Movie, right: Movie) -> bool:
     return normalize_title(left["title"]) == normalize_title(right["title"])
 
 
-def reconcile(movies: list[Movie]) -> list[Movie]:
+def reconcile(movies: list[Movie], *, stage: str | None = None) -> list[Movie]:
     """
     Collapse movies that satisfy `same_movie` into one each, in first-seen
     order. Merges showtimes (deduped, booking links preserved) and coalesces
     every other field to the first non-null value seen.
+
+    Pass `stage` to log a `reconcile_summary` for the collapse. Without it the
+    reconcile is silent — providers reconcile their own output before the
+    pipeline ever sees it, and those counts are already covered by
+    `provider_collection_summary`.
     """
     merged: list[Movie] = []
+    cross_title_merges: list[str] = []
     for movie in movies:
         for index, existing in enumerate(merged):
             if same_movie(existing, movie):
+                # Only the logged stages pay for the title comparison; providers
+                # reconcile their own output on every fetch.
+                if stage is not None and normalize_title(existing["title"]) != normalize_title(movie["title"]):
+                    cross_title_merges.append(f"{existing['title']} ← {movie['title']}")
                 merged[index] = _merge_pair(existing, movie)
                 break
         else:
             merged.append(movie)
+    if stage is not None:
+        _log_reconcile_summary(stage, movies, merged, cross_title_merges)
     return merged
+
+
+def _log_reconcile_summary(
+    stage: str,
+    before: list[Movie],
+    after: list[Movie],
+    cross_title_merges: list[str],
+) -> None:
+    """
+    Account for every movie and showtime the collapse removed.
+
+    `cross_title_merges` is the diagnostic that matters: same-title merges are
+    routine, but two differently-titled films collapsing into one is either an
+    imdb_id match doing its job or an over-merge silently hiding a film. Naming
+    them is the only way to tell the two apart after the fact.
+    """
+    showtimes_in = sum(len(movie["showtimes"]) for movie in before)
+    showtimes_out = sum(len(movie["showtimes"]) for movie in after)
+    log_event(
+        "reconcile_summary",
+        stage=stage,
+        movies_in=len(before),
+        movies_out=len(after),
+        movies_merged=len(before) - len(after),
+        showtimes_in=showtimes_in,
+        showtimes_out=showtimes_out,
+        showtimes_deduped=showtimes_in - showtimes_out,
+        cross_title_merge_count=len(cross_title_merges),
+        cross_title_merges=cross_title_merges[:_MAX_LOGGED_MERGES],
+    )
 
 
 # Every field a duplicate copy may or may not carry: the dedup key pins only

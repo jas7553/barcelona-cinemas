@@ -28,7 +28,56 @@ const DATA_KEY = "data/listings.json";
 
 const manifest = JSON.parse(readFileSync(new URL("./manifest.json", import.meta.url), "utf8"));
 
-export async function handler() {
+const ENVIRONMENT = process.env.ENVIRONMENT || (process.env.AWS_LAMBDA_FUNCTION_NAME ? "prod" : "dev");
+const METRIC_NAMESPACE = "BarcelonaMovieDatabase";
+
+// Mirrors observability.py's log_event/emit_metric so both Lambdas emit the
+// same JSON shape and the same EMF metric namespace — a refresh and the render
+// it triggered can then be joined on refresh_id across the two log groups.
+function logEvent(event, fields) {
+  console.log(JSON.stringify({ event, environment: ENVIRONMENT, ...fields }));
+}
+
+function emitMetric(name, value, unit = "Count") {
+  console.log(
+    JSON.stringify({
+      _aws: {
+        Timestamp: Date.now(),
+        CloudWatchMetrics: [
+          {
+            Namespace: METRIC_NAMESPACE,
+            Dimensions: [["Environment"]],
+            Metrics: [{ Name: name, Unit: unit }],
+          },
+        ],
+      },
+      Environment: ENVIRONMENT,
+      [name]: value,
+    }),
+  );
+}
+
+export async function handler(event = {}) {
+  const refreshId = event?.refresh_id ?? null;
+  const startedMs = Date.now();
+  try {
+    return await render(refreshId, startedMs);
+  } catch (err) {
+    // The invoke is async (InvocationType: Event), so nothing upstream ever
+    // sees this throw — without an explicit metric a dead renderer leaves the
+    // refresh reporting success and every dashboard green.
+    emitMetric("SsgRenderFailure", 1);
+    logEvent("ssg_render_failure", {
+      refresh_id: refreshId,
+      duration_ms: Date.now() - startedMs,
+      exception_type: err?.name ?? "Error",
+      message: err?.message,
+    });
+    throw err;
+  }
+}
+
+async function render(refreshId, startedMs) {
   const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: DATA_KEY }));
   const listings = JSON.parse(await obj.Body.transformToString());
 
@@ -53,8 +102,9 @@ export async function handler() {
     },
   });
 
+  let invalidationId = null;
   if (DIST) {
-    await cf.send(
+    const invalidation = await cf.send(
       new CreateInvalidationCommand({
         DistributionId: DIST,
         InvalidationBatch: {
@@ -63,8 +113,18 @@ export async function handler() {
         },
       }),
     );
+    // Surfacing the id turns "the site looks stale" into a single CLI lookup
+    // (`aws cloudfront get-invalidation`) instead of guesswork.
+    invalidationId = invalidation?.Invalidation?.Id ?? null;
   }
 
-  console.log(`[ssg] rendered index.html + ${filmCount} film page(s) → s3://${BUCKET}`);
+  logEvent("ssg_render_summary", {
+    refresh_id: refreshId,
+    bucket: BUCKET,
+    movie_count: listings?.movies?.length ?? 0,
+    film_page_count: filmCount,
+    invalidation_id: invalidationId,
+    duration_ms: Date.now() - startedMs,
+  });
   return { statusCode: 200, filmCount };
 }

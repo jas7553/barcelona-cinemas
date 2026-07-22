@@ -9,13 +9,52 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from models import PREMIUM_FORMATS, CinemaInfo, CinemaRegistry, Listings, Movie, Showtime
+from observability import log_event
 from reconcile import dedup_showtimes
 
 logger = logging.getLogger(__name__)
+
+# Cap the excluded-title list so one bad refresh cannot balloon a log line.
+_MAX_LOGGED_TITLES = 25
+
+
+@dataclass
+class _TransformStats:
+    """
+    Running account of everything `to_api_response` drops.
+
+    The public payload is much smaller than the cache it comes from, and every
+    reduction here is silent by construction (a filtered movie simply never
+    reaches the output list). Counting them is what makes the gap between
+    `MoviesCollected` and `ssg_data_published` explainable.
+    """
+
+    movies_in: int = 0
+    movies_out: int = 0
+    excluded_no_title: int = 0
+    excluded_no_showtimes: int = 0
+    excluded_malformed: int = 0
+    excluded_titles: list[str] = field(default_factory=list)
+    showtimes_in: int = 0
+    showtimes_out: int = 0
+    dropped_unknown_cinema: int = 0
+    dropped_beyond_cutoff: int = 0
+    dropped_malformed: int = 0
+    showtimes_deduped: int = 0
+    # A cinema key that stops matching cinemas.json drops every one of its
+    # showtimes without failing anything — name the offenders.
+    unknown_cinemas: set[str] = field(default_factory=set)
+
+    def log(self) -> None:
+        payload = asdict(self)
+        payload["excluded_titles"] = self.excluded_titles[:_MAX_LOGGED_TITLES]
+        payload["unknown_cinemas"] = sorted(self.unknown_cinemas)
+        log_event("transform_summary", **payload)
 
 
 def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegistry) -> dict[str, Any]:
@@ -33,14 +72,19 @@ def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegis
     cutoff = _parse_cutoff(generated_at)
 
     seen_theater_ids: set[str] = set()
+    stats = _TransformStats(movies_in=len(raw_movies))
 
     movies_out: list[dict[str, Any]] = []
     for movie in raw_movies:
         if not isinstance(movie, Mapping):
+            stats.excluded_malformed += 1
             continue
-        transformed = _transform_movie(movie, cinemas, cutoff, seen_theater_ids)
+        transformed = _transform_movie(movie, cinemas, cutoff, seen_theater_ids, stats)
         if transformed is not None:
             movies_out.append(transformed)
+
+    stats.movies_out = len(movies_out)
+    stats.log()
 
     theaters_out = _build_theaters(cinemas, seen_theater_ids)
 
@@ -70,9 +114,11 @@ def _transform_movie(
     cinema_lookup: dict[str, CinemaInfo],
     cutoff: datetime | None,
     seen_theater_ids: set[str],
+    stats: _TransformStats,
 ) -> dict[str, Any] | None:
     title: str = movie.get("english_title") or movie.get("title", "")
     if not title:
+        stats.excluded_no_title += 1
         return None
 
     tmdb_id: int | None = movie.get("tmdb_id")
@@ -83,9 +129,12 @@ def _transform_movie(
         cinema_lookup,
         cutoff,
         seen_theater_ids,
+        stats,
     )
 
     if not showtimes_out:
+        stats.excluded_no_showtimes += 1
+        stats.excluded_titles.append(title)
         return None
 
     # A rating of 0.0 with zero votes means "not yet rated", not "rated zero" —
@@ -122,15 +171,20 @@ def _transform_showtimes(
     cinema_lookup: dict[str, CinemaInfo],
     cutoff: datetime | None,
     seen_theater_ids: set[str],
+    stats: _TransformStats,
 ) -> list[dict[str, Any]]:
     candidates: list[dict[str, Any]] = []
+    stats.showtimes_in += len(showtimes)
 
     for st in showtimes:
         if not isinstance(st, Mapping):
+            stats.dropped_malformed += 1
             continue
         cinema_name: str = st.get("cinema", "")
         info = cinema_lookup.get(cinema_name)
         if info is None:
+            stats.dropped_unknown_cinema += 1
+            stats.unknown_cinemas.add(cinema_name)
             continue
 
         show_date: str = st.get("date", "")
@@ -140,6 +194,7 @@ def _transform_showtimes(
             try:
                 d = datetime.fromisoformat(show_date).replace(tzinfo=UTC)
                 if d >= cutoff:
+                    stats.dropped_beyond_cutoff += 1
                     continue
             except ValueError:
                 pass
@@ -172,6 +227,8 @@ def _transform_showtimes(
         candidates,
         key=lambda s: (s["theater_id"], s["date"], s["time"], s["language"]),
     )
+    stats.showtimes_deduped += len(candidates) - len(out)
+    stats.showtimes_out += len(out)
     for showtime in out:
         seen_theater_ids.add(showtime["theater_id"])
     return out

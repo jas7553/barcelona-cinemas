@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Any, cast
 import cache
 import transform
 from models import CinemaRegistry, Listings, Movie
-from observability import emit_metric, log_event, now_ms
+from observability import emit_metric, get_context, log_event, now_ms
 from reconcile import reconcile
 from validation import normalize_movies
 
@@ -100,6 +100,11 @@ def _publish_static_site(listings: Listings) -> None:
     all exceptions so a publish failure never masks a successful refresh — the
     old static pages keep serving and the age-based "out of date" banner appears
     naturally (reproducing the old stale-while-revalidate behaviour).
+
+    Because the failures are swallowed, `refresh_summary` still reports success
+    when publishing dies. The `SsgPublishFailure`/`SsgInvokeFailure` metrics are
+    the only signal that the site has silently stopped updating, so every exit
+    path here emits one.
     """
     bucket = os.environ.get("FRONTEND_BUCKET")
     if not bucket:
@@ -115,8 +120,9 @@ def _publish_static_site(listings: Listings) -> None:
             CacheControl="no-cache",
         )
         log_event("ssg_data_published", bucket=bucket, movies=len(public["movies"]))
-    except Exception:
+    except Exception as exc:
         logger.warning("Failed to publish SSG data to frontend bucket", exc_info=True)
+        _report_publish_failure("SsgPublishFailure", "ssg_publish_failure", exc, bucket=bucket)
         return
 
     function_name = os.environ.get("SSG_FUNCTION_NAME")
@@ -124,11 +130,24 @@ def _publish_static_site(listings: Listings) -> None:
         return
     try:
         # Async (Event): the renderer regenerates pages + invalidates CloudFront
-        # on its own; the refresh need not block on it.
-        _lambda().invoke(FunctionName=function_name, InvocationType="Event")
+        # on its own; the refresh need not block on it. The refresh_id rides
+        # along so the renderer's logs can be joined back to this refresh —
+        # nothing else correlates the two log groups.
+        _lambda().invoke(
+            FunctionName=function_name,
+            InvocationType="Event",
+            Payload=json.dumps({"source": "refresh", "refresh_id": get_context().get("refresh_id")}).encode(),
+        )
         log_event("ssg_render_invoked", function=function_name)
-    except Exception:
+    except Exception as exc:
         logger.warning("Failed to invoke SSG renderer Lambda", exc_info=True)
+        _report_publish_failure("SsgInvokeFailure", "ssg_invoke_failure", exc, function=function_name)
+
+
+def _report_publish_failure(metric: str, event: str, exc: Exception, **fields: Any) -> None:
+    """Pair every swallowed publish failure with a metric an alarm can watch."""
+    emit_metric(metric, 1)
+    log_event(event, level=logging.WARNING, exception_type=type(exc).__name__, **fields)
 
 
 def _filter_english(movies: list[Movie]) -> list[Movie]:
@@ -156,7 +175,7 @@ def _refresh() -> Listings:
 
     movies = _collect_movies(cinemas)
     enriched, _ = enricher.enrich(movies, cached_movies)
-    enriched = reconcile(enriched)
+    enriched = reconcile(enriched, stage="post_enrichment")
     emit_metric("MoviesCollected", len(enriched))
     enriched = _filter_english(enriched)
 
@@ -191,7 +210,7 @@ def _collect_movies(cinemas: CinemaRegistry) -> list[Movie]:
         emit_metric("CollectionFailure", 1)
         raise RuntimeError("All providers failed to return listings")
 
-    movies = reconcile(list(chain.from_iterable(provider_results)))
+    movies = reconcile(list(chain.from_iterable(provider_results)), stage="collection")
     if not movies:
         emit_metric("CollectionFailure", 1)
         raise RuntimeError("Providers returned data but merge produced no movies")
