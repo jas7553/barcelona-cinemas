@@ -71,18 +71,22 @@ def _booking_url(ticketing: list[Mapping[str, object]]) -> str | None:
     return relay_url
 
 
-def _subtitle_lang(tags: list[str]) -> str | None:
+def _tag_suffix(tags: list[str], prefix: str) -> str | None:
+    """The first tag carrying `prefix`, with the prefix stripped."""
     for tag in tags:
-        if tag.startswith(_SUBTITLE_TAG_PREFIX):
-            return normalize_subtitle_lang(tag[len(_SUBTITLE_TAG_PREFIX) :])
+        if tag.startswith(prefix):
+            return tag[len(prefix) :]
     return None
+
+
+def _subtitle_lang(tags: list[str]) -> str | None:
+    raw = _tag_suffix(tags, _SUBTITLE_TAG_PREFIX)
+    return normalize_subtitle_lang(raw) if raw is not None else None
 
 
 def _premium_format(tags: list[str]) -> str | None:
-    for tag in tags:
-        if tag.startswith(_FORMAT_TAG_PREFIX):
-            return normalize_premium_format(tag[len(_FORMAT_TAG_PREFIX) :])
-    return None
+    raw = _tag_suffix(tags, _FORMAT_TAG_PREFIX)
+    return normalize_premium_format(raw) if raw is not None else None
 
 
 def _fetch_showtimes_for_cinema_date(
