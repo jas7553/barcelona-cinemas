@@ -97,7 +97,7 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     cast = _as_optional_genres(data.get("cast"), source=f"{source} cast")
     if cast is not None:
         movie["cast"] = cast
-    vote_count = _as_optional_positive_int(data.get("vote_count"), source=f"{source} vote_count")
+    vote_count = _as_optional_vote_count(data.get("vote_count"), source=f"{source} vote_count")
     if vote_count is not None:
         movie["vote_count"] = vote_count
     return movie
@@ -188,7 +188,7 @@ def normalize_tmdb_payload(
     if rating is not None:
         normalized["vote_average"] = rating
 
-    vote_count = _as_optional_positive_int(data.get("vote_count"), source=f"TMDb vote_count for {title!r}")
+    vote_count = _as_optional_vote_count(data.get("vote_count"), source=f"TMDb vote_count for {title!r}")
     if vote_count is not None:
         normalized["vote_count"] = vote_count
 
@@ -410,6 +410,7 @@ def _as_optional_positive_int(value: object, *, source: str) -> int | None:
 
 
 def _as_optional_rating(value: object, *, source: str) -> float | None:
+    """Validate a 0-10 rating. 0.0 is valid — TMDb uses it for "no votes yet"."""
     if value is None:
         return None
     if isinstance(value, bool) or not isinstance(value, int | float):
@@ -417,10 +418,21 @@ def _as_optional_rating(value: object, *, source: str) -> float | None:
         return None
 
     rating = float(value)
-    if not math.isfinite(rating) or not 0 < rating <= 10:
+    if not math.isfinite(rating) or not 0 <= rating <= 10:
         logger.warning("Discarded %s: rating is out of range", source)
         return None
     return rating
+
+
+def _as_optional_vote_count(value: object, *, source: str) -> int | None:
+    """Validate a vote count. 0 is valid — TMDb uses it for "no votes yet"."""
+    parsed = _as_optional_int(value, source=source)
+    if parsed is None:
+        return None
+    if parsed < 0:
+        logger.warning("Discarded %s: expected non-negative integer", source)
+        return None
+    return parsed
 
 
 def _as_optional_genres(value: object, *, source: str) -> list[str] | None:

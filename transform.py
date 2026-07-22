@@ -88,6 +88,11 @@ def _transform_movie(
     if not showtimes_out:
         return None
 
+    # A rating of 0.0 with zero votes means "not yet rated", not "rated zero" —
+    # suppress it so the frontend doesn't render a misleading "0.0" badge.
+    vote_count = movie.get("vote_count")
+    rating = movie.get("rating") if vote_count != 0 else None
+
     return {
         "id": str(tmdb_id) if tmdb_id is not None else title.lower().replace(" ", "-"),
         "title": title,
@@ -97,8 +102,8 @@ def _transform_movie(
         "backdrop_url": movie.get("backdrop_url"),
         "trailer_url": movie.get("trailer_url"),
         "genres": movie.get("genres") or [],
-        "rating": movie.get("rating"),
-        "vote_count": movie.get("vote_count"),
+        "rating": rating,
+        "vote_count": vote_count,
         "original_lang": movie.get("original_lang"),
         "director": movie.get("director"),
         "cast": movie.get("cast") or [],

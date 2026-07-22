@@ -1,5 +1,9 @@
 """Tests for validation.py normalization helpers and payload safety."""
 
+import logging
+
+import pytest
+
 from validation import normalize_movie, normalize_tmdb_payload
 
 
@@ -330,3 +334,63 @@ def test_normalize_movie_keeps_cached_director_and_cast() -> None:
     assert movie is not None
     assert movie["director"] == "Denis Villeneuve"
     assert movie["cast"] == ["Timothée Chalamet", "Zendaya"]
+
+
+# ── TMDb "no votes yet" (vote_average / vote_count == 0) ──────────────────────
+
+
+def test_normalize_tmdb_payload_keeps_zero_vote_average_without_warning(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.WARNING)
+    payload = normalize_tmdb_payload({"id": 42, "vote_average": 0.0}, title="Unreleased Film")
+
+    assert payload is not None
+    assert payload["vote_average"] == 0.0
+    assert caplog.text == ""
+
+
+def test_normalize_tmdb_payload_keeps_zero_vote_count_without_warning(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.WARNING)
+    payload = normalize_tmdb_payload({"id": 42, "vote_count": 0}, title="Unreleased Film")
+
+    assert payload is not None
+    assert payload["vote_count"] == 0
+    assert caplog.text == ""
+
+
+def test_normalize_tmdb_payload_discards_negative_vote_average(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.WARNING)
+    payload = normalize_tmdb_payload({"id": 42, "vote_average": -1.0}, title="Some Film")
+
+    assert payload is not None
+    assert "vote_average" not in payload
+    assert "rating is out of range" in caplog.text
+
+
+def test_normalize_tmdb_payload_discards_vote_average_above_ten(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.WARNING)
+    payload = normalize_tmdb_payload({"id": 42, "vote_average": 10.5}, title="Some Film")
+
+    assert payload is not None
+    assert "vote_average" not in payload
+    assert "rating is out of range" in caplog.text
+
+
+def test_normalize_tmdb_payload_discards_negative_vote_count(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.WARNING)
+    payload = normalize_tmdb_payload({"id": 42, "vote_count": -3}, title="Some Film")
+
+    assert payload is not None
+    assert "vote_count" not in payload
+    assert "expected non-negative integer" in caplog.text
+
+
+def test_normalize_movie_keeps_zero_vote_count_without_warning(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.WARNING)
+    movie = normalize_movie(
+        {"title": "Unreleased Film", "vote_count": 0, "showtimes": []},
+        source="cache",
+    )
+
+    assert movie is not None
+    assert movie.get("vote_count") == 0
+    assert caplog.text == ""
