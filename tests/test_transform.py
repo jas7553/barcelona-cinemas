@@ -409,3 +409,72 @@ def test_falls_back_to_scraper_title_when_english_title_absent():
     movie = _movie(title="Anatomie d'une chute", showtimes=[_showtime()])
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     assert result["movies"][0]["title"] == "Anatomie d'une chute"
+
+
+# ── transform_summary logging ─────────────────────────────────────────────────
+
+
+def test_transform_summary_accounts_for_every_excluded_movie(find_event):
+    """The gap between the cached movie count and the published one must be explainable."""
+    far_future = (datetime.now(UTC) + timedelta(days=8)).date().isoformat()
+    kept = _movie(title="Kept", showtimes=[_showtime()])
+    no_showtimes = _movie(title="Ghost Film")
+    all_filtered = _movie(title="Too Far Out", showtimes=[_showtime(cinema="Verdi", date=far_future)])
+
+    result = to_api_response(_listings(movies=[kept, no_showtimes, all_filtered]), CINEMAS)
+
+    summary = find_event("transform_summary")
+    assert len(result["movies"]) == 1
+    assert summary["movies_in"] == 3
+    assert summary["movies_out"] == 1
+    assert summary["excluded_no_showtimes"] == 2
+    assert summary["excluded_titles"] == ["Ghost Film", "Too Far Out"]
+    assert summary["dropped_beyond_cutoff"] == 1
+
+
+def test_transform_summary_names_cinemas_missing_from_the_registry(find_event):
+    """A cinema key drifting out of cinemas.json drops its showtimes silently."""
+    movie = _movie(showtimes=[_showtime(), _showtime(cinema="Renoir Floridablanca")])
+
+    to_api_response(_listings(movies=[movie]), CINEMAS)
+
+    summary = find_event("transform_summary")
+    assert summary["dropped_unknown_cinema"] == 1
+    assert summary["unknown_cinemas"] == ["Renoir Floridablanca"]
+
+
+def test_transform_summary_counts_deduplicated_showtimes(find_event):
+    movie = _movie(showtimes=[_showtime(), _showtime()])
+
+    to_api_response(_listings(movies=[movie]), CINEMAS)
+
+    summary = find_event("transform_summary")
+    assert summary["showtimes_in"] == 2
+    assert summary["showtimes_out"] == 1
+    assert summary["showtimes_deduped"] == 1
+
+
+def test_transform_summary_counts_movies_dropped_for_having_no_title(find_event):
+    to_api_response(_listings(movies=[_movie(title="", showtimes=[_showtime()])]), CINEMAS)
+
+    summary = find_event("transform_summary")
+    assert summary["excluded_no_title"] == 1
+
+
+def test_transform_summary_counts_malformed_entries(find_event):
+    """Every movie in must land in exactly one bucket, or the accounting lies."""
+    listings = _listings(movies=[_movie(showtimes=[_showtime()])])
+    listings["movies"].append("not-a-movie")  # type: ignore[arg-type]
+
+    to_api_response(listings, CINEMAS)
+
+    summary = find_event("transform_summary")
+    assert summary["movies_in"] == 2
+    assert summary["excluded_malformed"] == 1
+    assert (
+        summary["movies_out"]
+        + summary["excluded_malformed"]
+        + summary["excluded_no_title"]
+        + summary["excluded_no_showtimes"]
+        == summary["movies_in"]
+    )

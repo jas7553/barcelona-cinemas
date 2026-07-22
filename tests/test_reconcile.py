@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
+
 import pytest
 
 from models import Movie, Showtime
 from reconcile import dedup_showtimes, normalize_title, reconcile, same_movie
+from tests.conftest import FindEvent
 
 
 def _movie(
@@ -178,3 +181,48 @@ def test_dedup_showtimes_preserves_first_seen_order():
     a = _showtime("Verdi", "2026-06-14", "18:00")
     b = _showtime("Malda", "2026-06-14", "20:00")
     assert dedup_showtimes([a, b], key=_key) == [a, b]
+
+
+# ── reconcile_summary logging ─────────────────────────────────────────────────
+
+
+def test_reconcile_is_silent_without_a_stage(caplog: pytest.LogCaptureFixture) -> None:
+    caplog.set_level(logging.INFO, logger="observability")
+    reconcile([_movie("Dune"), _movie("Dune")])
+    assert caplog.text == ""
+
+
+def test_reconcile_summary_accounts_for_merged_movies_and_showtimes(find_event: FindEvent) -> None:
+    shared = _showtime("Verdi", "2026-06-14", "18:00")
+    left = _movie("Dune", showtimes=[shared, _showtime("Verdi", "2026-06-14", "20:00")])
+    right = _movie("Dune", showtimes=[shared])
+    reconcile([left, right, _movie("Oppenheimer")], stage="collection")
+
+    summary = find_event("reconcile_summary")
+    assert summary["stage"] == "collection"
+    assert summary["movies_in"] == 3
+    assert summary["movies_out"] == 2
+    assert summary["movies_merged"] == 1
+    assert summary["showtimes_in"] == 3
+    assert summary["showtimes_out"] == 2
+    assert summary["showtimes_deduped"] == 1
+
+
+def test_reconcile_summary_names_films_merged_across_different_titles(find_event: FindEvent) -> None:
+    """An imdb_id match collapsing two distinct titles is the over-merge signal."""
+    reconcile(
+        [_movie("Dune: Part Two", imdb_id="tt15239678"), _movie("Dune Part 2", imdb_id="tt15239678")],
+        stage="post_enrichment",
+    )
+
+    summary = find_event("reconcile_summary")
+    assert summary["cross_title_merge_count"] == 1
+    assert summary["cross_title_merges"] == ["Dune: Part Two ← Dune Part 2"]
+
+
+def test_reconcile_summary_ignores_same_title_merges_as_routine(find_event: FindEvent) -> None:
+    reconcile([_movie("Dune"), _movie("  dune ")], stage="collection")
+
+    summary = find_event("reconcile_summary")
+    assert summary["movies_merged"] == 1
+    assert summary["cross_title_merges"] == []
