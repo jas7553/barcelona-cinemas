@@ -146,6 +146,39 @@ test("premium format chip renders on the film page", async ({ page }) => {
   expect(consoleErrors, consoleErrors.join(" | ")).toHaveLength(0);
 });
 
+// Structure the film page exposes to assistive tech: a heading outline to
+// navigate by rotor, day chips that are not dead ends, and showtime labels that
+// distinguish one day from another.
+test("film page exposes a11y structure", async ({ page }) => {
+  await page.goto("/");
+  const href = await page.locator(".film-card").first().getAttribute("href");
+  await page.goto(href!);
+
+  await expect(page.locator(".detail-film-title")).toBeVisible();
+  expect(await page.locator("h1, h2, h3, h4, h5, h6").count()).toBeGreaterThanOrEqual(3);
+  await expect(page.locator("footer")).toHaveCount(1);
+
+  await test.step("a disabled day chip does not change the showtime list", async () => {
+    const dead = page.locator(".day-chip[disabled]").first();
+    if (await dead.count()) {
+      const before = await page.locator(".showtime__main").count();
+      await dead.click({ force: true });
+      await expect(page.locator(".showtime__main")).toHaveCount(before);
+    }
+  });
+
+  await test.step("showtimes on different days carry different aria-labels", async () => {
+    const labels = await page
+      .locator(".cinema-row")
+      .first()
+      .locator(".showtime__main")
+      .evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""));
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  expect(consoleErrors, consoleErrors.join(" | ")).toHaveLength(0);
+});
+
 // Back navigation restores list scroll natively (the whole point of the MPA
 // refactor — no manual save/restore). Cross-document back uses bfcache.
 test("back restores list scroll position", async ({ page }) => {

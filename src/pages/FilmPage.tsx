@@ -316,12 +316,12 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
 
           {/* Showtimes */}
           <div className="detail-showtimes">
-            <div className="showtimes-heading">Showtimes</div>
+            <h2 className="showtimes-heading">Showtimes</h2>
 
             <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} days={days} />
 
             {cinemaRows.length > 0 && (
-              <div className="cinema-count">
+              <div className="cinema-count" aria-live="polite">
                 {`${showtimeCount} showtime${showtimeCount !== 1 ? "s" : ""} · ${cinemaRows.length} cinema${cinemaRows.length !== 1 ? "s" : ""}`}
               </div>
             )}
@@ -362,6 +362,10 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
 
                 return (
                   <div key={theater.id} className="cinema-row">
+                    {/* Heading wrapper for the rotor outline (H1 → H2 → H3 x N).
+                        `font: inherit` neutralises the UA h3 size/weight so the
+                        row renders byte-identically — no stylesheet change. */}
+                    <h3 style={{ font: "inherit" }}>
                     <button
                       className="cinema-row__header"
                       onClick={() =>
@@ -385,6 +389,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
                         <ChevronRightIcon />
                       </div>
                     </button>
+                    </h3>
                     <div className="cinema-row__times">
                       {dayGroups.map((group, gi) => {
                         const { isUniform, value: groupHoistedLang } = groupBadgeResults[gi];
@@ -404,10 +409,12 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
                                 <Showtime
                                   key={key}
                                   pillKey={key}
+                                  panelId={panelId(theater.id, key)}
                                   selectedKey={selectedPillKey}
                                   onSelect={setSelectedPillKey}
                                   time={t}
                                   date={date}
+                                  dayLabel={group.label}
                                   bookingUrl={bookingUrl}
                                   badge={isUniform ? null : viewingLangLabel(lang, "short")}
                                   formatBadge={formatBadge}
@@ -438,6 +445,11 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
   );
 }
 
+/** Stable DOM id for a showtime's actions panel — the pill key alone repeats
+ * across cinemas, so the theater id is part of it. */
+const panelId = (theaterId: string, pillKey: string) =>
+  `showtime-actions-${theaterId}-${pillKey}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+
 /**
  * One showtime, as a single atomic block: the time on top, its attribute tags
  * on a subline inside the same border. Bookable showtimes get a filled body
@@ -447,6 +459,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
 function Showtime({
   time,
   date,
+  dayLabel,
   bookingUrl,
   badge,
   formatBadge,
@@ -456,11 +469,14 @@ function Showtime({
   runtimeMinutes,
   now,
   pillKey,
+  panelId,
   selectedKey,
   onSelect,
 }: {
   time: string;
   date: string;
+  /** Day-group label ("Thu 23"); null when the page is filtered to one day. */
+  dayLabel: string | null;
   bookingUrl?: string;
   badge: string | null;
   formatBadge: string | null;
@@ -470,10 +486,12 @@ function Showtime({
   runtimeMinutes: number | null;
   now: Date;
   pillKey: string;
+  panelId: string;
   selectedKey: string | null;
   onSelect: (key: string | null) => void;
 }) {
   const isSelected = pillKey === selectedKey;
+  const when = dayLabel ? `${time} on ${dayLabel}` : time;
   const ics = buildIcs(
     {
       title: film,
@@ -515,7 +533,7 @@ function Showtime({
               target="_blank"
               rel="noreferrer"
               className="showtime__main"
-              aria-label={`Buy tickets for ${film} at ${cinema}, ${time}`}
+              aria-label={`Buy tickets for ${film} at ${cinema}, ${when}`}
             >
               {body}
             </a>
@@ -523,7 +541,8 @@ function Showtime({
               className="showtime__more"
               onClick={handleToggle}
               aria-expanded={isSelected}
-              aria-label={`More options for ${time} at ${cinema}`}
+              aria-controls={panelId}
+              aria-label={`More options for ${when} at ${cinema}`}
             >
               <ChevronDownIcon />
             </button>
@@ -533,14 +552,15 @@ function Showtime({
             className="showtime__main"
             onClick={handleToggle}
             aria-expanded={isSelected}
-            aria-label={`${time} at ${cinema}`}
+            aria-controls={panelId}
+            aria-label={`${when} at ${cinema}`}
           >
             {body}
           </button>
         )}
       </div>
       {isSelected && (
-        <div className="showtime__actions" role="group" aria-label="Showtime options">
+        <div id={panelId} className="showtime__actions" role="group" aria-label="Showtime options">
           {bookingUrl && (
             <a
               href={bookingUrl}
