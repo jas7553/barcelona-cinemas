@@ -237,6 +237,9 @@ def _fetch_provider_movies(provider: ListingsSource, cinemas: CinemaRegistry) ->
 
     movies = normalize_movies(fetched, source=f"{provider.name} output")
     emit_metric("ProviderSuccess", 1)
+    if not movies:
+        emit_metric("ProviderZeroResult", 1)
+        log_event("provider_zero_result", provider=provider.name)
     log_event(
         "provider_collection_summary",
         provider=provider.name,
