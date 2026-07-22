@@ -2,8 +2,8 @@
  * link to /privacy so both users and search crawlers can reach it. */
 export default function SiteFooter() {
   return (
-    <div className="site-footer">
+    <footer className="site-footer">
       <a href="/privacy" className="site-footer__link">Privacy</a>
-    </div>
+    </footer>
   );
 }

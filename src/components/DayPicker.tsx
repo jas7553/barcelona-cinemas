@@ -25,9 +25,10 @@ export default function DayPicker({ selectedDay, onSelect, activeDays, days }: P
   }, [selectedDay]);
 
   return (
-    <div className="day-chips">
+    <div className="day-chips" role="group" aria-label="Filter showtimes by day">
       <button
         className={`day-chip${selectedDay === null ? " day-chip--active" : ""}`}
+        aria-pressed={selectedDay === null}
         onClick={() => onSelect(null)}
       >
         All
@@ -35,13 +36,18 @@ export default function DayPicker({ selectedDay, onSelect, activeDays, days }: P
       {days.map(({ label, offset }) => {
         const isActive = selectedDay === offset;
         const hasScreenings = !activeDays || activeDays.has(offset);
+        // A chip for a day with nothing on is a dead end — selecting it writes
+        // ?day=N that the page rejects, leaving the URL lying about the view.
+        const isDisabled = !hasScreenings && !isActive;
         return (
           <button
             key={offset}
             ref={isActive ? activeRef : undefined}
-            className={`day-chip${isActive ? " day-chip--active" : ""}${!hasScreenings && !isActive ? " day-chip--faded" : ""}`}
-            aria-label={!hasScreenings && !isActive ? `${label} — no screenings` : undefined}
-            onClick={() => onSelect(isActive ? null : offset)}
+            className={`day-chip${isActive ? " day-chip--active" : ""}${isDisabled ? " day-chip--faded" : ""}`}
+            aria-label={isDisabled ? `${label} — no screenings` : undefined}
+            aria-pressed={isActive}
+            disabled={isDisabled}
+            onClick={isDisabled ? undefined : () => onSelect(isActive ? null : offset)}
           >
             {label}
           </button>
