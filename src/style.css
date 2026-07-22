@@ -58,8 +58,11 @@
   --border-lt:   #ede8e0;
   --text:        #1a1a1a;
   --text-sub:    #7a7062;
-  --text-mute:   #c0b8ad;
+  --text-mute:   #786f61;
   --accent:      #c17f3a;
+  /* Filled surfaces only. --accent stays for borders + text-on-light; on a
+     solid fill white text needs 4.5:1, which #c17f3a (3.3:1) can't give. */
+  --accent-solid: #a06626;
   --accent-text: #ffffff;
   --accent-bg:   #f5e8d4;
   --lc:          #d44e1e;
@@ -84,8 +87,10 @@
   --border-lt:   #302e28;
   --text:        #f0ece4;
   --text-sub:    #948c80;
-  --text-mute:   #555048;
+  --text-mute:   #8f857a;
   --accent:      #d4924a;
+  /* Dark accent + black text is already 8:1, so the fill token matches --accent. */
+  --accent-solid: #d4924a;
   --accent-text: #000000;
   --accent-bg:   #2a1e0c;
   --lc:          #f08030;
@@ -248,7 +253,12 @@ img { display: block; }
 
 .day-chip {
   flex-shrink: 0;
-  padding: 5px 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 5px 14px;
   border-radius: var(--r-pill);
   border: 1.5px solid var(--border);
   background: transparent;
@@ -260,13 +270,19 @@ img { display: block; }
 }
 
 .day-chip--active {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: var(--accent-solid);
+  background: var(--accent-solid);
   color: var(--accent-text);
   font-weight: 600;
 }
 
-.day-chip--faded { opacity: 0.45; }
+/* "No screenings" day. Opacity used to fade the label AND its border below AA
+   (and dissolve the pill's shape); instead de-emphasize with an explicit
+   lighter border at full opacity, keeping the label at the AA floor. */
+.day-chip--faded {
+  color: var(--text-sub);
+  border-color: var(--border-lt);
+}
 
 /* ── View tabs ───────────────────────────────────────────────────────────────── */
 .view-tabs {
@@ -493,9 +509,9 @@ img { display: block; }
 }
 
 .tag--accent {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--bg);
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  color: var(--accent-text);
 }
 
 /* ── Showtimes (film detail) ─────────────────────────────────────────────────
@@ -504,7 +520,8 @@ img { display: block; }
    no sibling chips floating beside the pill. */
 .showtime-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  /* 96px min keeps 3 columns at 375px (44px chevron + ≥44px tap target). */
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 6px;
   align-items: start;
 }
@@ -522,7 +539,9 @@ img { display: block; }
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   overflow: hidden;
-  min-height: 36px;
+  /* 46px so the interactive child inside (main / chevron), inset by the 1px
+     border top and bottom, still measures a full 44px tap target. */
+  min-height: 46px;
 }
 
 .showtime__box--book {
@@ -594,7 +613,7 @@ img { display: block; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
+  width: 44px;
   flex-shrink: 0;
   border: none;
   border-left: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
@@ -623,6 +642,7 @@ img { display: block; }
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 44px;
   padding: 4px 6px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
@@ -634,9 +654,9 @@ img { display: block; }
 }
 
 .showtime__action--book {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--bg);
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  color: var(--accent-text);
   font-weight: 600;
 }
 
@@ -737,6 +757,11 @@ img { display: block; }
 }
 
 .site-footer__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 12px;
   font-size: 12px;
   color: var(--text-mute);
   text-decoration: none;
@@ -878,8 +903,12 @@ img { display: block; }
 
 .empty-state__btn {
   margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   padding: 8px 20px;
-  background: var(--accent);
+  background: var(--accent-solid);
   color: var(--accent-text);
   border: none;
   border-radius: var(--r-pill);
@@ -1006,7 +1035,8 @@ img { display: block; }
   background: rgba(255, 255, 255, 0.82);
   border: none;
   border-radius: var(--r-pill);
-  padding: 4px 12px 4px 6px;
+  min-height: 44px;
+  padding: 4px 14px 4px 8px;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -1075,6 +1105,10 @@ img { display: block; }
   font-weight: 700;
   color: var(--text);
   line-height: 1.15;
+  /* A single long title word (e.g. "Disclosure") has no wrap opportunity and
+     overflows the meta column at 200% zoom, clipping the last glyph and forcing
+     a horizontal scrollbar (WCAG 1.4.4). Let it break within the word. */
+  overflow-wrap: break-word;
 }
 
 .detail-film-meta {
@@ -1093,7 +1127,7 @@ img { display: block; }
 
 .rating-badge {
   padding: 3px 10px;
-  background: var(--accent);
+  background: var(--accent-solid);
   border-radius: var(--r-md);
   font-size: 13px;
   color: var(--accent-text);
@@ -1103,8 +1137,10 @@ img { display: block; }
 .trailer-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-height: 44px;
   gap: 4px;
-  padding: 3px 10px;
+  padding: 3px 12px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   font-size: 13px;
@@ -1182,8 +1218,10 @@ img { display: block; }
 .ext-link {
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-height: 44px;
   gap: 5px;
-  padding: 3px 9px;
+  padding: 3px 11px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   font-size: 12px;
@@ -1227,6 +1265,7 @@ img { display: block; }
   justify-content: space-between;
   align-items: center;
   width: 100%;
+  min-height: 44px;
   padding: 9px 12px;
   border: none;
   border-bottom: 1px solid var(--border-lt);
@@ -1390,7 +1429,7 @@ img { display: block; }
   border-radius: var(--r-xl);
   border: none;
   cursor: pointer;
-  background: var(--accent);
+  background: var(--accent-solid);
   color: var(--accent-text);
   font-size: 15px;
   font-weight: 600;
