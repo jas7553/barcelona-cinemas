@@ -646,6 +646,21 @@ def test_filter_english_excludes_various_non_english_langs():
     assert pipeline._filter_english(movies) == []
 
 
+def test_fetch_provider_movies_emits_a_metric_when_a_provider_returns_zero_movies(caplog):
+    """A provider that runs clean but yields nothing looks identical to success without this signal."""
+    caplog.set_level(logging.INFO, logger="observability")
+    provider = MagicMock()
+    provider.name = "verdi"
+    provider.fetch.return_value = []
+
+    result = pipeline._fetch_provider_movies(provider, {})
+
+    assert result == []
+    assert '"ProviderZeroResult": 1' in caplog.text
+    assert '"event": "provider_zero_result"' in caplog.text
+    assert '"provider": "verdi"' in caplog.text
+
+
 def test_collect_movies_returns_data_when_one_provider_fails():
     provider_one = MagicMock()
     provider_one.name = "provider_one"
