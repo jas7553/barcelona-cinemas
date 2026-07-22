@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import ListPage from "./ListPage";
 import FilmPage from "./FilmPage";
 import { renderList, renderFilm, renderPrivacy, filmListings } from "../entry-server";
 import type { Listings } from "../types";
+import * as utils from "../utils";
 import { transformResponse } from "../utils";
 
 function futureDate(offsetDays: number): string {
@@ -134,6 +135,18 @@ describe("FilmPage", () => {
     )!;
     const chips = [...sub.querySelectorAll(".showtime__tag")];
     expect(chips.map((c) => c.textContent)).toEqual(["ES subs", "IMAX"]);
+  });
+
+  it("does not build an iCalendar doc for collapsed showtimes", () => {
+    const spy = vi.spyOn(utils, "buildIcs");
+    const narrowed = filmListings(sampleListings(), "1")!;
+    const { container } = render(
+      <FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />,
+    );
+    // Both showtimes render but none is expanded — the calendar doc is deferred.
+    expect(container.querySelectorAll(".showtime").length).toBeGreaterThan(0);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
   });
 
   it("shows a not-found state when the film is absent", () => {

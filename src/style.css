@@ -997,7 +997,9 @@ img { display: block; }
 }
 
 .detail-back-btn {
-  position: fixed;
+  /* Scrolls away with the document — native back, iOS swipe-back and bfcache
+     cover the deep-scroll case, so no fixed escape hatch is needed. */
+  position: absolute;
   top: max(52px, calc(env(safe-area-inset-top, 0px) + 8px));
   /* Align to the centered 840px shell, not the raw viewport, so on desktop the
      pill sits over the banner's left edge. (840/2 = 420px.) */
@@ -1018,18 +1020,10 @@ img { display: block; }
   color: var(--text);
   font-family: var(--font-ui);
   font-weight: 500;
-  transition: opacity 0.18s, transform 0.18s;
 }
 
 .dark .detail-back-btn { background: rgba(0, 0, 0, 0.6); }
 .detail-back-btn:active { opacity: 0.75; }
-
-/* Tucked away while scrolling down so it never covers showtime rows */
-.detail-back-btn--hidden {
-  opacity: 0;
-  transform: translateY(-8px);
-  pointer-events: none;
-}
 
 .detail-content {
   position: relative;
