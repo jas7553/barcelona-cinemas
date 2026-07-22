@@ -178,6 +178,26 @@ def test_vote_count_defaults_to_none_when_absent():
     assert result["movies"][0]["vote_count"] is None
 
 
+def test_suppresses_rating_when_vote_count_is_zero():
+    """TMDb's 0.0/0 for unreleased films means "no votes yet", not "rated zero" —
+    don't let the frontend render a misleading 0.0 badge."""
+    movie = _movie(showtimes=[_showtime()], rating=0.0)
+    movie["vote_count"] = 0
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    out = result["movies"][0]
+    assert out["rating"] is None
+    assert out["vote_count"] == 0
+
+
+def test_keeps_rating_when_vote_count_is_positive():
+    movie = _movie(showtimes=[_showtime()], rating=8.1)
+    movie["vote_count"] = 42
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    out = result["movies"][0]
+    assert out["rating"] == 8.1
+    assert out["vote_count"] == 42
+
+
 # ── Top-level shape ───────────────────────────────────────────────────────────
 
 
