@@ -43,11 +43,8 @@ describe("premiumFormatLabel", () => {
 });
 
 describe("buildCinemaRows premium format", () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
-
+  // No fake timers: transformResponse and buildCinemaRows both take `now`.
   it("emits the resolved formatBadge label per time", () => {
-    vi.setSystemTime(new Date("2026-03-29T10:00:00"));
     const listings: Listings = {
       generated_at: "2026-03-29T09:00:00Z",
       stale: false,

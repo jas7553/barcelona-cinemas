@@ -33,11 +33,12 @@ function FilmCard({ movie, dayOffset, search = "" }: Props) {
   const shownTimes = dayTimes.slice(0, MAX_PILLS);
   const extraTimes = dayTimes.length - shownTimes.length;
 
-  // Day-scoped for free: `filtered` is already the selected day's showtimes.
-  const fmt = premiumFormatLabel(premiumFormat(filtered));
-
   const meta = formatMovieMeta(movie);
   const showTimes = dayOffset !== undefined && dayTimes.length > 0;
+
+  // Day-scoped for free: `filtered` is already the selected day's showtimes.
+  // Only the times row renders the chip, so skip the scan when it is hidden.
+  const fmt = showTimes ? premiumFormatLabel(premiumFormat(filtered)) : null;
 
   return (
     <a

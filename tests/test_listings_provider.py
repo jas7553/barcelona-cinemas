@@ -3,6 +3,7 @@
 from datetime import date
 from unittest.mock import MagicMock, patch
 
+import pytest
 from bs4 import Tag
 
 from models import CinemaInfo, CinemaRegistry
@@ -63,31 +64,24 @@ def test_extract_cinema_name_strips_imax_span():
 # ── _premium_format ───────────────────────────────────────────────────────────
 
 
-def test_premium_format_reads_badge_span():
+def _badge(html: str) -> Tag:
     from bs4 import BeautifulSoup
 
-    html = '<a><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>'
-    badge = BeautifulSoup(html, "html.parser").find("a")
-    assert isinstance(badge, Tag)
-    assert _premium_format(badge) == "imax"
+    tag = BeautifulSoup(html, "html.parser").find("a")
+    assert isinstance(tag, Tag)
+    return tag
 
 
-def test_premium_format_absent_span():
-    from bs4 import BeautifulSoup
-
-    html = "<a><strong>18:00</strong> Verdi</a>"
-    badge = BeautifulSoup(html, "html.parser").find("a")
-    assert isinstance(badge, Tag)
-    assert _premium_format(badge) is None
-
-
-def test_premium_format_unmapped_badge():
-    from bs4 import BeautifulSoup
-
-    html = '<a><strong>18:00</strong> Verdi<span class="badge">VOSE</span></a>'
-    badge = BeautifulSoup(html, "html.parser").find("a")
-    assert isinstance(badge, Tag)
-    assert _premium_format(badge) is None
+@pytest.mark.parametrize(
+    ("html", "expected"),
+    [
+        ('<a><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>', "imax"),
+        ("<a><strong>18:00</strong> Verdi</a>", None),  # no span at all
+        ('<a><strong>18:00</strong> Verdi<span class="badge">VOSE</span></a>', None),  # unmapped
+    ],
+)
+def test_premium_format(html: str, expected: str | None) -> None:
+    assert _premium_format(_badge(html)) == expected
 
 
 # ── ListingsProvider.fetch ────────────────────────────────────────────────────

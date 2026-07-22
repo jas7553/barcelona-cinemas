@@ -8,9 +8,8 @@
 
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import { test, expect } from "@playwright/test";
-import { FIXTURE_TAGLINE } from "./fixture";
+import { FIXTURE_TAGLINE, ROOT } from "./fixture";
 
 // Collected across the run; asserted empty at the end.
 let consoleErrors: string[] = [];
@@ -147,10 +146,7 @@ test("premium format chip renders on the film page", async ({ page }) => {
   // The published shape the dev SSG server renders from (written by
   // `export_listings.py` in the webServer command).
   const listings = JSON.parse(
-    fs.readFileSync(
-      path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "static", "data", "listings.json"),
-      "utf8",
-    ),
+    fs.readFileSync(path.join(ROOT, "static", "data", "listings.json"), "utf8"),
   );
   const film = listings.movies.find((m: { showtimes: { premium_format?: string }[] }) =>
     m.showtimes.some((s) => s.premium_format === "imax"),

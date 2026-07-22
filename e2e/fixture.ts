@@ -10,7 +10,8 @@ import { fileURLToPath } from "url";
 
 export const FIXTURE_TAGLINE = "Believe the unbelievable.";
 
-const ROOT = path.dirname(fileURLToPath(import.meta.url)) + "/..";
+/** Repo root, resolved from this module. */
+export const ROOT = path.dirname(fileURLToPath(import.meta.url)) + "/..";
 
 /**
  * Build a temp CACHE_DIR holding a forward-shifted copy of cache/listings.json.

@@ -103,14 +103,16 @@ def test_carries_premium_format():
     assert result["movies"][0]["showtimes"][0]["premium_format"] == "imax"
 
 
-def test_premium_format_key_always_present_and_none_when_absent_or_invalid():
-    absent = _showtime()
-    invalid = _showtime()
-    invalid["time"] = "22:00"
-    invalid["premium_format"] = "4dx"
-    result = to_api_response(_listings(movies=[_movie(showtimes=[absent, invalid])]), CINEMAS)
-    out = result["movies"][0]["showtimes"]
-    assert [s["premium_format"] for s in out] == [None, None]
+def test_premium_format_key_present_and_none_when_absent():
+    result = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
+    assert result["movies"][0]["showtimes"][0]["premium_format"] is None
+
+
+def test_premium_format_key_present_and_none_when_unknown_slug():
+    st = _showtime()
+    st["premium_format"] = "4dx"
+    result = to_api_response(_listings(movies=[_movie(showtimes=[st])]), CINEMAS)
+    assert result["movies"][0]["showtimes"][0]["premium_format"] is None
 
 
 def test_passes_through_original_lang():

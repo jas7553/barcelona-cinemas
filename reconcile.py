@@ -53,25 +53,25 @@ def reconcile(movies: list[Movie]) -> list[Movie]:
     return merged
 
 
-def _showtime_info_score(showtime: Mapping[str, object]) -> tuple[int, int, int]:
+# Fields that make a showtime copy more informative, most significant first.
+_INFO_FIELDS = ("booking_url", "subtitle_lang", "premium_format")
+
+
+def _showtime_info_score(showtime: Mapping[str, object]) -> tuple[int, ...]:
     """
-    Rank how much a showtime carries: booking link, known subtitles, premium format.
+    Rank how much a showtime carries, by `_INFO_FIELDS` in priority order.
 
     Compared lexicographically, so the dimensions are ranked, not summed: a
-    premium-format-only copy never outranks one carrying a booking link. Format
-    breaks only what would otherwise be ties.
+    copy carrying only the last field never outranks one carrying the first.
+    A new field breaks only what would otherwise be ties.
     """
-    return (
-        1 if showtime.get("booking_url") else 0,
-        1 if showtime.get("subtitle_lang") else 0,
-        1 if showtime.get("premium_format") else 0,
-    )
+    return tuple(1 if showtime.get(field) else 0 for field in _INFO_FIELDS)
 
 
 def dedup_showtimes[S: Mapping[str, object], K: Hashable](showtimes: Iterable[S], key: Callable[[S], K]) -> list[S]:
     """
     Drop duplicate showtimes sharing a key, in first-seen order. On a collision
-    the more informative copy wins (booking link, known subtitle language), so a
+    the more informative copy wins (`_INFO_FIELDS`, in priority order), so a
     bare duplicate never clobbers a richer one regardless of provider order.
     Works on any showtime-shaped mapping: the internal Showtime, or the public
     API showtime dict produced by transform.py.
