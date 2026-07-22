@@ -68,6 +68,11 @@ def test_extract_cinema_name_strips_imax_span():
         ('<a><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>', "imax"),
         ("<a><strong>18:00</strong> Verdi</a>", None),  # no span at all
         ('<a><strong>18:00</strong> Verdi<span class="badge">VOSE</span></a>', None),  # unmapped
+        # Several badges: the format is not necessarily the first one.
+        (
+            '<a><strong>18:00</strong> Glòries<span class="badge">VOSE</span><span class="badge">IMAX</span></a>',
+            "imax",
+        ),
     ],
 )
 def test_premium_format(html: str, expected: str | None) -> None:

@@ -154,14 +154,46 @@ def test_dedup_showtimes_premium_format_wins_regardless_of_order():
     assert b.get("premium_format") == "imax"
 
 
-def test_dedup_showtimes_premium_format_does_not_outrank_booking_link():
-    """Score is lexicographic, not summed: a link-bearing copy always wins."""
+def test_dedup_showtimes_merges_disjoint_info_fields():
+    """
+    The real Cinesa overlap: SensaCine carries the booking link, the ECB feed
+    carries the IMAX badge, and neither carries the other. Both must survive —
+    picking a winner would silently drop one of them.
+    """
     premium = _showtime("Cinesa Diagonal", "2026-06-14", "21:40", premium_format="imax")
-    linked = _showtime("Cinesa Diagonal", "2026-06-14", "21:40", booking_url="https://book")
-    [a] = dedup_showtimes([premium, linked], key=_key)
-    assert a.get("booking_url") == "https://book"
-    [b] = dedup_showtimes([linked, premium], key=_key)
-    assert b.get("booking_url") == "https://book"
+    linked = _showtime("Cinesa Diagonal", "2026-06-14", "21:40", booking_url="https://book", subtitle_lang="es")
+    for order in ([premium, linked], [linked, premium]):
+        [kept] = dedup_showtimes(order, key=_key)
+        assert kept.get("booking_url") == "https://book"
+        assert kept.get("subtitle_lang") == "es"
+        assert kept.get("premium_format") == "imax"
+
+
+def test_dedup_showtimes_merge_never_overwrites_a_present_value():
+    """The first-seen copy stays the base; the other only fills the gaps."""
+    first = _showtime("Verdi", "2026-06-14", "18:00", booking_url="https://first", subtitle_lang="es")
+    second = _showtime("Verdi", "2026-06-14", "18:00", booking_url="https://second", premium_format="imax")
+    [kept] = dedup_showtimes([first, second], key=_key)
+    assert kept.get("booking_url") == "https://first"
+    assert kept.get("premium_format") == "imax"
+
+
+def test_dedup_showtimes_merges_audio_lang():
+    """audio_lang is optional enrichment too — a copy that knows it must win over one that doesn't."""
+    unknown = _showtime("Verdi", "2026-06-14", "18:00")
+    known = _showtime("Verdi", "2026-06-14", "18:00", audio_lang="en")
+    [a] = dedup_showtimes([unknown, known], key=_key)
+    assert a.get("audio_lang") == "en"
+    [b] = dedup_showtimes([known, unknown], key=_key)
+    assert b.get("audio_lang") == "en"
+
+
+def test_dedup_showtimes_merge_leaves_the_inputs_unmutated():
+    premium = _showtime("Verdi", "2026-06-14", "18:00", premium_format="imax")
+    linked = _showtime("Verdi", "2026-06-14", "18:00", booking_url="https://book")
+    dedup_showtimes([linked, premium], key=_key)
+    assert "premium_format" not in linked
+    assert "booking_url" not in premium
 
 
 def test_dedup_showtimes_preserves_first_seen_order():

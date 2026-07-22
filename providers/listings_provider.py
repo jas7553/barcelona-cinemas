@@ -82,13 +82,16 @@ def _extract_cinema_name(badge: Tag) -> str:
 def _premium_format(badge: Tag) -> str | None:
     """
     Extract the premium format from a showtime badge, if it carries one.
-    The child tag `_extract_cinema_name` skips is where it lives:
+    The child tags `_extract_cinema_name` skips are where it lives:
       <a ...><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>
+    All of them are scanned: a badge may carry several spans (e.g. a version
+    label beside the format), and only one of them is the premium format.
     """
-    span = badge.find("span", class_="badge")
-    if span is None:
-        return None
-    return normalize_premium_format(span.get_text())
+    for span in badge.find_all("span", class_="badge"):
+        premium_format = normalize_premium_format(span.get_text())
+        if premium_format is not None:
+            return premium_format
+    return None
 
 
 class ListingsProvider:

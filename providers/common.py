@@ -1,6 +1,6 @@
 """Helpers shared by listing providers."""
 
-from models import Movie, Showtime
+from models import PREMIUM_FORMATS, Movie, Showtime
 
 DEFAULT_HEADERS = {
     "User-Agent": (
@@ -21,7 +21,6 @@ def _matches(value: str, needles: tuple[str, ...]) -> bool:
 _ENGLISH = ("english", "ingl", "angl")
 _SPANISH = ("españ", "espan", "castell", "spanish")
 _CATALAN = ("català", "catal")
-_IMAX = ("imax",)
 
 
 def normalize_audio_lang(raw: str) -> str | None:
@@ -50,16 +49,18 @@ def normalize_subtitle_lang(raw: str) -> str | None:
 
 def normalize_premium_format(raw: str) -> str | None:
     """
-    Normalize a source premium-format label to "imax", or None (not premium).
+    Normalize a source premium-format label to a `PREMIUM_FORMATS` slug, or
+    None (not premium).
 
-    Substring-matched: the upstream labels are human-authored ("IMAX 3D",
-    "Sala IMAX"), and premium brand names are distinctive enough that a
-    false positive is implausible. Never raises.
+    The slug doubles as the needle: upstream labels are human-authored ("IMAX
+    3D", "Sala IMAX"), and premium brand names are distinctive enough that
+    substring matching cannot plausibly produce a false positive. Adding a
+    format is then a one-line edit to `PREMIUM_FORMATS`. Never raises.
     """
-    value = raw.casefold()
-    if _matches(value, _IMAX):
-        return "imax"
-    return None
+    value = raw.strip().lower()
+    if not value:
+        return None
+    return next((slug for slug in PREMIUM_FORMATS if _matches(value, (slug,))), None)
 
 
 def base_movie(title: str, imdb_id: str | None, showtimes: list[Showtime]) -> Movie:

@@ -1,9 +1,10 @@
 from typing import NotRequired, TypedDict
 
 # Premium large-format screening slugs. The single Python-side vocabulary:
-# validation.py gates on it at ingest, transform.py at publish. Adding one here
-# also needs a label in src/utils.ts (PREMIUM_FORMAT_LABELS) to render a chip.
-PREMIUM_FORMATS: frozenset[str] = frozenset({"imax"})
+# providers/common.py matches source labels against it, validation.py gates on
+# it at ingest, transform.py at publish. Adding one here also needs a label in
+# src/utils.ts (PREMIUM_FORMAT_LABELS) to render a chip.
+PREMIUM_FORMATS: tuple[str, ...] = ("imax",)
 
 
 class Showtime(TypedDict):

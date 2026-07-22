@@ -5,8 +5,7 @@ from __future__ import annotations
 import logging
 import math
 import re
-from collections.abc import Mapping
-from collections.abc import Set as AbstractSet
+from collections.abc import Collection, Mapping
 from contextlib import suppress
 from datetime import date, datetime
 from typing import Any
@@ -282,7 +281,7 @@ def _as_optional_imdb_id(value: object, *, source: str) -> str | None:
     return None
 
 
-def _as_enum(value: object, allowed: AbstractSet[str], *, source: str) -> str | None:
+def _as_enum(value: object, allowed: Collection[str], *, source: str) -> str | None:
     """Return value if it is one of the allowed strings, else None (unknown)."""
     code = _as_optional_string(value, source=source)
     if code is None:

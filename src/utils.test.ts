@@ -1,6 +1,43 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { Listings } from "./types";
+import type { Listings, Movie, Showtime } from "./types";
 import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, subtitleBadge, premiumFormat, premiumFormatLabel, buildCinemaRows } from "./utils";
+
+/** One Verdi theater and one movie; override only the movie fields a test asserts on. */
+function sampleListings(showtimes: Showtime[], movie: Partial<Movie> = {}): Listings {
+  return {
+    generated_at: "2026-03-29T09:00:00Z",
+    stale: false,
+    theaters: [
+      {
+        id: "verdi",
+        name: "Cinemes Verdi",
+        address: "Carrer de Verdi, 32",
+        neighborhood: "Gracia",
+        website_url: "https://cinesesverdi.com",
+        maps_url: "https://maps.google.com/?q=Verdi",
+        lat: null,
+        lng: null,
+      },
+    ],
+    movies: [
+      {
+        id: "movie-1",
+        title: "Project Hail Mary",
+        year: 2025,
+        runtime_minutes: 157,
+        poster_url: null,
+        backdrop_url: null,
+        trailer_url: null,
+        genres: ["Sci-Fi"],
+        rating: 8.2,
+        synopsis: "A lone astronaut races to save humanity.",
+        links: { imdb: null, imdb_id: null },
+        ...movie,
+        showtimes,
+      },
+    ],
+  };
+}
 
 describe("subtitleBadge", () => {
   it("shows English for English audio regardless of subs", () => {
@@ -45,47 +82,10 @@ describe("premiumFormatLabel", () => {
 describe("buildCinemaRows premium format", () => {
   // No fake timers: transformResponse and buildCinemaRows both take `now`.
   it("emits the resolved formatBadge label per time", () => {
-    const listings: Listings = {
-      generated_at: "2026-03-29T09:00:00Z",
-      stale: false,
-      theaters: [
-        {
-          id: "verdi",
-          name: "Cinemes Verdi",
-          address: "Carrer de Verdi, 32",
-          neighborhood: "Gracia",
-          website_url: "https://cinesesverdi.com",
-          maps_url: "https://maps.google.com/?q=Verdi",
-          lat: null,
-          lng: null,
-        },
-      ],
-      movies: [
-        {
-          id: "movie-1",
-          title: "Project Hail Mary",
-          year: 2025,
-          runtime_minutes: 157,
-          poster_url: null,
-          backdrop_url: null,
-          trailer_url: null,
-          genres: ["Sci-Fi"],
-          rating: 8.2,
-          synopsis: "A lone astronaut races to save humanity.",
-          links: { imdb: null, imdb_id: null },
-          showtimes: [
-            { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
-            {
-              theater_id: "verdi",
-              date: "2026-03-29",
-              time: "21:40",
-              language: "vo",
-              premium_format: "imax",
-            },
-          ],
-        },
-      ],
-    };
+    const listings = sampleListings([
+      { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
+      { theater_id: "verdi", date: "2026-03-29", time: "21:40", language: "vo", premium_format: "imax" },
+    ]);
 
     const now = new Date("2026-03-29T10:00:00");
     const [movie] = transformResponse(listings, now);
@@ -179,40 +179,10 @@ describe("transformResponse", () => {
 
   it("preserves poster_url on transformed movies", () => {
     vi.setSystemTime(new Date("2026-03-29T10:00:00"));
-    const listings: Listings = {
-      generated_at: "2026-03-29T09:00:00Z",
-      stale: false,
-      theaters: [
-        {
-          id: "verdi",
-          name: "Cinemes Verdi",
-          address: "Carrer de Verdi, 32",
-          neighborhood: "Gracia",
-          website_url: "https://cinesesverdi.com",
-          maps_url: "https://maps.google.com/?q=Verdi",
-          lat: null,
-          lng: null,
-        },
-      ],
-      movies: [
-        {
-          id: "movie-1",
-          title: "Project Hail Mary",
-          year: 2025,
-          runtime_minutes: 157,
-          poster_url: "https://image.tmdb.org/t/p/w342/project-hail-mary.jpg",
-          backdrop_url: null,
-          trailer_url: null,
-          genres: ["Sci-Fi"],
-          rating: 8.2,
-          synopsis: "A lone astronaut races to save humanity.",
-          links: { imdb: null, imdb_id: null },
-          showtimes: [
-            { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
-          ],
-        },
-      ],
-    };
+    const listings = sampleListings(
+      [{ theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" }],
+      { poster_url: "https://image.tmdb.org/t/p/w342/project-hail-mary.jpg" },
+    );
 
     const [movie] = transformResponse(listings);
     expect(movie.poster_url).toBe("https://image.tmdb.org/t/p/w342/project-hail-mary.jpg");
@@ -220,26 +190,10 @@ describe("transformResponse", () => {
 
   it("preserves director and cast on transformed movies", () => {
     vi.setSystemTime(new Date("2026-03-29T10:00:00"));
-    const listings: Listings = {
-      generated_at: "2026-03-29T09:00:00Z",
-      stale: false,
-      theaters: [
-        {
-          id: "verdi", name: "Cinemes Verdi", address: "Carrer de Verdi, 32",
-          neighborhood: "Gracia", website_url: "", maps_url: "", lat: null, lng: null,
-        },
-      ],
-      movies: [
-        {
-          id: "movie-1", title: "Dune", year: 2024, runtime_minutes: 166,
-          poster_url: null, backdrop_url: null, trailer_url: null, genres: [],
-          rating: 8.2, synopsis: "", links: { imdb: null, imdb_id: null },
-          director: "Denis Villeneuve", cast: ["Timothée Chalamet", "Zendaya"],
-          original_lang: "en",
-          showtimes: [{ theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo", audio_lang: "other", subtitle_lang: "es" }],
-        },
-      ],
-    };
+    const listings = sampleListings(
+      [{ theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo", audio_lang: "other", subtitle_lang: "es" }],
+      { title: "Dune", director: "Denis Villeneuve", cast: ["Timothée Chalamet", "Zendaya"], original_lang: "en" },
+    );
 
     const [movie] = transformResponse(listings);
     expect(movie.director).toBe("Denis Villeneuve");
@@ -252,40 +206,10 @@ describe("transformResponse", () => {
   it("excludes showtimes whose datetime has already passed", () => {
     // System time: 2026-03-29 at 20:00 — the 18:00 show is already over
     vi.setSystemTime(new Date("2026-03-29T20:00:00"));
-    const listings: Listings = {
-      generated_at: "2026-03-29T09:00:00Z",
-      stale: false,
-      theaters: [
-        {
-          id: "verdi",
-          name: "Cinemes Verdi",
-          address: "Carrer de Verdi, 32",
-          neighborhood: "Gracia",
-          website_url: "https://cinesesverdi.com",
-          maps_url: "",
-          lat: null,
-          lng: null,
-        },
-      ],
-      movies: [
-        {
-          id: "movie-1",
-          title: "Dead Film",
-          year: 2025,
-          runtime_minutes: 90,
-          poster_url: null,
-          backdrop_url: null,
-          trailer_url: null,
-          genres: [],
-          rating: null,
-          synopsis: "",
-          links: { imdb: null, imdb_id: null },
-          showtimes: [
-            { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
-          ],
-        },
-      ],
-    };
+    const listings = sampleListings(
+      [{ theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" }],
+      { title: "Dead Film" },
+    );
 
     const result = transformResponse(listings);
     expect(result).toHaveLength(0);
@@ -293,41 +217,13 @@ describe("transformResponse", () => {
 
   it("keeps only future showtimes when a film has a mix of past and future", () => {
     vi.setSystemTime(new Date("2026-03-29T16:00:00"));
-    const listings: Listings = {
-      generated_at: "2026-03-29T09:00:00Z",
-      stale: false,
-      theaters: [
-        {
-          id: "verdi",
-          name: "Cinemes Verdi",
-          address: "Carrer de Verdi, 32",
-          neighborhood: "Gracia",
-          website_url: "",
-          maps_url: "",
-          lat: null,
-          lng: null,
-        },
+    const listings = sampleListings(
+      [
+        { theater_id: "verdi", date: "2026-03-29", time: "12:00", language: "vo" }, // past
+        { theater_id: "verdi", date: "2026-03-29", time: "20:00", language: "vo" }, // future
       ],
-      movies: [
-        {
-          id: "movie-1",
-          title: "Mixed Times",
-          year: 2025,
-          runtime_minutes: 90,
-          poster_url: null,
-          backdrop_url: null,
-          trailer_url: null,
-          genres: [],
-          rating: null,
-          synopsis: "",
-          links: { imdb: null, imdb_id: null },
-          showtimes: [
-            { theater_id: "verdi", date: "2026-03-29", time: "12:00", language: "vo" }, // past
-            { theater_id: "verdi", date: "2026-03-29", time: "20:00", language: "vo" }, // future
-          ],
-        },
-      ],
-    };
+      { title: "Mixed Times" },
+    );
 
     const [movie] = transformResponse(listings);
     expect(movie.showtimes).toHaveLength(1);
