@@ -1,5 +1,11 @@
 from typing import NotRequired, TypedDict
 
+# Premium large-format screening slugs. The single Python-side vocabulary:
+# providers/common.py matches source labels against it, validation.py gates on
+# it at ingest, transform.py at publish. Adding one here also needs a label in
+# src/utils.ts (PREMIUM_FORMAT_LABELS) to render a chip.
+PREMIUM_FORMATS: tuple[str, ...] = ("imax",)
+
 
 class Showtime(TypedDict):
     cinema: str
@@ -11,6 +17,7 @@ class Showtime(TypedDict):
     audio_lang: NotRequired[str | None]  # "en" | "other" | None (unknown)
     subtitle_lang: NotRequired[str | None]  # "en" | "es" | "ca" | None (unknown)
     booking_url: NotRequired[str | None]
+    premium_format: NotRequired[str | None]  # PREMIUM_FORMATS | None; absent in caches predating this field
 
 
 class Movie(TypedDict):

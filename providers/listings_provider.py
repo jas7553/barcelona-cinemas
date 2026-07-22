@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup, Tag
 from listings_config import listings_feed_url
 from models import CinemaRegistry, Movie, Showtime
 from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
-from providers.common import DEFAULT_HEADERS, base_movie
+from providers.common import DEFAULT_HEADERS, base_movie, normalize_premium_format
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +79,21 @@ def _extract_cinema_name(badge: Tag) -> str:
     return " ".join(parts).strip()
 
 
+def _premium_format(badge: Tag) -> str | None:
+    """
+    Extract the premium format from a showtime badge, if it carries one.
+    The child tags `_extract_cinema_name` skips are where it lives:
+      <a ...><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>
+    All of them are scanned: a badge may carry several spans (e.g. a version
+    label beside the format), and only one of them is the premium format.
+    """
+    for span in badge.find_all("span", class_="badge"):
+        premium_format = normalize_premium_format(span.get_text())
+        if premium_format is not None:
+            return premium_format
+    return None
+
+
 class ListingsProvider:
     name = "english_cinema_bcn"
 
@@ -144,16 +159,18 @@ class ListingsProvider:
                     if cinema_key is None:
                         continue
 
-                    showtimes.append(
-                        Showtime(
-                            cinema=cinema_key,
-                            neighborhood=cinemas[cinema_key]["neighborhood"],
-                            address=cinemas[cinema_key]["address"],
-                            date=show_date,
-                            time=time_str,
-                            language="vo",
-                        )
+                    showtime = Showtime(
+                        cinema=cinema_key,
+                        neighborhood=cinemas[cinema_key]["neighborhood"],
+                        address=cinemas[cinema_key]["address"],
+                        date=show_date,
+                        time=time_str,
+                        language="vo",
                     )
+                    premium_format = _premium_format(badge)
+                    if premium_format is not None:
+                        showtime["premium_format"] = premium_format
+                    showtimes.append(showtime)
 
             if not showtimes:
                 continue

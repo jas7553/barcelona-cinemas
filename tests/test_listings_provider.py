@@ -3,13 +3,15 @@
 from datetime import date
 from unittest.mock import MagicMock, patch
 
-from bs4 import Tag
+import pytest
+from bs4 import BeautifulSoup, Tag
 
 from models import CinemaInfo, CinemaRegistry
 from providers.listings_provider import (
     ListingsProvider,
     _extract_cinema_name,
     _parse_date,
+    _premium_format,
 )
 
 # ── _parse_date ───────────────────────────────────────────────────────────────
@@ -41,22 +43,40 @@ def test_parse_date_invalid_returns_empty():
 # ── _extract_cinema_name ──────────────────────────────────────────────────────
 
 
-def test_extract_cinema_name_plain():
-    from bs4 import BeautifulSoup
+def _badge(html: str) -> Tag:
+    """Parse a showtime-badge `<a>` out of an HTML snippet."""
+    tag = BeautifulSoup(html, "html.parser").find("a")
+    assert isinstance(tag, Tag)
+    return tag
 
-    html = "<a><strong>18:00</strong> Verdi</a>"
-    badge = BeautifulSoup(html, "html.parser").find("a")
-    assert isinstance(badge, Tag)
-    assert _extract_cinema_name(badge) == "Verdi"
+
+def test_extract_cinema_name_plain():
+    assert _extract_cinema_name(_badge("<a><strong>18:00</strong> Verdi</a>")) == "Verdi"
 
 
 def test_extract_cinema_name_strips_imax_span():
-    from bs4 import BeautifulSoup
-
-    html = '<a><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>'
-    badge = BeautifulSoup(html, "html.parser").find("a")
-    assert isinstance(badge, Tag)
+    badge = _badge('<a><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>')
     assert _extract_cinema_name(badge) == "Glòries"
+
+
+# ── _premium_format ───────────────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("html", "expected"),
+    [
+        ('<a><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>', "imax"),
+        ("<a><strong>18:00</strong> Verdi</a>", None),  # no span at all
+        ('<a><strong>18:00</strong> Verdi<span class="badge">VOSE</span></a>', None),  # unmapped
+        # Several badges: the format is not necessarily the first one.
+        (
+            '<a><strong>18:00</strong> Glòries<span class="badge">VOSE</span><span class="badge">IMAX</span></a>',
+            "imax",
+        ),
+    ],
+)
+def test_premium_format(html: str, expected: str | None) -> None:
+    assert _premium_format(_badge(html)) == expected
 
 
 # ── ListingsProvider.fetch ────────────────────────────────────────────────────

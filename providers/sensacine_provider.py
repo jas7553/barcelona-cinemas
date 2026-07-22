@@ -8,7 +8,7 @@ from datetime import date, timedelta
 import requests
 
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
-from providers.common import DEFAULT_HEADERS, base_movie, normalize_subtitle_lang
+from providers.common import DEFAULT_HEADERS, base_movie, normalize_premium_format, normalize_subtitle_lang
 from reconcile import reconcile
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ _SENSACINE_IDS: dict[str, str] = {
 _DAYS_AHEAD = int(os.environ.get("SENSACINE_DAYS_AHEAD", "7"))
 
 _SUBTITLE_TAG_PREFIX = "Localization.Subtitle."
+_FORMAT_TAG_PREFIX = "Format.Projection."
 
 
 def _fetch_dates() -> list[date]:
@@ -70,11 +71,22 @@ def _booking_url(ticketing: list[Mapping[str, object]]) -> str | None:
     return relay_url
 
 
-def _subtitle_lang(tags: list[str]) -> str | None:
+def _tag_suffix(tags: list[str], prefix: str) -> str | None:
+    """The first tag carrying `prefix`, with the prefix stripped."""
     for tag in tags:
-        if tag.startswith(_SUBTITLE_TAG_PREFIX):
-            return normalize_subtitle_lang(tag[len(_SUBTITLE_TAG_PREFIX) :])
+        if tag.startswith(prefix):
+            return tag[len(prefix) :]
     return None
+
+
+def _subtitle_lang(tags: list[str]) -> str | None:
+    raw = _tag_suffix(tags, _SUBTITLE_TAG_PREFIX)
+    return normalize_subtitle_lang(raw) if raw is not None else None
+
+
+def _premium_format(tags: list[str]) -> str | None:
+    raw = _tag_suffix(tags, _FORMAT_TAG_PREFIX)
+    return normalize_premium_format(raw) if raw is not None else None
 
 
 def _fetch_showtimes_for_cinema_date(
@@ -128,6 +140,7 @@ def _fetch_showtimes_for_cinema_date(
 
             tags: list[str] = [str(t) for t in (st.get("tags") or [])]
             sub_lang = _subtitle_lang(tags)
+            premium_format = _premium_format(tags)
 
             ticketing_entries = (st.get("data") or {}).get("ticketing") or []
             booking = _booking_url(ticketing_entries)
@@ -146,6 +159,8 @@ def _fetch_showtimes_for_cinema_date(
                 showtime["subtitle_lang"] = sub_lang
             if booking is not None:
                 showtime["booking_url"] = booking
+            if premium_format is not None:
+                showtime["premium_format"] = premium_format
             showtimes.append(showtime)
 
         if not showtimes:
