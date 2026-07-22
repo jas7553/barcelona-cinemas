@@ -473,51 +473,14 @@ img { display: block; }
   color: var(--lc);
 }
 
-.time-pill--lg {
-  padding: 3px 10px;
-  font-size: 13px;
-}
-
 .time-pill--more {
   border-color: var(--border);
   color: var(--text-sub);
 }
 
-/* Bookable showtime: filled pill that links straight to the seat picker. */
-a.time-pill--link {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: var(--accent);
-  color: var(--bg);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.time-pill__ticket {
-  font-size: 11px;
-  line-height: 1;
-}
-
-/* Showtime pill group — column so the action panel can expand below the pill. */
-.time-pill-group {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.time-pill-group__row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Subtitle/version badge on a showtime (e.g. "Spanish subs"), and the
-   premium-format chip that sits beside it. Hidden when unknown. */
-.subtitle-badge,
-.format-badge {
+/* One chip style for every hoisted attribute — list card, cinema header, day
+   head. Hidden when unknown. */
+.tag {
   font-size: 10px;
   font-weight: 600;
   line-height: 1;
@@ -529,53 +492,152 @@ a.time-pill--link {
   white-space: nowrap;
 }
 
-/* Selected state — outline replaces the old always-visible cal button. */
-.time-pill--selected {
+.tag--accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+/* ── Showtimes (film detail) ─────────────────────────────────────────────────
+   One showtime = one atomic block: time on top, attribute tags on a subline
+   inside the same border. Uniform width so the blocks column-align in a grid;
+   no sibling chips floating beside the pill. */
+.showtime-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 6px;
+  align-items: start;
+}
+
+.showtime {
+  min-width: 0;
+}
+
+/* The bordered container. Bookable = accent-tinted (a solid fill turns a dense
+   week into a wall of colour); the chevron is a segment inside this border
+   (split button), not a detached control. */
+.showtime__box {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  min-height: 36px;
+}
+
+.showtime__box--book {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.showtime__main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 6px;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+
+.showtime__box--book .showtime__main {
+  color: var(--accent);
+}
+
+.showtime__main:active { opacity: 0.7; }
+
+.showtime__time {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.showtime__sub {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+  max-width: 100%;
+}
+
+.showtime__tag {
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+/* IMAX and friends read as a property of the screening, not the language —
+   give them a hairline box so the two tags never blur into one string. */
+.showtime__tag--format {
+  padding: 0 3px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.9;
+}
+
+/* Chevron segment: reveals calendar/booking actions without stealing the
+   primary tap target. */
+.showtime__more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  flex-shrink: 0;
+  border: none;
+  border-left: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+.showtime__box--selected .showtime__more { transform: rotate(180deg); }
+
+.showtime__box--selected {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
-/* Chevron toggle for bookable pills (primary tap = navigate; this tap = reveal options). */
-.time-pill__chevron {
-  display: inline-flex;
+/* Action panel, expanded in flow below the block (grid row grows). */
+.showtime__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.showtime__action {
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3px 6px;
+  padding: 4px 6px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   font-size: 11px;
-  line-height: 1;
+  font-weight: 500;
   color: var(--text-sub);
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-/* Action panel revealed after selecting a pill. */
-.time-pill__actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.time-pill__action-book {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
+.showtime__action--book {
   background: var(--accent);
+  border-color: var(--accent);
   color: var(--bg);
-  border-radius: var(--r-md);
-  font-size: 12px;
   font-weight: 600;
-  text-decoration: none;
-}
-
-.time-pill__action-cal {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  font-size: 12px;
-  color: var(--text-sub);
-  text-decoration: none;
 }
 
 /* ── Cinema group (By Cinema) ────────────────────────────────────────────────── */
@@ -1198,70 +1260,27 @@ a.time-pill--link {
 
 .cinema-row__times {
   display: flex;
-  gap: 7px;
-  padding: 10px 12px;
-  flex-wrap: wrap;
-}
-
-.cinema-row__times--grouped {
   flex-direction: column;
-  gap: 5px;
+  gap: 12px;
+  padding: 10px 12px 12px;
 }
 
-.cinema-row__day-group {
+/* Day label sits on its own line rather than a fixed-width left column: the
+   hoisted badge needs the room, and the pill grid below stays full width so
+   times column-align across days. */
+.cinema-row__day-head {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .cinema-row__day-label {
   font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   color: var(--text-mute);
-  min-width: 50px;
-  flex-shrink: 0;
-}
-
-.cinema-row__day-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-/* Hoisted language badge shown once per day-group or cinema header. */
-.cinema-row__day-badge {
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 1;
-  padding: 2px 6px;
-  border-radius: var(--r-md);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-sub);
-  white-space: nowrap;
-}
-
-/* Smaller badge in the cinema header right slot (same look as day-badge). */
-.cinema-row__header-badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: var(--r-md);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-sub);
-  white-space: nowrap;
-}
-
-/* Bookability signal in the cinema header. */
-.cinema-row__book-badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: var(--r-md);
-  background: var(--accent);
-  color: var(--bg);
-  white-space: nowrap;
 }
 
 .detail-bottom-spacer { height: calc(24px + env(safe-area-inset-bottom, 0px)); }
@@ -1400,6 +1419,7 @@ a.time-pill--link {
 @media (hover: hover) {
   .film-card:hover { border-color: var(--accent); }
   .cinema-row__header:hover { background: var(--border-lt); }
+  .showtime__box:hover { border-color: var(--accent); }
   .cinema-group__film:hover { background: var(--surface2); }
   .icon-btn:hover,
   .view-tab:hover { color: var(--text); }

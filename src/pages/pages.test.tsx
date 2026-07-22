@@ -75,14 +75,14 @@ describe("ListPage", () => {
     data.movies[0].showtimes[1].premium_format = "imax";
     selectDayOf(data);
     const { container } = render(<ListPage data={{ renderedAt, listings: data }} />);
-    expect(container.querySelectorAll(".film-card__times .format-badge")).toHaveLength(1);
+    expect(container.querySelectorAll(".film-card__times .tag")).toHaveLength(1);
   });
 
   it("renders no format chip when no showtime carries one", () => {
     const data = sampleListings();
     selectDayOf(data);
     const { container } = render(<ListPage data={{ renderedAt, listings: data }} />);
-    expect(container.querySelectorAll(".format-badge")).toHaveLength(0);
+    expect(container.querySelectorAll(".film-card__times .tag")).toHaveLength(0);
   });
 
   it("links each card to its film page", () => {
@@ -116,8 +116,8 @@ describe("FilmPage", () => {
     const { container } = render(
       <FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />,
     );
-    expect(container.querySelectorAll(".time-pill-group__row .subtitle-badge")).toHaveLength(0);
-    expect(container.querySelectorAll(".time-pill-group__row .format-badge")).toHaveLength(1);
+    expect(container.querySelectorAll(".showtime__tag--subs")).toHaveLength(0);
+    expect(container.querySelectorAll(".showtime__tag--format")).toHaveLength(1);
   });
 
   it("puts the language chip before the format chip on a shared pill", () => {
@@ -129,13 +129,11 @@ describe("FilmPage", () => {
     const { container } = render(
       <FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />,
     );
-    const row = [...container.querySelectorAll(".time-pill-group__row")].find((r) =>
-      r.querySelector(".format-badge"),
+    const sub = [...container.querySelectorAll(".showtime__sub")].find((r) =>
+      r.querySelector(".showtime__tag--format"),
     )!;
-    const chips = [...row.querySelectorAll(".subtitle-badge, .format-badge")];
-    expect(chips.map((c) => c.className)).toEqual(["subtitle-badge", "format-badge"]);
-    expect(chips[0].textContent).toBe("Spanish subs");
-    expect(chips[1].textContent).toBe("IMAX");
+    const chips = [...sub.querySelectorAll(".showtime__tag")];
+    expect(chips.map((c) => c.textContent)).toEqual(["ES subs", "IMAX"]);
   });
 
   it("shows a not-found state when the film is absent", () => {

@@ -20,20 +20,43 @@ export function formatDistKm(km: number | null | undefined): string | null {
 
 // ── Subtitle badge ──────────────────────────────────────────────────────────
 
+/** How a screening reads to an English speaker — the grouping key for badges. */
+export type ViewingLang = "en-audio" | "en-subs" | "es-subs" | "ca-subs";
+
 /**
- * Derive the screening's viewing-language badge from the (audio, subtitle) pair,
- * for an English speaker. English audio wins outright; otherwise the subtitle
- * language decides. Unknown → null (no badge shown).
+ * `long` is used wherever a badge is hoisted to a day/cinema header and has the
+ * room; `short` inside the showtime pill, where the tag shares a ~90px column
+ * with the time.
  */
-export function subtitleBadge(s: {
+const VIEWING_LANG_LABELS: Record<ViewingLang, { long: string; short: string }> = {
+  "en-audio": { long: "English", short: "EN" },
+  "en-subs": { long: "English subs", short: "EN subs" },
+  "es-subs": { long: "Spanish subs", short: "ES subs" },
+  "ca-subs": { long: "Catalan subs", short: "CA subs" },
+};
+
+/**
+ * Classify a screening by the (audio, subtitle) pair, for an English speaker.
+ * English audio wins outright; otherwise the subtitle language decides.
+ * Unknown → null (no badge shown).
+ */
+export function viewingLang(s: {
   audio_lang?: string | null;
   subtitle_lang?: string | null;
-}): string | null {
-  if (s.audio_lang === "en") return "English";
-  if (s.subtitle_lang === "en") return "English subs";
-  if (s.subtitle_lang === "es") return "Spanish subs";
-  if (s.subtitle_lang === "ca") return "Catalan subs";
+}): ViewingLang | null {
+  if (s.audio_lang === "en") return "en-audio";
+  if (s.subtitle_lang === "en") return "en-subs";
+  if (s.subtitle_lang === "es") return "es-subs";
+  if (s.subtitle_lang === "ca") return "ca-subs";
   return null;
+}
+
+/** Display label for a viewing language. Absent → null (render nothing). */
+export function viewingLangLabel(
+  lang: ViewingLang | null,
+  form: "long" | "short" = "long",
+): string | null {
+  return lang ? VIEWING_LANG_LABELS[lang][form] : null;
 }
 
 const PREMIUM_FORMAT_LABELS: Record<string, string> = { imax: "IMAX" };
@@ -297,7 +320,8 @@ export type DayGroup = {
     t: string;
     date: string;
     bookingUrl?: string;
-    badge: string | null;
+    /** Grouping key for badge hoisting; the view picks the long or short label. */
+    lang: ViewingLang | null;
     formatBadge: string | null;
   }[];
 };
@@ -325,7 +349,7 @@ export function buildCinemaRows(
       t: s.time,
       date: s.date,
       bookingUrl: s.booking_url ?? undefined,
-      badge: subtitleBadge(s),
+      lang: viewingLang(s),
       formatBadge: premiumFormatLabel(s.premium_format),
     };
     if (selectedDay != null) {
