@@ -83,7 +83,7 @@ function FilmCard({ movie, dayOffset, search = "" }: Props) {
             {extraTimes > 0 && (
               <span className="time-pill time-pill--more">+{extraTimes} more</span>
             )}
-            {fmt && <span className="format-badge">{fmt}</span>}
+            {fmt && <span className="tag">{fmt}</span>}
           </div>
         )}
       </div>

@@ -142,7 +142,7 @@ test("film deep link renders standalone", async ({ page }) => {
 // listings.json → SSG render → DOM.
 test("premium format chip renders on the film page", async ({ page }) => {
   await page.goto(`/film/${premiumFormatFilmId()}`);
-  await expect(page.locator(".format-badge").first()).toHaveText("IMAX");
+  await expect(page.locator(".showtime__tag--format").first()).toHaveText("IMAX");
   expect(consoleErrors, consoleErrors.join(" | ")).toHaveLength(0);
 });
 

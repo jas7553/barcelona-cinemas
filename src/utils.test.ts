@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Listings, Movie, Showtime } from "./types";
-import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, subtitleBadge, premiumFormatLabel, buildCinemaRows } from "./utils";
+import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, viewingLang, viewingLangLabel, premiumFormatLabel, buildCinemaRows } from "./utils";
 
 /** One Verdi theater and one movie; override only the movie fields a test asserts on. */
 function sampleListings(showtimes: Showtime[], movie: Partial<Movie> = {}): Listings {
@@ -39,20 +39,28 @@ function sampleListings(showtimes: Showtime[], movie: Partial<Movie> = {}): List
   };
 }
 
-describe("subtitleBadge", () => {
+const badge = (s: { audio_lang?: string | null; subtitle_lang?: string | null }) =>
+  viewingLangLabel(viewingLang(s));
+
+describe("viewingLang", () => {
   it("shows English for English audio regardless of subs", () => {
-    expect(subtitleBadge({ audio_lang: "en", subtitle_lang: "es" })).toBe("English");
-    expect(subtitleBadge({ audio_lang: "en" })).toBe("English");
+    expect(badge({ audio_lang: "en", subtitle_lang: "es" })).toBe("English");
+    expect(badge({ audio_lang: "en" })).toBe("English");
   });
   it("shows the subtitle language for foreign audio", () => {
-    expect(subtitleBadge({ audio_lang: "other", subtitle_lang: "en" })).toBe("English subs");
-    expect(subtitleBadge({ audio_lang: "other", subtitle_lang: "es" })).toBe("Spanish subs");
-    expect(subtitleBadge({ subtitle_lang: "ca" })).toBe("Catalan subs");
+    expect(badge({ audio_lang: "other", subtitle_lang: "en" })).toBe("English subs");
+    expect(badge({ audio_lang: "other", subtitle_lang: "es" })).toBe("Spanish subs");
+    expect(badge({ subtitle_lang: "ca" })).toBe("Catalan subs");
   });
   it("returns null when unknown", () => {
-    expect(subtitleBadge({})).toBeNull();
-    expect(subtitleBadge({ audio_lang: null, subtitle_lang: null })).toBeNull();
-    expect(subtitleBadge({ audio_lang: "other" })).toBeNull();
+    expect(badge({})).toBeNull();
+    expect(badge({ audio_lang: null, subtitle_lang: null })).toBeNull();
+    expect(badge({ audio_lang: "other" })).toBeNull();
+  });
+  it("has a compact form for the showtime pill", () => {
+    expect(viewingLangLabel(viewingLang({ audio_lang: "en" }), "short")).toBe("EN");
+    expect(viewingLangLabel(viewingLang({ subtitle_lang: "es" }), "short")).toBe("ES subs");
+    expect(viewingLangLabel(null, "short")).toBeNull();
   });
 });
 
