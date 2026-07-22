@@ -7,7 +7,7 @@
 //   npx playwright test --ui     # interactive
 
 import { test, expect } from "@playwright/test";
-import { FIXTURE_TAGLINE } from "./fixture";
+import { FIXTURE_TAGLINE, premiumFormatFilmId } from "./fixture";
 
 // Collected across the run; asserted empty at the end.
 let consoleErrors: string[] = [];
@@ -134,6 +134,15 @@ test("film deep link renders standalone", async ({ page }) => {
   await page.goto(href!);
   await expect(page.locator(".detail-film-title")).toBeVisible();
   await expect(page.locator(".detail-showtimes")).toBeVisible();
+  expect(consoleErrors, consoleErrors.join(" | ")).toHaveLength(0);
+});
+
+// The one test exercising the whole premium-format chain: the fixture is a
+// cache-shape file, so the injected value flows validation → transform →
+// listings.json → SSG render → DOM.
+test("premium format chip renders on the film page", async ({ page }) => {
+  await page.goto(`/film/${premiumFormatFilmId()}`);
+  await expect(page.locator(".format-badge").first()).toHaveText("IMAX");
   expect(consoleErrors, consoleErrors.join(" | ")).toHaveLength(0);
 });
 

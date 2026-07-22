@@ -28,6 +28,8 @@ export interface Showtime {
   /** Direct ticket-purchase link for this exact screening, when the cinema exposes one.
       Optional: older cached API responses predate this field. */
   booking_url?: string | null;
+  /** Premium large-format screening: "imax" | null. Optional: older cached responses predate it. */
+  premium_format?: "imax" | null;
 }
 
 export interface Movie {

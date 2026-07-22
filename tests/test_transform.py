@@ -96,6 +96,47 @@ def test_subtitle_fields_default_to_none_when_absent():
     assert out["subtitle_lang"] is None
 
 
+def test_carries_premium_format():
+    st = _showtime()
+    st["premium_format"] = "imax"
+    result = to_api_response(_listings(movies=[_movie(showtimes=[st])]), CINEMAS)
+    assert result["movies"][0]["showtimes"][0]["premium_format"] == "imax"
+
+
+def test_premium_format_key_present_and_none_when_absent():
+    result = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
+    assert result["movies"][0]["showtimes"][0]["premium_format"] is None
+
+
+def test_premium_format_key_present_and_none_when_unknown_slug():
+    st = _showtime()
+    st["premium_format"] = "4dx"
+    result = to_api_response(_listings(movies=[_movie(showtimes=[st])]), CINEMAS)
+    assert result["movies"][0]["showtimes"][0]["premium_format"] is None
+
+
+def test_premium_format_survives_dedup_against_a_richer_duplicate():
+    """
+    Regression: the same screening reaches transform twice — the ECB feed's
+    copy carries the IMAX badge, SensaCine's carries the booking link and the
+    subtitle language. Deduping to a single winner dropped the badge; the merge
+    must keep every field, whichever provider ran first.
+    """
+    date = _today_iso()
+    premium = _showtime(date=date, time="21:40")
+    premium["premium_format"] = "imax"
+    linked = _showtime(date=date, time="21:40")
+    linked["booking_url"] = "https://book"
+    linked["subtitle_lang"] = "es"
+    for showtimes in ([premium, linked], [linked, premium]):
+        result = to_api_response(_listings(movies=[_movie(showtimes=showtimes)]), CINEMAS)
+
+        [out] = result["movies"][0]["showtimes"]
+        assert out["premium_format"] == "imax"
+        assert out["booking_url"] == "https://book"
+        assert out["subtitle_lang"] == "es"
+
+
 def test_passes_through_original_lang():
     movie = _movie(showtimes=[_showtime()])
     movie["original_lang"] = "fr"

@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 import math
 import re
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from contextlib import suppress
 from datetime import date, datetime
 from typing import Any
 
-from models import Listings, Movie, Showtime
+from models import PREMIUM_FORMATS, Listings, Movie, Showtime
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +151,9 @@ def normalize_showtime(data: object, *, source: str) -> Showtime | None:
     booking_url = _as_optional_http_url(data.get("booking_url"), source=f"{source} booking_url")
     if booking_url is not None:
         showtime["booking_url"] = booking_url
+    premium_format = _as_enum(data.get("premium_format"), PREMIUM_FORMATS, source=f"{source} premium_format")
+    if premium_format is not None:
+        showtime["premium_format"] = premium_format
     return showtime
 
 
@@ -278,7 +281,7 @@ def _as_optional_imdb_id(value: object, *, source: str) -> str | None:
     return None
 
 
-def _as_enum(value: object, allowed: set[str], *, source: str) -> str | None:
+def _as_enum(value: object, allowed: Collection[str], *, source: str) -> str | None:
     """Return value if it is one of the allowed strings, else None (unknown)."""
     code = _as_optional_string(value, source=source)
     if code is None:

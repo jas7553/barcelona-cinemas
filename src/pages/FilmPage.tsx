@@ -389,49 +389,33 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
                       {dayGroups.map((group, gi) => {
                         const { isUniform, value: groupHoistedBadge } = groupBadgeResults[gi];
                         const showDayBadge = !cinemaHeaderBadge && isUniform && groupHoistedBadge !== null;
+                        const pills = group.times.map(({ key, t, date, bookingUrl, badge, formatBadge }) => (
+                          <TimePill
+                            key={key}
+                            pillKey={key}
+                            selectedKey={selectedPillKey}
+                            onSelect={setSelectedPillKey}
+                            time={t}
+                            date={date}
+                            bookingUrl={bookingUrl}
+                            badge={isUniform ? null : badge}
+                            formatBadge={formatBadge}
+                            film={movie.title}
+                            cinema={theater.name}
+                            address={theater.address}
+                            runtimeMinutes={movie.runtime_minutes}
+                            now={now}
+                          />
+                        ));
                         return group.label == null ? (
-                          group.times.map(({ key, t, date, bookingUrl, badge }) => (
-                            <TimePill
-                              key={key}
-                              pillKey={key}
-                              selectedKey={selectedPillKey}
-                              onSelect={setSelectedPillKey}
-                              time={t}
-                              date={date}
-                              bookingUrl={bookingUrl}
-                              badge={isUniform ? null : badge}
-                              film={movie.title}
-                              cinema={theater.name}
-                              address={theater.address}
-                              runtimeMinutes={movie.runtime_minutes}
-                              now={now}
-                            />
-                          ))
+                          pills
                         ) : (
                           <div key={group.offset} className="cinema-row__day-group">
                             <span className="cinema-row__day-label">{group.label}</span>
                             {showDayBadge && (
                               <span className="cinema-row__day-badge">{groupHoistedBadge}</span>
                             )}
-                            <div className="cinema-row__day-pills">
-                              {group.times.map(({ key, t, date, bookingUrl, badge }) => (
-                                <TimePill
-                                  key={key}
-                                  pillKey={key}
-                                  selectedKey={selectedPillKey}
-                                  onSelect={setSelectedPillKey}
-                                  time={t}
-                                  date={date}
-                                  bookingUrl={bookingUrl}
-                                  badge={isUniform ? null : badge}
-                                  film={movie.title}
-                                  cinema={theater.name}
-                                  address={theater.address}
-                                  runtimeMinutes={movie.runtime_minutes}
-                                  now={now}
-                                />
-                              ))}
-                            </div>
+                            <div className="cinema-row__day-pills">{pills}</div>
                           </div>
                         );
                       })}
@@ -456,6 +440,7 @@ function TimePill({
   date,
   bookingUrl,
   badge,
+  formatBadge,
   film,
   cinema,
   address,
@@ -469,6 +454,7 @@ function TimePill({
   date: string;
   bookingUrl?: string;
   badge: string | null;
+  formatBadge: string | null;
   film: string;
   cinema: string;
   address: string;
@@ -531,6 +517,7 @@ function TimePill({
           </button>
         )}
         {badge && <span className="subtitle-badge">{badge}</span>}
+        {formatBadge && <span className="format-badge">{formatBadge}</span>}
       </div>
       {isSelected && (
         <div className="time-pill__actions" role="group" aria-label="Showtime options">

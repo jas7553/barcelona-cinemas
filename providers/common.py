@@ -1,6 +1,6 @@
 """Helpers shared by listing providers."""
 
-from models import Movie, Showtime
+from models import PREMIUM_FORMATS, Movie, Showtime
 
 DEFAULT_HEADERS = {
     "User-Agent": (
@@ -45,6 +45,22 @@ def normalize_subtitle_lang(raw: str) -> str | None:
     if _matches(value, _SPANISH):
         return "es"
     return None
+
+
+def normalize_premium_format(raw: str) -> str | None:
+    """
+    Normalize a source premium-format label to a `PREMIUM_FORMATS` slug, or
+    None (not premium).
+
+    The slug doubles as the needle: upstream labels are human-authored ("IMAX
+    3D", "Sala IMAX"), and premium brand names are distinctive enough that
+    substring matching cannot plausibly produce a false positive. Adding a
+    format is then a one-line edit to `PREMIUM_FORMATS`. Never raises.
+    """
+    value = raw.strip().lower()
+    if not value:
+        return None
+    return next((slug for slug in PREMIUM_FORMATS if slug in value), None)
 
 
 def base_movie(title: str, imdb_id: str | None, showtimes: list[Showtime]) -> Movie:

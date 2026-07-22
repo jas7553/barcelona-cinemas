@@ -514,8 +514,10 @@ a.time-pill--link {
   gap: 8px;
 }
 
-/* Subtitle/version badge on a showtime (e.g. "Spanish subs"). Hidden when unknown. */
-.subtitle-badge {
+/* Subtitle/version badge on a showtime (e.g. "Spanish subs"), and the
+   premium-format chip that sits beside it. Hidden when unknown. */
+.subtitle-badge,
+.format-badge {
   font-size: 10px;
   font-weight: 600;
   line-height: 1;

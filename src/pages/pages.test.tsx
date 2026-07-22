@@ -4,6 +4,7 @@ import ListPage from "./ListPage";
 import FilmPage from "./FilmPage";
 import { renderList, renderFilm, renderPrivacy, filmListings } from "../entry-server";
 import type { Listings } from "../types";
+import { transformResponse } from "../utils";
 
 function futureDate(offsetDays: number): string {
   const d = new Date();
@@ -63,6 +64,27 @@ describe("ListPage", () => {
     expect(screen.getByText("Project Hail Mary")).toBeInTheDocument();
   });
 
+  // The card's times row (and so the chip) only renders with a day selected.
+  function selectDayOf(data: Listings): void {
+    const [movie] = transformResponse(data, new Date(renderedAt));
+    window.history.replaceState({}, "", `/?day=${movie.showtimes[0].dayOffset}`);
+  }
+
+  it("renders the format chip in the card's times row when a day is selected", () => {
+    const data = sampleListings();
+    data.movies[0].showtimes[1].premium_format = "imax";
+    selectDayOf(data);
+    const { container } = render(<ListPage data={{ renderedAt, listings: data }} />);
+    expect(container.querySelectorAll(".film-card__times .format-badge")).toHaveLength(1);
+  });
+
+  it("renders no format chip when no showtime carries one", () => {
+    const data = sampleListings();
+    selectDayOf(data);
+    const { container } = render(<ListPage data={{ renderedAt, listings: data }} />);
+    expect(container.querySelectorAll(".format-badge")).toHaveLength(0);
+  });
+
   it("links each card to its film page", () => {
     render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
     const link = screen.getByRole("link", { name: /Project Hail Mary/ });
@@ -82,6 +104,38 @@ describe("FilmPage", () => {
     render(<FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />);
     expect(screen.getByRole("heading", { name: "Project Hail Mary" })).toBeInTheDocument();
     expect(screen.getByText(/Showtimes/)).toBeInTheDocument();
+  });
+
+  it("keeps the format chip on the pill even when the language badge hoists", () => {
+    const full = sampleListings();
+    // Uniform language across both showtimes → the language badge hoists away;
+    // the format chip must not follow it.
+    for (const s of full.movies[0].showtimes) s.audio_lang = "en";
+    full.movies[0].showtimes[1].premium_format = "imax";
+    const narrowed = filmListings(full, "1")!;
+    const { container } = render(
+      <FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />,
+    );
+    expect(container.querySelectorAll(".time-pill-group__row .subtitle-badge")).toHaveLength(0);
+    expect(container.querySelectorAll(".time-pill-group__row .format-badge")).toHaveLength(1);
+  });
+
+  it("puts the language chip before the format chip on a shared pill", () => {
+    const full = sampleListings();
+    full.movies[0].showtimes[0].subtitle_lang = "en";
+    full.movies[0].showtimes[1].subtitle_lang = "es";
+    full.movies[0].showtimes[1].premium_format = "imax";
+    const narrowed = filmListings(full, "1")!;
+    const { container } = render(
+      <FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />,
+    );
+    const row = [...container.querySelectorAll(".time-pill-group__row")].find((r) =>
+      r.querySelector(".format-badge"),
+    )!;
+    const chips = [...row.querySelectorAll(".subtitle-badge, .format-badge")];
+    expect(chips.map((c) => c.className)).toEqual(["subtitle-badge", "format-badge"]);
+    expect(chips[0].textContent).toBe("Spanish subs");
+    expect(chips[1].textContent).toBe("IMAX");
   });
 
   it("shows a not-found state when the film is absent", () => {
