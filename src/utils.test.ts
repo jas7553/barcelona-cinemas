@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Listings, Movie, Showtime } from "./types";
-import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, subtitleBadge, premiumFormat, premiumFormatLabel, buildCinemaRows } from "./utils";
+import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, subtitleBadge, premiumFormatLabel, buildCinemaRows } from "./utils";
 
 /** One Verdi theater and one movie; override only the movie fields a test asserts on. */
 function sampleListings(showtimes: Showtime[], movie: Partial<Movie> = {}): Listings {
@@ -53,16 +53,6 @@ describe("subtitleBadge", () => {
     expect(subtitleBadge({})).toBeNull();
     expect(subtitleBadge({ audio_lang: null, subtitle_lang: null })).toBeNull();
     expect(subtitleBadge({ audio_lang: "other" })).toBeNull();
-  });
-});
-
-describe("premiumFormat", () => {
-  it("returns the first non-null format in the set", () => {
-    expect(premiumFormat([{}, { premium_format: null }, { premium_format: "imax" }])).toBe("imax");
-  });
-  it("returns null when no showtime carries one", () => {
-    expect(premiumFormat([])).toBeNull();
-    expect(premiumFormat([{}, { premium_format: null }])).toBeNull();
   });
 });
 

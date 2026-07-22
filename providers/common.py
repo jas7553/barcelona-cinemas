@@ -60,7 +60,7 @@ def normalize_premium_format(raw: str) -> str | None:
     value = raw.strip().lower()
     if not value:
         return None
-    return next((slug for slug in PREMIUM_FORMATS if _matches(value, (slug,))), None)
+    return next((slug for slug in PREMIUM_FORMATS if slug in value), None)
 
 
 def base_movie(title: str, imdb_id: str | None, showtimes: list[Showtime]) -> Movie:

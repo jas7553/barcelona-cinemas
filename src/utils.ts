@@ -36,14 +36,6 @@ export function subtitleBadge(s: {
   return null;
 }
 
-/** The premium format for a set of showtimes, if any carries one. Vocab: "imax". */
-export function premiumFormat(
-  showtimes: Array<{ premium_format?: string | null }>,
-): string | null {
-  for (const s of showtimes) if (s.premium_format) return s.premium_format;
-  return null;
-}
-
 const PREMIUM_FORMAT_LABELS: Record<string, string> = { imax: "IMAX" };
 
 /** Display label for a premium-format slug. Unknown or absent → null (render nothing). */

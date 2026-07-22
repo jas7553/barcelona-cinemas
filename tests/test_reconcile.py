@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from models import Movie, Showtime
 from reconcile import dedup_showtimes, normalize_title, reconcile, same_movie
 
@@ -122,36 +124,22 @@ def _key(s: Showtime) -> tuple[str, str, str]:
     return (s["cinema"], s["date"], s["time"])
 
 
-def test_dedup_showtimes_linkless_duplicate_does_not_clobber_linked():
-    linked = _showtime("Verdi", "2026-06-14", "18:00", booking_url="https://book")
-    linkless = _showtime("Verdi", "2026-06-14", "18:00")
-    [kept] = dedup_showtimes([linked, linkless], key=_key)
-    assert kept.get("booking_url") == "https://book"
-
-
-def test_dedup_showtimes_linked_duplicate_replaces_linkless():
-    linkless = _showtime("Verdi", "2026-06-14", "18:00")
-    linked = _showtime("Verdi", "2026-06-14", "18:00", booking_url="https://book")
-    [kept] = dedup_showtimes([linkless, linked], key=_key)
-    assert kept.get("booking_url") == "https://book"
-
-
-def test_dedup_showtimes_known_subtitle_wins_regardless_of_order():
-    known = _showtime("Verdi", "2026-06-14", "18:00", subtitle_lang="es")
-    unknown = _showtime("Verdi", "2026-06-14", "18:00")
-    [a] = dedup_showtimes([unknown, known], key=_key)
-    assert a.get("subtitle_lang") == "es"
-    [b] = dedup_showtimes([known, unknown], key=_key)
-    assert b.get("subtitle_lang") == "es"
-
-
-def test_dedup_showtimes_premium_format_wins_regardless_of_order():
-    premium = _showtime("Cinesa Diagonal", "2026-06-14", "21:40", premium_format="imax")
-    plain = _showtime("Cinesa Diagonal", "2026-06-14", "21:40")
-    [a] = dedup_showtimes([plain, premium], key=_key)
-    assert a.get("premium_format") == "imax"
-    [b] = dedup_showtimes([premium, plain], key=_key)
-    assert b.get("premium_format") == "imax"
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("booking_url", "https://book"),
+        ("subtitle_lang", "es"),
+        ("audio_lang", "en"),
+        ("premium_format", "imax"),
+    ],
+)
+def test_dedup_showtimes_info_field_wins_regardless_of_order(field: str, value: str) -> None:
+    """A copy carrying optional enrichment contributes it whichever provider ran first."""
+    rich = _showtime("Verdi", "2026-06-14", "18:00", **{field: value})
+    plain = _showtime("Verdi", "2026-06-14", "18:00")
+    for order in ([plain, rich], [rich, plain]):
+        [kept] = dedup_showtimes(order, key=_key)
+        assert kept.get(field) == value
 
 
 def test_dedup_showtimes_merges_disjoint_info_fields():
@@ -176,16 +164,6 @@ def test_dedup_showtimes_merge_never_overwrites_a_present_value():
     [kept] = dedup_showtimes([first, second], key=_key)
     assert kept.get("booking_url") == "https://first"
     assert kept.get("premium_format") == "imax"
-
-
-def test_dedup_showtimes_merges_audio_lang():
-    """audio_lang is optional enrichment too — a copy that knows it must win over one that doesn't."""
-    unknown = _showtime("Verdi", "2026-06-14", "18:00")
-    known = _showtime("Verdi", "2026-06-14", "18:00", audio_lang="en")
-    [a] = dedup_showtimes([unknown, known], key=_key)
-    assert a.get("audio_lang") == "en"
-    [b] = dedup_showtimes([known, unknown], key=_key)
-    assert b.get("audio_lang") == "en"
 
 
 def test_dedup_showtimes_merge_leaves_the_inputs_unmutated():

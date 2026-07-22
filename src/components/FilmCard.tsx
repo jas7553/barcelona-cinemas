@@ -3,7 +3,6 @@ import PosterPlaceholder from "./PosterPlaceholder";
 import {
   isLastChance,
   formatMovieMeta,
-  premiumFormat,
   premiumFormatLabel,
   thumbPosterUrl,
 } from "../utils";
@@ -37,7 +36,9 @@ function FilmCard({ movie, dayOffset, search = "" }: Props) {
   const showTimes = dayOffset !== undefined && dayTimes.length > 0;
 
   // Day-scoped for free: `filtered` is already the selected day's showtimes.
-  const fmt = premiumFormatLabel(premiumFormat(filtered));
+  const fmt = showTimes
+    ? premiumFormatLabel(filtered.find((s) => s.premium_format)?.premium_format)
+    : null;
 
   return (
     <a
