@@ -97,7 +97,14 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
                     stats["tmdb_enriched_count"] += 1
                 if result.failed:
                     stats["tmdb_failure_count"] += 1
-                enriched.append(result.movie)
+                # A re-enrichment that produced nothing (network failure or no
+                # TMDb match) must not discard good cached metadata — keep the
+                # cached copy with fresh showtimes rather than reverting to the
+                # bare scraped listing. Uncached titles still fall through.
+                if not result.enriched and cached is not None and cached.get("tmdb_id") is not None:
+                    enriched.append({**cached, "showtimes": movie["showtimes"]})
+                else:
+                    enriched.append(result.movie)
         if stats["tmdb_failure_count"]:
             emit_metric("TmdbLookupFailure", stats["tmdb_failure_count"])
         emit_metric("MoviesEnriched", stats["tmdb_enriched_count"])

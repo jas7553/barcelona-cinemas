@@ -202,6 +202,36 @@ def test_lookup_failure_returns_movie_without_metadata(mock_env):
     assert stats["tmdb_failure_count"] == 1
 
 
+def test_reenrichment_failure_preserves_cached_metadata(mock_env):
+    """Stale cache + TMDb outage keeps cached metadata, only showtimes refresh."""
+    cached = _movie(
+        "Dune: Part Two",
+        tmdb_id=42,
+        imdb_id="tt15239678",
+        poster_url="https://image.tmdb.org/t/p/w342/poster.jpg",
+        synopsis="Cached synopsis",
+        rating=8.5,
+        enriched_at="2020-01-01T00:00:00+00:00",
+        showtimes=[_showtime("2026-03-27")],
+    )
+    fresh = _movie("Dune: Part Two", showtimes=[_showtime("2026-03-28")])
+
+    mock_session = MagicMock()
+    mock_session.__enter__ = MagicMock(return_value=mock_session)
+    mock_session.__exit__ = MagicMock(return_value=False)
+    mock_session.get.side_effect = ConnectionError("network down")
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, stats = enricher.enrich([fresh], [cached])
+
+    assert result[0]["synopsis"] == "Cached synopsis"
+    assert result[0]["poster_url"] == "https://image.tmdb.org/t/p/w342/poster.jpg"
+    assert result[0]["tmdb_id"] == 42
+    assert result[0]["showtimes"][0]["date"] == "2026-03-28"
+    assert stats["tmdb_failure_count"] == 1
+    assert stats["tmdb_reenriched_count"] == 1
+
+
 def test_skips_enrichment_when_no_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     """Missing API key returns movies unchanged."""
     monkeypatch.delenv("TMDB_API_KEY", raising=False)
