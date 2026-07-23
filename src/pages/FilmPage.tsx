@@ -15,7 +15,6 @@ import {
   formatLanguage,
   generateDays,
   buildCinemaRows,
-  haversineKm,
   buildIcs,
   icsHref,
   viewingLangLabel,
@@ -112,8 +111,6 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
   };
   const [selectedPillKey, setSelectedPillKey] = useState<string | null>(null);
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
-  // Snapshot at mount — prevents jarring reorder when geolocation resolves after render
-  const [sortCoords] = useState(coords);
   const rafRef = useRef<number | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -131,9 +128,13 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
 
   const days = useMemo(() => generateDays(now), [now]);
 
+  // Sort nearest-first on live coords so order and distance labels agree. Coords
+  // are null on the server + first client render (geolocation resolves in an
+  // effect), so SSG and first hydration both render alphabetical, then the rows
+  // re-sort once coords arrive — same deferred pattern as the labels.
   const cinemaRows = useMemo(
-    () => buildCinemaRows(movie, selectedDay, sortCoords, now),
-    [movie, selectedDay, sortCoords, now],
+    () => buildCinemaRows(movie, selectedDay, coords, now),
+    [movie, selectedDay, coords, now],
   );
 
   const showtimeCount = movie.showtimes.filter(
@@ -317,6 +318,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
             {cinemaRows.length > 0 && (
               <div className="cinema-count" aria-live="polite">
                 {`${showtimeCount} showtime${showtimeCount !== 1 ? "s" : ""} · ${cinemaRows.length} cinema${cinemaRows.length !== 1 ? "s" : ""}`}
+                <span className="cinema-count__order">{coords ? "Nearest first" : "A–Z"}</span>
               </div>
             )}
 
@@ -326,14 +328,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
               </div>
             ) : (
               cinemaRows.map(({ theater, dayGroups, distKm }) => {
-                // Sort order stays frozen to mount-time coords, but distance
-                // labels use live coords — geolocation usually resolves after
-                // first render, and without this the labels never appear.
-                const liveKm =
-                  coords && theater.lat != null && theater.lng != null
-                    ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
-                    : distKm;
-                const dl = formatDistKm(liveKm);
+                const dl = formatDistKm(distKm);
 
                 // Change 3: bookability signal in cinema header.
                 const isBookable = dayGroups.some((g) => g.times.some((t) => t.bookingUrl));
