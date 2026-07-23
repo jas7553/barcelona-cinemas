@@ -421,7 +421,6 @@ function FilmView({ movie, coords, now, generatedAt, stale }: FilmViewProps) {
                               {group.times.map(({ key, t, date, bookingUrl, lang, formatBadge }) => (
                                 <Showtime
                                   key={key}
-                                  pillKey={key}
                                   panelId={panelId(theater.id, key)}
                                   selectedKey={selectedPillKey}
                                   onSelect={setSelectedPillKey}
@@ -487,7 +486,6 @@ function Showtime({
   address,
   runtimeMinutes,
   now,
-  pillKey,
   panelId,
   selectedKey,
   onSelect,
@@ -504,12 +502,14 @@ function Showtime({
   address: string;
   runtimeMinutes: number | null;
   now: Date;
-  pillKey: string;
   panelId: string;
   selectedKey: string | null;
   onSelect: (key: string | null) => void;
 }) {
-  const isSelected = pillKey === selectedKey;
+  // Selection identity must be theater-scoped: pillKey (`${dayOffset}-${time}`)
+  // repeats across cinemas, so keying selection on it alone expands every row
+  // sharing that time. panelId already carries the theater id — reuse it.
+  const isSelected = panelId === selectedKey;
   const when = dayLabel ? `${time} on ${dayLabel}` : time;
   // Deferred to expand: building the iCalendar doc + filename on every render
   // meant ~159 unused docs per re-render. Only the open row needs them.
@@ -531,7 +531,7 @@ function Showtime({
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onSelect(isSelected ? null : pillKey);
+    onSelect(isSelected ? null : panelId);
   };
 
   const body = (

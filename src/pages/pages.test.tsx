@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import ListPage from "./ListPage";
 import FilmPage from "./FilmPage";
 import { renderList, renderFilm, renderPrivacy, filmListings } from "../entry-server";
@@ -147,6 +147,38 @@ describe("FilmPage", () => {
     expect(container.querySelectorAll(".showtime").length).toBeGreaterThan(0);
     expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
+  });
+
+  it("expands only the tapped showtime when two cinemas share a time", () => {
+    // Two cinemas each screen the film at 18:00 on the same day. The pill key
+    // (`${dayOffset}-${time}`) is identical across them, so selection must be
+    // theater-scoped or tapping one expands both.
+    const full = sampleListings();
+    full.theaters.push({
+      id: "balmes",
+      name: "Mooby Balmes",
+      address: "Carrer de Balmes, 3",
+      neighborhood: "Eixample",
+      website_url: "https://example.com",
+      maps_url: "https://maps.google.com/?q=Balmes",
+      lat: null,
+      lng: null,
+    });
+    full.movies[0].showtimes = [
+      { theater_id: "verdi", date: futureDate(2), time: "18:00", language: "vo" },
+      { theater_id: "balmes", date: futureDate(2), time: "18:00", language: "vo" },
+    ];
+    const narrowed = filmListings(full, "1")!;
+    const { container } = render(
+      <FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />,
+    );
+
+    const pills = container.querySelectorAll<HTMLButtonElement>(".showtime__main");
+    expect(pills).toHaveLength(2);
+    fireEvent.click(pills[0]);
+
+    expect(container.querySelectorAll(".showtime__box--selected")).toHaveLength(1);
+    expect(container.querySelectorAll(".showtime__actions")).toHaveLength(1);
   });
 
   it("shows a not-found state when the film is absent", () => {
