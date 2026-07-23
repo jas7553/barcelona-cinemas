@@ -98,6 +98,24 @@ def test_merge_pair_english_title_absent_when_neither_side_has_it():
     assert "english_title" not in merged
 
 
+def test_merge_pair_preserves_enriched_at():
+    # Post-enrichment reconcile runs after enrich(), so a merged movie that drops
+    # enriched_at reads as never-enriched and gets re-enriched every refresh cycle.
+    a = _movie("Dune", imdb_id="tt1", enriched_at="2026-07-23T10:00:00+00:00")
+    b = _movie("Dune: Part One", imdb_id="tt1", enriched_at="2026-07-23T10:00:00+00:00")
+    [merged] = reconcile([a, b])
+    assert merged.get("enriched_at") == "2026-07-23T10:00:00+00:00"
+
+
+def test_merge_pair_preserves_zero_vote_count():
+    # vote_count == 0 is the "not yet rated" signal transform.py uses to suppress a
+    # misleading 0.0 badge; dropping it in the merge defeats that suppression.
+    a = _movie("Dune", imdb_id="tt1", rating=0.0, vote_count=0)
+    b = _movie("Dune", imdb_id="tt1", rating=0.0, vote_count=0)
+    [merged] = reconcile([a, b])
+    assert merged.get("vote_count") == 0
+
+
 def test_reconcile_picks_longest_title():
     a = _movie("Dune", imdb_id="tt1")
     b = _movie("Dune: Part One", imdb_id="tt1")

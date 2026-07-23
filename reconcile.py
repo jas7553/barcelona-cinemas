@@ -199,4 +199,13 @@ def _merge_pair(left: Movie, right: Movie) -> Movie:
     cast = _coalesce(left.get("cast"), right.get("cast"))
     if cast is not None:
         merged["cast"] = cast
+    vote_count = _coalesce(left.get("vote_count"), right.get("vote_count"))
+    if vote_count is not None:
+        merged["vote_count"] = vote_count
+    # Preserve enriched_at: without it the merged movie reads as never-enriched,
+    # so the next refresh re-enriches it every cycle (post-enrichment reconcile
+    # runs after enrich(), so both copies carry it).
+    enriched_at = _coalesce(left.get("enriched_at"), right.get("enriched_at"))
+    if enriched_at is not None:
+        merged["enriched_at"] = enriched_at
     return merged

@@ -43,12 +43,12 @@ function CinemaGroup({ group, onCinemaTap, search = "" }: Props) {
                 height={52}
                 loading="lazy"
                 decoding="async"
-                style={{ objectFit: "cover", flexShrink: 0, borderRadius: 2, background: "var(--surface2)" }}
+                className="cinema-group__film-poster"
               />
             ) : (
               <PosterPlaceholder w={36} h={52} id={movie.id} />
             )}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="cinema-group__film-body">
               <div className="cinema-group__film-title-row">
                 <span className="cinema-group__film-title">{movie.title}</span>
                 {lc && <div className="leaving-soon-badge">Leaving soon</div>}

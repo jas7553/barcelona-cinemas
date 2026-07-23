@@ -378,8 +378,15 @@ export function buildCinemaRows(
     return { theater, dayGroups, distKm };
   });
 
+  // Total order even when only some rows have a distance: located rows sort
+  // ahead of unlocated ones (a bare `distKm !== undefined` compare is
+  // intransitive on mixed input). Ties, and the all-unlocated case, fall to name.
   return rows.sort((a, b) => {
-    if (a.distKm !== undefined && b.distKm !== undefined) return a.distKm - b.distKm;
+    if (a.distKm !== undefined && b.distKm !== undefined) {
+      return a.distKm - b.distKm || a.theater.name.localeCompare(b.theater.name);
+    }
+    if (a.distKm !== undefined) return -1;
+    if (b.distKm !== undefined) return 1;
     return a.theater.name.localeCompare(b.theater.name);
   });
 }
@@ -426,10 +433,14 @@ export function buildCinemaGroups(
         : undefined,
   }));
 
+  // Total order even when only some groups have a distance (see buildCinemaRows):
+  // located groups sort ahead of unlocated, ties and all-unlocated fall to name.
   return groups.sort((a, b) => {
     if (a.distanceKm !== undefined && b.distanceKm !== undefined) {
-      return a.distanceKm - b.distanceKm;
+      return a.distanceKm - b.distanceKm || a.theater.name.localeCompare(b.theater.name);
     }
+    if (a.distanceKm !== undefined) return -1;
+    if (b.distanceKm !== undefined) return 1;
     return a.theater.name.localeCompare(b.theater.name);
   });
 }
