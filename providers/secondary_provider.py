@@ -91,7 +91,13 @@ def _parse_showtime(
     perf_code = performance.get("performance_code")
     if booking is not None and isinstance(perf_code, str) and perf_code:
         template, theatre_code = booking
-        showtime["booking_url"] = template % (perf_code, "en", theatre_code)
+        # Fill the three %s left-to-right without %-formatting: a pre-encoded
+        # char elsewhere in the template (e.g. "%20") makes `template % (...)`
+        # raise ValueError, which would abort the whole provider fetch.
+        booking_url = template
+        for value in (perf_code, "en", theatre_code):
+            booking_url = booking_url.replace("%s", value, 1)
+        showtime["booking_url"] = booking_url
     return showtime
 
 

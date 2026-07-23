@@ -8,6 +8,7 @@ API contract.  Also handles the stale-cache fallback path.
 from __future__ import annotations
 
 import logging
+import re
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -21,6 +22,20 @@ logger = logging.getLogger(__name__)
 
 # Cap the excluded-title list so one bad refresh cannot balloon a log line.
 _MAX_LOGGED_TITLES = 25
+
+_SLUG_STRIP_RE = re.compile(r"[^a-z0-9]+")
+
+
+def _slugify(title: str) -> str:
+    """URL/filename-safe id for a movie with no TMDb id.
+
+    The id becomes the film-page path (`/film/<id>` → `film/<id>.html`) and an
+    SVG placeholder ref, so it must contain only `[a-z0-9-]` — a raw title with
+    a slash, colon, or ampersand would break the route, the written file path,
+    and the `url(#...)` reference. Falls back to "film" for an all-punctuation
+    title (title itself is already guaranteed non-empty upstream).
+    """
+    return _SLUG_STRIP_RE.sub("-", title.lower()).strip("-") or "film"
 
 
 @dataclass
@@ -143,7 +158,7 @@ def _transform_movie(
     rating = movie.get("rating") if vote_count != 0 else None
 
     return {
-        "id": str(tmdb_id) if tmdb_id is not None else title.lower().replace(" ", "-"),
+        "id": str(tmdb_id) if tmdb_id is not None else _slugify(title),
         "title": title,
         "year": movie.get("year"),
         "runtime_minutes": movie.get("runtime_mins"),

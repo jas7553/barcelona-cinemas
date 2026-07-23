@@ -34,6 +34,10 @@ export function useLocationPin(): LocationPin {
       localStorage.removeItem(STORAGE_KEY);
       return;
     }
+    // Silent re-acquire on load; surface the resolving state so the cinema
+    // view can show its skeleton until coords arrive.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setResolving(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
@@ -51,6 +55,7 @@ export function useLocationPin(): LocationPin {
     if (active) {
       setActive(false);
       setCoords(null);
+      setResolving(false);
       localStorage.removeItem(STORAGE_KEY);
       return;
     }
@@ -62,13 +67,16 @@ export function useLocationPin(): LocationPin {
       return;
     }
 
+    setResolving(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         localStorage.setItem(STORAGE_KEY, "true");
         setActive(true);
+        setResolving(false);
       },
       () => {
+        setResolving(false);
         setError(true);
         if (errorTimer.current) clearTimeout(errorTimer.current);
         errorTimer.current = setTimeout(() => setError(false), 3000);
