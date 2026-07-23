@@ -45,13 +45,16 @@ def _parse_date(header: str) -> str:
 
     today = date.today()
     year = today.year
-    # If the parsed month is earlier than today's month by more than 2 months,
-    # the listing is rolling into next year (e.g., listing in Dec shows Jan dates).
-    candidate = date(year, month, day)
-    # If candidate is more than 8 days in the past, bump to next year
-    if (today - candidate).days > 8:
-        year += 1
+    try:
+        # If candidate is more than 8 days in the past, the listing is rolling
+        # into next year (e.g. a Dec listing showing Jan dates) — bump the year.
         candidate = date(year, month, day)
+        if (today - candidate).days > 8:
+            candidate = date(year + 1, month, day)
+    except ValueError:
+        # Impossible day/month (e.g. Feb 29 in a non-leap year from a garbled
+        # header) — skip this column rather than crash the whole fetch.
+        return ""
 
     return candidate.isoformat()
 

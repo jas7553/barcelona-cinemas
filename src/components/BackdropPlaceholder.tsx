@@ -15,7 +15,7 @@ export default function BackdropPlaceholder({ w, h, id }: Props) {
     <svg
       viewBox={`0 0 ${w || 430} ${h}`}
       preserveAspectRatio="xMidYMid slice"
-      style={{ display: "block", width: "100%", height: "100%" }}
+      className="backdrop-placeholder-svg"
     >
       <defs>
         <pattern id={pid} patternUnits="userSpaceOnUse" width="20" height="20" patternTransform="rotate(20)">

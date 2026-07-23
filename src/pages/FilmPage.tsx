@@ -239,10 +239,7 @@ function FilmView({ movie, coords, now, generatedAt, stale }: FilmViewProps) {
         ) : (
           <BackdropPlaceholder w={430} h={200} id={movie.id} />
         )}
-        <div
-          className="detail-backdrop-gradient"
-          style={{ background: `linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, var(--bg) 100%)` }}
-        />
+        <div className="detail-backdrop-gradient" />
       </div>
 
       {/* Back button */}
@@ -267,7 +264,6 @@ function FilmView({ movie, coords, now, generatedAt, stale }: FilmViewProps) {
                   height={112}
                   loading="lazy"
                   decoding="async"
-                  style={{ objectFit: "cover" }}
                 />
               ) : (
                 <PosterPlaceholder w={76} h={112} id={movie.id} />
@@ -378,9 +374,11 @@ function FilmView({ movie, coords, now, generatedAt, stale }: FilmViewProps) {
                 return (
                   <div key={theater.id} className="cinema-row">
                     {/* Heading wrapper for the rotor outline (H1 → H2 → H3 x N).
-                        `font: inherit` neutralises the UA h3 size/weight so the
-                        row renders byte-identically — no stylesheet change. */}
-                    <h3 style={{ font: "inherit" }}>
+                        `.cinema-row__h` sets `font: inherit` to neutralise the UA
+                        h3 size/weight so the row renders byte-identically. (An
+                        inline style here would be blocked by the strict CSP
+                        style-src.) */}
+                    <h3 className="cinema-row__h">
                     <button
                       className="cinema-row__header"
                       onClick={() =>
@@ -616,7 +614,7 @@ function Showtime({
 function FaviconLink({ icon, label, href }: { icon: string; label: string; href: string }) {
   return (
     <a href={href} target="_blank" rel="noreferrer" className="ext-link">
-      <img src={icon} width={14} height={14} alt="" style={{ borderRadius: 2 }} />
+      <img src={icon} width={14} height={14} alt="" className="ext-link__icon" />
       {label}
     </a>
   );

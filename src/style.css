@@ -712,6 +712,18 @@ img { display: block; }
 
 .cinema-group__film:active { opacity: 0.75; }
 
+.cinema-group__film-poster {
+  object-fit: cover;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: var(--surface2);
+}
+
+.cinema-group__film-body {
+  flex: 1;
+  min-width: 0;
+}
+
 .cinema-group__film + .cinema-group__film {
   border-top: 1px solid var(--border-lt);
 }
@@ -1029,6 +1041,7 @@ img { display: block; }
 .detail-backdrop-gradient {
   position: absolute;
   inset: 0;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, var(--bg) 100%);
 }
 
 .detail-back-btn {
@@ -1092,6 +1105,13 @@ img { display: block; }
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
   background: var(--surface2);
 }
+
+.detail-poster img { object-fit: cover; }
+
+/* Generated SVG placeholders (art-less films). Classes not inline styles —
+   the strict CSP style-src blocks inline styles. */
+.backdrop-placeholder-svg { display: block; width: 100%; height: 100%; }
+.poster-placeholder-svg { display: block; flex-shrink: 0; }
 
 .detail-meta-col {
   padding-top: 44px;
@@ -1232,6 +1252,8 @@ img { display: block; }
 
 .ext-link:active { opacity: 0.7; }
 
+.ext-link__icon { border-radius: 2px; }
+
 /* Showtimes section */
 .detail-showtimes {
   padding: 16px 16px 0;
@@ -1272,6 +1294,10 @@ img { display: block; }
   border: 1px solid var(--border);
   overflow: hidden;
 }
+
+/* Neutralise UA h3 size/weight so the header button renders byte-identically.
+   A class, not an inline style — the strict CSP style-src blocks inline styles. */
+.cinema-row__h { font: inherit; }
 
 .cinema-row__header {
   display: flex;
