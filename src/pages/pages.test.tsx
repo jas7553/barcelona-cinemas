@@ -154,6 +154,27 @@ describe("FilmPage", () => {
     render(<FilmPage data={{ renderedAt, listings: empty, filmId: "999" }} />);
     expect(screen.getByText(/isn't showing/)).toBeInTheDocument();
   });
+
+  it("shows the finished-run state (not 'Not found') when every showtime has passed", () => {
+    const full = sampleListings();
+    // The id still matches a film in the payload, but all its showtimes are now
+    // in the past, so transformResponse drops it — a finished run, not a bad link.
+    for (const s of full.movies[0].showtimes) s.date = futureDate(-3);
+    const narrowed = filmListings(full, "1")!;
+    render(<FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />);
+    expect(screen.getByText(/Finished its run/i)).toBeInTheDocument();
+    expect(screen.queryByText(/isn't showing/)).not.toBeInTheDocument();
+  });
+
+  it("renders a data-age note in the film footer", () => {
+    const full = sampleListings();
+    full.generated_at = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+    const narrowed = filmListings(full, "1")!;
+    const { container } = render(
+      <FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />,
+    );
+    expect(container.querySelector(".site-footer")!.textContent).toContain("updated 5h ago");
+  });
 });
 
 describe("entry-server (SSG)", () => {

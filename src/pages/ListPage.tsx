@@ -4,6 +4,7 @@ import FilmCard from "../components/FilmCard";
 import CinemaGroup from "../components/CinemaGroup";
 import CinemaSheet from "../components/CinemaSheet";
 import SiteFooter from "../components/Footer";
+import DataAge from "../components/DataAge";
 import { MoonIcon, SunIcon, SearchIcon, PinIcon } from "../components/Icons";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useNow, useUrlParams } from "../hooks/useClient";
@@ -333,11 +334,7 @@ function ListView({
             <div className="result-row">
               <div className="result-count" aria-live="polite">
                 {listCount} {listNoun}{atCinemas} {showingLabel}
-                {(dataAge || stale) && (
-                  <span className={`result-count-age${stale ? " result-count-age--stale" : ""}`}>
-                    {" "}· {dataAge ? `updated ${dataAge}` : "may be out of date"}
-                  </span>
-                )}
+                <DataAge generatedAt={generatedAt} stale={stale} now={now} prefix=" · " />
               </div>
               {view === "cinema" && (
                 <button

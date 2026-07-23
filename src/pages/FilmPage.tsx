@@ -4,6 +4,7 @@ import PosterPlaceholder from "../components/PosterPlaceholder";
 import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
 import SiteFooter from "../components/Footer";
+import DataAge, { dataAgeLabel } from "../components/DataAge";
 import { BackIcon, ChevronDownIcon, ChevronRightIcon } from "../components/Icons";
 import { ThemeProvider } from "../context/ThemeContext";
 import { useNow, useUrlParams } from "../hooks/useClient";
@@ -37,9 +38,13 @@ export interface FilmPageData {
  */
 export default function FilmPage({ data }: { data: FilmPageData }) {
   const now = useNow(data.renderedAt);
+  // The id matched a real film in the payload — distinct from a bad id. When the
+  // film exists but transformResponse drops it (all showtimes now in the past),
+  // that is a finished run, not a broken link. See the two empty states below.
+  const filmInPayload = data.listings.movies.some((m) => m.id === data.filmId);
   const movie = useMemo(() => {
     const movies = transformResponse(data.listings, now);
-    return movies.find((m) => m.id === data.filmId) ?? movies[0] ?? null;
+    return movies.find((m) => m.id === data.filmId) ?? null;
   }, [data.listings, data.filmId, now]);
 
   const { coords, active, toggle } = useLocationPin();
@@ -64,15 +69,34 @@ export default function FilmPage({ data }: { data: FilmPageData }) {
         <div className="app-shell">
           <main className="screen">
             {movie ? (
-              <FilmView movie={movie} coords={coords} now={now} />
+              <FilmView
+                movie={movie}
+                coords={coords}
+                now={now}
+                generatedAt={data.listings.generated_at}
+                stale={data.listings.stale}
+              />
             ) : (
               <div className="detail-screen">
                 <div className="empty-state empty-state--center">
-                  <div className="empty-state__overline">Not found</div>
-                  <div className="empty-state__heading">This film isn't showing</div>
-                  <div className="empty-state__body">
-                    It may have finished its run, or the link is out of date.
-                  </div>
+                  {filmInPayload ? (
+                    <>
+                      <div className="empty-state__overline">Finished its run</div>
+                      <div className="empty-state__heading">This film has wrapped</div>
+                      <div className="empty-state__body">
+                        Its remaining showtimes have all passed. It may return — see
+                        what's on now.
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="empty-state__overline">Not found</div>
+                      <div className="empty-state__heading">This film isn't showing</div>
+                      <div className="empty-state__body">
+                        The link may be out of date.
+                      </div>
+                    </>
+                  )}
                   <a className="empty-state__btn" href="/">
                     See what's on
                   </a>
@@ -90,9 +114,11 @@ interface FilmViewProps {
   movie: TransformedMovie;
   coords: { lat: number; lng: number } | null;
   now: Date;
+  generatedAt: string | null;
+  stale: boolean;
 }
 
-function FilmView({ movie, coords, now }: FilmViewProps) {
+function FilmView({ movie, coords, now, generatedAt, stale }: FilmViewProps) {
   const { params: searchParams, setParams } = useUrlParams();
   // The day filter lives in the URL (?day=): the list's filter carries over on
   // entry, and a changed day survives refresh/share. Replace-state keeps the
@@ -321,8 +347,8 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
             )}
 
             {selectedDay != null && cinemaRows.length === 0 ? (
-              <div style={{ fontSize: 13, color: "var(--text-sub)", padding: "4px 0 8px" }}>
-                No screenings on this day.
+              <div className="empty-state">
+                <div className="empty-state__body">No screenings on this day.</div>
               </div>
             ) : (
               cinemaRows.map(({ theater, dayGroups, distKm }) => {
@@ -434,7 +460,13 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
         </div>
       </div>
 
-      <SiteFooter />
+      <SiteFooter
+        age={
+          dataAgeLabel(generatedAt, stale, now) != null ? (
+            <DataAge generatedAt={generatedAt} stale={stale} now={now} />
+          ) : undefined
+        }
+      />
     </div>
   );
 }
