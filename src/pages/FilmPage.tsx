@@ -111,13 +111,11 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
     });
   };
   const [selectedPillKey, setSelectedPillKey] = useState<string | null>(null);
-  const [scrollY, setScrollY] = useState(0);
-  const [backHidden, setBackHidden] = useState(false);
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
   // Snapshot at mount — prevents jarring reorder when geolocation resolves after render
   const [sortCoords] = useState(coords);
   const rafRef = useRef<number | null>(null);
-  const lastScrollTop = useRef(0);
+  const backdropRef = useRef<HTMLDivElement>(null);
 
   // Prefer real browser back so the list restores its scroll + filters via
   // bfcache; fall back to the home document on a cold deep-link entry.
@@ -125,8 +123,6 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
     if (window.history.length > 1) window.history.back();
     else window.location.assign("/");
   };
-
-  const backdropOpacity = Math.max(0, 1 - scrollY / 130);
 
   const activeDays = useMemo(
     () => new Set(movie.showtimes.map((s) => s.dayOffset)),
@@ -153,10 +149,9 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
   const rtHref = `https://www.rottentomatoes.com/search?search=${encodeURIComponent(movie.title)}`;
   const metacriticHref = `https://www.metacritic.com/search/${encodeURIComponent(movie.title)}/`;
 
-  // Detail scrolls the document body (so iOS Safari pull-to-refresh works);
-  // track window scroll for the backdrop fade + Back-pill auto-hide. No manual
-  // scroll reset: this is its own document, loaded at the top on forward nav and
-  // restored natively (bfcache) on back.
+  // Detail scrolls the document body (so iOS Safari pull-to-refresh works).
+  // No manual scroll reset: this is its own document, loaded at the top on
+  // forward nav and restored natively (bfcache) on back.
   useEffect(() => {
     if (selectedPillKey == null) return;
     const handler = () => setSelectedPillKey(null);
@@ -172,21 +167,24 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
+  // Backdrop fade, off the React render path: write opacity straight to the DOM
+  // inside a rAF-throttled scroll listener. Same ramp as before (1 → 0 over the
+  // first 130px). Once fully faded we stop touching the DOM until the user
+  // scrolls back up into the ramp.
   useEffect(() => {
+    const el = backdropRef.current;
+    if (el == null) return;
+    const apply = () => {
+      rafRef.current = null;
+      const opacity = Math.max(0, 1 - window.scrollY / 130);
+      if (opacity === 0 && el.style.opacity === "0") return;
+      el.style.opacity = String(opacity);
+    };
     const onScroll = () => {
       if (rafRef.current != null) return;
-      rafRef.current = requestAnimationFrame(() => {
-        const y = window.scrollY;
-        setScrollY(y);
-        // Tuck the floating Back pill away while scrolling down so it doesn't
-        // sit on top of the showtime grid; bring it back on any upward scroll.
-        const last = lastScrollTop.current;
-        lastScrollTop.current = y;
-        if (y > last && y > 160) setBackHidden(true);
-        else if (y < last || y <= 160) setBackHidden(false);
-        rafRef.current = null;
-      });
+      rafRef.current = requestAnimationFrame(apply);
     };
+    apply(); // sync initial state (e.g. reload while already scrolled)
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
@@ -199,7 +197,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
       <CinemaSheet venue={sheetVenue} onClose={() => setSheetVenue(null)} />
 
       {/* Backdrop */}
-      <div className="detail-backdrop" style={{ opacity: backdropOpacity }}>
+      <div className="detail-backdrop" ref={backdropRef}>
         {movie.backdrop_url ? (
           <img
             src={movie.backdrop_url}
@@ -221,11 +219,7 @@ function FilmView({ movie, coords, now }: FilmViewProps) {
       </div>
 
       {/* Back button */}
-      <button
-        className={`detail-back-btn${backHidden ? " detail-back-btn--hidden" : ""}`}
-        onClick={onBack}
-        aria-label="Back"
-      >
+      <button className="detail-back-btn" onClick={onBack} aria-label="Back">
         <BackIcon />
         <span>Back</span>
       </button>
@@ -492,17 +486,23 @@ function Showtime({
 }) {
   const isSelected = pillKey === selectedKey;
   const when = dayLabel ? `${time} on ${dayLabel}` : time;
-  const ics = buildIcs(
-    {
-      title: film,
-      location: [cinema, address].filter(Boolean).join(", "),
-      date,
-      time,
-      runtimeMinutes,
-    },
-    now,
-  );
-  const calName = `${film.replace(/\s+/g, "-").toLowerCase()}-${date}-${time.replace(":", "")}.ics`;
+  // Deferred to expand: building the iCalendar doc + filename on every render
+  // meant ~159 unused docs per re-render. Only the open row needs them.
+  const ics = isSelected
+    ? buildIcs(
+        {
+          title: film,
+          location: [cinema, address].filter(Boolean).join(", "),
+          date,
+          time,
+          runtimeMinutes,
+        },
+        now,
+      )
+    : null;
+  const calName = isSelected
+    ? `${film.replace(/\s+/g, "-").toLowerCase()}-${date}-${time.replace(":", "")}.ics`
+    : "";
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -559,7 +559,7 @@ function Showtime({
           </button>
         )}
       </div>
-      {isSelected && (
+      {isSelected && ics != null && (
         <div id={panelId} className="showtime__actions" role="group" aria-label="Showtime options">
           {bookingUrl && (
             <a
