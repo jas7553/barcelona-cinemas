@@ -756,6 +756,12 @@ img { display: block; }
   margin-top: auto;
 }
 
+.site-footer__age {
+  font-size: 12px;
+  color: var(--text-mute);
+  margin-bottom: 2px;
+}
+
 .site-footer__link {
   display: inline-flex;
   align-items: center;
