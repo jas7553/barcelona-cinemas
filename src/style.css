@@ -1246,9 +1246,22 @@ img { display: block; }
 }
 
 .cinema-count {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
   font-size: 12px;
   color: var(--text-sub);
   margin-bottom: 10px;
+}
+
+.cinema-count__order {
+  flex: none;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-sub);
+  opacity: 0.75;
 }
 
 /* Cinema rows in film detail */
