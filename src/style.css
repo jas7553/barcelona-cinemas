@@ -620,10 +620,17 @@ img { display: block; }
   background: none;
   color: var(--accent);
   cursor: pointer;
-  transition: transform 0.15s;
 }
 
-.showtime__box--selected .showtime__more { transform: rotate(180deg); }
+/* Rotate the glyph only — never the button box. The segment carries a
+   divider border-left; spinning the whole element swings that border around
+   its centre and reads as a janky flip. Isolate the transform on the SVG so
+   the box stays put and just the chevron eases over. */
+.showtime__more svg {
+  transition: transform 0.2s ease;
+}
+
+.showtime__box--selected .showtime__more svg { transform: rotate(180deg); }
 
 .showtime__box--selected {
   outline: 2px solid var(--accent);
@@ -1518,6 +1525,7 @@ img { display: block; }
   .detail-screen { animation: none; }
   .cinema-dialog,
   .cinema-dialog::backdrop { transition: none; }
+  .showtime__more svg { transition: none; }
 }
 
 /* ── Accessibility ───────────────────────────────────────────────────────────── */
