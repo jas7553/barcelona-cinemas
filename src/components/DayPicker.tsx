@@ -6,10 +6,20 @@ interface Props {
   activeDays?: Set<number>;
   /** Day chips, computed by the page from its shared `now` (SSG/hydration parity). */
   days: Array<{ label: string; fullLabel: string; offset: number }>;
+  /**
+   * Drop days with no screenings entirely instead of fading them. The film page
+   * shows a single film, so a week of dead chips is pure scaffolding; the list
+   * page keeps the full week (different films play different days).
+   */
+  hideInactive?: boolean;
 }
 
-export default function DayPicker({ selectedDay, onSelect, activeDays, days }: Props) {
+export default function DayPicker({ selectedDay, onSelect, activeDays, days, hideInactive }: Props) {
   const activeRef = useRef<HTMLButtonElement>(null);
+  const shownDays =
+    hideInactive && activeDays
+      ? days.filter(({ offset }) => activeDays.has(offset) || selectedDay === offset)
+      : days;
 
   // Deep links like /?day=5 select a chip that sits offscreen in the
   // scrollable row — bring it into view. Scroll the row only, by hand:
@@ -33,7 +43,7 @@ export default function DayPicker({ selectedDay, onSelect, activeDays, days }: P
       >
         All
       </button>
-      {days.map(({ label, offset }) => {
+      {shownDays.map(({ label, offset }) => {
         const isActive = selectedDay === offset;
         const hasScreenings = !activeDays || activeDays.has(offset);
         // A chip for a day with nothing on is a dead end — selecting it writes
