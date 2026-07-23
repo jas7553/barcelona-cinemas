@@ -238,6 +238,7 @@ Resources:
       ReservedConcurrentExecutions: 2
       Environment:
         Variables:
+          TZ: Europe/Madrid
           FRONTEND_BUCKET: !Ref FrontendBucket
           CLOUDFRONT_DISTRIBUTION_ID: !Ref CloudFrontDistributionId
           SITE_URL: !Sub "https://${CloudFrontDomainName}"
