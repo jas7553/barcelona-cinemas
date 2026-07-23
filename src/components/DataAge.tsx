@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatDataAge } from "../utils";
 
 /**
@@ -16,20 +17,27 @@ export function dataAgeLabel(
   return age ? `updated ${age}` : "may be out of date";
 }
 
-/** The freshness note as a styled span, or nothing when the data is fresh. */
+/**
+ * The freshness note as a styled span, or nothing when the data is fresh.
+ * `prefix` is rendered inside the span so its own coloring (muted / stale)
+ * covers any separator the caller wants ahead of the label.
+ */
 export default function DataAge({
   generatedAt,
   stale,
   now,
+  prefix,
 }: {
   generatedAt: string | null;
   stale: boolean;
   now: Date;
+  prefix?: ReactNode;
 }) {
   const label = dataAgeLabel(generatedAt, stale, now);
   if (label == null) return null;
   return (
     <span className={`result-count-age${stale ? " result-count-age--stale" : ""}`}>
+      {prefix}
       {label}
     </span>
   );

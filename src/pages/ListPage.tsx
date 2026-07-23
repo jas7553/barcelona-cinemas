@@ -334,11 +334,7 @@ function ListView({
             <div className="result-row">
               <div className="result-count" aria-live="polite">
                 {listCount} {listNoun}{atCinemas} {showingLabel}
-                {(dataAge || stale) && (
-                  <>
-                    {" "}· <DataAge generatedAt={generatedAt} stale={stale} now={now} />
-                  </>
-                )}
+                <DataAge generatedAt={generatedAt} stale={stale} now={now} prefix=" · " />
               </div>
               {view === "cinema" && (
                 <button
