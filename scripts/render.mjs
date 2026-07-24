@@ -25,6 +25,15 @@ try {
   listings = { generated_at: new Date().toISOString(), stale: false, theaters: [], movies: [] };
 }
 
+// Per-film output dirs the prune sweeps, each paired with the only extension it
+// is allowed to delete there. Keep in sync with ssg-lambda/index.mjs.
+const PRUNE_PREFIXES = [
+  ["film", ".html"],
+  ["data/film", ".json"],
+];
+
+let prunedCount = 0;
+
 const { filmCount } = await renderAll({
   listings,
   manifest,
@@ -35,6 +44,28 @@ const { filmCount } = await renderAll({
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, contents);
   },
+  // Delete per-film output left over from a previous render whose movie has
+  // since dropped out of the listings — mirrors the S3 prune in
+  // ssg-lambda/index.mjs. Each prefix only ever sweeps its own file type, so
+  // anything else living under these dirs is left alone.
+  prune(keepRelPaths) {
+    for (const [prefix, ext] of PRUNE_PREFIXES) {
+      const dir = path.join(OUT, prefix);
+      let names;
+      try {
+        names = fs.readdirSync(dir);
+      } catch {
+        continue; // dir not there yet (first render, or vite build emptied static/)
+      }
+      for (const name of names) {
+        if (!name.endsWith(ext)) continue;
+        if (keepRelPaths.has(`${prefix}/${name}`)) continue;
+        fs.unlinkSync(path.join(dir, name));
+        prunedCount++;
+      }
+    }
+  },
 });
 
-console.log(`[render] wrote index.html + ${filmCount} film page(s) → static/`);
+const pruned = prunedCount ? `, pruned ${prunedCount} stale film object(s)` : "";
+console.log(`[render] wrote index.html + ${filmCount} film page(s) → static/${pruned}`);

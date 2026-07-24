@@ -13,7 +13,13 @@
 // AWS SDK v3 is provided by the Lambda nodejs runtime — not vendored here.
 
 import { readFileSync } from "node:fs";
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+} from "@aws-sdk/client-s3";
 import { CloudFrontClient, CreateInvalidationCommand } from "@aws-sdk/client-cloudfront";
 import { renderAll } from "./render-core.mjs";
 import * as server from "./entry-server.js";
@@ -57,6 +63,65 @@ function emitMetric(name, value, unit = "Count") {
   );
 }
 
+// S3 caps a single DeleteObjects request at 1000 keys.
+const DELETE_BATCH = 1000;
+
+// Per-film output prefixes the prune sweeps, each paired with the only
+// extension it may delete there. ListObjectsV2 matches on a literal prefix, so
+// `film/` does NOT cover `data/film/` — each needs its own listing pass.
+// Keep in sync with scripts/render.mjs.
+const PRUNE_PREFIXES = [
+  ["film/", ".html"],
+  ["data/film/", ".json"],
+];
+
+/**
+ * Delete per-film objects for movies no longer in the listings.
+ *
+ * Only ever touches keys under the PRUNE_PREFIXES above, and only those with
+ * that prefix's expected extension — the hashed /assets/* bundles,
+ * data/listings.json, and the root documents are all off limits (and the IAM
+ * policy scopes DeleteObject to these two prefixes besides). Called by
+ * renderAll only after every page write succeeded, so an empty keep set can
+ * only mean the listings really are empty.
+ *
+ * @param {Set<string>} keepRelPaths  Per-film keys this render just wrote.
+ * @returns {Promise<number>} objects deleted
+ */
+async function pruneStaleFilmPages(keepRelPaths) {
+  const stale = [];
+  for (const [prefix, ext] of PRUNE_PREFIXES) {
+    let token;
+    do {
+      const page = await s3.send(
+        new ListObjectsV2Command({ Bucket: BUCKET, Prefix: prefix, ContinuationToken: token }),
+      );
+      for (const obj of page.Contents ?? []) {
+        const key = obj.Key ?? "";
+        if (!key.endsWith(ext) || keepRelPaths.has(key)) continue;
+        stale.push({ Key: key });
+      }
+      token = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (token);
+  }
+
+  let deleted = 0;
+  for (let i = 0; i < stale.length; i += DELETE_BATCH) {
+    const batch = stale.slice(i, i + DELETE_BATCH);
+    const res = await s3.send(
+      new DeleteObjectsCommand({ Bucket: BUCKET, Delete: { Objects: batch, Quiet: true } }),
+    );
+    const failed = res.Errors ?? [];
+    deleted += batch.length - failed.length;
+    // Per-key failures don't reject the request, so surface them explicitly —
+    // otherwise a permanently undeletable page looks pruned in the summary.
+    for (const e of failed) {
+      logEvent("ssg_prune_object_failure", { key: e.Key, code: e.Code, message: e.Message });
+    }
+  }
+  return deleted;
+}
+
 export async function handler(event = {}) {
   const refreshId = event?.refresh_id ?? null;
   const startedMs = Date.now();
@@ -81,6 +146,8 @@ async function render(refreshId, startedMs) {
   const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: DATA_KEY }));
   const listings = JSON.parse(await obj.Body.transformToString());
 
+  let prunedCount = 0;
+
   const { filmCount } = await renderAll({
     listings,
     manifest,
@@ -99,6 +166,20 @@ async function render(refreshId, startedMs) {
           CacheControl: "no-cache",
         }),
       );
+    },
+    async prune(keepRelPaths) {
+      // Never fail the render over a prune: the freshly written pages are
+      // already correct, and a leftover stale page beats no refresh at all.
+      try {
+        prunedCount = await pruneStaleFilmPages(keepRelPaths);
+      } catch (err) {
+        emitMetric("SsgPruneFailure", 1);
+        logEvent("ssg_prune_failure", {
+          refresh_id: refreshId,
+          exception_type: err?.name ?? "Error",
+          message: err?.message,
+        });
+      }
     },
   });
 
@@ -123,6 +204,7 @@ async function render(refreshId, startedMs) {
     bucket: BUCKET,
     movie_count: listings?.movies?.length ?? 0,
     film_page_count: filmCount,
+    pruned_object_count: prunedCount,
     invalidation_id: invalidationId,
     duration_ms: Date.now() - startedMs,
   });
