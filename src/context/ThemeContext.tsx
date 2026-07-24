@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 interface ThemeCtx {
   dark: boolean;
@@ -30,7 +30,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Skip the first run: <html> already carries the correct theme from the
+  // pre-paint <head> script, and `dark` starts false for hydration parity. On
+  // mount this effect would otherwise write that stale `false` to the DOM,
+  // stripping the pre-painted `dark` class a beat before the read effect above
+  // re-adds it — a dark→light→dark flash on every load for dark-mode users.
+  // The read effect computes the identical value the pre-paint script used, so
+  // the DOM and React state already agree; only apply on later changes (toggle).
+  const domSynced = useRef(false);
   useEffect(() => {
+    if (!domSynced.current) {
+      domSynced.current = true;
+      return;
+    }
     document.documentElement.classList.toggle("dark", dark);
     document.documentElement.style.colorScheme = dark ? "dark" : "light";
     const meta = document.getElementById("theme-color-meta") as HTMLMetaElement | null;
