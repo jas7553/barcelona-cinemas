@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Listings, Movie, Showtime } from "./types";
-import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, viewingLang, viewingLangLabel, premiumFormatLabel, buildCinemaRows } from "./utils";
+import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, viewingLang, viewingLangLabel, premiumFormatLabel, buildCinemaRows, buildCinemaGroups, buildDaySections, generateDays, dayHorizon } from "./utils";
 
 /** One Verdi theater and one movie; override only the movie fields a test asserts on. */
 function sampleListings(showtimes: Showtime[], movie: Partial<Movie> = {}): Listings {
@@ -90,6 +90,117 @@ describe("buildCinemaRows premium format", () => {
     const [row] = buildCinemaRows(movie, null, null, now);
     const times = row.dayGroups.flatMap((g) => g.times);
     expect(times.map((t) => t.formatBadge)).toEqual([null, "IMAX"]);
+  });
+});
+
+describe("day horizon", () => {
+  const now = new Date("2026-03-29T10:00:00");
+
+  it("defaults to a week of chips", () => {
+    expect(generateDays(now)).toHaveLength(7);
+    expect(generateDays(now)[0].label).toBe("Today");
+  });
+
+  it("stretches to reach a day the providers published beyond the week", () => {
+    // Providers occasionally publish an 8th day. Without a chip for it those
+    // showtimes render under "All" but no filter can isolate them.
+    const listings = sampleListings([
+      { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
+      { theater_id: "verdi", date: "2026-04-05", time: "18:00", language: "vo" },
+    ]);
+    const movies = transformResponse(listings, now);
+
+    expect(dayHorizon(movies)).toBe(8);
+    const days = generateDays(now, dayHorizon(movies));
+    expect(days).toHaveLength(8);
+    expect(days.map((d) => d.offset)).toContain(7);
+  });
+
+  it("never shrinks below a week for a short run", () => {
+    const listings = sampleListings([
+      { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
+    ]);
+    expect(dayHorizon(transformResponse(listings, now))).toBe(7);
+  });
+});
+
+describe("buildCinemaGroups", () => {
+  const now = new Date("2026-03-29T10:00:00");
+  const twoDays = () =>
+    transformResponse(
+      sampleListings([
+        { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
+        { theater_id: "verdi", date: "2026-03-30", time: "20:00", language: "vo" },
+        { theater_id: "verdi", date: "2026-03-30", time: "22:15", language: "vo" },
+      ]),
+      now,
+    );
+
+  it("keeps each day's times apart when no day filter is applied", () => {
+    // Regression: times used to be deduped across the whole week into one
+    // undated row, so a week's union read as one evening's schedule.
+    const [group] = buildCinemaGroups(twoDays(), null, null);
+    const [film] = group.films;
+
+    expect(film.days.map((d) => d.offset)).toEqual([0, 1]);
+    expect(film.days[0].times).toEqual(["18:00"]);
+    expect(film.days[1].times).toEqual(["20:00", "22:15"]);
+  });
+
+  it("collapses to one unlabelled group when a day is already selected", () => {
+    const [group] = buildCinemaGroups(twoDays(), 1, null);
+    const [film] = group.films;
+
+    expect(film.days).toHaveLength(1);
+    expect(film.days[0].offset).toBe(-1);
+    expect(film.days[0].times).toEqual(["20:00", "22:15"]);
+  });
+});
+
+describe("buildDaySections", () => {
+  const now = new Date("2026-03-29T10:00:00");
+  const listings = (): Listings => ({
+    ...sampleListings([
+      { theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" },
+      { theater_id: "malda", date: "2026-03-29", time: "19:30", language: "vo" },
+      { theater_id: "verdi", date: "2026-03-30", time: "20:00", language: "vo" },
+    ]),
+    theaters: [
+      ...sampleListings([]).theaters,
+      {
+        id: "malda",
+        name: "Cinema Maldà",
+        address: "Carrer del Pi, 5",
+        neighborhood: "Gotic",
+        website_url: "",
+        maps_url: "",
+        lat: null,
+        lng: null,
+      },
+    ],
+  });
+
+  it("groups day-first, with every cinema for that day inside it", () => {
+    const [movie] = transformResponse(listings(), now);
+    const sections = buildDaySections(movie, null, null, now);
+
+    expect(sections.map((s) => s.offset)).toEqual([0, 1]);
+    expect(sections[0].label).toBe("Today");
+    expect(sections[0].cinemas.map((c) => c.theater.name)).toEqual([
+      "Cinema Maldà",
+      "Cinemes Verdi",
+    ]);
+    expect(sections[1].cinemas.map((c) => c.theater.name)).toEqual(["Cinemes Verdi"]);
+  });
+
+  it("returns the single selected day, labelled from the real offset", () => {
+    const [movie] = transformResponse(listings(), now);
+    const sections = buildDaySections(movie, 1, null, now);
+
+    expect(sections).toHaveLength(1);
+    expect(sections[0].offset).toBe(1);
+    expect(sections[0].label).toBe(generateDays(now)[1].label);
+    expect(sections[0].cinemas[0].times.map((t) => t.t)).toEqual(["20:00"]);
   });
 });
 

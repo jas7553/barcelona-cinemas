@@ -15,7 +15,8 @@ import {
   formatMovieMeta,
   formatLanguage,
   generateDays,
-  buildCinemaRows,
+  dayHorizon,
+  buildDaySections,
   buildIcs,
   icsHref,
   viewingLangLabel,
@@ -46,7 +47,7 @@ export default function FilmPage({ data }: { data: FilmPageData }) {
     return movies.find((m) => m.id === data.filmId) ?? null;
   }, [data.listings, data.filmId, now]);
 
-  const { coords, active, toggle } = useLocationPin();
+  const { coords, active, error, resolving, toggle } = useLocationPin();
 
   // Distance labels are nice-to-have: re-use geolocation only if the user has
   // already granted permission — never raise the system prompt uninvited.
@@ -74,6 +75,10 @@ export default function FilmPage({ data }: { data: FilmPageData }) {
                 now={now}
                 generatedAt={data.listings.generated_at}
                 stale={data.listings.stale}
+                locationActive={active}
+                locationError={error}
+                locationResolving={resolving}
+                onToggleLocation={toggle}
               />
             ) : (
               <div className="detail-screen">
@@ -115,9 +120,23 @@ interface FilmViewProps {
   now: Date;
   generatedAt: string | null;
   stale: boolean;
+  locationActive: boolean;
+  locationError: boolean;
+  locationResolving: boolean;
+  onToggleLocation: () => void;
 }
 
-function FilmView({ movie, coords, now, generatedAt, stale }: FilmViewProps) {
+function FilmView({
+  movie,
+  coords,
+  now,
+  generatedAt,
+  stale,
+  locationActive,
+  locationError,
+  locationResolving,
+  onToggleLocation,
+}: FilmViewProps) {
   const { params: searchParams, setParams } = useUrlParams();
   // The day filter lives in the URL (?day=): the list's filter carries over on
   // entry, and a changed day survives refresh/share. Replace-state keeps the
@@ -142,8 +161,14 @@ function FilmView({ movie, coords, now, generatedAt, stale }: FilmViewProps) {
 
   // Prefer real browser back so the list restores its scroll + filters via
   // bfcache; fall back to the home document on a cold deep-link entry.
+  // history.length alone isn't enough: arriving in the same tab from Google or
+  // a chat app leaves a populated history whose previous entry is that other
+  // site, so "Back" would leave the app entirely. Only step back when the
+  // referrer says we came from here.
   const onBack = () => {
-    if (window.history.length > 1) window.history.back();
+    const cameFromApp =
+      document.referrer !== "" && new URL(document.referrer).origin === window.location.origin;
+    if (cameFromApp && window.history.length > 1) window.history.back();
     else window.location.assign("/");
   };
 
@@ -152,20 +177,27 @@ function FilmView({ movie, coords, now, generatedAt, stale }: FilmViewProps) {
     [movie.showtimes],
   );
 
-  const days = useMemo(() => generateDays(now), [now]);
+  const days = useMemo(() => generateDays(now, dayHorizon([movie])), [now, movie]);
 
   // Sort nearest-first on live coords so order and distance labels agree. Coords
   // are null on the server + first client render (geolocation resolves in an
   // effect), so SSG and first hydration both render alphabetical, then the rows
   // re-sort once coords arrive — same deferred pattern as the labels.
-  const cinemaRows = useMemo(
-    () => buildCinemaRows(movie, selectedDay, coords, now),
+  const daySections = useMemo(
+    () => buildDaySections(movie, selectedDay, coords, now),
     [movie, selectedDay, coords, now],
   );
 
   const showtimeCount = movie.showtimes.filter(
     (s) => selectedDay == null || s.dayOffset === selectedDay,
   ).length;
+
+  // Distinct cinemas across the whole run, not per day — a cinema showing the
+  // film on three days is still one cinema in the summary line.
+  const cinemaCount = useMemo(
+    () => new Set(daySections.flatMap((d) => d.cinemas.map((c) => c.theater.id))).size,
+    [daySections],
+  );
 
   const meta = formatMovieMeta(movie, true);
   const originalLanguage = formatLanguage(movie.original_lang);
@@ -337,114 +369,121 @@ function FilmView({ movie, coords, now, generatedAt, stale }: FilmViewProps) {
 
             <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} days={days} />
 
-            {cinemaRows.length > 0 && (
+            {cinemaCount > 0 && (
               <div className="cinema-count" aria-live="polite">
-                {`${showtimeCount} showtime${showtimeCount !== 1 ? "s" : ""} · ${cinemaRows.length} cinema${cinemaRows.length !== 1 ? "s" : ""}`}
-                <span className="cinema-count__order">{coords ? "Nearest first" : "A–Z"}</span>
+                {`${showtimeCount} showtime${showtimeCount !== 1 ? "s" : ""} · ${cinemaCount} cinema${cinemaCount !== 1 ? "s" : ""}`}
+                {/* Was a bare label reading "A–Z", styled like a control but
+                    inert — and geolocation could only be granted from the list,
+                    so a deep-linked visitor had no way to reach distance order. */}
+                <button
+                  className={`cinema-count__order${locationActive ? " cinema-count__order--active" : ""}`}
+                  onClick={onToggleLocation}
+                  aria-pressed={locationActive}
+                  aria-label={locationActive ? "Sorted by distance" : "Sort cinemas by distance"}
+                >
+                  {locationError
+                    ? "No location"
+                    : locationResolving
+                      ? "Locating…"
+                      : locationActive
+                        ? "Nearest first"
+                        : "A–Z"}
+                </button>
               </div>
             )}
 
-            {selectedDay != null && cinemaRows.length === 0 ? (
+            {selectedDay != null && daySections.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state__body">No screenings on this day.</div>
               </div>
             ) : (
-              cinemaRows.map(({ theater, dayGroups, distKm }) => {
-                const dl = formatDistKm(distKm);
-
-                // Change 3: bookability signal in cinema header.
-                const isBookable = dayGroups.some((g) => g.times.some((t) => t.bookingUrl));
-
-                // Change 1: badge hoisting — compute uniform badge per day-group.
-                const groupBadgeResults = dayGroups.map((g) => {
-                  const set = new Set(g.times.map((t) => t.lang));
-                  const isUniform = set.size === 1;
-                  return { isUniform, value: isUniform ? [...set][0] : null };
-                });
-                // Promote to cinema header when ALL day-groups share the same non-null badge.
-                const cinemaHeaderBadge = viewingLangLabel(
-                  groupBadgeResults.length > 0 &&
-                    groupBadgeResults.every(
-                      (r) => r.isUniform && r.value !== null && r.value === groupBadgeResults[0].value,
-                    )
-                    ? groupBadgeResults[0].value
-                    : null,
-                );
-
-                return (
-                  <div key={theater.id} className="cinema-row">
-                    {/* Heading wrapper for the rotor outline (H1 → H2 → H3 x N).
-                        `.cinema-row__h` sets `font: inherit` to neutralise the UA
-                        h3 size/weight so the row renders byte-identically. (An
-                        inline style here would be blocked by the strict CSP
-                        style-src.) */}
-                    <h3 className="cinema-row__h">
-                    <button
-                      className="cinema-row__header"
-                      onClick={() =>
-                        setSheetVenue({
-                          name: theater.name,
-                          address: theater.address || undefined,
-                          neighborhood: theater.neighborhood || undefined,
-                          distLabel: dl ?? undefined,
-                          mapsUrl: theater.maps_url || undefined,
-                          websiteUrl: theater.website_url || undefined,
-                          lat: theater.lat,
-                          lng: theater.lng,
-                        })
-                      }
-                    >
-                      <span className="cinema-row__name">{theater.name}</span>
-                      <div className="cinema-row__right">
-                        {isBookable && <span className="tag tag--accent">Book online</span>}
-                        {cinemaHeaderBadge && <span className="tag">{cinemaHeaderBadge}</span>}
-                        {dl && <span className="cinema-row__dist">{dl}</span>}
-                        <ChevronRightIcon />
-                      </div>
-                    </button>
+              daySections.map((section) => (
+                <section key={section.offset} className="day-section">
+                  {/* Day-first: one evening stays contiguous instead of being
+                      scattered across every cinema block. Cinemas repeat per
+                      day, which is the cheaper repetition — the day is what
+                      people filter by first. */}
+                  {selectedDay == null && (
+                    <h3 className="day-section__h">
+                      <span className="day-section__label">{section.label}</span>
+                      <span className="day-section__count">
+                        {section.cinemas.reduce((n, c) => n + c.times.length, 0)} showtimes ·{" "}
+                        {section.cinemas.length} cinema{section.cinemas.length !== 1 ? "s" : ""}
+                      </span>
                     </h3>
-                    <div className="cinema-row__times">
-                      {dayGroups.map((group, gi) => {
-                        const { isUniform, value: groupHoistedLang } = groupBadgeResults[gi];
-                        const dayBadge = cinemaHeaderBadge || !isUniform
-                          ? null
-                          : viewingLangLabel(groupHoistedLang);
-                        return (
-                          <div key={group.offset}>
-                            {group.label != null && (
-                              <div className="cinema-row__day-head">
-                                <span className="cinema-row__day-label">{group.label}</span>
-                                {dayBadge && <span className="tag">{dayBadge}</span>}
-                              </div>
-                            )}
-                            <div className="showtime-grid">
-                              {group.times.map(({ key, t, date, bookingUrl, lang, formatBadge }) => (
-                                <Showtime
-                                  key={key}
-                                  panelId={panelId(theater.id, key)}
-                                  selectedKey={selectedPillKey}
-                                  onSelect={setSelectedPillKey}
-                                  time={t}
-                                  date={date}
-                                  dayLabel={group.label}
-                                  bookingUrl={bookingUrl}
-                                  badge={isUniform ? null : viewingLangLabel(lang, "short")}
-                                  formatBadge={formatBadge}
-                                  film={movie.title}
-                                  cinema={theater.name}
-                                  address={theater.address}
-                                  runtimeMinutes={movie.runtime_minutes}
-                                  now={now}
-                                />
-                              ))}
+                  )}
+
+                  {section.cinemas.map(({ theater, times, distKm }) => {
+                    const dl = formatDistKm(distKm);
+                    const isBookable = times.some((t) => t.bookingUrl);
+
+                    // Badge hoisting: one cinema on one day usually screens a
+                    // single viewing language — say it once on the header
+                    // instead of on every pill.
+                    const langs = new Set(times.map((t) => t.lang));
+                    const isUniform = langs.size === 1;
+                    const headerBadge = viewingLangLabel(isUniform ? [...langs][0] : null);
+
+                    return (
+                      <div key={theater.id} className="cinema-row">
+                        {/* Heading wrapper for the rotor outline (H1 → H2 → H3 →
+                            H4). `.cinema-row__h` sets `font: inherit` to
+                            neutralise the UA heading size/weight so the row
+                            renders byte-identically. (An inline style here would
+                            be blocked by the strict CSP style-src.) */}
+                        <h4 className="cinema-row__h">
+                          <button
+                            className="cinema-row__header"
+                            onClick={() =>
+                              setSheetVenue({
+                                name: theater.name,
+                                address: theater.address || undefined,
+                                neighborhood: theater.neighborhood || undefined,
+                                distLabel: dl ?? undefined,
+                                mapsUrl: theater.maps_url || undefined,
+                                websiteUrl: theater.website_url || undefined,
+                                lat: theater.lat,
+                                lng: theater.lng,
+                              })
+                            }
+                          >
+                            <span className="cinema-row__name">{theater.name}</span>
+                            <div className="cinema-row__right">
+                              {isBookable && <span className="tag tag--accent">Book online</span>}
+                              {headerBadge && <span className="tag">{headerBadge}</span>}
+                              {dl && <span className="cinema-row__dist">{dl}</span>}
+                              <ChevronRightIcon />
                             </div>
+                          </button>
+                        </h4>
+                        <div className="cinema-row__times">
+                          <div className="showtime-grid">
+                            {times.map(({ key, t, date, bookingUrl, lang, formatBadge }) => (
+                              <Showtime
+                                key={key}
+                                panelId={panelId(theater.id, key)}
+                                selectedKey={selectedPillKey}
+                                onSelect={setSelectedPillKey}
+                                time={t}
+                                date={date}
+                                dayLabel={section.label}
+                                bookingUrl={bookingUrl}
+                                badge={isUniform ? null : viewingLangLabel(lang, "short")}
+                                formatBadge={formatBadge}
+                                film={movie.title}
+                                cinema={theater.name}
+                                address={theater.address}
+                                runtimeMinutes={movie.runtime_minutes}
+                                now={now}
+                              />
+                            ))}
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })
+                        </div>
+                      </div>
+                    );
+                  })}
+                </section>
+              ))
             )}
 
             <div className="detail-bottom-spacer" />

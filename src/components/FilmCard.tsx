@@ -11,11 +11,13 @@ import type { TransformedMovie } from "../types";
 interface Props {
   movie: TransformedMovie;
   dayOffset?: number;
+  /** Day chips from the page clock, for labelling the next showing. */
+  days?: Array<{ label: string; offset: number }>;
   /** Current list query string (e.g. "?day=2"), carried into the detail URL. */
   search?: string;
 }
 
-function FilmCard({ movie, dayOffset, search = "" }: Props) {
+function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
   const lc = isLastChance(movie);
 
   const filtered =
@@ -34,6 +36,21 @@ function FilmCard({ movie, dayOffset, search = "" }: Props) {
 
   const meta = formatMovieMeta(movie);
   const showTimes = dayOffset !== undefined && dayTimes.length > 0;
+
+  // Unfiltered, the card used to carry no time at all — the default landing
+  // state was the least informative one. Times across a whole week can't be
+  // listed honestly, but the very next screening can.
+  const next = showTimes
+    ? null
+    : movie.showtimes.reduce<TransformedMovie["showtimes"][number] | null>(
+        (best, s) =>
+          best == null || s.dayOffset < best.dayOffset || (s.dayOffset === best.dayOffset && s.time < best.time)
+            ? s
+            : best,
+        null,
+      );
+  const nextLabel =
+    next && days ? `${days.find((d) => d.offset === next.dayOffset)?.label ?? ""} ${next.time}`.trim() : null;
 
   // Day-scoped for free: `filtered` is already the selected day's showtimes.
   const fmt = showTimes
@@ -84,6 +101,11 @@ function FilmCard({ movie, dayOffset, search = "" }: Props) {
               <span className="time-pill time-pill--more">+{extraTimes} more</span>
             )}
             {fmt && <span className="tag">{fmt}</span>}
+          </div>
+        )}
+        {nextLabel && (
+          <div className="film-card__next">
+            Next <time className={`time-pill${lc ? " time-pill--lc" : ""}`}>{nextLabel}</time>
           </div>
         )}
       </div>

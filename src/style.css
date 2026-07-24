@@ -60,12 +60,20 @@
   --text-sub:    #7a7062;
   --text-mute:   #786f61;
   --accent:      #c17f3a;
-  /* Filled surfaces only. --accent stays for borders + text-on-light; on a
-     solid fill white text needs 4.5:1, which #c17f3a (3.3:1) can't give. */
+  /* Filled surfaces only. --accent is a 3.3:1 decorative amber: fine for
+     borders and focus rings (3:1 floor for non-text UI), but it fails AA as
+     text and as a fill behind white text. Hence two darker siblings. */
   --accent-solid: #a06626;
   --accent-text: #ffffff;
+  /* Small accent text on --surface / --bg (4.7:1). */
+  --accent-ink:  #a06626;
   --accent-bg:   #f5e8d4;
   --lc:          #d44e1e;
+  /* Same split for "leaving soon": --lc stays decorative, --lc-ink is the
+     AA-safe text colour (4.8:1) and --lc-solid the AA-safe badge fill. */
+  --lc-ink:      #cc4413;
+  --lc-solid:    #cc4413;
+  --lc-text:     #ffffff;
   --lc-bg:       #fff5ee;
   --lc-border:   #f0c0a0;
 
@@ -89,11 +97,18 @@
   --text-sub:    #948c80;
   --text-mute:   #8f857a;
   --accent:      #d4924a;
-  /* Dark accent + black text is already 8:1, so the fill token matches --accent. */
+  /* Dark accent + black text is already 8:1, so the fill token matches --accent,
+     and the same amber clears 6.4:1 as text on --surface. */
   --accent-solid: #d4924a;
   --accent-text: #000000;
+  --accent-ink:  #d4924a;
   --accent-bg:   #2a1e0c;
   --lc:          #f08030;
+  /* On a dark page the bright orange is the readable text colour; as a badge
+     fill it needs black on top (7.8:1) — white would be 2.7:1. */
+  --lc-ink:      #f08030;
+  --lc-solid:    #f08030;
+  --lc-text:     #000000;
   --lc-bg:       #1e1208;
   --lc-border:   #5a3010;
 }
@@ -238,6 +253,17 @@ img { display: block; }
   color: var(--text-sub);
 }
 
+/* The title scrolls away, the filters don't. Sticks to the top of the document
+   scroller; `--bg` is opaque so the list passes underneath. */
+.list-controls {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--bg);
+  /* Own padding: it is a sibling of .main-header, not a child (see ListPage). */
+  padding: 2px 16px 0;
+}
+
 /* ── Day chips ───────────────────────────────────────────────────────────────── */
 .day-chips {
   display: flex;
@@ -292,12 +318,15 @@ img { display: block; }
 }
 
 .view-tab {
-  padding: 6px 0;
+  /* 44px tap target. The negative top margin absorbs the extra padding so the
+     strip keeps its original height; the bottom one also laps the 1.5px rule. */
+  padding: 15px 0;
+  margin-top: -9px;
+  margin-bottom: -10.5px;
   margin-right: 24px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  margin-bottom: -1.5px;
   color: var(--text-sub);
   font-size: 14px;
   font-weight: 400;
@@ -345,12 +374,12 @@ img { display: block; }
 .near-btn--active {
   border-color: var(--accent);
   background: var(--accent-bg);
-  color: var(--accent);
+  color: var(--accent-ink);
   font-weight: 600;
 }
 
 .result-count-age { color: var(--text-mute); }
-.result-count-age--stale { color: var(--lc); }
+.result-count-age--stale { color: var(--lc-ink); }
 
 /* ── Film list scroll ────────────────────────────────────────────────────────── */
 .film-list-scroll {
@@ -362,7 +391,17 @@ img { display: block; }
   flex-direction: column;
   gap: 10px;
   padding: 12px 16px 24px;
+  list-style: none;
 }
+
+/* The <li> is the flex/grid child; `flex: 1` on it makes the card fill the
+   track so the two-column layout still bottom-aligns. */
+.film-list > li {
+  display: flex;
+  min-width: 0;
+}
+
+.film-list > li > * { flex: 1; min-width: 0; }
 
 /* ── Film card ───────────────────────────────────────────────────────────────── */
 .film-card {
@@ -449,11 +488,11 @@ img { display: block; }
 
 .film-card__rating {
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-ink);
   margin-top: 2px;
 }
 
-.film-card--lc .film-card__rating { color: var(--lc); }
+.film-card--lc .film-card__rating { color: var(--lc-ink); }
 
 .film-card__times {
   display: flex;
@@ -462,13 +501,22 @@ img { display: block; }
   margin-top: 7px;
 }
 
+.film-card__next {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
 .leaving-soon-badge {
   flex-shrink: 0;
   padding: 2px 7px;
-  background: var(--lc);
+  background: var(--lc-solid);
   border-radius: var(--r-sm);
   font-size: 10px;
-  color: #fff;
+  color: var(--lc-text);
   font-weight: 600;
   margin-top: 2px;
 }
@@ -479,14 +527,14 @@ img { display: block; }
   border: 1px solid var(--accent);
   border-radius: var(--r-md);
   font-size: 11px;
-  color: var(--accent);
+  color: var(--accent-ink);
   font-weight: 500;
   flex-shrink: 0;
 }
 
 .time-pill--lc {
   border-color: var(--lc);
-  color: var(--lc);
+  color: var(--lc-ink);
 }
 
 .time-pill--more {
@@ -568,7 +616,7 @@ img { display: block; }
 }
 
 .showtime__box--book .showtime__main {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 .showtime__main:active { opacity: 0.7; }
@@ -618,7 +666,7 @@ img { display: block; }
   border: none;
   border-left: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   background: none;
-  color: var(--accent);
+  color: var(--accent-ink);
   cursor: pointer;
 }
 
@@ -753,7 +801,31 @@ img { display: block; }
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
+}
+
+/* Each day gets its own labelled row. Undated pills used to imply a single
+   evening's schedule when they were the whole week deduped together. */
+.cinema-group__film-day {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   margin-top: 5px;
+}
+
+.cinema-group__film-day-label {
+  flex: none;
+  min-width: 52px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.cinema-group__film-more {
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--text-mute);
 }
 
 /* ── List footnote ───────────────────────────────────────────────────────────── */
@@ -999,7 +1071,7 @@ img { display: block; }
 
 .search-cancel {
   font-size: 15px;
-  color: var(--accent);
+  color: var(--accent-ink);
   font-weight: 500;
   font-family: var(--font-ui);
   white-space: nowrap;
@@ -1189,7 +1261,7 @@ img { display: block; }
   font-family: var(--font-display);
   font-style: italic;
   font-size: 14px;
-  color: var(--accent);
+  color: var(--accent-ink);
   line-height: 1.4;
   margin-bottom: 6px;
 }
@@ -1286,11 +1358,27 @@ img { display: block; }
 
 .cinema-count__order {
   flex: none;
+  /* 44px tap target; the negative margin keeps the visual pill compact and the
+     summary row at its original height. */
+  min-height: 44px;
+  min-width: 44px;
+  padding: 4px 10px;
+  margin: -10px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  font-family: var(--font-ui);
   font-size: 11px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   color: var(--text-sub);
-  opacity: 0.75;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.cinema-count__order--active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: var(--accent-ink);
+  font-weight: 600;
 }
 
 /* Cinema rows in film detail */
@@ -1365,6 +1453,38 @@ img { display: block; }
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+/* ── Day sections (film detail, day-first) ───────────────────────────────────── */
+.day-section { margin-bottom: 18px; }
+
+.day-section__h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  /* Wraps rather than overflowing: at 200% zoom the label and the count no
+     longer fit on one line. */
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  /* Sticks so the day you're reading stays named while its cinemas scroll by. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: 6px 0 8px;
+  font: inherit;
+}
+
+.day-section__label {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.day-section__count {
+  font-size: 11px;
   color: var(--text-mute);
 }
 
@@ -1535,6 +1655,47 @@ img { display: block; }
   border-radius: var(--r-sm);
 }
 
+/* Visible only while focused — the first tab stop on the list document. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 20;
+  padding: 13px 16px;
+  border-radius: var(--r-md);
+  background: var(--accent-solid);
+  color: var(--accent-text);
+  font-size: 14px;
+  font-weight: 600;
+  transition: top 0.15s;
+}
+
+.skip-link:focus-visible { top: calc(env(safe-area-inset-top, 0px) + 8px); }
+
+/* Windows high-contrast strips author colours: restore the borders that carry
+   selected/leaving-soon state, which were colour-only signals. */
+@media (forced-colors: active) {
+  .day-chip--active,
+  .view-tab--active,
+  .cinema-count__order--active,
+  .near-btn--active,
+  .showtime__box--selected {
+    border: 2px solid Highlight;
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .leaving-soon-badge {
+    border: 1px solid CanvasText;
+    forced-color-adjust: none;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  :focus-visible { outline-color: Highlight; }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1549,7 +1710,8 @@ img { display: block; }
 
 /* ── Responsive (≥640px) ─────────────────────────────────────────────────────── */
 @media (min-width: 640px) {
-  .main-header {
+  .main-header,
+  .list-controls {
     padding-left: 24px;
     padding-right: 24px;
   }

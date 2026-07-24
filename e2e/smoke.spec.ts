@@ -190,13 +190,17 @@ test("back restores list scroll position", async ({ page }) => {
   expect(scrollBefore).toBeGreaterThan(0);
 
   // Click a card already in view — Playwright auto-scrolls offscreen targets,
-  // which would corrupt the scroll-restore assertion.
-  const visibleIdx = await page.evaluate(() =>
-    [...document.querySelectorAll(".film-card")].findIndex((c) => {
+  // which would corrupt the scroll-restore assertion. "In view" has to clear
+  // the sticky filter bar too: a card tucked under it is obscured, and clicking
+  // it makes Playwright scroll it out from behind the bar.
+  const visibleIdx = await page.evaluate(() => {
+    const controls = document.querySelector(".list-controls");
+    const top = controls ? controls.getBoundingClientRect().bottom : 0;
+    return [...document.querySelectorAll(".film-card")].findIndex((c) => {
       const r = c.getBoundingClientRect();
-      return r.top >= 0 && r.bottom <= window.innerHeight;
-    }),
-  );
+      return r.top >= top && r.bottom <= window.innerHeight;
+    });
+  });
   await page.locator(".film-card").nth(visibleIdx).click();
   await expect(page.locator(".detail-film-title")).toBeVisible();
 

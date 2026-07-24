@@ -12,6 +12,7 @@ import { useLocationPin } from "../hooks/useLocationPin";
 import {
   transformResponse,
   generateDays,
+  dayHorizon,
   formatDataAge,
   buildCinemaGroups,
   normalizeForSearch,
@@ -122,7 +123,7 @@ function ListView({
     });
   };
 
-  const days = generateDays(now);
+  const days = generateDays(now, dayHorizon(movies));
 
   // Carry only the day filter into the detail URL — the detail page reads ?day=
   // and ignores ?q=/?view=, and bfcache restores the full list state on back.
@@ -146,17 +147,20 @@ function ListView({
     [movies, selectedDay, coords, view],
   );
 
+  // Search runs inside the day filter, not around it: the chips stay in the URL
+  // while the search header hides them, so searching across the whole week
+  // would silently contradict a ?day= the visitor can no longer see.
   const searchResults = useMemo(() => {
     const q = normalizeForSearch(searchInput);
-    if (!q) return movies;
-    return movies.filter(
+    if (!q) return dayMovies;
+    return dayMovies.filter(
       (m) =>
         normalizeForSearch(m.title).includes(q) ||
         m.genres.some((g) => normalizeForSearch(g).includes(q)) ||
         (m.director != null && normalizeForSearch(m.director).includes(q)) ||
         (m.cast?.some((c) => normalizeForSearch(c).includes(q)) ?? false),
     );
-  }, [movies, searchInput]);
+  }, [dayMovies, searchInput]);
 
   const handleSetView = (v: "film" | "cinema") => {
     setParams((next) => {
@@ -253,6 +257,11 @@ function ListView({
 
   return (
     <>
+      {/* The filter header is ~10 tab stops deep; keyboard users shouldn't have
+          to cross it to reach the listings. */}
+      <a className="skip-link" href="#film-list">
+        Skip to listings
+      </a>
       <div className="main-header">
         {searching ? (
           <>
@@ -292,10 +301,10 @@ function ListView({
             </div>
             <div className="search-hint" aria-live="polite">
               {searchInput.trim().length === 0
-                ? "All films in English this week"
+                ? `All films in English ${showingLabel}`
                 : searchResults.length === 0
                   ? "No results"
-                  : `${searchResults.length} film${searchResults.length !== 1 ? "s" : ""} found`}
+                  : `${searchResults.length} film${searchResults.length !== 1 ? "s" : ""} found ${showingLabel}`}
             </div>
             <div className="search-divider" />
           </>
@@ -307,7 +316,12 @@ function ListView({
                 <span className="app-title__line app-title__line--2">This Week</span>
               </h1>
               <div className="header-actions">
-                <button className="icon-btn" onClick={toggleDark} aria-label="Toggle dark mode">
+                <button
+                  className="icon-btn"
+                  onClick={toggleDark}
+                  aria-pressed={dark}
+                  aria-label="Dark mode"
+                >
                   {dark ? <SunIcon /> : <MoonIcon />}
                 </button>
                 <button className="icon-btn" onClick={openSearch} aria-label="Search films">
@@ -315,56 +329,78 @@ function ListView({
                 </button>
               </div>
             </div>
-
-            <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} days={days} />
-
-            <div className="view-tabs">
-              {(["film", "cinema"] as const).map((v) => (
-                <button
-                  key={v}
-                  aria-pressed={view === v}
-                  className={`view-tab${view === v ? " view-tab--active" : ""}`}
-                  onClick={() => handleSetView(v)}
-                >
-                  {v === "film" ? "By Film" : "By Cinema"}
-                </button>
-              ))}
-            </div>
-
-            <div className="result-row">
-              <div className="result-count" aria-live="polite">
-                {listCount} {listNoun}{atCinemas} {showingLabel}
-                <DataAge generatedAt={generatedAt} stale={stale} now={now} prefix=" · " />
-              </div>
-              {view === "cinema" && (
-                <button
-                  className={`near-btn${locationActive ? " near-btn--active" : ""}`}
-                  onClick={onToggleLocation}
-                  aria-pressed={locationActive}
-                  aria-label="Sort cinemas by distance"
-                >
-                  <PinIcon size={12} />
-                  {locationError ? "No location" : locationResolving ? "Locating…" : "Near me"}
-                </button>
-              )}
-            </div>
           </>
         )}
       </div>
 
-      {searching ? (
-        searchResults.length > 0 ? (
-          <div className="film-list">
-            {searchResults.map((m) => (
-              <FilmCard key={m.id} movie={m} search={search} />
+      {/* Outside .main-header on purpose: a sticky element can only travel
+          inside its parent's box, and the header's box ends where the title
+          does. As a sibling it sticks for the whole list instead — otherwise a
+          ~4000px list means scrolling back to the top to change day. */}
+      {!searching && (
+        <div className="list-controls">
+          <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} days={days} />
+
+          <div className="view-tabs">
+            {(["film", "cinema"] as const).map((v) => (
+              <button
+                key={v}
+                aria-pressed={view === v}
+                className={`view-tab${view === v ? " view-tab--active" : ""}`}
+                onClick={() => handleSetView(v)}
+              >
+                {v === "film" ? "By Film" : "By Cinema"}
+              </button>
             ))}
           </div>
+
+          <div className="result-row">
+            <div className="result-count" aria-live="polite">
+              {listCount} {listNoun}{atCinemas} {showingLabel}
+              <DataAge generatedAt={generatedAt} stale={stale} now={now} prefix=" · " />
+            </div>
+            {view === "cinema" && (
+              <button
+                className={`near-btn${locationActive ? " near-btn--active" : ""}`}
+                onClick={onToggleLocation}
+                aria-pressed={locationActive}
+                aria-label="Sort cinemas by distance"
+              >
+                <PinIcon size={12} />
+                {locationError ? "No location" : locationResolving ? "Locating…" : "Near me"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {searching ? (
+        searchResults.length > 0 ? (
+          <ul className="film-list" id="film-list">
+            {searchResults.map((m) => (
+              <li key={m.id}>
+                <FilmCard movie={m} dayOffset={selectedDay ?? undefined} days={days} search={search} />
+              </li>
+            ))}
+          </ul>
         ) : searchInput.trim().length > 0 ? (
           <div className="empty-state">
             <div className="empty-state__heading">Nothing showing</div>
             <div className="empty-state__body">
-              No English-language screenings match <em>"{searchInput}"</em> this week.
+              No English-language screenings match <em>"{searchInput}"</em> {showingLabel}.
             </div>
+            {selectedDay != null ? (
+              <button
+                className="empty-state__btn"
+                onClick={() => setSelectedDay(null)}
+              >
+                Search all days
+              </button>
+            ) : (
+              <button className="empty-state__btn" onClick={closeSearch}>
+                Back to all films
+              </button>
+            )}
           </div>
         ) : null
       ) : view === "film" ? (
@@ -392,11 +428,13 @@ function ListView({
             )}
           </div>
         ) : (
-          <div className="film-list">
+          <ul className="film-list" id="film-list">
             {dayMovies.map((m) => (
-              <FilmCard key={m.id} movie={m} dayOffset={selectedDay ?? undefined} search={search} />
+              <li key={m.id}>
+                <FilmCard movie={m} dayOffset={selectedDay ?? undefined} days={days} search={search} />
+              </li>
             ))}
-          </div>
+          </ul>
         )
       ) : locationResolving ? (
         <div className="loading-pulse loading-pulse--cinema" role="status" aria-label="Loading cinemas">
@@ -424,11 +462,13 @@ function ListView({
           )}
         </div>
       ) : (
-        <div className="film-list">
+        <ul className="film-list" id="film-list">
           {cinemaGroups.map((g) => (
-            <CinemaGroup key={g.theaterId} group={g} onCinemaTap={openCinemaSheet} search={search} />
+            <li key={g.theaterId}>
+              <CinemaGroup group={g} onCinemaTap={openCinemaSheet} days={days} search={search} />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {!searching && listCount > 0 && (
