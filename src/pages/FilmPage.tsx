@@ -5,8 +5,8 @@ import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
 import SiteFooter from "../components/Footer";
 import DataAge, { dataAgeLabel } from "../components/DataAge";
-import { BackIcon, ChevronDownIcon, ChevronRightIcon } from "../components/Icons";
-import { ThemeProvider } from "../context/ThemeContext";
+import { BackIcon, ChevronDownIcon, ChevronRightIcon, MoonIcon, SunIcon } from "../components/Icons";
+import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useNow, useUrlParams } from "../hooks/useClient";
 import { useLocationPin } from "../hooks/useLocationPin";
 import {
@@ -137,6 +137,7 @@ function FilmView({
   locationResolving,
   onToggleLocation,
 }: FilmViewProps) {
+  const { dark, toggle: toggleDark } = useTheme();
   const { params: searchParams, setParams } = useUrlParams();
   // The day filter lives in the URL (?day=): the list's filter carries over on
   // entry, and a changed day survives refresh/share. Replace-state keeps the
@@ -196,6 +197,13 @@ function FilmView({
   // film on three days is still one cinema in the summary line.
   const cinemaCount = useMemo(
     () => new Set(daySections.flatMap((d) => d.cinemas.map((c) => c.theater.id))).size,
+    [daySections],
+  );
+
+  // Amber pills mean "bookable" — a colour-only code nothing on the page
+  // explained. Only worth a legend when some row actually carries it.
+  const anyBookable = useMemo(
+    () => daySections.some((d) => d.cinemas.some((c) => c.times.some((t) => t.bookingUrl))),
     [daySections],
   );
 
@@ -274,10 +282,21 @@ function FilmView({
         <div className="detail-backdrop-gradient" />
       </div>
 
-      {/* Back button */}
+      {/* Back button + theme toggle. The toggle is repeated here because a film
+          page is a landing page in its own right (search results, shared links),
+          and its visitor would otherwise have no way to change the theme
+          without first navigating to the list. */}
       <button className="detail-back-btn" onClick={onBack} aria-label="Back">
         <BackIcon />
         <span>Back</span>
+      </button>
+      <button
+        className="detail-theme-btn"
+        onClick={toggleDark}
+        aria-pressed={dark}
+        aria-label="Dark mode"
+      >
+        {dark ? <SunIcon /> : <MoonIcon />}
       </button>
 
       {/* Scrollable content */}
@@ -392,6 +411,13 @@ function FilmView({
               </div>
             )}
 
+            {anyBookable && (
+              <p className="showtimes-legend">
+                <span className="showtimes-legend__swatch" aria-hidden="true" />
+                Highlighted times book online. Tap any time for calendar options.
+              </p>
+            )}
+
             {selectedDay != null && daySections.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state__body">No screenings on this day.</div>
@@ -415,7 +441,20 @@ function FilmView({
 
                   {section.cinemas.map(({ theater, times, distKm }) => {
                     const dl = formatDistKm(distKm);
-                    const isBookable = times.some((t) => t.bookingUrl);
+                    // "Book online" over-claimed when only some of a cinema's
+                    // times were bookable — say which case it is.
+                    const bookableCount = times.filter((t) => t.bookingUrl).length;
+                    const bookLabel =
+                      bookableCount === 0
+                        ? null
+                        : bookableCount === times.length
+                          ? "Book online"
+                          : "Some online";
+                    // The open row's actions render once, below the whole grid
+                    // (see .showtime__actions) rather than inside a grid cell —
+                    // in-cell they stretched the entire grid row, leaving the
+                    // sibling times floating above a void.
+                    const openTime = times.find((t) => panelId(theater.id, t.key) === selectedPillKey);
 
                     // Badge hoisting: one cinema on one day usually screens a
                     // single viewing language — say it once on the header
@@ -449,7 +488,7 @@ function FilmView({
                           >
                             <span className="cinema-row__name">{theater.name}</span>
                             <div className="cinema-row__right">
-                              {isBookable && <span className="tag tag--accent">Book online</span>}
+                              {bookLabel && <span className="tag tag--accent">{bookLabel}</span>}
                               {headerBadge && <span className="tag">{headerBadge}</span>}
                               {dl && <span className="cinema-row__dist">{dl}</span>}
                               <ChevronRightIcon />
@@ -458,26 +497,35 @@ function FilmView({
                         </h4>
                         <div className="cinema-row__times">
                           <div className="showtime-grid">
-                            {times.map(({ key, t, date, bookingUrl, lang, formatBadge }) => (
+                            {times.map(({ key, t, bookingUrl, lang, formatBadge }) => (
                               <Showtime
                                 key={key}
                                 panelId={panelId(theater.id, key)}
                                 selectedKey={selectedPillKey}
                                 onSelect={setSelectedPillKey}
                                 time={t}
-                                date={date}
                                 dayLabel={section.label}
                                 bookingUrl={bookingUrl}
                                 badge={isUniform ? null : viewingLangLabel(lang, "short")}
                                 formatBadge={formatBadge}
                                 film={movie.title}
                                 cinema={theater.name}
-                                address={theater.address}
-                                runtimeMinutes={movie.runtime_minutes}
-                                now={now}
                               />
                             ))}
                           </div>
+                          {openTime && (
+                            <ShowtimeActions
+                              id={panelId(theater.id, openTime.key)}
+                              time={openTime.t}
+                              date={openTime.date}
+                              bookingUrl={openTime.bookingUrl}
+                              film={movie.title}
+                              cinema={theater.name}
+                              address={theater.address}
+                              runtimeMinutes={movie.runtime_minutes}
+                              now={now}
+                            />
+                          )}
                         </div>
                       </div>
                     );
@@ -512,25 +560,24 @@ const panelId = (theaterId: string, pillKey: string) =>
  * on a subline inside the same border. Bookable showtimes get a filled body
  * (primary tap = seat picker) plus an attached chevron segment that reveals the
  * secondary actions — never a detached sibling control.
+ *
+ * The revealed panel is *not* rendered here: it lives below the whole grid (see
+ * `ShowtimeActions`), because a panel inside a grid cell stretched the entire
+ * grid row and left the sibling times floating over a void.
  */
 function Showtime({
   time,
-  date,
   dayLabel,
   bookingUrl,
   badge,
   formatBadge,
   film,
   cinema,
-  address,
-  runtimeMinutes,
-  now,
   panelId,
   selectedKey,
   onSelect,
 }: {
   time: string;
-  date: string;
   /** Day-group label ("Thu 23"); null when the page is filtered to one day. */
   dayLabel: string | null;
   bookingUrl?: string;
@@ -538,9 +585,6 @@ function Showtime({
   formatBadge: string | null;
   film: string;
   cinema: string;
-  address: string;
-  runtimeMinutes: number | null;
-  now: Date;
   panelId: string;
   selectedKey: string | null;
   onSelect: (key: string | null) => void;
@@ -550,23 +594,6 @@ function Showtime({
   // sharing that time. panelId already carries the theater id — reuse it.
   const isSelected = panelId === selectedKey;
   const when = dayLabel ? `${time} on ${dayLabel}` : time;
-  // Deferred to expand: building the iCalendar doc + filename on every render
-  // meant ~159 unused docs per re-render. Only the open row needs them.
-  const ics = isSelected
-    ? buildIcs(
-        {
-          title: film,
-          location: [cinema, address].filter(Boolean).join(", "),
-          date,
-          time,
-          runtimeMinutes,
-        },
-        now,
-      )
-    : null;
-  const calName = isSelected
-    ? `${film.replace(/\s+/g, "-").toLowerCase()}-${date}-${time.replace(":", "")}.ics`
-    : "";
 
   const handleToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -623,29 +650,68 @@ function Showtime({
           </button>
         )}
       </div>
-      {isSelected && ics != null && (
-        <div id={panelId} className="showtime__actions" role="group" aria-label="Showtime options">
-          {bookingUrl && (
-            <a
-              href={bookingUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="showtime__action showtime__action--book"
-              onClick={(e) => e.stopPropagation()}
-            >
-              Book tickets ↗
-            </a>
-          )}
-          <a
-            href={icsHref(ics)}
-            download={calName}
-            className="showtime__action"
-            onClick={(e) => e.stopPropagation()}
-          >
-            Add to calendar
-          </a>
-        </div>
-      )}
+    </div>
+  );
+}
+
+/**
+ * Secondary actions for the one open showtime, rendered full-width under its
+ * cinema's grid. Only ever one is mounted, so building the iCalendar document
+ * here costs one doc per open row rather than ~159 unused ones per re-render.
+ *
+ * "Book tickets" is deliberately absent when the row is bookable: tapping the
+ * pill body already opens the seat picker, so repeating it here would be a
+ * second control for an action the visitor just declined to take.
+ */
+function ShowtimeActions({
+  id,
+  time,
+  date,
+  bookingUrl,
+  film,
+  cinema,
+  address,
+  runtimeMinutes,
+  now,
+}: {
+  id: string;
+  time: string;
+  date: string;
+  bookingUrl?: string;
+  film: string;
+  cinema: string;
+  address: string;
+  runtimeMinutes: number | null;
+  now: Date;
+}) {
+  const ics = buildIcs(
+    {
+      title: film,
+      location: [cinema, address].filter(Boolean).join(", "),
+      date,
+      time,
+      runtimeMinutes,
+    },
+    now,
+  );
+  const calName = `${film.replace(/\s+/g, "-").toLowerCase()}-${date}-${time.replace(":", "")}.ics`;
+
+  return (
+    <div id={id} className="showtime__actions" role="group" aria-label={`Options for ${time}`}>
+      {/* Names its subject: the panel sits under a grid of times, so without it
+          there is nothing saying which one was opened. */}
+      <span className="showtime__actions-note">
+        <strong>{time}</strong>
+        {bookingUrl ? "" : " · no online booking, buy at the box office"}
+      </span>
+      <a
+        href={icsHref(ics)}
+        download={calName}
+        className="showtime__action"
+        onClick={(e) => e.stopPropagation()}
+      >
+        Add to calendar
+      </a>
     </div>
   );
 }

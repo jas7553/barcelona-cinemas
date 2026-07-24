@@ -8,12 +8,14 @@ interface Props {
 
 export default function CinemaSheet({ venue, onClose }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const primaryCtaRef = useRef<HTMLAnchorElement & HTMLButtonElement>(null);
 
   useEffect(() => {
     const el = dialogRef.current;
     if (!el) return;
     if (venue) {
       el.showModal();
+      primaryCtaRef.current?.focus();
     } else if (el.open) {
       el.close();
     }
@@ -41,7 +43,7 @@ export default function CinemaSheet({ venue, onClose }: Props) {
       <div className="cinema-dialog__inner" onClick={(e) => e.stopPropagation()}>
         <div className="cinema-dialog__header">
           <div>
-            <div className="sheet-cinema-name" id="cinema-dialog-name">{venue?.name}</div>
+            <h2 className="sheet-cinema-name" id="cinema-dialog-name">{venue?.name}</h2>
             {venue?.address && (
               <div className="sheet-cinema-address">{venue.address}</div>
             )}
@@ -58,11 +60,17 @@ export default function CinemaSheet({ venue, onClose }: Props) {
 
         <div className="sheet-ctas">
           {directionsUrl ? (
-            <a href={directionsUrl} target="_blank" rel="noreferrer" className="sheet-cta-primary">
-              Get Directions
+            <a
+              ref={primaryCtaRef}
+              href={directionsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="sheet-cta-primary"
+            >
+              Get Directions ↗
             </a>
           ) : (
-            <button className="sheet-cta-primary" onClick={onClose}>
+            <button ref={primaryCtaRef} className="sheet-cta-primary" onClick={onClose}>
               Close
             </button>
           )}

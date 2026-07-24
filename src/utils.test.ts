@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Listings, Movie, Showtime } from "./types";
-import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, viewingLang, viewingLangLabel, premiumFormatLabel, buildCinemaRows, buildCinemaGroups, buildDaySections, generateDays, dayHorizon } from "./utils";
+import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, viewingLang, viewingLangLabel, premiumFormatLabel, buildCinemaRows, buildCinemaGroups, buildDaySections, generateDays, dayHorizon, parseSortMode, sortMovies, movieMatchesQuery, normalizeForSearch } from "./utils";
 
 /** One Verdi theater and one movie; override only the movie fields a test asserts on. */
 function sampleListings(showtimes: Showtime[], movie: Partial<Movie> = {}): Listings {
@@ -357,6 +357,175 @@ describe("haversineKm", () => {
     const d = haversineKm(41.4035, 2.1580, 41.3610, 2.1073);
     expect(d).toBeGreaterThan(5);
     expect(d).toBeLessThan(15);
+  });
+});
+
+describe("parseSortMode", () => {
+  it("returns 'next' only for the exact parameter value", () => {
+    expect(parseSortMode("next")).toBe("next");
+  });
+  it("falls back to 'rating' for anything else", () => {
+    expect(parseSortMode(null)).toBe("rating");
+    expect(parseSortMode("")).toBe("rating");
+    expect(parseSortMode("rating")).toBe("rating");
+    expect(parseSortMode("NEXT")).toBe("rating");
+    expect(parseSortMode("next ")).toBe("rating");
+    expect(parseSortMode("%%%")).toBe("rating");
+  });
+});
+
+describe("sortMovies", () => {
+  const now = new Date("2026-03-29T10:00:00");
+
+  /** Several films sharing the sampleListings movie/theater shape. */
+  const films = (specs: Array<{ title: string; showtimes: Showtime[] }>) =>
+    transformResponse(
+      {
+        ...sampleListings([]),
+        movies: specs.map((s, i) => ({ ...sampleListings([]).movies[0], id: `movie-${i}`, ...s })),
+      },
+      now,
+    );
+
+  const scoped = () =>
+    films([
+      {
+        title: "Matinee And Late",
+        showtimes: [
+          { theater_id: "verdi", date: "2026-03-29", time: "12:00", language: "vo" },
+          { theater_id: "verdi", date: "2026-03-31", time: "22:00", language: "vo" },
+        ],
+      },
+      {
+        title: "Only Day Two",
+        showtimes: [{ theater_id: "verdi", date: "2026-03-31", time: "09:00", language: "vo" }],
+      },
+      {
+        title: "Day Zero Only",
+        showtimes: [{ theater_id: "verdi", date: "2026-03-29", time: "20:00", language: "vo" }],
+      },
+    ]);
+
+  it("returns the input untouched in rating mode", () => {
+    const movies = scoped();
+    // The rating branch returns `movies` itself, not a copy.
+    expect(sortMovies(movies, "rating", null)).toBe(movies);
+  });
+
+  it("orders by the earliest remaining showtime across all days", () => {
+    const movies = films([
+      {
+        title: "Early Tomorrow",
+        showtimes: [{ theater_id: "verdi", date: "2026-03-30", time: "09:00", language: "vo" }],
+      },
+      {
+        title: "Late Tonight",
+        showtimes: [{ theater_id: "verdi", date: "2026-03-29", time: "21:00", language: "vo" }],
+      },
+    ]);
+
+    expect(sortMovies(movies, "next", null).map((m) => m.title)).toEqual([
+      "Late Tonight",
+      "Early Tomorrow",
+    ]);
+  });
+
+  it("scopes 'next' to the selected day, not the film's earliest matinée", () => {
+    expect(sortMovies(scoped(), "next", null).map((m) => m.title)).toEqual([
+      "Matinee And Late",
+      "Day Zero Only",
+      "Only Day Two",
+    ]);
+    expect(sortMovies(scoped(), "next", 2).map((m) => m.title)).toEqual([
+      "Only Day Two",
+      "Matinee And Late",
+      "Day Zero Only",
+    ]);
+  });
+
+  it("sinks films with nothing left in scope to the end", () => {
+    const order = sortMovies(scoped(), "next", 2).map((m) => m.title);
+    expect(order[order.length - 1]).toBe("Day Zero Only");
+  });
+
+  it("breaks ties alphabetically by title", () => {
+    const sameTime = films([
+      {
+        title: "Zulu",
+        showtimes: [{ theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" }],
+      },
+      {
+        title: "Amelie",
+        showtimes: [{ theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" }],
+      },
+    ]);
+
+    expect(sortMovies([...sameTime].reverse(), "next", null).map((m) => m.title)).toEqual([
+      "Amelie",
+      "Zulu",
+    ]);
+  });
+
+  it("does not mutate the input array", () => {
+    const movies = scoped();
+    const before = movies.map((m) => m.title);
+    sortMovies(movies, "next", 2);
+    expect(movies.map((m) => m.title)).toEqual(before);
+  });
+});
+
+describe("movieMatchesQuery", () => {
+  const now = new Date("2026-03-29T10:00:00");
+
+  // Accented neighborhood: the query side is normalized by the caller, the data
+  // side by movieMatchesQuery, so "gracia" must reach "Gràcia".
+  const movie = () => {
+    const base = sampleListings(
+      [{ theater_id: "verdi", date: "2026-03-29", time: "18:00", language: "vo" }],
+      {
+        title: "Amélie",
+        genres: ["Romance", "Comedy"],
+        director: "Jean-Pierre Jeunet",
+        cast: ["Audrey Tautou", "Mathieu Kassovitz"],
+      },
+    );
+    return transformResponse(
+      { ...base, theaters: [{ ...base.theaters[0], neighborhood: "Gràcia" }] },
+      now,
+    )[0];
+  };
+
+  // ListPage normalizes the query before calling; mirror that here.
+  const matches = (q: string) => movieMatchesQuery(movie(), normalizeForSearch(q));
+
+  it("matches on title, genre, director and cast", () => {
+    expect(matches("amelie")).toBe(true);
+    expect(matches("comedy")).toBe(true);
+    expect(matches("jeunet")).toBe(true);
+    expect(matches("tautou")).toBe(true);
+  });
+
+  it("matches on the cinema name reached through the showtimes", () => {
+    expect(matches("verdi")).toBe(true);
+    expect(matches("Cinemes")).toBe(true);
+  });
+
+  it("matches on the cinema neighborhood", () => {
+    expect(matches("gracia")).toBe(true);
+  });
+
+  it("is accent- and case-insensitive", () => {
+    expect(matches("AMÉLIE")).toBe(true);
+    expect(matches("Gràcia")).toBe(true);
+    expect(matches("VERDI")).toBe(true);
+  });
+
+  it("matches everything on an empty query", () => {
+    expect(matches("")).toBe(true);
+  });
+
+  it("returns false when nothing matches", () => {
+    expect(matches("godzilla")).toBe(false);
   });
 });
 

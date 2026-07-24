@@ -315,9 +315,74 @@ export function transformResponse(apiResponse: Listings, now: Date = new Date())
   .filter((movie) => movie.showtimes.length > 0)
   // Source order is arbitrary; rating is on every card, so rating-desc gives
   // the list a self-explanatory order. Unrated films sink, ties alphabetical.
+  // `sortMovies` re-orders from here when the visitor picks another axis.
   .sort(
     (a, b) =>
       (b.rating ?? -1) - (a.rating ?? -1) || a.title.localeCompare(b.title),
+  );
+}
+
+// ── List ordering ───────────────────────────────────────────────────────────
+
+/** How the list is ordered. Mirrors `?sort=` — "rating" is the default and
+ * writes no parameter. */
+export type SortMode = "rating" | "next";
+
+/** Parse `?sort=`; anything unrecognised falls back to the default. */
+export function parseSortMode(raw: string | null): SortMode {
+  return raw === "next" ? "next" : "rating";
+}
+
+/**
+ * Re-order an already-filtered list. `transformResponse` sorts by rating, which
+ * answers "what is worth seeing"; "next" answers "what can I still catch",
+ * which is the more useful axis once a day is picked. Sorting happens after the
+ * day filter, so `selectedDay` scopes which showtime counts as "next" — a film
+ * whose only Friday screening is at 22:00 must not sort on its Wednesday matinée.
+ * Films with nothing left in scope sink to the end.
+ */
+export function sortMovies(
+  movies: TransformedMovie[],
+  mode: SortMode,
+  selectedDay: number | null,
+): TransformedMovie[] {
+  if (mode !== "next") return movies;
+  // showtimes are already ascending (dayOffset, then time), so the first match
+  // in scope is the earliest one. null = nothing in scope; kept as a real null
+  // rather than a max-value sentinel string, whose ordering would depend on the
+  // runtime's collation table.
+  const nextKey = (m: TransformedMovie): string | null => {
+    const s = m.showtimes.find((x) => selectedDay == null || x.dayOffset === selectedDay);
+    return s ? `${String(s.dayOffset).padStart(2, "0")}${s.time}` : null;
+  };
+  return [...movies].sort((a, b) => {
+    const ka = nextKey(a);
+    const kb = nextKey(b);
+    if (ka !== kb) {
+      if (ka == null) return 1;
+      if (kb == null) return -1;
+      if (ka !== kb) return ka < kb ? -1 : 1;
+    }
+    return a.title.localeCompare(b.title);
+  });
+}
+
+/**
+ * Does this film match a free-text query? Covers what is actually on the card
+ * (title, genres, credits) plus the venues it plays at — searching "Verdi" or
+ * "Gràcia" from the cinema view used to return "Nothing showing", which read as
+ * "this cinema has no English films" rather than "we don't search that".
+ */
+export function movieMatchesQuery(movie: TransformedMovie, normalizedQuery: string): boolean {
+  if (!normalizedQuery) return true;
+  const hit = (v: string | null | undefined) =>
+    v != null && normalizeForSearch(v).includes(normalizedQuery);
+  return (
+    hit(movie.title) ||
+    movie.genres.some(hit) ||
+    hit(movie.director) ||
+    (movie.cast?.some(hit) ?? false) ||
+    movie.showtimes.some((s) => hit(s.theater.name) || hit(s.theater.neighborhood))
   );
 }
 
