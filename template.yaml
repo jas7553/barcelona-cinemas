@@ -250,6 +250,23 @@ Resources:
                 - s3:GetObject
                 - s3:PutObject
               Resource: !Sub "${FrontendBucket.Arn}/*"
+            # Prune stale per-film output: list film/ and data/film/ to find
+            # objects whose movie left the listings, then delete them. Delete is
+            # scoped to those two prefixes only — the renderer must stay unable
+            # to remove data/listings.json, the hashed assets, or the root
+            # documents, so do not widen this to the whole bucket.
+            - Sid: ListFrontendBucket
+              Effect: Allow
+              Action:
+                - s3:ListBucket
+              Resource: !GetAtt FrontendBucket.Arn
+            - Sid: PruneStaleFilmObjects
+              Effect: Allow
+              Action:
+                - s3:DeleteObject
+              Resource:
+                - !Sub "${FrontendBucket.Arn}/film/*"
+                - !Sub "${FrontendBucket.Arn}/data/film/*"
             - Sid: CloudFrontInvalidate
               Effect: Allow
               Action:

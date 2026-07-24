@@ -31,9 +31,17 @@ export function assets(manifest, entryKey) {
  * @param {object} o.server     The entry-server module (renderList/renderFilm/renderPrivacy/filmListings).
  * @param {string} [o.siteUrl]  Absolute origin for OpenGraph og:url.
  * @param {(relPath: string, contents: string, contentType: string) => (void|Promise<void>)} o.write
+ * @param {(keepRelPaths: Set<string>) => (void|Promise<void>)} [o.prune]
+ *   Optional sink for deleting stale output. Called exactly once, only after
+ *   every write above has resolved, with the full set of per-film paths this
+ *   render produced — both `film/<id>.html` and `data/film/<id>.json`. Sinks
+ *   sweep those two prefixes and delete anything not in the set. A partial
+ *   render must never delete anything, so a throwing write short-circuits
+ *   before prune ever runs. Omit it and nothing is deleted (previous
+ *   behaviour).
  * @returns {Promise<{filmCount: number}>}
  */
-export async function renderAll({ listings, manifest, server, siteUrl = "", write }) {
+export async function renderAll({ listings, manifest, server, siteUrl = "", write, prune }) {
   const renderedAt = new Date().toISOString();
   const listAssets = assets(manifest, "src/entry-list.tsx");
   const filmAssets = assets(manifest, "src/entry-film.tsx");
@@ -74,7 +82,10 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
   );
 
   // Film pages — render all synchronously then flush all writes in parallel.
+  const filmOutputs = new Set();
   const filmJobs = listings.movies.map((movie) => {
+    filmOutputs.add(`film/${movie.id}.html`);
+    filmOutputs.add(`data/film/${movie.id}.json`);
     const filmData = { renderedAt, listings: server.filmListings(listings, movie.id), filmId: movie.id };
     const page = server.renderFilm(filmData, siteUrl);
     return Promise.all([
@@ -119,6 +130,13 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
       `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
     await write("sitemap.xml", xml, "application/xml");
   }
+
+  // Every write landed — now, and only now, it is safe to drop per-film output
+  // for movies that fell out of the listings. Left behind, a stale page 200s
+  // forever with a dead hashed /assets/* bundle (deleted by the next deploy),
+  // so it never hydrates and serves frozen showtimes still labelled "Today";
+  // its sibling JSON just accumulates in the bucket.
+  if (prune) await prune(filmOutputs);
 
   return { filmCount: listings.movies.length };
 }
