@@ -40,13 +40,17 @@ export default function DayPicker({ selectedDay, onSelect, activeDays, days }: P
         // ?day=N that the page rejects, leaving the URL lying about the view.
         const isDisabled = !hasScreenings && !isActive;
         return (
+          // aria-disabled, not disabled: a natively disabled chip leaves the tab
+          // order, so the "no screenings" reason is never announced. The chip
+          // stays focusable; the undefined onClick is what inerts it (Enter/Space
+          // included).
           <button
             key={offset}
             ref={isActive ? activeRef : undefined}
             className={`day-chip${isActive ? " day-chip--active" : ""}${isDisabled ? " day-chip--faded" : ""}`}
             aria-label={isDisabled ? `${label} — no screenings` : undefined}
             aria-pressed={isActive}
-            disabled={isDisabled}
+            aria-disabled={isDisabled || undefined}
             onClick={isDisabled ? undefined : () => onSelect(isActive ? null : offset)}
           >
             {label}

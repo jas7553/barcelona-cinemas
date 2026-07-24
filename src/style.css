@@ -65,13 +65,19 @@
      text and as a fill behind white text. Hence two darker siblings. */
   --accent-solid: #a06626;
   --accent-text: #ffffff;
-  /* Small accent text on --surface / --bg (4.7:1). */
-  --accent-ink:  #a06626;
+  /* Small accent text, on every light surface we actually paint it on:
+     5.97:1 on --surface, 5.54:1 on --bg, 5.06:1 on --surface2, 4.94:1 on
+     --accent-bg. Darker than --accent-solid on purpose — the active pills
+     (.near-btn--active, .cinema-count__order--active) put this ink on
+     --accent-bg, where the old #a06626 measured 3.93:1 and failed AA. */
+  --accent-ink:  #8f5620;
   --accent-bg:   #f5e8d4;
   --lc:          #d44e1e;
   /* Same split for "leaving soon": --lc stays decorative, --lc-ink is the
-     AA-safe text colour (4.8:1) and --lc-solid the AA-safe badge fill. */
-  --lc-ink:      #cc4413;
+     AA-safe text colour (4.86:1 on --bg, 4.87:1 on --lc-bg) and --lc-solid the
+     AA-safe badge fill (4.77:1 under white). The ink is darker than the fill
+     because it is painted on tinted card backgrounds, not on white. */
+  --lc-ink:      #c23f11;
   --lc-solid:    #cc4413;
   --lc-text:     #ffffff;
   --lc-bg:       #fff5ee;
@@ -262,6 +268,11 @@ img { display: block; }
   background: var(--bg);
   /* Own padding: it is a sibling of .main-header, not a child (see ListPage). */
   padding: 2px 16px 0;
+  /* The list passes *underneath* this block. Without an edge, cards were sliced
+     mid-title against an identically-coloured background and read as a broken
+     render rather than as an overlay. The hairline is what makes the occlusion
+     legible. */
+  border-bottom: 1px solid var(--border-lt);
 }
 
 /* ── Day chips ───────────────────────────────────────────────────────────────── */
@@ -308,6 +319,10 @@ img { display: block; }
 .day-chip--faded {
   color: var(--text-sub);
   border-color: var(--border-lt);
+  /* aria-disabled, not disabled (see DayPicker) — so it still takes focus and
+     can announce "no screenings". The native pointer affordance has to go by
+     hand, since nothing is actually clickable. */
+  cursor: default;
 }
 
 /* ── View tabs ───────────────────────────────────────────────────────────────── */
@@ -339,6 +354,28 @@ img { display: block; }
   color: var(--text);
   border-bottom-color: var(--accent);
   font-weight: 600;
+}
+
+/* Order toggle, parked in the dead space right of the tabs. It reads as the
+   current order ("Top rated"), not as a verb — the aria-label carries the
+   action. Before this the list was rating-ordered with nothing saying so. */
+.sort-btn {
+  margin-left: auto;
+  align-self: center;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  /* 44px tap target; negative margin keeps the strip at its original height. */
+  min-height: 44px;
+  margin-top: -9px;
+  margin-bottom: -10.5px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-sub);
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 
 /* ── Result count ────────────────────────────────────────────────────────────── */
@@ -522,14 +559,17 @@ img { display: block; }
 }
 
 /* ── Time pills ──────────────────────────────────────────────────────────────── */
+/* The showtime is the datum the whole app exists to deliver — it was set two
+   steps below the film title. 12px is the floor for it. */
 .time-pill {
   padding: 1px 7px;
   border: 1px solid var(--accent);
   border-radius: var(--r-md);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--accent-ink);
   font-weight: 500;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .time-pill--lc {
@@ -537,9 +577,14 @@ img { display: block; }
   color: var(--lc-ink);
 }
 
+/* "+3 more" is a count, not a time. Bordered like its neighbours it read as a
+   fourth showtime — drop the pill shape so it recedes into a caption. */
 .time-pill--more {
-  border-color: var(--border);
+  border-color: transparent;
   color: var(--text-sub);
+  padding-left: 2px;
+  padding-right: 2px;
+  font-size: 11px;
 }
 
 /* One chip style for every hoisted attribute — list card, cinema header, day
@@ -595,6 +640,15 @@ img { display: block; }
 .showtime__box--book {
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* A 12% amber wash over a near-black surface is almost nothing, so on dark the
+   bookable pill was reading as *less* prominent than the inert ones next to it
+   — the primary action losing to the secondary. Push the mix until the tint is
+   actually visible. */
+.dark .showtime__box--book {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .showtime__main {
@@ -685,34 +739,42 @@ img { display: block; }
   outline-offset: 1px;
 }
 
-/* Action panel, expanded in flow below the block (grid row grows). */
+/* Action panel for the one open showtime. It is a sibling of .showtime-grid,
+   not a grid cell: inside a cell it stretched the whole grid row, so the times
+   sharing that row hung above ~100px of void, and the buttons were squeezed to
+   one column width. Full-width here, and the open pill keeps its
+   --selected outline to carry the association. */
 .showtime__actions {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.showtime__actions-note {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-sub);
 }
 
 .showtime__action {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  margin-left: auto;
   min-height: 44px;
-  padding: 4px 6px;
+  padding: 4px 14px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-sub);
   text-decoration: none;
   white-space: nowrap;
-}
-
-.showtime__action--book {
-  background: var(--accent-solid);
-  border-color: var(--accent-solid);
-  color: var(--accent-text);
-  font-weight: 600;
 }
 
 /* ── Cinema group (By Cinema) ────────────────────────────────────────────────── */
@@ -851,6 +913,36 @@ img { display: block; }
   font-size: 12px;
   color: var(--text-mute);
   margin-bottom: 2px;
+}
+
+/* TMDb attribution. Required by the TMDb API terms — every poster, backdrop,
+   synopsis, rating and credit on the site comes from them. */
+.site-footer__attr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.site-footer__attr-link {
+  display: inline-flex;
+  align-items: center;
+  /* 44px tap target without the logo growing to match. */
+  min-height: 44px;
+  padding: 0 8px;
+}
+
+.site-footer__attr-logo {
+  width: 56px;
+  height: auto;
+}
+
+.site-footer__attr-text {
+  max-width: 40ch;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-mute);
 }
 
 .site-footer__link {
@@ -1153,6 +1245,32 @@ img { display: block; }
 .dark .detail-back-btn { background: rgba(0, 0, 0, 0.6); }
 .detail-back-btn:active { opacity: 0.75; }
 
+/* Mirrors the back pill on the other edge of the banner. A film page is a
+   landing page (shared links, search results) and used to be the one document
+   with no way to change the theme. */
+.detail-theme-btn {
+  position: absolute;
+  top: max(52px, calc(env(safe-area-inset-top, 0px) + 8px));
+  right: max(12px, calc(50% - 420px + 12px));
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.dark .detail-theme-btn { background: rgba(0, 0, 0, 0.6); }
+.detail-theme-btn:active { opacity: 0.75; }
+
 .detail-content {
   position: relative;
   z-index: 2;
@@ -1379,6 +1497,31 @@ img { display: block; }
   background: var(--accent-bg);
   color: var(--accent-ink);
   font-weight: 600;
+}
+
+/* "Amber = bookable" was a colour-only code with nothing on the page decoding
+   it. Rendered only when some row on this page actually is bookable. */
+.showtimes-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.showtimes-legend__swatch {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.dark .showtimes-legend__swatch {
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 /* Cinema rows in film detail */
@@ -1628,7 +1771,9 @@ img { display: block; }
   .cinema-group__film:hover { background: var(--surface2); }
   .icon-btn:hover,
   .view-tab:hover { color: var(--text); }
-  .day-chip:not(.day-chip--active):hover { border-color: var(--text-sub); color: var(--text); }
+  .day-chip:not(.day-chip--active):not(.day-chip--faded):hover { border-color: var(--text-sub); color: var(--text); }
+  .sort-btn:hover,
+  .showtime__action:hover { border-color: var(--accent); color: var(--text); }
   .ext-link:hover,
   .trailer-btn:hover { border-color: var(--accent); color: var(--text); }
   .empty-state__btn:hover,

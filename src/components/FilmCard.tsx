@@ -26,6 +26,7 @@ function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
       : movie.showtimes;
 
   const dayTimes = [...new Set(filtered.map((s) => s.time))].sort();
+  const dateByTime = new Map(filtered.map((s) => [s.time, s.date]));
   const cinemaCount = new Set(filtered.map((s) => s.theater.id)).size;
 
   // A popular film can have 16+ distinct times on one day — cap the pills;
@@ -51,6 +52,7 @@ function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
       );
   const nextLabel =
     next && days ? `${days.find((d) => d.offset === next.dayOffset)?.label ?? ""} ${next.time}`.trim() : null;
+  const nextDateTime = next ? `${next.date}T${next.time}` : undefined;
 
   // Day-scoped for free: `filtered` is already the selected day's showtimes.
   const fmt = showTimes
@@ -92,11 +94,18 @@ function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
         </div>
         {showTimes && (
           <div className="film-card__times">
-            {shownTimes.map((t) => (
-              <time key={t} className={`time-pill${lc ? " time-pill--lc" : ""}`}>
-                {t}
-              </time>
-            ))}
+            {shownTimes.map((t) => {
+              const d = dateByTime.get(t);
+              return (
+                <time
+                  key={t}
+                  className={`time-pill${lc ? " time-pill--lc" : ""}`}
+                  dateTime={d ? `${d}T${t}` : t}
+                >
+                  {t}
+                </time>
+              );
+            })}
             {extraTimes > 0 && (
               <span className="time-pill time-pill--more">+{extraTimes} more</span>
             )}
@@ -105,7 +114,10 @@ function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
         )}
         {nextLabel && (
           <div className="film-card__next">
-            Next <time className={`time-pill${lc ? " time-pill--lc" : ""}`}>{nextLabel}</time>
+            Next{" "}
+            <time className={`time-pill${lc ? " time-pill--lc" : ""}`} dateTime={nextDateTime}>
+              {nextLabel}
+            </time>
           </div>
         )}
       </div>

@@ -16,6 +16,9 @@ import {
   formatDataAge,
   buildCinemaGroups,
   normalizeForSearch,
+  movieMatchesQuery,
+  parseSortMode,
+  sortMovies,
 } from "../utils";
 import type { CinemaViewGroup, SheetVenueData, TransformedMovie, Listings } from "../types";
 
@@ -115,6 +118,7 @@ function ListView({
   const rawDay = searchParams.get("day");
   const selectedDay: number | null = rawDay !== null && !isNaN(Number(rawDay)) ? Number(rawDay) : null;
   const view: "film" | "cinema" = searchParams.get("view") === "cinema" ? "cinema" : "film";
+  const sort = parseSortMode(searchParams.get("sort"));
 
   const setSelectedDay = (day: number | null) => {
     setParams((next) => {
@@ -130,11 +134,16 @@ function ListView({
   const search = selectedDay != null ? `?day=${selectedDay}` : "";
 
   const dayMovies = useMemo(
-    () =>
-      selectedDay == null
-        ? movies
-        : movies.filter((m) => m.showtimes.some((s) => s.dayOffset === selectedDay)),
-    [movies, selectedDay],
+    () => {
+      const scoped =
+        selectedDay == null
+          ? movies
+          : movies.filter((m) => m.showtimes.some((s) => s.dayOffset === selectedDay));
+      // Order after filtering: "next showing" must mean next *within the day
+      // the visitor is looking at.
+      return sortMovies(scoped, sort, selectedDay);
+    },
+    [movies, selectedDay, sort],
   );
 
   const activeDays = useMemo(
@@ -153,19 +162,23 @@ function ListView({
   const searchResults = useMemo(() => {
     const q = normalizeForSearch(searchInput);
     if (!q) return dayMovies;
-    return dayMovies.filter(
-      (m) =>
-        normalizeForSearch(m.title).includes(q) ||
-        m.genres.some((g) => normalizeForSearch(g).includes(q)) ||
-        (m.director != null && normalizeForSearch(m.director).includes(q)) ||
-        (m.cast?.some((c) => normalizeForSearch(c).includes(q)) ?? false),
-    );
+    return dayMovies.filter((m) => movieMatchesQuery(m, q));
   }, [dayMovies, searchInput]);
 
   const handleSetView = (v: "film" | "cinema") => {
     setParams((next) => {
       if (v === "cinema") next.set("view", "cinema");
       else next.delete("view");
+    });
+  };
+
+  // Rating order is a fine default but it was previously the *only* order, and
+  // unlabelled — a 12:00 you already missed outranked a 21:00 you could still
+  // catch. "rating" writes no parameter so the default URL stays clean.
+  const toggleSort = () => {
+    setParams((next) => {
+      if (sort === "rating") next.set("sort", "next");
+      else next.delete("sort");
     });
   };
 
@@ -278,8 +291,8 @@ function ListView({
                     if (e.key === "Escape") closeSearch();
                   }}
                   enterKeyHint="done"
-                  placeholder="Film title, genre…"
-                  aria-label="Search films"
+                  placeholder="Film, genre, cinema…"
+                  aria-label="Search films and cinemas"
                 />
                 {searchInput.length > 0 && (
                   <button
@@ -352,6 +365,21 @@ function ListView({
                 {v === "film" ? "By Film" : "By Cinema"}
               </button>
             ))}
+            {/* Cinema view has its own axis (A–Z vs. distance, via "Near me"),
+                so the film-order toggle only belongs to the film view. */}
+            {view === "film" && (
+              <button
+                className="sort-btn"
+                onClick={toggleSort}
+                aria-label={
+                  sort === "rating"
+                    ? "Sorted by rating. Sort by next showing instead"
+                    : "Sorted by next showing. Sort by rating instead"
+                }
+              >
+                {sort === "rating" ? "Top rated" : "Starting soonest"}
+              </button>
+            )}
           </div>
 
           <div className="result-row">
