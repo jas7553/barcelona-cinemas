@@ -188,11 +188,22 @@ export function formatDayLabel(offset: number, date: Date): string {
  * reference instant (avoids a hydration mismatch); the client swaps to the
  * live clock after mount.
  */
-export function generateDays(now: Date = new Date()): Array<{ label: string; fullLabel: string; offset: number }> {
+/**
+ * Day chips from `now`.
+ *
+ * `count` must cover the data's horizon: providers occasionally publish an
+ * eighth day, and a chip-less day is unreachable — its showtimes render under
+ * "All" but no filter can isolate them and no per-day count includes them.
+ * Callers pass `dayHorizon(movies)`; the 7 default is the usual week.
+ */
+export function generateDays(
+  now: Date = new Date(),
+  count = 7,
+): Array<{ label: string; fullLabel: string; offset: number }> {
   const hour = now.getHours();
   const result: Array<{ label: string; fullLabel: string; offset: number }> = [];
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < Math.max(1, count); i++) {
     const d = new Date(now);
     d.setDate(d.getDate() + i);
 
@@ -211,6 +222,15 @@ export function generateDays(now: Date = new Date()): Array<{ label: string; ful
   }
 
   return result;
+}
+
+/** Chip count needed to reach the furthest day present in the data (min 7). */
+export function dayHorizon(movies: TransformedMovie[]): number {
+  let max = 6;
+  for (const m of movies) {
+    for (const s of m.showtimes) if (s.dayOffset > max) max = s.dayOffset;
+  }
+  return max + 1;
 }
 
 // ── Search normalization ────────────────────────────────────────────────────
@@ -327,6 +347,57 @@ export type DayGroup = {
 };
 export type CinemaRow = { theater: TransformedShowtime["theater"]; dayGroups: DayGroup[]; distKm?: number };
 
+/** One cinema's showings on a single day (film detail, day-first layout). */
+export type DayCinema = {
+  theater: TransformedShowtime["theater"];
+  times: DayGroup["times"];
+  distKm?: number;
+};
+
+/** A day of the film's run, with every cinema showing it that day. */
+export type DaySection = { offset: number; label: string; cinemas: DayCinema[] };
+
+/**
+ * Day-first showtimes for the film detail page.
+ *
+ * Cinema-first grouping scattered a single evening across every cinema block,
+ * so "what can I see tonight?" meant scanning the whole page. Day-first keeps
+ * one evening contiguous; cinemas repeat per day, which is the cheaper
+ * repetition because the day is what people filter by first.
+ */
+export function buildDaySections(
+  movie: TransformedMovie,
+  selectedDay: number | null,
+  coords: { lat: number; lng: number } | null,
+  now: Date = new Date(),
+): DaySection[] {
+  const rows = buildCinemaRows(movie, selectedDay, coords, now);
+  const dayLabelMap = new Map(generateDays(now, dayHorizon([movie])).map((d) => [d.offset, d.label]));
+  const sections = new Map<number, DaySection>();
+
+  for (const { theater, dayGroups, distKm } of rows) {
+    for (const g of dayGroups) {
+      // A day filter collapses buildCinemaRows to a single unlabelled group
+      // keyed 0; recover the real offset from the selection.
+      const offset = selectedDay ?? g.offset;
+      const label =
+        g.label ??
+        dayLabelMap.get(offset) ??
+        new Date(`${g.times[0]?.date}T00:00:00`).toLocaleDateString("en-GB", {
+          weekday: "short",
+          day: "numeric",
+        });
+      const section = sections.get(offset) ?? { offset, label, cinemas: [] };
+      section.cinemas.push({ theater, times: g.times, distKm });
+      sections.set(offset, section);
+    }
+  }
+
+  // buildCinemaRows already ordered the cinemas (distance, then name); the Map
+  // preserved that per day, so only the days themselves need sorting.
+  return [...sections.values()].sort((a, b) => a.offset - b.offset);
+}
+
 export function buildCinemaRows(
   movie: TransformedMovie,
   selectedDay: number | null,
@@ -393,7 +464,15 @@ export function buildCinemaRows(
 
 // ── Cinema group builder ────────────────────────────────────────────────────
 
-/** Group films by theater for the selected day. Sorted by distance if coords provided. */
+/**
+ * Group films by theater, with each film's times split per day.
+ *
+ * The split is the point: without a day filter this view used to dedupe times
+ * across the whole week into one undated row, so "16:00 18:00 20:00" read as
+ * one evening's schedule when it was really the union of five. Days stay
+ * separate and labelled; a day filter yields the single unlabelled group the
+ * flat layout expects. Sorted by distance if coords provided.
+ */
 export function buildCinemaGroups(
   movies: TransformedMovie[],
   dayOffset: number | null,
@@ -408,17 +487,31 @@ export function buildCinemaGroups(
     const dayShowtimes = dayOffset == null
       ? movie.showtimes
       : movie.showtimes.filter((s) => s.dayOffset === dayOffset);
-    const byTheater = new Map<string, { theater: TransformedShowtime["theater"]; times: string[] }>();
+    const byTheater = new Map<
+      string,
+      { theater: TransformedShowtime["theater"]; days: Map<number, string[]> }
+    >();
 
     for (const s of dayShowtimes) {
-      const entry = byTheater.get(s.theater.id) ?? { theater: s.theater, times: [] };
-      if (!entry.times.includes(s.time)) entry.times.push(s.time);
+      const entry = byTheater.get(s.theater.id) ?? {
+        theater: s.theater,
+        days: new Map<number, string[]>(),
+      };
+      const key = dayOffset == null ? s.dayOffset : -1;
+      const times = entry.days.get(key) ?? [];
+      if (!times.includes(s.time)) times.push(s.time);
+      entry.days.set(key, times);
       byTheater.set(s.theater.id, entry);
     }
 
-    for (const [theaterId, { theater, times }] of byTheater) {
+    for (const [theaterId, { theater, days }] of byTheater) {
       const existing = theaterMap.get(theaterId) ?? { theater, films: [] };
-      existing.films.push({ movie, times: [...times].sort() });
+      existing.films.push({
+        movie,
+        days: [...days.entries()]
+          .sort(([a], [b]) => a - b)
+          .map(([offset, times]) => ({ offset, times: [...times].sort() })),
+      });
       theaterMap.set(theaterId, existing);
     }
   }

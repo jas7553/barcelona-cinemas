@@ -15,6 +15,12 @@ export interface LocationPin {
 
 const STORAGE_KEY = "location_active";
 
+// iOS Safari can leave getCurrentPosition pending indefinitely (indoors, or with
+// Location Services off at the OS level). Without a deadline the cinema list sits
+// behind its skeleton forever, so cap the wait and fall through to the error
+// state, which still renders the alphabetical order.
+const GEO_OPTIONS: PositionOptions = { timeout: 10_000, maximumAge: 5 * 60_000 };
+
 export function useLocationPin(): LocationPin {
   const [active, setActive] = useState(false);
   const [coords, setCoords] = useState<Coords | null>(null);
@@ -48,6 +54,7 @@ export function useLocationPin(): LocationPin {
         localStorage.removeItem(STORAGE_KEY);
         setResolving(false);
       },
+      GEO_OPTIONS,
     );
   }, []);
 
@@ -81,6 +88,7 @@ export function useLocationPin(): LocationPin {
         if (errorTimer.current) clearTimeout(errorTimer.current);
         errorTimer.current = setTimeout(() => setError(false), 3000);
       },
+      GEO_OPTIONS,
     );
   }, [active]);
 

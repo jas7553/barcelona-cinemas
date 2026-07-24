@@ -92,7 +92,12 @@ export interface CinemaViewGroup {
   theater: Theater;
   films: Array<{
     movie: TransformedMovie;
-    times: string[];
+    /**
+     * Times split per day, ascending. `offset` is the dayOffset, or -1 for the
+     * single group produced when a day filter is already applied (the view
+     * renders that one bare, since the chip above already names the day).
+     */
+    days: Array<{ offset: number; times: string[] }>;
   }>;
   distanceKm?: number;
 }
