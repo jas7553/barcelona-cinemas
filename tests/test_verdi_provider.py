@@ -1,13 +1,32 @@
+from collections.abc import Iterator
 from unittest.mock import MagicMock, patch
 
-from models import CinemaInfo, CinemaRegistry
+import pytest
+
+from models import CinemaInfo, CinemaRegistry, Listings
 from providers.verdi_provider import (
     VerdiProvider,
+    _cached_sala_map,
     _extract_film_meta,
     _is_vo,
     _parse_sessions,
     _resolve_cinema_key,
 )
+
+
+@pytest.fixture(autouse=True)
+def _cold_cache() -> Iterator[None]:
+    """
+    Default every test to an empty sala map.
+
+    `_cached_sala_map` reads the real cache, so without this the suite would
+    resolve salas from whatever listings happen to sit in the developer's
+    ./cache — passing or failing on local state. Tests that exercise the cached
+    path patch `cache.read` themselves.
+    """
+    with patch("cache.read", return_value=None):
+        yield
+
 
 CINEMAS: CinemaRegistry = {
     "Verdi": CinemaInfo(
@@ -291,3 +310,121 @@ def test_fetch_deduplicates_same_time_slot_sala_lookup() -> None:
     # Three sessions at the same time → only ONE sala lookup.
     assert len(seat_urls_fetched) == 1
     assert "400001" in seat_urls_fetched[0]
+
+
+def _listings_with(showtimes: list[dict[str, object]]) -> Listings:
+    return {
+        "fetched_at": "2026-07-28T20:00:00+00:00",
+        "stale": False,
+        "movies": [{"title": "Obsession", "showtimes": showtimes}],  # type: ignore[typeddict-item]
+    }
+
+
+def test_cached_sala_map_extracts_session_ids_from_booking_urls() -> None:
+    listings = _listings_with(
+        [
+            {"cinema": "Verdi", "booking_url": "https://verdibcn.admit-one.eu/seats/500001/"},
+            {"cinema": "VP", "booking_url": "https://verdibcn.admit-one.eu/seats/500002/"},
+        ]
+    )
+    with patch("cache.read", return_value=listings):
+        assert _cached_sala_map() == {"500001": "Verdi", "500002": "VP"}
+
+
+def test_cached_sala_map_ignores_non_verdi_and_foreign_urls() -> None:
+    listings = _listings_with(
+        [
+            {"cinema": "Renoir", "booking_url": "https://verdibcn.admit-one.eu/seats/600001/"},
+            {"cinema": "Verdi", "booking_url": "https://example.com/seats/600002/"},
+            {"cinema": "Verdi", "booking_url": None},
+            {"cinema": "Verdi"},
+        ]
+    )
+    with patch("cache.read", return_value=listings):
+        assert _cached_sala_map() == {}
+
+
+def test_cached_sala_map_empty_on_cold_cache() -> None:
+    with patch("cache.read", return_value=None):
+        assert _cached_sala_map() == {}
+
+
+def test_fetch_skips_network_when_session_is_in_cached_sala_map() -> None:
+    """A session resolved by an earlier refresh costs no admit-one request."""
+    film_html = _film_html_with_sessions(
+        '\n<a href="https://verdibcn.admit-one.eu/seats/700001/" x-show="!isPast(&#039;20260628203000&#039;)" x-cloak target="_blank"><time>20:30</time><small>V.O. SUB. CASTELLÀ</small></a>\n'
+    )
+    seat_urls_fetched: list[str] = []
+
+    def _get(url: str, **kwargs: object) -> MagicMock:
+        if "cartellera" in url:
+            return _mock_response('<a href="/obsession" class="group"></a>')
+        if "cines-verdi.com" in url:
+            return _mock_response(film_html)
+        seat_urls_fetched.append(url)
+        raise Exception("admit-one is down")
+
+    listings = _listings_with([{"cinema": "VP", "booking_url": "https://verdibcn.admit-one.eu/seats/700001/"}])
+    with (
+        patch("cache.read", return_value=listings),
+        patch("providers.verdi_provider.requests.get", side_effect=_get),
+    ):
+        movies = VerdiProvider().fetch(CINEMAS)
+
+    assert seat_urls_fetched == []
+    assert movies[0]["showtimes"][0]["cinema"] == "VP"
+
+
+def test_fetch_uses_cached_sala_from_any_session_in_the_slot() -> None:
+    """The slot's first session is unknown, but a later date's session is cached."""
+    film_html = _film_html_with_sessions("""
+<a href="https://verdibcn.admit-one.eu/seats/800001/" x-show="!isPast(&#039;20260628203000&#039;)" x-cloak target="_blank"><time>20:30</time><small>V.O. SUB. CASTELLÀ</small></a>
+<a href="https://verdibcn.admit-one.eu/seats/800002/" x-show="!isPast(&#039;20260629203000&#039;)" x-cloak target="_blank"><time>20:30</time><small>V.O. SUB. CASTELLÀ</small></a>
+""")
+    seat_urls_fetched: list[str] = []
+
+    def _get(url: str, **kwargs: object) -> MagicMock:
+        if "cartellera" in url:
+            return _mock_response('<a href="/obsession" class="group"></a>')
+        if "cines-verdi.com" in url:
+            return _mock_response(film_html)
+        seat_urls_fetched.append(url)
+        return _mock_response(_SEAT_PAGE_VERDI)
+
+    listings = _listings_with([{"cinema": "VP", "booking_url": "https://verdibcn.admit-one.eu/seats/800002/"}])
+    with (
+        patch("cache.read", return_value=listings),
+        patch("providers.verdi_provider.requests.get", side_effect=_get),
+    ):
+        movies = VerdiProvider().fetch(CINEMAS)
+
+    assert seat_urls_fetched == []
+    assert {st["cinema"] for st in movies[0]["showtimes"]} == {"VP"}
+
+
+def test_fetch_falls_back_to_lookup_for_sessions_absent_from_cache() -> None:
+    film_html = _film_html_with_sessions(
+        '\n<a href="https://verdibcn.admit-one.eu/seats/900001/" x-show="!isPast(&#039;20260628203000&#039;)" x-cloak target="_blank"><time>20:30</time><small>V.O. SUB. CASTELLÀ</small></a>\n'
+    )
+    responses = {
+        "https://barcelona.cines-verdi.com/cartellera": '<a href="/obsession" class="group"></a>',
+        "https://barcelona.cines-verdi.com/obsession": film_html,
+        "https://verdibcn.admit-one.eu/seats/900001/": _SEAT_PAGE_VERDI,
+    }
+    listings = _listings_with([{"cinema": "VP", "booking_url": "https://verdibcn.admit-one.eu/seats/111111/"}])
+    with (
+        patch("cache.read", return_value=listings),
+        patch("providers.verdi_provider.requests.get", side_effect=_make_get(responses)),
+    ):
+        movies = VerdiProvider().fetch(CINEMAS)
+
+    assert movies[0]["showtimes"][0]["cinema"] == "Verdi"
+
+
+def test_resolve_cinema_key_uses_short_timeout() -> None:
+    """A hung admit-one must not be able to eat the refresh's Lambda budget."""
+    mock_get = MagicMock(return_value=_mock_response(_SEAT_PAGE_VERDI))
+    with patch("providers.verdi_provider.requests.get", mock_get):
+        _resolve_cinema_key("100001")
+
+    assert mock_get.call_args.kwargs["timeout"] == 3
