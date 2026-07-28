@@ -8,6 +8,12 @@ Cinema detection: the admit-one seat page shows "Cines Verdi Barcelona | Sala N"
 for Verdi main (numeric sala) and "Cines Verdi Barcelona | Sala A V.Park" (or
 similar letter + V.Park suffix) for Verdi Park. One lookup per unique time-slot
 per film covers the whole weekly run.
+
+admit-one is the slowest and least reliable dependency in the pipeline: a bad
+spell there once ate the entire 120s Lambda budget in 10s timeouts and killed
+the whole refresh. Two guards: a short per-request timeout, and a session ->
+cinema map recovered from the previous run's cached showtimes, which skips the
+network entirely for any session already resolved once.
 """
 
 from __future__ import annotations
@@ -26,6 +32,16 @@ logger = logging.getLogger(__name__)
 
 _VERDI_BASE = "https://barcelona.cines-verdi.com"
 _ADMIT_ONE_BASE = "https://verdibcn.admit-one.eu"
+
+# Seat pages answer in well under a second when healthy. The ceiling exists to
+# bound a hung host, not to wait out a slow one — every second here is spent
+# serially, once per unique time slot, inside a 120s Lambda.
+_SALA_TIMEOUT = 3
+
+# Session id inside a stored booking_url, for rebuilding the sala map from cache.
+_BOOKING_SESSION_RE = re.compile(r"/seats/(\d+)/")
+
+_VERDI_CINEMA_KEYS = frozenset({"Verdi", "VP"})
 
 # href="/some-slug" class="group" — film cards on the cartellera page.
 _FILM_LINK_RE = re.compile(r'href="(/[a-z][a-z0-9-]+)"\s+class="group"')
@@ -105,7 +121,7 @@ def _resolve_cinema_key(sess_id: str) -> str | None:
     """
     url = f"{_ADMIT_ONE_BASE}/seats/{sess_id}/"
     try:
-        resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=10)
+        resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=_SALA_TIMEOUT)
         resp.raise_for_status()
     except Exception as exc:
         logger.warning("Sala lookup failed for session %s: %s", sess_id, exc)
@@ -119,6 +135,35 @@ def _resolve_cinema_key(sess_id: str) -> str | None:
     return None
 
 
+def _cached_sala_map() -> dict[str, str]:
+    """
+    Rebuild {session_id: cinema_key} from the previous run's cached showtimes.
+
+    A session's sala never changes once assigned, so a resolution from any
+    earlier refresh stays valid for the life of that session id. Returns an
+    empty map on a cold cache — the provider then just does the lookups.
+    """
+    import cache  # noqa: PLC0415  — deferred: keeps provider import cheap and cycle-free
+
+    cached = cache.read()
+    if cached is None:
+        return {}
+
+    sala_map: dict[str, str] = {}
+    for movie in cached.get("movies", []):
+        for showtime in movie.get("showtimes", []):
+            cinema_key = showtime.get("cinema")
+            booking_url = showtime.get("booking_url")
+            if cinema_key not in _VERDI_CINEMA_KEYS or not booking_url:
+                continue
+            if not booking_url.startswith(_ADMIT_ONE_BASE):
+                continue
+            m = _BOOKING_SESSION_RE.search(booking_url)
+            if m:
+                sala_map[m.group(1)] = cinema_key
+    return sala_map
+
+
 class VerdiProvider:
     name = "verdi"
 
@@ -129,10 +174,13 @@ class VerdiProvider:
             logger.warning("Verdi cartellera fetch failed: %s", exc)
             return []
 
+        known_salas = _cached_sala_map()
+        logger.info("Verdi sala map seeded with %d cached session(s)", len(known_salas))
+
         movies: list[Movie] = []
         for slug in slugs:
             try:
-                movie = self._process_film(slug, cinemas)
+                movie = self._process_film(slug, cinemas, known_salas)
             except Exception as exc:
                 logger.warning("Verdi film %s skipped: %s", slug, exc)
                 continue
@@ -146,7 +194,12 @@ class VerdiProvider:
         resp.raise_for_status()
         return list(dict.fromkeys(_FILM_LINK_RE.findall(resp.text)))
 
-    def _process_film(self, slug: str, cinemas: CinemaRegistry) -> Movie | None:
+    def _process_film(
+        self,
+        slug: str,
+        cinemas: CinemaRegistry,
+        known_salas: dict[str, str] | None = None,
+    ) -> Movie | None:
         resp = requests.get(f"{_VERDI_BASE}{slug}", headers=DEFAULT_HEADERS, timeout=15)
         resp.raise_for_status()
         html = resp.text
@@ -160,11 +213,24 @@ class VerdiProvider:
         if not vo_sessions:
             return None
 
-        # One sala lookup per unique time slot covers the whole run.
-        cinema_by_time: dict[str, str | None] = {}
+        # One sala lookup per unique time slot covers the whole run. A slot's
+        # sessions all sit in the same sala, so any one of them already in the
+        # cached map answers for the slot without touching the network.
+        known = known_salas or {}
+        sessions_by_time: dict[str, list[str]] = {}
         for _d, time_slot, sess_id, _url, _lang in vo_sessions:
-            if time_slot not in cinema_by_time:
-                cinema_by_time[time_slot] = _resolve_cinema_key(sess_id)
+            sessions_by_time.setdefault(time_slot, []).append(sess_id)
+
+        cinema_by_time: dict[str, str | None] = {}
+        for time_slot, sess_ids in sessions_by_time.items():
+            cached_key = next((known[sid] for sid in sess_ids if sid in known), None)
+            if cached_key is not None:
+                cinema_by_time[time_slot] = cached_key
+                continue
+            resolved = _resolve_cinema_key(sess_ids[0])
+            cinema_by_time[time_slot] = resolved
+            if resolved is not None:
+                known[sess_ids[0]] = resolved
 
         showtimes: list[Showtime] = []
         for date, time_str, _sess_id, booking_url, lang in vo_sessions:
