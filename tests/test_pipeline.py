@@ -1,9 +1,16 @@
-"""Tests for pipeline.py — cache TTL logic and collection error handling."""
+"""
+Tests for pipeline.py — the refresh's I/O half.
+
+The ritual itself (collection, Reconciliation, Enrichment, the English filter)
+lives in refresh.py and is tested in tests/test_refresh.py. What is left here is
+cache TTL logic, the cache read/build/write ordering, and publication of the
+static site.
+"""
 
 import json
 import logging
-import threading
 from datetime import UTC, datetime
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -12,7 +19,7 @@ import cache
 import observability
 import pipeline
 import transform
-from models import Listings, Movie
+from models import Listings
 
 
 def _listings() -> Listings:
@@ -29,42 +36,29 @@ def tmp_cache(tmp_path, monkeypatch):
 
 
 def test_get_listings_returns_cache_when_fresh(tmp_cache, monkeypatch):
-    """Fresh cache is returned without calling refresh."""
+    """A fresh cache is served straight back."""
     cached = _listings()
     cache.write(cached)
 
     monkeypatch.setattr(pipeline, "_CACHE_TTL_HOURS", 12)
 
-    with patch.object(pipeline, "_refresh") as mock_refresh:
-        result = pipeline.get_listings()
-
-    mock_refresh.assert_not_called()
-    assert result["fetched_at"] == cached["fetched_at"]
+    assert pipeline.get_listings()["fetched_at"] == cached["fetched_at"]
 
 
 def test_get_listings_marks_cache_stale_when_ttl_is_exceeded(tmp_cache, monkeypatch):
-    """Expired cache is served back as stale without triggering refresh."""
+    """An expired cache is served back as stale; the read path never refreshes."""
     cache.write(_listings())
     monkeypatch.setattr(pipeline, "_CACHE_TTL_HOURS", 0)  # always stale
 
-    with patch.object(pipeline, "_refresh") as mock_refresh:
-        result = pipeline.get_listings()
-
-    mock_refresh.assert_not_called()
-    assert result["stale"] is True
+    assert pipeline.get_listings()["stale"] is True
 
 
 def test_get_listings_raises_when_no_cache(tmp_cache, monkeypatch):
     """No cache file now returns an error to the request path."""
     monkeypatch.setattr(pipeline, "_CACHE_TTL_HOURS", 12)
 
-    with (
-        patch.object(pipeline, "_refresh") as mock_refresh,
-        pytest.raises(RuntimeError, match="Listings cache unavailable"),
-    ):
+    with pytest.raises(RuntimeError, match="Listings cache unavailable"):
         pipeline.get_listings()
-
-    mock_refresh.assert_not_called()
 
 
 def test_force_refresh_bypasses_ttl(tmp_cache, monkeypatch):
@@ -79,362 +73,6 @@ def test_force_refresh_bypasses_ttl(tmp_cache, monkeypatch):
 
     mock_refresh.assert_called_once()
     assert result is fresh
-
-
-def test_collect_movies_raises_when_all_providers_fail():
-    """RuntimeError is raised when every provider fails."""
-    provider_one = MagicMock(name="provider_one")
-    provider_one.name = "provider_one"
-    provider_one.fetch.side_effect = RuntimeError("down")
-    provider_two = MagicMock(name="provider_two")
-    provider_two.name = "provider_two"
-    provider_two.fetch.side_effect = RuntimeError("down")
-
-    with (
-        patch("providers.all_providers", return_value=[provider_one, provider_two]),
-        pytest.raises(RuntimeError, match="All providers failed"),
-    ):
-        pipeline._collect_movies({})
-
-
-def test_collect_movies_drops_invalid_movies_and_showtimes():
-    """Provider output is normalized before it reaches the cache layer."""
-    provider = MagicMock()
-    provider.name = "provider_one"
-    provider.fetch.return_value = [
-        {
-            "title": "Valid Film",
-            "tmdb_id": None,
-            "synopsis": None,
-            "rating": None,
-            "runtime_mins": None,
-            "genres": None,
-            "showtimes": [
-                {
-                    "cinema": "Verdi",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Verdi, 32",
-                    "date": "2026-03-28",
-                    "time": "18:00",
-                },
-                {
-                    "cinema": "Verdi",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Verdi, 32",
-                    "date": "bad-date",
-                    "time": "18:00",
-                },
-            ],
-        },
-        {
-            "title": "",
-            "tmdb_id": None,
-            "synopsis": None,
-            "rating": None,
-            "runtime_mins": None,
-            "genres": None,
-            "showtimes": [],
-        },
-    ]
-
-    with patch("providers.all_providers", return_value=[provider]):
-        result = pipeline._collect_movies({})
-
-    assert len(result) == 1
-    assert result[0]["title"] == "Valid Film"
-    assert result[0]["showtimes"] == [
-        {
-            "cinema": "Verdi",
-            "neighborhood": "Gracia",
-            "address": "Carrer de Verdi, 32",
-            "date": "2026-03-28",
-            "time": "18:00",
-        }
-    ]
-
-
-def test_collect_movies_merges_provider_results_by_title_and_imdb_id():
-    provider_one = MagicMock()
-    provider_one.name = "provider_one"
-    provider_one.fetch.return_value = [
-        {
-            "title": "Project Hail Mary",
-            "tmdb_id": None,
-            "imdb_id": None,
-            "year": None,
-            "poster_url": None,
-            "synopsis": None,
-            "rating": None,
-            "runtime_mins": None,
-            "genres": None,
-            "showtimes": [
-                {
-                    "cinema": "Verdi",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Verdi, 32",
-                    "date": "2026-03-28",
-                    "time": "18:00",
-                }
-            ],
-        }
-    ]
-    provider_two = MagicMock()
-    provider_two.name = "provider_two"
-    provider_two.fetch.return_value = [
-        {
-            "title": "Project Hail Mary",
-            "tmdb_id": None,
-            "imdb_id": "tt12042730",
-            "year": None,
-            "poster_url": None,
-            "synopsis": None,
-            "rating": None,
-            "runtime_mins": None,
-            "genres": None,
-            "showtimes": [
-                {
-                    "cinema": "Verdi",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Verdi, 32",
-                    "date": "2026-03-29",
-                    "time": "20:00",
-                    "language": "vo",
-                }
-            ],
-        }
-    ]
-
-    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
-        result = pipeline._collect_movies({})
-
-    assert len(result) == 1
-    assert result[0]["imdb_id"] == "tt12042730"
-    assert len(result[0]["showtimes"]) == 2
-
-
-def test_collect_movies_deduplicates_missing_and_explicit_vo_language():
-    provider_one = MagicMock()
-    provider_one.name = "provider_one"
-    provider_one.fetch.return_value = [
-        {
-            "title": "Project Hail Mary",
-            "tmdb_id": None,
-            "imdb_id": None,
-            "year": None,
-            "poster_url": None,
-            "synopsis": None,
-            "rating": None,
-            "runtime_mins": None,
-            "genres": None,
-            "showtimes": [
-                {
-                    "cinema": "Verdi",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Verdi, 32",
-                    "date": "2026-03-28",
-                    "time": "18:00",
-                }
-            ],
-        }
-    ]
-    provider_two = MagicMock()
-    provider_two.name = "provider_two"
-    provider_two.fetch.return_value = [
-        {
-            "title": "Project Hail Mary",
-            "tmdb_id": None,
-            "imdb_id": "tt12042730",
-            "year": None,
-            "poster_url": None,
-            "synopsis": None,
-            "rating": None,
-            "runtime_mins": None,
-            "genres": None,
-            "showtimes": [
-                {
-                    "cinema": "Verdi",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Verdi, 32",
-                    "date": "2026-03-28",
-                    "time": "18:00",
-                    "language": "vo",
-                }
-            ],
-        }
-    ]
-
-    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
-        result = pipeline._collect_movies({})
-
-    assert len(result) == 1
-    assert result[0]["showtimes"] == [
-        {
-            "cinema": "Verdi",
-            "neighborhood": "Gracia",
-            "address": "Carrer de Verdi, 32",
-            "date": "2026-03-28",
-            "time": "18:00",
-            "language": "vo",
-        }
-    ]
-
-
-def test_collect_movies_keeps_booking_url_when_duplicate_lacks_one():
-    def _movie_with_showtime(showtime: dict[str, object]) -> dict[str, object]:
-        return {
-            "title": "Project Hail Mary",
-            "tmdb_id": None,
-            "imdb_id": None,
-            "year": None,
-            "poster_url": None,
-            "synopsis": None,
-            "rating": None,
-            "runtime_mins": None,
-            "genres": None,
-            "showtimes": [showtime],
-        }
-
-    base = {
-        "cinema": "Verdi",
-        "neighborhood": "Gracia",
-        "address": "Carrer de Verdi, 32",
-        "date": "2026-03-28",
-        "time": "18:00",
-        "language": "vo",
-    }
-    provider_one = MagicMock()
-    provider_one.name = "provider_one"
-    provider_one.fetch.return_value = [_movie_with_showtime({**base, "booking_url": "https://tickets.example/seats/1"})]
-    provider_two = MagicMock()
-    provider_two.name = "provider_two"
-    provider_two.fetch.return_value = [_movie_with_showtime(dict(base))]
-
-    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
-        result = pipeline._collect_movies({})
-
-    assert len(result) == 1
-    assert len(result[0]["showtimes"]) == 1
-    assert result[0]["showtimes"][0].get("booking_url") == "https://tickets.example/seats/1"
-
-
-def test_collect_movies_merges_quoted_and_unquoted_titles_when_identity_matches():
-    provider_one = MagicMock()
-    provider_one.name = "provider_one"
-    provider_one.fetch.return_value = [
-        {
-            "title": '"Wuthering Heights"',
-            "tmdb_id": None,
-            "imdb_id": None,
-            "year": None,
-            "poster_url": None,
-            "synopsis": None,
-            "rating": None,
-            "runtime_mins": None,
-            "genres": None,
-            "showtimes": [
-                {
-                    "cinema": "Verdi",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Verdi, 32",
-                    "date": "2026-03-28",
-                    "time": "18:00",
-                    "language": "vo",
-                }
-            ],
-        }
-    ]
-    provider_two = MagicMock()
-    provider_two.name = "provider_two"
-    provider_two.fetch.return_value = [
-        {
-            "title": "Wuthering Heights",
-            "tmdb_id": None,
-            "imdb_id": "tt32897959",
-            "year": None,
-            "poster_url": None,
-            "synopsis": None,
-            "rating": None,
-            "runtime_mins": None,
-            "genres": None,
-            "showtimes": [
-                {
-                    "cinema": "Verdi",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Verdi, 32",
-                    "date": "2026-03-29",
-                    "time": "20:00",
-                    "language": "vo",
-                }
-            ],
-        }
-    ]
-
-    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
-        result = pipeline._collect_movies({})
-
-    assert len(result) == 1
-    assert result[0]["imdb_id"] == "tt32897959"
-    assert len(result[0]["showtimes"]) == 2
-
-
-def test_collect_movies_keeps_conflicting_imdb_ids_split_even_when_titles_normalize():
-    provider_one = MagicMock()
-    provider_one.name = "provider_one"
-    provider_one.fetch.return_value = [
-        {
-            "title": '"Wuthering Heights"',
-            "tmdb_id": 1316092,
-            "imdb_id": "tt32897959",
-            "year": 2026,
-            "poster_url": "https://image.tmdb.org/t/p/w342/new.jpg",
-            "synopsis": "New adaptation",
-            "rating": 6.4,
-            "runtime_mins": 136,
-            "genres": ["Drama"],
-            "showtimes": [
-                {
-                    "cinema": "Verdi",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Verdi, 32",
-                    "date": "2026-03-28",
-                    "time": "18:00",
-                    "language": "vo",
-                }
-            ],
-        }
-    ]
-    provider_two = MagicMock()
-    provider_two.name = "provider_two"
-    provider_two.fetch.return_value = [
-        {
-            "title": "Wuthering Heights",
-            "tmdb_id": 25095,
-            "imdb_id": "tt0104181",
-            "year": 1992,
-            "poster_url": "https://image.tmdb.org/t/p/w342/old.jpg",
-            "synopsis": "Older adaptation",
-            "rating": 6.6,
-            "runtime_mins": 105,
-            "genres": ["Drama", "Romance"],
-            "showtimes": [
-                {
-                    "cinema": "Balmes",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Balmes, 422-424",
-                    "date": "2026-03-29",
-                    "time": "20:00",
-                    "language": "vo",
-                }
-            ],
-        }
-    ]
-
-    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
-        result = pipeline._collect_movies({})
-
-    assert len(result) == 2
-    imdb_ids = {movie["imdb_id"] for movie in result}
-    assert imdb_ids == {"tt32897959", "tt0104181"}
 
 
 # ── _publish_static_site ──────────────────────────────────────────────────────
@@ -532,171 +170,6 @@ def test_force_refresh_skips_publish_on_failure(tmp_cache):
     mock_publish.assert_not_called()
 
 
-def test_collect_movies_result_order_follows_provider_order_not_completion_order():
-    """Results are ordered by provider list position, not by which provider finishes first."""
-    gate = threading.Event()
-
-    def _slow_fetch(_cinemas):
-        gate.wait()  # provider_one blocks until provider_two has already finished
-        return [
-            {
-                "title": "From Provider One",
-                "tmdb_id": None,
-                "imdb_id": "tt0000001",
-                "year": None,
-                "poster_url": None,
-                "synopsis": None,
-                "rating": None,
-                "runtime_mins": None,
-                "genres": None,
-                "showtimes": [
-                    {
-                        "cinema": "Verdi",
-                        "neighborhood": "Gracia",
-                        "address": "Carrer de Verdi, 32",
-                        "date": "2026-03-28",
-                        "time": "18:00",
-                    }
-                ],
-            }
-        ]
-
-    def _fast_fetch(_cinemas):
-        gate.set()  # unblock provider_one after provider_two has completed
-        return [
-            {
-                "title": "From Provider Two",
-                "tmdb_id": None,
-                "imdb_id": "tt0000002",
-                "year": None,
-                "poster_url": None,
-                "synopsis": None,
-                "rating": None,
-                "runtime_mins": None,
-                "genres": None,
-                "showtimes": [
-                    {
-                        "cinema": "Balmes",
-                        "neighborhood": "Gracia",
-                        "address": "Carrer de Balmes, 422-424",
-                        "date": "2026-03-29",
-                        "time": "20:00",
-                    }
-                ],
-            }
-        ]
-
-    provider_one = MagicMock()
-    provider_one.name = "provider_one"
-    provider_one.fetch.side_effect = _slow_fetch
-    provider_two = MagicMock()
-    provider_two.name = "provider_two"
-    provider_two.fetch.side_effect = _fast_fetch
-
-    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
-        result = pipeline._collect_movies({})
-
-    # provider_two finished first, but provider_one's movie must appear first
-    assert len(result) == 2
-    assert result[0]["imdb_id"] == "tt0000001"
-    assert result[1]["imdb_id"] == "tt0000002"
-
-
-def _bare_movie(title: str, original_lang: str | None = None) -> Movie:
-    m = Movie(
-        title=title,
-        tmdb_id=None,
-        imdb_id=None,
-        year=None,
-        poster_url=None,
-        synopsis=None,
-        rating=None,
-        runtime_mins=None,
-        genres=None,
-        showtimes=[],
-    )
-    if original_lang is not None:
-        m["original_lang"] = original_lang
-    return m
-
-
-def test_filter_english_keeps_english_original():
-    movies = [_bare_movie("Dune: Part Two", "en")]
-    assert pipeline._filter_english(movies) == movies
-
-
-def test_filter_english_keeps_unknown_original_lang():
-    movies = [_bare_movie("Mystery Film")]  # original_lang absent → trust provider
-    assert pipeline._filter_english(movies) == movies
-
-
-def test_filter_english_excludes_non_english_original():
-    english = _bare_movie("Dune: Part Two", "en")
-    foreign = _bare_movie("El drama", "es")
-    result = pipeline._filter_english([english, foreign])
-    assert result == [english]
-
-
-def test_filter_english_excludes_various_non_english_langs():
-    movies = [
-        _bare_movie("Anatomie d'une chute", "fr"),
-        _bare_movie("Parasite", "ko"),
-        _bare_movie("El drama", "es"),
-    ]
-    assert pipeline._filter_english(movies) == []
-
-
-def test_fetch_provider_movies_emits_a_metric_when_a_provider_returns_zero_movies(caplog):
-    """A provider that runs clean but yields nothing looks identical to success without this signal."""
-    caplog.set_level(logging.INFO, logger="observability")
-    provider = MagicMock()
-    provider.name = "verdi"
-    provider.fetch.return_value = []
-
-    result = pipeline._fetch_provider_movies(provider, {})
-
-    assert result == []
-    assert '"ProviderZeroResult": 1' in caplog.text
-    assert '"event": "provider_zero_result"' in caplog.text
-    assert '"provider": "verdi"' in caplog.text
-
-
-def test_collect_movies_returns_data_when_one_provider_fails():
-    provider_one = MagicMock()
-    provider_one.name = "provider_one"
-    provider_one.fetch.side_effect = RuntimeError("down")
-    provider_two = MagicMock()
-    provider_two.name = "provider_two"
-    provider_two.fetch.return_value = [
-        {
-            "title": "Valid Film",
-            "tmdb_id": None,
-            "imdb_id": None,
-            "year": None,
-            "poster_url": None,
-            "synopsis": None,
-            "rating": None,
-            "runtime_mins": None,
-            "genres": None,
-            "showtimes": [
-                {
-                    "cinema": "Verdi",
-                    "neighborhood": "Gracia",
-                    "address": "Carrer de Verdi, 32",
-                    "date": "2026-03-28",
-                    "time": "18:00",
-                }
-            ],
-        }
-    ]
-
-    with patch("providers.all_providers", return_value=[provider_one, provider_two]):
-        result = pipeline._collect_movies({})
-
-    assert len(result) == 1
-    assert result[0]["title"] == "Valid Film"
-
-
 def test_publish_static_site_forwards_the_refresh_id_to_the_renderer(monkeypatch):
     """Nothing else joins the renderer's log group back to the refresh that triggered it."""
     monkeypatch.setenv("FRONTEND_BUCKET", "frontend-bucket")
@@ -722,7 +195,9 @@ def test_publish_static_site_forwards_the_refresh_id_to_the_renderer(monkeypatch
     assert payload["refresh_id"] == "refresh-abc123"
 
 
-def test_publish_static_site_emits_a_metric_when_the_upload_fails(monkeypatch, caplog):
+def test_publish_static_site_emits_a_metric_when_the_upload_fails(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     """The refresh still reports success, so this metric is the only alarm signal."""
     caplog.set_level(logging.INFO, logger="observability")
     monkeypatch.setenv("FRONTEND_BUCKET", "frontend-bucket")
@@ -741,7 +216,9 @@ def test_publish_static_site_emits_a_metric_when_the_upload_fails(monkeypatch, c
     assert '"event": "ssg_publish_failure"' in caplog.text
 
 
-def test_publish_static_site_emits_a_metric_when_the_renderer_invoke_fails(monkeypatch, caplog):
+def test_publish_static_site_emits_a_metric_when_the_renderer_invoke_fails(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
     caplog.set_level(logging.INFO, logger="observability")
     monkeypatch.setenv("FRONTEND_BUCKET", "frontend-bucket")
     monkeypatch.setenv("SSG_FUNCTION_NAME", "ssg-renderer")
@@ -761,3 +238,76 @@ def test_publish_static_site_emits_a_metric_when_the_renderer_invoke_fails(monke
 
     assert '"SsgInvokeFailure": 1' in caplog.text
     assert '"event": "ssg_invoke_failure"' in caplog.text
+
+
+# ── _refresh: I/O only ────────────────────────────────────────────────────────
+
+
+def test_refresh_reads_the_cache_builds_then_writes(tmp_cache, monkeypatch):
+    """
+    The whole of `_refresh`: one cache read in, one cache write out, and
+    `refresh.build_listings` in between. The order is the point — the read has
+    to precede the build (its Listings seed both Enrichment and the Verdi
+    Provider's admit-one sala map) and the write has to follow it.
+    """
+    previous = _listings()
+    cache.write(previous)
+    fresh = _listings()
+    calls: list[str] = []
+
+    def _fake_build(providers: Any, cinemas: Any, cached: Any, now: Any) -> tuple[Listings, dict[str, int]]:
+        calls.append("build")
+        assert cached["fetched_at"] == previous["fetched_at"]
+        assert cinemas  # the registry, not an empty dict
+        return fresh, {}
+
+    real_write = cache.write
+
+    def _spy_write(listings: Listings) -> None:
+        calls.append("write")
+        real_write(listings)
+
+    monkeypatch.setattr(pipeline, "build_listings", _fake_build)
+    monkeypatch.setattr(cache, "write", _spy_write)
+    with patch("providers.all_providers", return_value=[]) as mock_all_providers:
+        result = pipeline._refresh()
+
+    assert calls == ["build", "write"]
+    assert result is fresh
+    written = cache.read()
+    assert written is not None
+    assert written["fetched_at"] == fresh["fetched_at"]
+    # The Providers are constructed from the same cache read the build gets.
+    assert mock_all_providers.call_args.args[0]["fetched_at"] == previous["fetched_at"]
+
+
+def test_refresh_leaves_the_cache_alone_when_the_build_fails(tmp_cache, monkeypatch):
+    """A failed refresh must leave the old Listings serving."""
+    previous = _listings()
+    cache.write(previous)
+
+    def _failing_build(*args: Any, **kwargs: Any) -> tuple[Listings, dict[str, int]]:
+        raise RuntimeError("All providers failed to return listings")
+
+    monkeypatch.setattr(pipeline, "build_listings", _failing_build)
+    with patch("providers.all_providers", return_value=[]), pytest.raises(RuntimeError):
+        pipeline._refresh()
+
+    untouched = cache.read()
+    assert untouched is not None
+    assert untouched["fetched_at"] == previous["fetched_at"]
+
+
+def test_refresh_passes_a_cold_cache_through_as_none(tmp_cache, monkeypatch):
+    seen: list[Any] = []
+
+    def _fake_build(providers: Any, cinemas: Any, cached: Any, now: Any) -> tuple[Listings, dict[str, int]]:
+        seen.append(cached)
+        return _listings(), {}
+
+    monkeypatch.setattr(pipeline, "build_listings", _fake_build)
+    with patch("providers.all_providers", return_value=[]) as mock_all_providers:
+        pipeline._refresh()
+
+    assert seen == [None]
+    assert mock_all_providers.call_args.args[0] is None

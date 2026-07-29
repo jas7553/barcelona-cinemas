@@ -1,31 +1,17 @@
-from collections.abc import Iterator
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from models import CinemaInfo, CinemaRegistry, Listings
 from providers.verdi_provider import (
     VerdiProvider,
-    _cached_sala_map,
     _extract_film_meta,
     _is_vo,
     _parse_sessions,
     _resolve_cinema_key,
+    sala_map_from_cache,
 )
 
-
-@pytest.fixture(autouse=True)
-def _cold_cache() -> Iterator[None]:
-    """
-    Default every test to an empty sala map.
-
-    `_cached_sala_map` reads the real cache, so without this the suite would
-    resolve salas from whatever listings happen to sit in the developer's
-    ./cache — passing or failing on local state. Tests that exercise the cached
-    path patch `cache.read` themselves.
-    """
-    with patch("cache.read", return_value=None):
-        yield
+# The sala map is injected, so a provider constructed without one is a cold
+# start — no test here depends on whatever sits in the developer's ./cache.
 
 
 CINEMAS: CinemaRegistry = {
@@ -327,8 +313,7 @@ def test_cached_sala_map_extracts_session_ids_from_booking_urls() -> None:
             {"cinema": "VP", "booking_url": "https://verdibcn.admit-one.eu/seats/500002/"},
         ]
     )
-    with patch("cache.read", return_value=listings):
-        assert _cached_sala_map() == {"500001": "Verdi", "500002": "VP"}
+    assert sala_map_from_cache(listings) == {"500001": "Verdi", "500002": "VP"}
 
 
 def test_cached_sala_map_ignores_non_verdi_and_foreign_urls() -> None:
@@ -340,13 +325,11 @@ def test_cached_sala_map_ignores_non_verdi_and_foreign_urls() -> None:
             {"cinema": "Verdi"},
         ]
     )
-    with patch("cache.read", return_value=listings):
-        assert _cached_sala_map() == {}
+    assert sala_map_from_cache(listings) == {}
 
 
 def test_cached_sala_map_empty_on_cold_cache() -> None:
-    with patch("cache.read", return_value=None):
-        assert _cached_sala_map() == {}
+    assert sala_map_from_cache(None) == {}
 
 
 def test_fetch_skips_network_when_session_is_in_cached_sala_map() -> None:
@@ -365,11 +348,8 @@ def test_fetch_skips_network_when_session_is_in_cached_sala_map() -> None:
         raise Exception("admit-one is down")
 
     listings = _listings_with([{"cinema": "VP", "booking_url": "https://verdibcn.admit-one.eu/seats/700001/"}])
-    with (
-        patch("cache.read", return_value=listings),
-        patch("providers.verdi_provider.requests.get", side_effect=_get),
-    ):
-        movies = VerdiProvider().fetch(CINEMAS)
+    with patch("providers.verdi_provider.requests.get", side_effect=_get):
+        movies = VerdiProvider(sala_map=sala_map_from_cache(listings)).fetch(CINEMAS)
 
     assert seat_urls_fetched == []
     assert movies[0]["showtimes"][0]["cinema"] == "VP"
@@ -392,11 +372,8 @@ def test_fetch_uses_cached_sala_from_any_session_in_the_slot() -> None:
         return _mock_response(_SEAT_PAGE_VERDI)
 
     listings = _listings_with([{"cinema": "VP", "booking_url": "https://verdibcn.admit-one.eu/seats/800002/"}])
-    with (
-        patch("cache.read", return_value=listings),
-        patch("providers.verdi_provider.requests.get", side_effect=_get),
-    ):
-        movies = VerdiProvider().fetch(CINEMAS)
+    with patch("providers.verdi_provider.requests.get", side_effect=_get):
+        movies = VerdiProvider(sala_map=sala_map_from_cache(listings)).fetch(CINEMAS)
 
     assert seat_urls_fetched == []
     assert {st["cinema"] for st in movies[0]["showtimes"]} == {"VP"}
@@ -412,11 +389,8 @@ def test_fetch_falls_back_to_lookup_for_sessions_absent_from_cache() -> None:
         "https://verdibcn.admit-one.eu/seats/900001/": _SEAT_PAGE_VERDI,
     }
     listings = _listings_with([{"cinema": "VP", "booking_url": "https://verdibcn.admit-one.eu/seats/111111/"}])
-    with (
-        patch("cache.read", return_value=listings),
-        patch("providers.verdi_provider.requests.get", side_effect=_make_get(responses)),
-    ):
-        movies = VerdiProvider().fetch(CINEMAS)
+    with patch("providers.verdi_provider.requests.get", side_effect=_make_get(responses)):
+        movies = VerdiProvider(sala_map=sala_map_from_cache(listings)).fetch(CINEMAS)
 
     assert movies[0]["showtimes"][0]["cinema"] == "Verdi"
 

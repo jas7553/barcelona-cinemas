@@ -7,7 +7,7 @@ select = ["E", "W", "F", "I", "UP", "B", "SIM"]
 ignore = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["models", "cache", "pipeline", "enricher", "observability", "providers", "validation", "listings_config"]
+known-first-party = ["models", "cache", "pipeline", "refresh", "enricher", "observability", "providers", "validation", "listings_config"]
 
 [tool.coverage.run]
 source = ["."]
@@ -19,7 +19,7 @@ show_missing = true
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["app.py", "pipeline.py", "cache.py", "enricher.py", "observability.py", "models.py", "validation.py", "providers/", "listings_config.py", "tests/"]
+files = ["app.py", "pipeline.py", "refresh.py", "cache.py", "enricher.py", "observability.py", "models.py", "validation.py", "providers/", "listings_config.py", "tests/"]
 
 [[tool.mypy.overrides]]
 module = "flask"

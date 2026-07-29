@@ -14,6 +14,13 @@ spell there once ate the entire 120s Lambda budget in 10s timeouts and killed
 the whole refresh. Two guards: a short per-request timeout, and a session ->
 cinema map recovered from the previous run's cached showtimes, which skips the
 network entirely for any session already resolved once.
+
+That second guard is a read-behind on the previous refresh's Listings, and it is
+injected, not fetched: `sala_map_from_cache` is a pure function of a Listings
+payload and the provider takes the resulting map as a constructor argument. The
+provider never touches the cache module, so the ordering constraint it implies
+(build the providers from the cache read, before the refresh overwrites it) is
+visible in `pipeline._refresh` rather than hidden behind an import.
 """
 
 from __future__ import annotations
@@ -21,12 +28,16 @@ from __future__ import annotations
 import json
 import logging
 import re
+from typing import TYPE_CHECKING
 
 import requests
 
-from models import CinemaRegistry, Movie, Showtime
+from models import CinemaRegistry, Listings, Movie, Showtime
 from providers.common import DEFAULT_HEADERS, base_movie, normalize_subtitle_lang
 from reconcile import reconcile
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -135,17 +146,14 @@ def _resolve_cinema_key(sess_id: str) -> str | None:
     return None
 
 
-def _cached_sala_map() -> dict[str, str]:
+def sala_map_from_cache(cached: Listings | None) -> dict[str, str]:
     """
-    Rebuild {session_id: cinema_key} from the previous run's cached showtimes.
+    Rebuild {session_id: cinema_key} from the previous run's cached Showtimes.
 
     A session's sala never changes once assigned, so a resolution from any
     earlier refresh stays valid for the life of that session id. Returns an
     empty map on a cold cache — the provider then just does the lookups.
     """
-    import cache  # noqa: PLC0415  — deferred: keeps provider import cheap and cycle-free
-
-    cached = cache.read()
     if cached is None:
         return {}
 
@@ -167,6 +175,14 @@ def _cached_sala_map() -> dict[str, str]:
 class VerdiProvider:
     name = "verdi"
 
+    def __init__(self, sala_map: Mapping[str, str] | None = None) -> None:
+        """
+        `sala_map` is {session_id: cinema_key} recovered from the previous
+        refresh (see `sala_map_from_cache`). Omitting it is a cold start: every
+        time slot costs one admit-one lookup.
+        """
+        self._sala_map: Mapping[str, str] = sala_map or {}
+
     def fetch(self, cinemas: CinemaRegistry) -> list[Movie]:
         try:
             slugs = self._fetch_slugs()
@@ -174,7 +190,9 @@ class VerdiProvider:
             logger.warning("Verdi cartellera fetch failed: %s", exc)
             return []
 
-        known_salas = _cached_sala_map()
+        # Copied: the fetch memoizes newly resolved sessions into it across
+        # films, and the injected map belongs to the caller.
+        known_salas = dict(self._sala_map)
         logger.info("Verdi sala map seeded with %d cached session(s)", len(known_salas))
 
         movies: list[Movie] = []
