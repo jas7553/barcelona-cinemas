@@ -15,6 +15,11 @@ updates:
     groups:
       npm:
         patterns: ["*"]
+    ignore:
+      # typescript-eslint peers on typescript <6.1.0; a TS 7 bump breaks npm ci.
+      # Drop this once typescript-eslint ships TS 7 support.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
