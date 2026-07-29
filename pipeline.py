@@ -8,20 +8,14 @@ from __future__ import annotations
 import json
 import logging
 import os
-from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
-from itertools import chain
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 import cache
 import transform
-from models import CinemaRegistry, Listings, Movie
+from models import CinemaRegistry, Listings
 from observability import emit_metric, get_context, log_event, now_ms
-from reconcile import reconcile
-from validation import normalize_movies
-
-if TYPE_CHECKING:
-    from providers import ListingsSource
+from refresh import build_listings
 
 logger = logging.getLogger(__name__)
 
@@ -150,101 +144,23 @@ def _report_publish_failure(metric: str, event: str, exc: Exception, **fields: A
     log_event(event, level=logging.WARNING, exception_type=type(exc).__name__, **fields)
 
 
-def _filter_english(movies: list[Movie]) -> list[Movie]:
-    """Drop movies with a confirmed non-English original language."""
-    kept: list[Movie] = []
-    dropped: list[str] = []
-    for movie in movies:
-        original_lang = movie.get("original_lang")
-        if original_lang is None or original_lang == "en":
-            kept.append(movie)
-        else:
-            dropped.append(movie["title"])
-    if dropped:
-        logger.info("Excluded %d non-English-original film(s): %s", len(dropped), ", ".join(dropped))
-        emit_metric("NonEnglishFiltered", len(dropped))
-    return kept
-
-
 def _refresh() -> Listings:
-    import enricher  # noqa: PLC0415
+    """
+    The refresh's I/O half: read the cache, build fresh Listings, write it back.
+
+    Everything between the two cache calls lives in `refresh.build_listings`,
+    which owns the step order. The single cache read here feeds both the
+    Providers (the Verdi Provider recovers its admit-one sala map from the
+    previous run's Showtimes) and Enrichment's reuse of already-fetched TMDb
+    metadata — so the read must happen before `all_providers`, and the write
+    only after the build has returned.
+    """
+    from providers import all_providers  # noqa: PLC0415  — deferred: providers pull in requests
 
     cinemas = load_cinemas()
-    existing = cache.read()
-    cached_movies: list[Movie] = existing["movies"] if existing else []
+    cached = cache.read()
 
-    movies = _collect_movies(cinemas)
-    enriched, _ = enricher.enrich(movies, cached_movies)
-    enriched = reconcile(enriched, stage="post_enrichment")
-    emit_metric("MoviesCollected", len(enriched))
-    enriched = _filter_english(enriched)
+    listings, _stats = build_listings(all_providers(cached), cinemas, cached, datetime.now(UTC))
 
-    result: Listings = {
-        "fetched_at": datetime.now(UTC).isoformat(),
-        "stale": False,
-        "movies": enriched,
-    }
-    cache.write(result)
-    return result
-
-
-def _collect_movies(cinemas: CinemaRegistry) -> list[Movie]:
-    from providers import all_providers  # noqa: PLC0415
-
-    started_ms = now_ms()
-    provider_results: list[list[Movie]] = []
-    failed_provider_count = 0
-
-    providers = list(all_providers())
-    with ThreadPoolExecutor(max_workers=len(providers) or 1) as executor:
-        futures = [executor.submit(_fetch_provider_movies, provider, cinemas) for provider in providers]
-
-    for future in futures:
-        movies = future.result()
-        if movies is None:
-            failed_provider_count += 1
-            continue
-        provider_results.append(movies)
-
-    if not provider_results:
-        emit_metric("CollectionFailure", 1)
-        raise RuntimeError("All providers failed to return listings")
-
-    movies = reconcile(list(chain.from_iterable(provider_results)), stage="collection")
-    if not movies:
-        emit_metric("CollectionFailure", 1)
-        raise RuntimeError("Providers returned data but merge produced no movies")
-    log_event(
-        "collection_summary",
-        provider_count=len(provider_results),
-        failed_provider_count=failed_provider_count,
-        duration_ms=round(now_ms() - started_ms, 2),
-        movie_count=len(movies),
-        showtime_count=sum(len(movie["showtimes"]) for movie in movies),
-    )
-    return movies
-
-
-def _fetch_provider_movies(provider: ListingsSource, cinemas: CinemaRegistry) -> list[Movie] | None:
-    started_ms = now_ms()
-    try:
-        fetched = provider.fetch(cinemas)
-    except Exception as exc:
-        logger.warning("%s failed: %s", provider.name, exc)
-        emit_metric("ProviderFailure", 1)
-        log_event("collection_failure", provider=provider.name, exception_type=type(exc).__name__)
-        return None
-
-    movies = normalize_movies(fetched, source=f"{provider.name} output")
-    emit_metric("ProviderSuccess", 1)
-    if not movies:
-        emit_metric("ProviderZeroResult", 1)
-        log_event("provider_zero_result", provider=provider.name)
-    log_event(
-        "provider_collection_summary",
-        provider=provider.name,
-        duration_ms=round(now_ms() - started_ms, 2),
-        movie_count=len(movies),
-        showtime_count=sum(len(movie["showtimes"]) for movie in movies),
-    )
-    return movies
+    cache.write(listings)
+    return listings
