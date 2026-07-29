@@ -27,6 +27,7 @@ echo "    stage SSG Lambda artifacts"
 cp dist-ssr/entry-server.js ssg-lambda/entry-server.js
 cp scripts/render-core.mjs ssg-lambda/render-core.mjs
 cp scripts/template.mjs ssg-lambda/template.mjs
+cp scripts/site-constants.mjs ssg-lambda/site-constants.mjs
 cp static/.vite/manifest.json ssg-lambda/manifest.json
 
 echo "==> 2/6 SAM build (package Lambdas)"
@@ -38,6 +39,16 @@ sam build
 echo "    verifying built package imports app..."
 ( cd .aws-sam/build/ApiFunction && python -c "import app" ) \
   || { echo "ERROR: built Lambda package cannot import app — check Makefile copy list"; exit 1; }
+
+# Same failure mode on the Node side, which had no equivalent check:
+# ssg-lambda/Makefile copies its modules by hand-enumerated name, so a new
+# import that nobody added to that list only fails at runtime, in prod, on the
+# next refresh. Assert the artifacts are all present in the built package.
+echo "    verifying built SSG package has every module..."
+for module in index.mjs render-core.mjs template.mjs site-constants.mjs entry-server.js manifest.json; do
+  [ -f ".aws-sam/build/SsgFunction/$module" ] \
+    || { echo "ERROR: SsgFunction package is missing $module — check ssg-lambda/Makefile copy list"; exit 1; }
+done
 
 echo "==> 3/6 SAM deploy"
 # Fetch distribution ID + domain from the existing stack so they can be injected

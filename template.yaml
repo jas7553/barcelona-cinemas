@@ -238,6 +238,10 @@ Resources:
       ReservedConcurrentExecutions: 2
       Environment:
         Variables:
+          # Must equal SITE_TIMEZONE in scripts/site-constants.mjs — the handler
+          # asserts it at run time and scripts/site-constants.test.mjs asserts
+          # this literal. ApiFunction is deliberately left on UTC (see the
+          # Python side, which assumes UTC internally).
           TZ: Europe/Madrid
           FRONTEND_BUCKET: !Ref FrontendBucket
           CLOUDFRONT_DISTRIBUTION_ID: !Ref CloudFrontDistributionId
@@ -255,6 +259,8 @@ Resources:
             # scoped to those two prefixes only — the renderer must stay unable
             # to remove data/listings.json, the hashed assets, or the root
             # documents, so do not widen this to the whole bucket.
+            # The two globs below must match PRUNE_PREFIXES in
+            # scripts/site-constants.mjs; site-constants.test.mjs asserts it.
             - Sid: ListFrontendBucket
               Effect: Allow
               Action:
@@ -463,9 +469,16 @@ Resources:
         SecurityHeadersConfig: &securityHeaders
           ContentSecurityPolicy:
             # script-src allows: bundled JS ('self'); the inline pre-paint theme
-            # script (sha256 — regenerate if scripts/template.mjs THEME_SCRIPT
-            # changes); and inline speculation rules. The hydration payload is
-            # inert JSON, so it needs no allowance.
+            # script; and the inline speculation rules. The hydration payload
+            # and any ld+json are inert data blocks, so they need no allowance.
+            #
+            # Both sha256 values below are DERIVED from the script bodies in
+            # scripts/template.mjs (THEME_SCRIPT, SPECULATION_RULES) — that
+            # module is the single owner, and the generated 404 page reuses the
+            # same THEME_SCRIPT string rather than a copy. Change a body and
+            # scripts/template.test.mjs fails with the replacement hashes to
+            # paste here. Do not hand-edit these without running that test:
+            # a stale hash is invisible in dev (no CSP) and only breaks in prod.
             ContentSecurityPolicy: >-
               default-src 'self';
               base-uri 'self';

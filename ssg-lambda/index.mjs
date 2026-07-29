@@ -5,10 +5,11 @@
 // invalidates CloudFront. No public HTTP surface.
 //
 // Packaged files (copied in by deploy.sh after `npm run build`):
-//   entry-server.js   self-contained React SSR bundle (dist-ssr/)
-//   render-core.mjs   shared render loop (scripts/)
-//   template.mjs      HTML document template (scripts/)
-//   manifest.json     Vite client manifest (static/.vite/)
+//   entry-server.js     self-contained React SSR bundle (dist-ssr/)
+//   render-core.mjs     shared render loop (scripts/)
+//   template.mjs        HTML document template (scripts/)
+//   site-constants.mjs  timezone + prune prefixes (scripts/)
+//   manifest.json       Vite client manifest (static/.vite/)
 //
 // AWS SDK v3 is provided by the Lambda nodejs runtime — not vendored here.
 
@@ -22,6 +23,7 @@ import {
 } from "@aws-sdk/client-s3";
 import { CloudFrontClient, CreateInvalidationCommand } from "@aws-sdk/client-cloudfront";
 import { renderAll } from "./render-core.mjs";
+import { assertSiteTimezone, prunePrefixesS3 } from "./site-constants.mjs";
 import * as server from "./entry-server.js";
 
 const s3 = new S3Client({});
@@ -67,13 +69,11 @@ function emitMetric(name, value, unit = "Count") {
 const DELETE_BATCH = 1000;
 
 // Per-film output prefixes the prune sweeps, each paired with the only
-// extension it may delete there. ListObjectsV2 matches on a literal prefix, so
-// `film/` does NOT cover `data/film/` — each needs its own listing pass.
-// Keep in sync with scripts/render.mjs.
-const PRUNE_PREFIXES = [
-  ["film/", ".html"],
-  ["data/film/", ".json"],
-];
+// extension it may delete there — derived from the shared constant, in this
+// sink's dialect (trailing slash). ListObjectsV2 matches on a literal prefix,
+// so `film/` does NOT cover `data/film/` — each needs its own listing pass.
+// See scripts/site-constants.mjs.
+const PRUNE_PREFIXES = prunePrefixesS3();
 
 /**
  * Delete per-film objects for movies no longer in the listings.
@@ -143,6 +143,12 @@ export async function handler(event = {}) {
 }
 
 async function render(refreshId, startedMs) {
+  // Checked here rather than at module load so the failure lands inside the
+  // handler's catch and emits SsgRenderFailure — a renderer in the wrong zone
+  // would otherwise publish plausible-looking pages with the wrong dates.
+  // template.yaml sets TZ on this function; the drift test keeps it there.
+  assertSiteTimezone("ssg-lambda");
+
   const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: DATA_KEY }));
   const listings = JSON.parse(await obj.Body.transformToString());
 

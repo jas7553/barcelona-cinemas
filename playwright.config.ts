@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 import fs from "fs";
 import { buildFixtureCache } from "./e2e/fixture";
+// @ts-expect-error — plain ESM helper, no types
+import { SITE_TIMEZONE } from "./scripts/site-constants.mjs";
 
 const WEB_PORT = 5180;
 const BASE = `http://localhost:${WEB_PORT}`;
@@ -24,6 +26,10 @@ export default defineConfig({
   use: {
     baseURL: BASE,
     trace: "on-first-retry",
+    // Both halves of the render must agree on the zone: the browser context
+    // (client hydration) and the dev SSG server below (server render). Unpinned,
+    // these passed only because CI happens to be UTC.
+    timezoneId: SITE_TIMEZONE,
   },
 
   // iPhone 13 geometry (390×844, mobile, touch) but on Chromium — matches the
@@ -38,7 +44,7 @@ export default defineConfig({
   webServer: {
     command: `python3 scripts/export_listings.py && npx vite --port ${WEB_PORT} --strictPort`,
     url: BASE,
-    env: { CACHE_DIR: cacheDir },
+    env: { CACHE_DIR: cacheDir, TZ: SITE_TIMEZONE },
     reuseExistingServer: false,
     timeout: 60_000,
   },
