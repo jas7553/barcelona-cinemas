@@ -386,7 +386,13 @@ function FilmView({
           <div className="detail-showtimes">
             <h2 className="showtimes-heading">Showtimes</h2>
 
-            <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} days={days} />
+            <DayPicker
+              selectedDay={selectedDay}
+              onSelect={setSelectedDay}
+              activeDays={activeDays}
+              days={days}
+              hideInactive
+            />
 
             {cinemaCount > 0 && (
               <div className="cinema-count" aria-live="polite">
