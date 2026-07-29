@@ -5,7 +5,9 @@ import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react";
 import { configDefaults } from "vitest/config";
 // @ts-expect-error — plain ESM helper, no types
-import { renderDocument } from "./scripts/template.mjs";
+import { renderDocument, render404Document } from "./scripts/template.mjs";
+// @ts-expect-error — plain ESM helper, no types
+import { SITE_TIMEZONE } from "./scripts/site-constants.mjs";
 
 const DATA_FILE = path.resolve(__dirname, "static/data/listings.json");
 
@@ -38,6 +40,14 @@ function ssgDevServer(): Plugin {
         const isList = url === "/" || url === "/index.html";
         const filmMatch = url.match(/^\/film\/([^/]+?)(?:\.html)?$/);
         const isPrivacy = url === "/privacy" || url === "/privacy.html";
+        // 404.html is generated at build time (scripts/render.mjs), not shipped
+        // from public/, so dev has to serve it from the same template.
+        if (url === "/404.html") {
+          res.statusCode = 200;
+          res.setHeader("Content-Type", "text/html");
+          res.end(render404Document());
+          return;
+        }
         if (!isList && !filmMatch && !isPrivacy) return next();
 
         try {
@@ -116,6 +126,10 @@ export default defineConfig(({ command }) => ({
   test: {
     environment: "jsdom",
     globals: true,
+    // Pin the suite to the site's timezone. Previously unpinned: CI is UTC, so
+    // every date assertion was silently being validated in the wrong zone and a
+    // real Madrid-vs-UTC bucketing bug could pass. Derived, not literal.
+    env: { TZ: SITE_TIMEZONE },
     setupFiles: ["./src/test-setup.ts"],
     exclude: [...configDefaults.exclude, ".aws-sam/**", "e2e/**"],
     coverage: {

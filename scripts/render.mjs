@@ -9,6 +9,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { renderAll } from "./render-core.mjs";
+import { render404Document } from "./template.mjs";
+import { assertSiteTimezone, prunePrefixesFs } from "./site-constants.mjs";
+
+// Fail the build rather than bake wrong dates. `npm run build` sets TZ for this
+// command; if that ever gets dropped, this is what catches it.
+assertSiteTimezone("scripts/render.mjs");
 
 const ROOT = process.cwd();
 const OUT = path.join(ROOT, "static");
@@ -26,11 +32,9 @@ try {
 }
 
 // Per-film output dirs the prune sweeps, each paired with the only extension it
-// is allowed to delete there. Keep in sync with ssg-lambda/index.mjs.
-const PRUNE_PREFIXES = [
-  ["film", ".html"],
-  ["data/film", ".json"],
-];
+// is allowed to delete there — derived from the shared constant, in this sink's
+// dialect (relative dirs for path.join). See scripts/site-constants.mjs.
+const PRUNE_PREFIXES = prunePrefixesFs();
 
 let prunedCount = 0;
 
@@ -67,5 +71,10 @@ const { filmCount } = await renderAll({
   },
 });
 
+// The CloudFront custom-error page. Not part of renderAll (the SSG Lambda does
+// not own it — deploy.sh syncs static/404.html to the bucket separately), but
+// generated from the same THEME_SCRIPT so the CSP hash covers it too.
+fs.writeFileSync(path.join(OUT, "404.html"), render404Document());
+
 const pruned = prunedCount ? `, pruned ${prunedCount} stale film object(s)` : "";
-console.log(`[render] wrote index.html + ${filmCount} film page(s) → static/${pruned}`);
+console.log(`[render] wrote index.html + 404.html + ${filmCount} film page(s) → static/${pruned}`);

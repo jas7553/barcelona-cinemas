@@ -68,7 +68,12 @@ function jsonLdScript(obj: unknown): string {
   return `\n    <script type="application/ld+json">${json}</script>`;
 }
 
-/** Europe/Madrid UTC offset ("+02:00"/"+01:00") for a given YYYY-MM-DD, DST-aware. */
+/** Europe/Madrid UTC offset ("+02:00"/"+01:00") for a given YYYY-MM-DD, DST-aware.
+ *
+ * Deliberately independent of process TZ — this is the correctness anchor for
+ * the ScreeningEvent startDate. The literal below must equal SITE_TIMEZONE in
+ * scripts/site-constants.mjs (a .mjs the client bundle must not import, so it
+ * stays a literal); scripts/site-constants.test.mjs fails if it drifts. */
 function madridOffset(dateStr: string): string {
   try {
     const parts = new Intl.DateTimeFormat("en-US", {
