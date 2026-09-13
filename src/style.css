@@ -352,10 +352,9 @@ img { display: block; }
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  /* 44px tap target; negative margin keeps the strip at its original height. */
+  /* 44px tap target; no negative bottom margin, or the visible border overlaps the rule. */
   min-height: 44px;
   margin-top: -9px;
-  margin-bottom: -10.5px;
   padding: 4px 10px;
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
