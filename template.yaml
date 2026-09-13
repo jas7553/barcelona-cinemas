@@ -434,12 +434,10 @@ Resources:
       OKActions:
         - !Ref AlertTopic
 
-  # Threshold 2 over 24h ≈ same provider failed in both daily runs —
-  # persistent breakage, not a transient timeout.
   ProviderDegradationAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmDescription: A listings provider failed in both daily refresh runs — coverage degraded
+      AlarmDescription: A listings provider failed in both daily refresh runs on two consecutive days — coverage degraded
       Namespace: BarcelonaMovieDatabase
       MetricName: ProviderFailure
       Dimensions:
@@ -449,7 +447,8 @@ Resources:
           Value: schedule
       Statistic: Sum
       Period: 86400
-      EvaluationPeriods: 1
+      EvaluationPeriods: 2
+      DatapointsToAlarm: 2
       Threshold: 2
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching

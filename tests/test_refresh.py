@@ -13,6 +13,8 @@ failed to do and then assert on where that lands in `RefreshStats`.
 
 from __future__ import annotations
 
+import json
+import logging
 import threading
 from datetime import UTC, datetime
 from typing import Any, cast
@@ -21,6 +23,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 import cache
+import observability
 import refresh
 from enricher import EnrichmentStats
 from models import Listings, Movie
@@ -461,3 +464,37 @@ def test_metrics_describe_the_stages_they_name(caplog: pytest.LogCaptureFixture,
     assert '"MoviesPublished": 1' in caplog.text
     assert '"NonEnglishFiltered": 1' in caplog.text
     assert find_event("refresh_stats")["published_movie_count"] == stats["published_movie_count"]
+
+
+def _find_metrics(caplog: pytest.LogCaptureFixture, metric_name: str) -> list[dict[str, Any]]:
+    # emit_metric payloads have no "event" key, so find_event can't see them.
+    payloads = []
+    for record in caplog.records:
+        if record.name != "observability":
+            continue
+        payload = json.loads(record.message)
+        if metric_name in payload:
+            payloads.append(payload)
+    return payloads
+
+
+def test_provider_metrics_carry_the_trigger_dimension_set_on_the_calling_thread(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO, logger="observability")
+    observability.set_context(trigger="schedule")
+    try:
+        _build(
+            [
+                _provider("one", fetch=RuntimeError("down")),
+                _provider("two", [_raw_movie("Valid Film")]),
+            ]
+        )
+    finally:
+        observability.clear_context()
+
+    (failure_payload,) = _find_metrics(caplog, "ProviderFailure")
+    assert failure_payload["Trigger"] == "schedule"
+
+    (success_payload,) = _find_metrics(caplog, "ProviderSuccess")
+    assert success_payload["Trigger"] == "schedule"

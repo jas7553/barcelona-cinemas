@@ -60,6 +60,21 @@ def test_heartbeat_alarm_treats_missing_data_as_breaching(template: dict[str, An
     assert heartbeat["TreatMissingData"] == "breaching"
 
 
+def test_provider_degradation_alarm_requires_two_consecutive_failing_days(template: dict[str, Any]) -> None:
+    properties = template["Resources"]["ProviderDegradationAlarm"]["Properties"]
+    dims = {dim["Name"]: dim["Value"] for dim in properties["Dimensions"]}
+
+    assert dims == {"Environment": "prod", "Trigger": "schedule"}
+    assert properties["MetricName"] == "ProviderFailure"
+    assert properties["Statistic"] == "Sum"
+    assert properties["Period"] == 86400
+    assert properties["EvaluationPeriods"] == 2
+    assert properties["DatapointsToAlarm"] == 2
+    assert properties["Threshold"] == 2
+    assert properties["ComparisonOperator"] == "GreaterThanOrEqualToThreshold"
+    assert properties["TreatMissingData"] == "notBreaching"
+
+
 def test_template_includes_listings_feed_runtime_configuration() -> None:
     template = Path("template.yaml").read_text()
 
