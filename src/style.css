@@ -352,10 +352,7 @@ img { display: block; }
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  /* 44px tap target. Unlike .view-tab, the pill's own border is visible, so it
-     can't lap the container's border-bottom rule the way the tab underline
-     does — only pull the top margin negative and let the bottom sit flush,
-     keeping the pill's edge clear of the line. */
+  /* 44px tap target; no negative bottom margin, or the visible border overlaps the rule. */
   min-height: 44px;
   margin-top: -9px;
   padding: 4px 10px;
