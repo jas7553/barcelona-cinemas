@@ -1754,6 +1754,16 @@ img { display: block; }
   .search-clear:hover { color: var(--text); }
 }
 
+/* ── Touch press feedback (delay entering :active so a scroll-start cancels it
+   before it becomes visible — avoids the iOS Safari touchstart flash) ───────── */
+@media (hover: none) {
+  .film-card:active,
+  .showtime__main:active,
+  .cinema-group__header:active,
+  .cinema-group__film:active,
+  .cinema-row__header:active { transition-delay: 80ms; }
+}
+
 /* ── Reduced motion ──────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .app-title--animate .app-title__line { animation: none; }
