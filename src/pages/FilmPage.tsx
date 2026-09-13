@@ -9,6 +9,7 @@ import { BackIcon, ChevronDownIcon, ChevronRightIcon, MoonIcon, SunIcon } from "
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useNow, useUrlParams } from "../hooks/useClient";
 import { useLocationPin } from "../hooks/useLocationPin";
+import { compositeOverlay, mixHex, rgbToHex, sampleTopEdgeColor, type Rgb } from "../backdropColor";
 import {
   transformResponse,
   formatDistKm,
@@ -159,6 +160,14 @@ function FilmView({
   const [sheetVenue, setSheetVenue] = useState<SheetVenueData | null>(null);
   const rafRef = useRef<number | null>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
+  const backdropImgRef = useRef<HTMLImageElement>(null);
+  // Composited top-edge colour of the backdrop (image sample + gradient's top
+  // stop folded in) — null until the image has loaded, or if canvas sampling
+  // fails (tainted canvas, no canvas backend), in which case the status bar
+  // just stays the plain page colour.
+  const sampledColorRef = useRef<Rgb | null>(null);
+  const lastMetaHexRef = useRef<string | null>(null);
+  const applyMetaRef = useRef<(() => void) | null>(null);
 
   // Prefer real browser back so the list restores its scroll + filters via
   // bfcache; fall back to the home document on a cold deep-link entry.
@@ -234,28 +243,83 @@ function FilmView({
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
+  // Page background under the backdrop tint — the colour the status bar
+  // settles back to once the backdrop has scrolled away.
+  const pageBg = dark ? "#0f0e0c" : "#faf6ef";
+  const pageBgRef = useRef(pageBg);
+  useEffect(() => {
+    pageBgRef.current = pageBg;
+  }, [pageBg]);
+
   // Backdrop fade, off the React render path: write opacity straight to the DOM
   // inside a rAF-throttled scroll listener. Same ramp as before (1 → 0 over the
   // first 130px). Once fully faded we stop touching the DOM until the user
-  // scrolls back up into the ramp.
+  // scrolls back up into the ramp. The same listener drives the iOS status-bar
+  // colour (theme-color meta): it mixes from the sampled backdrop colour down
+  // to the plain page background as the backdrop fades.
   useEffect(() => {
     const el = backdropRef.current;
     if (el == null) return;
+    const meta = document.getElementById("theme-color-meta") as HTMLMetaElement | null;
+    const applyMeta = () => {
+      if (meta == null) return;
+      const opacity = Math.max(0, 1 - window.scrollY / 130);
+      const sampled = sampledColorRef.current;
+      const hex = sampled ? mixHex(pageBg, rgbToHex(sampled), opacity) : pageBg;
+      if (hex === lastMetaHexRef.current) return;
+      meta.content = hex;
+      lastMetaHexRef.current = hex;
+    };
+    applyMetaRef.current = applyMeta;
     const apply = () => {
       rafRef.current = null;
       const opacity = Math.max(0, 1 - window.scrollY / 130);
-      if (opacity === 0 && el.style.opacity === "0") return;
-      el.style.opacity = String(opacity);
+      if (!(opacity === 0 && el.style.opacity === "0")) el.style.opacity = String(opacity);
+      applyMeta();
     };
     const onScroll = () => {
       if (rafRef.current != null) return;
       rafRef.current = requestAnimationFrame(apply);
     };
     apply(); // sync initial state (e.g. reload while already scrolled)
+    // ThemeContext's own effect writes the plain page colour on a dark-mode
+    // toggle, and — since this effect re-runs on the same `dark` change — the
+    // two can commit in either order; a frame later always wins, so schedule
+    // one more application to guarantee the mixed colour lands last.
+    const raf = requestAnimationFrame(applyMeta);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
+      applyMetaRef.current = null;
       window.removeEventListener("scroll", onScroll);
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(raf);
+    };
+  }, [pageBg]);
+
+  // Sample the backdrop image's top edge once it's loaded (or immediately if
+  // already complete/cached), so the status-bar colour has something to mix
+  // toward. Re-applies through applyMetaRef rather than duplicating the mix
+  // logic here.
+  useEffect(() => {
+    const img = backdropImgRef.current;
+    if (img == null) return;
+    const onLoad = () => {
+      const raw = sampleTopEdgeColor(img);
+      if (raw == null) return; // tainted canvas / no canvas backend: leave as-is
+      sampledColorRef.current = compositeOverlay(raw, { r: 0, g: 0, b: 0 }, 0.1);
+      applyMetaRef.current?.();
+    };
+    if (img.complete && img.naturalWidth > 0) onLoad();
+    else img.addEventListener("load", onLoad);
+    return () => img.removeEventListener("load", onLoad);
+  }, [movie.backdrop_url]);
+
+  // Leaving the film page: the list/home document has no backdrop to match,
+  // so hand the status bar back the plain page colour.
+  useEffect(() => {
+    return () => {
+      const meta = document.getElementById("theme-color-meta") as HTMLMetaElement | null;
+      if (meta) meta.content = pageBgRef.current;
     };
   }, []);
 
@@ -267,6 +331,7 @@ function FilmView({
       <div className="detail-backdrop" ref={backdropRef}>
         {movie.backdrop_url ? (
           <img
+            ref={backdropImgRef}
             src={movie.backdrop_url}
             alt=""
             className="detail-backdrop-img"
@@ -275,6 +340,11 @@ function FilmView({
             fetchPriority="high"
             decoding="async"
             loading="lazy"
+            // TMDb's image CDN sends Access-Control-Allow-Origin: *, so this
+            // stays a normal <img> render while also letting canvas sampling
+            // (theme-color tinting, see the effects above) read its pixels
+            // without tainting the canvas.
+            crossOrigin="anonymous"
           />
         ) : (
           <BackdropPlaceholder w={430} h={200} id={movie.id} />
