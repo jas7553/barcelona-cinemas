@@ -1316,7 +1316,8 @@
         "Colin Firth",
         "Colman Domingo",
         "Eve Hewson"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "Backrooms",
@@ -2272,7 +2273,8 @@
         "Mark Duplass",
         "Finn Bennett",
         "Lukita Maxwell"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "The Drama",
@@ -3204,7 +3206,8 @@
         "Mamoudou Athie",
         "Alana Haim",
         "Jordyn Curet"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "Scary Movie",
@@ -3719,7 +3722,8 @@
         "Anna Faris",
         "Regina Hall",
         "Damon Wayans Jr."
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "The Devil Wears Prada 2",
@@ -4121,7 +4125,8 @@
         }
       ],
       "backdrop_url": "https://image.tmdb.org/t/p/w1280/y3fQa7pytlysovXzovpXc1OQlTW.jpg",
-      "trailer_url": "https://www.youtube.com/watch?v=PMd1at7OwiE"
+      "trailer_url": "https://www.youtube.com/watch?v=PMd1at7OwiE",
+      "vote_count": 500
     },
     {
       "title": "Michael",
@@ -4507,7 +4512,8 @@
         }
       ],
       "backdrop_url": "https://image.tmdb.org/t/p/w1280/xBT0oNq6rsTFv4SxG5uGRIEOrq6.jpg",
-      "trailer_url": "https://www.youtube.com/watch?v=k-YAcjaLuSI"
+      "trailer_url": "https://www.youtube.com/watch?v=k-YAcjaLuSI",
+      "vote_count": 500
     },
     {
       "title": "Toy Story 5",
@@ -4944,7 +4950,8 @@
         "Joan Cusack",
         "Greta Lee",
         "Conan O'Brien"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "The Mandalorian and Grogu",
@@ -5172,7 +5179,8 @@
         "Sigourney Weaver",
         "Brendan Wayne",
         "Lateef Crowder"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "Masters of the Universe",
@@ -5376,7 +5384,8 @@
         "Idris Elba",
         "Jared Leto",
         "Alison Brie"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "The Sheep Detectives",
@@ -5516,7 +5525,8 @@
         "Emma Thompson",
         "Nicholas Braun",
         "Chris O'Dowd"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "Rebuilding",
@@ -5662,7 +5672,8 @@
         "Lily LaTorre",
         "Kali Reis",
         "Amy Madigan"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "Project Hail Mary",
@@ -5784,7 +5795,8 @@
         }
       ],
       "backdrop_url": "https://image.tmdb.org/t/p/w1280/8Tfys3mDZVp4tNoH2ktm06a0Tau.jpg",
-      "trailer_url": "https://www.youtube.com/watch?v=NKYea63tQmI"
+      "trailer_url": "https://www.youtube.com/watch?v=NKYea63tQmI",
+      "vote_count": 500
     },
     {
       "title": "Truth & Treason",
@@ -5892,7 +5904,8 @@
         "Ferdinand McKay",
         "Daf Thomas",
         "Nye Occomore"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "The Amazing Digital Circus: The Last Act",
@@ -5969,7 +5982,8 @@
         "Michael Kovach",
         "Amanda Hufford",
         "Marissa Lenti"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "I Swear",
@@ -6019,7 +6033,8 @@
         }
       ],
       "backdrop_url": "https://image.tmdb.org/t/p/w1280/fe6kkxaxn0mCU2gl1vfU44IYWsy.jpg",
-      "trailer_url": "https://www.youtube.com/watch?v=10ynpduiRpM"
+      "trailer_url": "https://www.youtube.com/watch?v=10ynpduiRpM",
+      "vote_count": 500
     },
     {
       "title": "Tuner",
@@ -6070,7 +6085,8 @@
         "Lior Raz",
         "Tovah Feldshuh",
         "Jean Reno"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "The Super Mario Galaxy Movie",
@@ -6107,7 +6123,8 @@
         }
       ],
       "backdrop_url": "https://image.tmdb.org/t/p/w1280/kxQiIJ4gVcD3K6o14MJ72p5yRcE.jpg",
-      "trailer_url": "https://www.youtube.com/watch?v=En5QZmL5R1s"
+      "trailer_url": "https://www.youtube.com/watch?v=En5QZmL5R1s",
+      "vote_count": 500
     },
     {
       "title": "Billie Eilish - Hit Me Hard and Soft: The Tour (Live in 3D)",
@@ -6158,7 +6175,8 @@
         "Andrew Marshall",
         "Solomon Smith",
         "Abraham Nouri"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "Wendy and Lucy",
@@ -6192,7 +6210,8 @@
         "Larry Fessenden",
         "Will Oldham",
         "John Robinson"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "Resisting Paradise",
@@ -6220,7 +6239,8 @@
       "director": "Barbara Hammer",
       "cast": [
         "Barbara Hammer"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "EPiC: Elvis Presley in Concert",
@@ -6255,7 +6275,8 @@
         "John Wilkinson",
         "Charlie Hodge",
         "Jerry Scheff"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "Troll 2",
@@ -6291,7 +6312,8 @@
         "Mads Sjøgård Pettersen",
         "Sara Khorami",
         "Karoline Viktoria Sletteng Garvang"
-      ]
+      ],
+      "vote_count": 500
     },
     {
       "title": "History Lessons",
@@ -6325,7 +6347,8 @@
         "Fernando Álvarez Rebeil",
         "Héctor Holten",
         "Gabino Rodríguez"
-      ]
+      ],
+      "vote_count": 500
     }
   ]
 }
