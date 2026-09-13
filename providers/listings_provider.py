@@ -1,5 +1,6 @@
 import logging
 from datetime import date
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup, Tag
@@ -26,22 +27,24 @@ _MONTH_MAP = {
     "Dec": 12,
 }
 
-_TITLE_SUFFIX = " in English at cinemas in Barcelona"
 
-
-def _parse_date(header: str) -> str:
+def _parse_showtime_label(label: str) -> tuple[str, str]:
     """
-    Convert a header like "Sat, 28 Mar" to "YYYY-MM-DD".
-    Infers year from today; handles Dec→Jan rollover.
+    Convert a showtime-chip's `data-showtime-label`, e.g. "Sun 13 Sept 20:45",
+    to a `(date, time)` pair of ("YYYY-MM-DD", "HH:MM"). Infers year from
+    today; handles Dec→Jan rollover. The month token is matched on its first
+    three letters since the site spells September "Sept" (4 letters) but
+    every other month with the usual 3-letter abbreviation.
     """
-    parts = header.replace(",", "").split()
-    if len(parts) < 3:
-        return ""
+    parts = label.split()
+    if len(parts) != 4:
+        return "", ""
     try:
         day = int(parts[1])
-        month = _MONTH_MAP[parts[2]]
+        month = _MONTH_MAP[parts[2][:3]]
     except (ValueError, KeyError, IndexError):
-        return ""
+        return "", ""
+    time_str = parts[3]
 
     today = date.today()
     year = today.year
@@ -53,44 +56,22 @@ def _parse_date(header: str) -> str:
             candidate = date(year + 1, month, day)
     except ValueError:
         # Impossible day/month (e.g. Feb 29 in a non-leap year from a garbled
-        # header) — skip this column rather than crash the whole fetch.
-        return ""
+        # label) — skip this showtime rather than crash the whole fetch.
+        return "", ""
 
-    return candidate.isoformat()
+    return candidate.isoformat(), time_str
 
 
-def _extract_cinema_name(badge: Tag) -> str:
+def _premium_format(chip: Tag) -> str | None:
     """
-    Extract the cinema short-name from a showtime badge.
-    The badge HTML is roughly:
-      <a ...><i class="fi-clock ..."></i><strong>18:00</strong> Yelmo Icaria</a>
-    We want only NavigableString nodes after the <strong> tag (skip child tags
-    like the IMAX <span> so they don't pollute the cinema name).
+    Extract the premium format from a showtime chip, if it carries one.
+    The chip HTML is roughly:
+      <a class="showtime-chip" ...><span class="showtime-chip-time">18:05</span>
+        <span class="showtime-tags"><span class="showtime-tag">IMAX</span></span></a>
+    All tag spans are scanned: a chip may carry several (e.g. a version label
+    beside the format), and only one of them is the premium format.
     """
-    from bs4 import NavigableString
-
-    parts: list[str] = []
-    found_strong = False
-    for child in badge.children:
-        if hasattr(child, "name") and child.name == "strong":
-            found_strong = True
-            continue
-        if found_strong and isinstance(child, NavigableString):
-            text = str(child).strip()
-            if text:
-                parts.append(text)
-    return " ".join(parts).strip()
-
-
-def _premium_format(badge: Tag) -> str | None:
-    """
-    Extract the premium format from a showtime badge, if it carries one.
-    The child tags `_extract_cinema_name` skips are where it lives:
-      <a ...><strong>18:00</strong> Glòries<span class="badge">IMAX</span></a>
-    All of them are scanned: a badge may carry several spans (e.g. a version
-    label beside the format), and only one of them is the premium format.
-    """
-    for span in badge.find_all("span", class_="badge"):
+    for span in chip.find_all("span", class_="showtime-tag"):
         premium_format = normalize_premium_format(span.get_text())
         if premium_format is not None:
             return premium_format
@@ -101,64 +82,52 @@ class ListingsProvider:
     name = "english_cinema_bcn"
 
     def fetch(self, cinemas: CinemaRegistry) -> list[Movie]:
-        """Fetch and parse the current listings feed."""
+        """
+        Fetch and parse the current listings feed.
+
+        The feed URL is now a film-catalog page (one card per currently
+        showing film, no per-showtime detail); the full schedule lives on
+        each film's own detail page, which is fetched in turn.
+        """
         resp = requests.get(listings_feed_url(), headers=DEFAULT_HEADERS, timeout=15)
         resp.raise_for_status()
 
         soup = BeautifulSoup(resp.text, "html.parser")
-        table = soup.find("table", class_="table")
-        if not table or not isinstance(table, Tag):
-            raise RuntimeError("Could not find listings table on page")
-
-        thead = table.find("thead")
-        tbody = table.find("tbody")
-        if not thead or not isinstance(thead, Tag):
-            raise RuntimeError("Could not find table header")
-        if not tbody or not isinstance(tbody, Tag):
-            raise RuntimeError("Could not find table body")
-
-        # Build the date list from the table header, skipping the title column.
-        header_cells = thead.find_all("th")
-        dates: list[str] = []
-        for th in header_cells[1:]:
-            dates.append(_parse_date(th.get_text(strip=True)))
+        film_cards = soup.find_all("a", class_="film-card")
+        if not film_cards:
+            raise RuntimeError("Could not find film listing cards on page")
 
         movies: list[Movie] = []
         seen_cinema_names: set[str] = set()
         alias_lookup = build_cinema_alias_lookup(cinemas, self.name)
 
-        for row in tbody.find_all("tr"):
-            cells = row.find_all("td")
-            if not cells:
+        for card in film_cards:
+            if not isinstance(card, Tag):
+                continue
+            title = card.get("data-title", "")
+            title = title.strip() if isinstance(title, str) else ""
+            href = card.get("href")
+            if not title or not isinstance(href, str) or not href:
                 continue
 
-            # The first cell carries the movie title in the poster alt text.
-            img = cells[0].find("img")
-            if not img:
-                continue
-            title: str = img.get("alt", "").strip()
-            title = title.removesuffix(_TITLE_SUFFIX)
-            if not title:
-                continue
+            film_resp = requests.get(urljoin(resp.url, href), headers=DEFAULT_HEADERS, timeout=15)
+            film_resp.raise_for_status()
+            film_soup = BeautifulSoup(film_resp.text, "html.parser")
 
             showtimes: list[Showtime] = []
 
-            for col_idx, cell in enumerate(cells[1:]):
-                if col_idx >= len(dates):
-                    break
-                show_date = dates[col_idx]
-                if not show_date:
+            for block in film_soup.find_all("div", class_="cinema-block"):
+                name_tag = block.find("h3", class_="cinema-block-name")
+                if not name_tag:
                     continue
+                cinema_name = name_tag.get_text(strip=True)
+                seen_cinema_names.add(cinema_name)
+                cinema_key = alias_lookup.get(normalize_alias(cinema_name))
 
-                for badge in cell.find_all("a", class_="badge-s"):
-                    strong = badge.find("strong")
-                    if not strong:
+                for chip in block.find_all("a", class_="showtime-chip"):
+                    show_date, time_str = _parse_showtime_label(chip.get("data-showtime-label", ""))
+                    if not show_date:
                         continue
-                    time_str = strong.get_text(strip=True)
-
-                    cinema_name = _extract_cinema_name(badge)
-                    seen_cinema_names.add(cinema_name)
-                    cinema_key = alias_lookup.get(normalize_alias(cinema_name))
                     if cinema_key is None:
                         continue
 
@@ -170,7 +139,7 @@ class ListingsProvider:
                         time=time_str,
                         language="vo",
                     )
-                    premium_format = _premium_format(badge)
+                    premium_format = _premium_format(chip)
                     if premium_format is not None:
                         showtime["premium_format"] = premium_format
                     showtimes.append(showtime)

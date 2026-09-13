@@ -9,7 +9,7 @@
     "lat": 41.4040,
     "lng": 2.1569,
     "aliases": {
-      "english_cinema_bcn": ["Verdi"]
+      "english_cinema_bcn": ["Verdi", "Cinemes Verdi"]
     }
   },
   "VP": {
@@ -126,7 +126,8 @@
     "lat": 41.3763,
     "lng": 2.1493,
     "aliases": {
-      "secondary": ["ARENAS", "/arenas", "BAL-ARENAS"]
+      "secondary": ["ARENAS", "/arenas", "BAL-ARENAS"],
+      "english_cinema_bcn": ["Arenas de Barcelona Multicines"]
     }
   },
   "Balmes": {
@@ -231,7 +232,7 @@
     "lng": 2.1336,
     "aliases": {
       "secondary": ["SARRIA", "SARRIÀ", "/sarria", "BAL-SARRIA"],
-      "english_cinema_bcn": ["Gr.Sarrià", "Gr. Sarrià", "Gran Sarrià", "Sarrià"]
+      "english_cinema_bcn": ["Gr.Sarrià", "Gr. Sarrià", "Gran Sarrià", "Sarrià", "Mooby Gran Sarrià"]
     }
   },
   "Zumzeig": {
@@ -244,7 +245,7 @@
     "lat": 41.3773,
     "lng": 2.1450,
     "aliases": {
-      "english_cinema_bcn": ["Zumzeig"]
+      "english_cinema_bcn": ["Zumzeig", "Zumzeig Cinema"]
     }
   },
   "Phenomena": {
