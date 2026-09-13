@@ -11,11 +11,12 @@ import logging
 import re
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from models import PREMIUM_FORMATS, CinemaInfo, CinemaRegistry, Listings, Movie, Showtime
 from observability import log_event
+from providers.common import madrid_today
 from reconcile import dedup_showtimes
 
 logger = logging.getLogger(__name__)
@@ -115,15 +116,23 @@ def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegis
     }
 
 
-def _parse_cutoff(generated_at: str) -> datetime | None:
-    """Return the datetime 7 days after generated_at, or None if unparseable."""
+def _parse_cutoff(generated_at: str) -> date | None:
+    """
+    Return the Madrid calendar date 7 days after generated_at's Madrid day, or
+    None if unparseable.
+
+    `generated_at` (`fetched_at`) is a UTC instant. Showtime `date` strings are
+    Madrid-local calendar dates, so the cutoff must be computed on the Madrid
+    calendar day, not on the raw UTC instant — otherwise the horizon's last
+    day is dropped or kept depending on what time of day the refresh ran.
+    """
     if not generated_at:
         return None
     try:
         dt = datetime.fromisoformat(generated_at)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=UTC)
-        return dt + timedelta(days=7)
+        return madrid_today(dt) + timedelta(days=7)
     except ValueError:
         return None
 
@@ -131,7 +140,7 @@ def _parse_cutoff(generated_at: str) -> datetime | None:
 def _transform_movie(
     movie: Movie | Mapping[str, Any],
     cinema_lookup: dict[str, CinemaInfo],
-    cutoff: datetime | None,
+    cutoff: date | None,
     seen_theater_ids: set[str],
     stats: _TransformStats,
 ) -> dict[str, Any] | None:
@@ -189,7 +198,7 @@ def _transform_movie(
 def _transform_showtimes(
     showtimes: list[Showtime] | list[Mapping[str, Any]],
     cinema_lookup: dict[str, CinemaInfo],
-    cutoff: datetime | None,
+    cutoff: date | None,
     seen_theater_ids: set[str],
     stats: _TransformStats,
 ) -> list[dict[str, Any]]:
@@ -212,7 +221,7 @@ def _transform_showtimes(
 
         if cutoff is not None and show_date:
             try:
-                d = datetime.fromisoformat(show_date).replace(tzinfo=UTC)
+                d = date.fromisoformat(show_date)
                 if d >= cutoff:
                     stats.dropped_beyond_cutoff += 1
                     continue

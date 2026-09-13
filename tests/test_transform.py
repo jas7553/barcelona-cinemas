@@ -432,6 +432,37 @@ def test_falls_back_to_scraper_title_when_english_title_absent():
     assert result["movies"][0]["title"] == "Anatomie d'une chute"
 
 
+# ── Madrid-day horizon (fetched_at UTC time-of-day must not shift the cutoff) ──
+
+
+def test_horizon_last_madrid_day_kept_regardless_of_fetch_time_of_day():
+    """
+    A showtime on exactly the horizon's last Madrid calendar day (fetched_at's
+    Madrid day + 6) must survive no matter what UTC time-of-day the refresh ran
+    at — the cutoff is a Madrid calendar date, not a UTC instant.
+    """
+    # Late-evening UTC refresh, already the next Madrid day (CEST, UTC+2).
+    fetched_at = datetime(2026, 7, 14, 22, 30, tzinfo=UTC).isoformat()
+    last_day = "2026-07-21"  # Madrid today (07-15) + 6 days
+    movie = _movie(title="On The Edge", showtimes=[_showtime(date=last_day)])
+
+    result = to_api_response(Listings(fetched_at=fetched_at, stale=False, movies=[movie]), CINEMAS)
+
+    assert [m["title"] for m in result["movies"]] == ["On The Edge"]
+
+
+def test_horizon_day_beyond_last_madrid_day_dropped(find_event):
+    fetched_at = datetime(2026, 7, 14, 22, 30, tzinfo=UTC).isoformat()
+    beyond = "2026-07-22"  # one day past the Madrid horizon
+    movie = _movie(title="Too Late", showtimes=[_showtime(date=beyond)])
+
+    result = to_api_response(Listings(fetched_at=fetched_at, stale=False, movies=[movie]), CINEMAS)
+
+    assert result["movies"] == []
+    summary = find_event("transform_summary")
+    assert summary["dropped_beyond_cutoff"] == 1
+
+
 # ── transform_summary logging ─────────────────────────────────────────────────
 
 
