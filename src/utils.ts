@@ -1,5 +1,88 @@
 import type { Listings, Theater, TransformedMovie, TransformedShowtime, CinemaViewGroup } from "./types";
 
+// ── Barcelona wall-clock ↔ instant conversions ──────────────────────────────
+//
+// Showtime `date`/`time` strings are Barcelona wall-clock by data contract
+// (see CLAUDE.md). Every conversion between those strings and a JS `Date`
+// instant must go through `Intl.DateTimeFormat` pinned to Europe/Madrid —
+// never through the engine's ambient timezone (`new Date(y, mo, d, h, mi)`,
+// `.setHours()`, `.getHours()`, etc.), or a browser/device in another zone
+// disagrees with the Madrid-pinned SSG render and produces wrong day buckets,
+// wrong past-showtime filtering, and a hydration mismatch.
+
+const MADRID_TZ = "Europe/Madrid";
+
+interface MadridParts {
+  y: number;
+  mo: number;
+  d: number;
+  h: number;
+  mi: number;
+  s: number;
+}
+
+const madridPartsFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: MADRID_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Decompose an instant into its Europe/Madrid wall-clock components. */
+export function madridParts(instant: Date): MadridParts {
+  const parts = madridPartsFormatter.formatToParts(instant);
+  const get = (type: string): number => Number(parts.find((p) => p.type === type)?.value ?? 0);
+  return { y: get("year"), mo: get("month"), d: get("day"), h: get("hour"), mi: get("minute"), s: get("second") };
+}
+
+/** "YYYY-MM-DD" for the Europe/Madrid calendar day an instant falls on. */
+export function madridDateKey(instant: Date): string {
+  const { y, mo, d } = madridParts(instant);
+  return `${y}-${pad2(mo)}-${pad2(d)}`;
+}
+
+/** The Europe/Madrid UTC offset, in ms, applying to a given instant. */
+function madridOffsetMsAt(instantMs: number): number {
+  const p = madridParts(new Date(instantMs));
+  const asIfUtc = Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi, p.s);
+  return asIfUtc - instantMs;
+}
+
+/**
+ * Convert a Barcelona wall-clock `date`/`time` pair (as found on a `Showtime`)
+ * to the instant it represents, correct across the DST transition.
+ *
+ * Standard guess-and-correct trick: treat the wall-clock components as if they
+ * were UTC to get a first estimate, measure Madrid's actual offset at that
+ * estimate, and re-derive the instant from it. A second pass re-measures at
+ * the corrected instant so a guess landing just the wrong side of a DST
+ * boundary still converges (the offset only ever takes one of two values, so
+ * two passes always suffice).
+ */
+export function madridWallToInstant(date: string, time: string): Date {
+  const [y, mo, d] = date.split("-").map(Number);
+  const [h, mi] = time.split(":").map(Number);
+  const targetAsUtc = Date.UTC(y, mo - 1, d, h, mi, 0);
+  let instant = targetAsUtc - madridOffsetMsAt(targetAsUtc);
+  instant = targetAsUtc - madridOffsetMsAt(instant);
+  return new Date(instant);
+}
+
+/** UTC-midnight instant (ms) for a "YYYY-MM-DD" key — a stable value for day-diff arithmetic. */
+function dateKeyToUtcMidnightMs(key: string): number {
+  const [y, mo, d] = key.split("-").map(Number);
+  return Date.UTC(y, mo - 1, d);
+}
+
+/** Whole-day difference between two "YYYY-MM-DD" keys (b - a). */
+function dayKeyDiff(a: string, b: string): number {
+  return Math.round((dateKeyToUtcMidnightMs(b) - dateKeyToUtcMidnightMs(a)) / 86400000);
+}
+
 // ── Geo distance ────────────────────────────────────────────────────────────
 
 /** Haversine formula — returns distance in kilometres. */
@@ -100,14 +183,6 @@ function escapeIcsText(s: string): string {
     .replace(/\r?\n/g, "\\n");
 }
 
-/** Floating local datetime stamp "YYYYMMDDTHHMMSS" — calendar reads it in the device's zone. */
-function icsLocalStamp(dt: Date): string {
-  return (
-    `${dt.getFullYear()}${pad2(dt.getMonth() + 1)}${pad2(dt.getDate())}` +
-    `T${pad2(dt.getHours())}${pad2(dt.getMinutes())}${pad2(dt.getSeconds())}`
-  );
-}
-
 /** UTC stamp "YYYYMMDDTHHMMSSZ" for DTSTAMP. */
 function icsUtcStamp(dt: Date): string {
   return (
@@ -117,8 +192,12 @@ function icsUtcStamp(dt: Date): string {
 }
 
 /**
- * Build a single-event VCALENDAR string for one screening. Times are emitted as
- * floating local time so the user's device interprets them in Barcelona's zone.
+ * Build a single-event VCALENDAR string for one screening. `date`/`time` are
+ * Barcelona wall-clock (data contract); converted to instants via
+ * `madridWallToInstant` and emitted as UTC `Z` stamps so the event lands at
+ * the correct wall-clock time on any device regardless of its local zone
+ * (a floating local stamp would have a non-Madrid device save the wrong time
+ * — this is the primary CTA, so it must be right everywhere).
  * DTEND = start + runtime (falls back to a sane default when runtime is null).
  * `now` is injectable so SSR and hydration use the same instant and produce identical URLs.
  */
@@ -126,18 +205,16 @@ export function buildIcs(
   opts: {
     title: string;
     location: string;
-    date: string; // YYYY-MM-DD
-    time: string; // HH:MM
+    date: string; // YYYY-MM-DD, Barcelona wall-clock
+    time: string; // HH:MM, Barcelona wall-clock
     runtimeMinutes: number | null;
   },
   now: Date = new Date(),
 ): string {
-  const [y, mo, d] = opts.date.split("-").map(Number);
-  const [h, mi] = opts.time.split(":").map(Number);
-  const start = new Date(y, mo - 1, d, h, mi, 0);
+  const start = madridWallToInstant(opts.date, opts.time);
   const minutes = opts.runtimeMinutes && opts.runtimeMinutes > 0 ? opts.runtimeMinutes : ICS_FALLBACK_RUNTIME;
   const end = new Date(start.getTime() + minutes * 60000);
-  const uid = `${icsLocalStamp(start)}-${opts.title.replace(/\s+/g, "-").toLowerCase()}@barcelona-movie-database`;
+  const uid = `${icsUtcStamp(start)}-${opts.title.replace(/\s+/g, "-").toLowerCase()}@barcelona-movie-database`;
 
   return [
     "BEGIN:VCALENDAR",
@@ -146,8 +223,8 @@ export function buildIcs(
     "BEGIN:VEVENT",
     `UID:${uid}`,
     `DTSTAMP:${icsUtcStamp(now)}`,
-    `DTSTART:${icsLocalStamp(start)}`,
-    `DTEND:${icsLocalStamp(end)}`,
+    `DTSTART:${icsUtcStamp(start)}`,
+    `DTEND:${icsUtcStamp(end)}`,
     `SUMMARY:${escapeIcsText(opts.title)}`,
     `LOCATION:${escapeIcsText(opts.location)}`,
     "END:VEVENT",
@@ -200,12 +277,14 @@ export function generateDays(
   now: Date = new Date(),
   count = 7,
 ): Array<{ label: string; fullLabel: string; offset: number }> {
-  const hour = now.getHours();
+  const { y, mo, d: startDay, h: hour } = madridParts(now);
+  // Midnight UTC of the Madrid calendar day `now` falls on — a stable anchor
+  // for adding whole days that doesn't depend on the engine's ambient zone.
+  const baseUtcMs = Date.UTC(y, mo - 1, startDay);
   const result: Array<{ label: string; fullLabel: string; offset: number }> = [];
 
   for (let i = 0; i < Math.max(1, count); i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() + i);
+    const dayUtc = new Date(baseUtcMs + i * 86400000);
 
     if (i === 0) {
       result.push({
@@ -214,9 +293,11 @@ export function generateDays(
         offset: 0,
       });
     } else {
-      const weekday = d.toLocaleDateString("en-GB", { weekday: "short" });
-      const weekdayFull = d.toLocaleDateString("en-GB", { weekday: "long" });
-      const day = d.getDate();
+      // dayUtc is a date-only UTC midnight; format in UTC so the ambient zone
+      // can't roll it to the adjacent calendar day.
+      const weekday = dayUtc.toLocaleDateString("en-GB", { weekday: "short", timeZone: "UTC" });
+      const weekdayFull = dayUtc.toLocaleDateString("en-GB", { weekday: "long", timeZone: "UTC" });
+      const day = dayUtc.getUTCDate();
       result.push({ label: `${weekday} ${day}`, fullLabel: `${weekdayFull} ${day}`, offset: i });
     }
   }
@@ -305,11 +386,6 @@ export function thumbPosterUrl(posterUrl: string | null): string | null {
 
 // ── Client-side API response transform ─────────────────────────────────────
 
-export function todayAtMidnight(now: Date = new Date()): Date {
-  const d = new Date(now);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
 
 /**
  * `now` is injectable so the SSG render and the first client (hydration) render
@@ -317,7 +393,7 @@ export function todayAtMidnight(now: Date = new Date()): Date {
  * the live clock, which re-filters past showtimes the stale snapshot still showed.
  */
 export function transformResponse(apiResponse: Listings, now: Date = new Date()): TransformedMovie[] {
-  const today = todayAtMidnight(now);
+  const todayKey = madridDateKey(now);
 
   const theaterMap: Record<string, Theater> = Object.fromEntries(
     apiResponse.theaters.map((t) => [t.id, t])
@@ -329,8 +405,7 @@ export function transformResponse(apiResponse: Listings, now: Date = new Date())
     showtimes: movie.showtimes
       .filter((s) => s.theater_id in theaterMap)
       .map((s): TransformedShowtime => {
-        const showDate = new Date(`${s.date}T00:00:00`);
-        const dayOffset = Math.round((showDate.getTime() - today.getTime()) / 86400000);
+        const dayOffset = dayKeyDiff(todayKey, s.date);
         return {
           ...s,
           theater: theaterMap[s.theater_id],
@@ -339,9 +414,7 @@ export function transformResponse(apiResponse: Listings, now: Date = new Date())
       })
       .filter((s) => {
         if (s.dayOffset < 0 || s.dayOffset > 13) return false;
-        const [sy, smo, sd] = s.date.split("-").map(Number);
-        const [sh, sm] = s.time.split(":").map(Number);
-        return new Date(sy, smo - 1, sd, sh, sm) > now;
+        return madridWallToInstant(s.date, s.time) > now;
       })
       .sort((a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time)),
   }))

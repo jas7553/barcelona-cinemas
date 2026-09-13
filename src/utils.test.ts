@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Listings, Movie, Showtime } from "./types";
-import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, viewingLang, viewingLangLabel, premiumFormatLabel, buildCinemaRows, buildCinemaGroups, buildDaySections, generateDays, dayHorizon, parseSortMode, sortMovies, movieMatchesQuery, normalizeForSearch, screeningKind, runCoverageLabel } from "./utils";
+import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, viewingLang, viewingLangLabel, premiumFormatLabel, buildCinemaRows, buildCinemaGroups, buildDaySections, generateDays, dayHorizon, parseSortMode, sortMovies, movieMatchesQuery, normalizeForSearch, screeningKind, runCoverageLabel, madridDateKey, madridWallToInstant } from "./utils";
 import type { TransformedMovie, TransformedShowtime } from "./types";
 
 /** One Verdi theater and one movie; override only the movie fields a test asserts on. */
@@ -221,28 +221,87 @@ describe("buildIcs", () => {
     expect(ics).toContain("\r\n");
   });
 
+  // Times are emitted as UTC "Z" stamps (not floating local time) so a
+  // non-Madrid device still saves the correct wall-clock instant. Madrid is
+  // UTC+2 on 2026-06-15 (CEST), so 21:30 local is 19:30Z.
   it("sets DTEND to start + runtime", () => {
     const ics = buildIcs({ ...base, runtimeMinutes: 90 });
-    expect(ics).toContain("DTSTART:20260615T213000");
-    expect(ics).toContain("DTEND:20260615T230000"); // 21:30 + 90m = 23:00
+    expect(ics).toContain("DTSTART:20260615T193000Z");
+    expect(ics).toContain("DTEND:20260615T210000Z"); // 21:30+02:00 + 90m = 23:00+02:00
   });
 
   it("falls back to a 120-minute event when runtime is null", () => {
     const ics = buildIcs({ ...base, runtimeMinutes: null });
-    expect(ics).toContain("DTSTART:20260615T213000");
-    expect(ics).toContain("DTEND:20260615T233000"); // 21:30 + 120m = 23:30
+    expect(ics).toContain("DTSTART:20260615T193000Z");
+    expect(ics).toContain("DTEND:20260615T213000Z"); // 21:30+02:00 + 120m = 23:30+02:00
   });
 
   it("rolls the end date over midnight", () => {
     const ics = buildIcs({ ...base, time: "23:30", runtimeMinutes: 120 });
-    expect(ics).toContain("DTSTART:20260615T233000");
-    expect(ics).toContain("DTEND:20260616T013000");
+    expect(ics).toContain("DTSTART:20260615T213000Z");
+    expect(ics).toContain("DTEND:20260615T233000Z"); // 01:30+02:00 next day Madrid = 23:30Z same UTC day
   });
 
   it("escapes commas in TEXT fields", () => {
     const ics = buildIcs({ ...base, title: "Dune, Part Two", runtimeMinutes: 90 });
     expect(ics).toContain("SUMMARY:Dune\\, Part Two");
     expect(ics).toContain("LOCATION:Cinemes Verdi\\, Carrer de Verdi 32");
+  });
+});
+
+describe("Madrid wall-clock/instant conversions (ambient-TZ independent)", () => {
+  // These assert against explicit UTC instants computed by hand from the known
+  // Europe/Madrid UTC offset, so the test itself doesn't depend on the
+  // ambient TZ the test runner happens to be in. Run the suite under
+  // TZ=America/New_York or TZ=UTC and the results must be identical.
+
+  it("converts a CET (winter, UTC+1) wall-clock time to the correct instant", () => {
+    // 2026-01-15 19:00 Madrid (CET, +01:00) → 18:00 UTC.
+    expect(madridWallToInstant("2026-01-15", "19:00").toISOString()).toBe("2026-01-15T18:00:00.000Z");
+  });
+
+  it("converts a CEST (summer, UTC+2) wall-clock time to the correct instant", () => {
+    // 2026-06-15 19:00 Madrid (CEST, +02:00) → 17:00 UTC.
+    expect(madridWallToInstant("2026-06-15", "19:00").toISOString()).toBe("2026-06-15T17:00:00.000Z");
+  });
+
+  it("handles the spring-forward transition (2026-03-29, CET→CEST at 02:00→03:00)", () => {
+    // 01:30 is still CET (+01:00): → 00:30 UTC.
+    expect(madridWallToInstant("2026-03-29", "01:30").toISOString()).toBe("2026-03-29T00:30:00.000Z");
+    // 03:30 is already CEST (+02:00): → 01:30 UTC.
+    expect(madridWallToInstant("2026-03-29", "03:30").toISOString()).toBe("2026-03-29T01:30:00.000Z");
+  });
+
+  it("handles the fall-back transition (2026-10-25, CEST→CET at 03:00→02:00)", () => {
+    // 01:30 is still CEST (+02:00), before the fold: → 2026-10-24T23:30:00Z.
+    expect(madridWallToInstant("2026-10-25", "01:30").toISOString()).toBe("2026-10-24T23:30:00.000Z");
+    // 04:30 is CET (+01:00), after the fold: → 2026-10-25T03:30:00Z.
+    expect(madridWallToInstant("2026-10-25", "04:30").toISOString()).toBe("2026-10-25T03:30:00.000Z");
+  });
+
+  it("madridDateKey buckets a late-evening Madrid showtime to the Madrid calendar day even near UTC midnight", () => {
+    // 2026-06-15 23:30 Madrid (CEST, +02:00) is 2026-06-15T21:30:00Z — still
+    // the 15th in UTC too, but the interesting case is the reverse: an
+    // instant just after UTC midnight that Madrid still reads as the *next*
+    // evening's tail. 2026-06-16T01:30:00Z is 03:30 CEST on the 16th.
+    expect(madridDateKey(new Date("2026-06-16T01:30:00Z"))).toBe("2026-06-16");
+    // But 2026-06-15T22:30:00Z (00:30 CEST on the 16th) is already the 16th
+    // in Madrid though it's still the 15th in UTC — the case ambient-TZ code
+    // gets wrong.
+    expect(madridDateKey(new Date("2026-06-15T22:30:00Z"))).toBe("2026-06-16");
+  });
+
+  it("transformResponse keeps a showtime that is future in Madrid but past in another ambient zone's naive read, and vice versa", () => {
+    // now = 2026-09-14T18:30:00Z = 20:30 Madrid (CEST). A 19:00 *Madrid*
+    // showtime today has already started in Madrid and must be dropped,
+    // regardless of the machine's ambient TZ.
+    const now = new Date("2026-09-14T18:30:00Z");
+    const listings = sampleListings([
+      { theater_id: "verdi", date: "2026-09-14", time: "19:00", language: "vo" },
+      { theater_id: "verdi", date: "2026-09-14", time: "21:00", language: "vo" },
+    ]);
+    const [movie] = transformResponse(listings, now);
+    expect(movie?.showtimes.map((s) => s.time)).toEqual(["21:00"]);
   });
 });
 
