@@ -16,7 +16,10 @@ export function hexToRgb(hex: string): Rgb {
 
 /** `{r,g,b}` → `#rrggbb`, clamping/rounding each channel. */
 export function rgbToHex({ r, g, b }: Rgb): string {
-  const c = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  const c = (v: number) =>
+    Math.max(0, Math.min(255, Math.round(v)))
+      .toString(16)
+      .padStart(2, "0");
   return `#${c(r)}${c(g)}${c(b)}`;
 }
 
@@ -35,13 +38,26 @@ export function mixRgb(a: Rgb, b: Rgb, t: number): Rgb {
  * over an opaque background) — used to fold the backdrop gradient's top stop
  * into a sampled pixel so the result matches what's actually on screen.
  */
-export function compositeOverlay(base: Rgb, overlay: Rgb, overlayAlpha: number): Rgb {
+export function compositeOverlay(
+  base: Rgb,
+  overlay: Rgb,
+  overlayAlpha: number,
+): Rgb {
   return mixRgb(base, overlay, overlayAlpha);
 }
 
 /** `mixRgb` for hex colours in, hex out — the shape the theme-color meta wants. */
 export function mixHex(hexA: string, hexB: string, t: number): string {
   return rgbToHex(mixRgb(hexToRgb(hexA), hexToRgb(hexB), t));
+}
+
+/**
+ * The URL to load for colour sampling: the w300 variant of a TMDb backdrop.
+ * Must differ from the URL the visible <img> renders (see FilmPage) and only
+ * needs enough pixels for an average. Non-TMDb URLs pass through unchanged.
+ */
+export function backdropSampleUrl(url: string): string {
+  return url.replace(/(\/\/image\.tmdb\.org\/t\/p\/)w\d+\//, "$1w300/");
 }
 
 /**

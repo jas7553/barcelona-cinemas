@@ -5,11 +5,24 @@ import DayPicker from "../components/DayPicker";
 import CinemaSheet from "../components/CinemaSheet";
 import SiteFooter from "../components/Footer";
 import DataAge, { dataAgeLabel } from "../components/DataAge";
-import { BackIcon, ChevronDownIcon, ChevronRightIcon, MoonIcon, SunIcon } from "../components/Icons";
+import {
+  BackIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  MoonIcon,
+  SunIcon,
+} from "../components/Icons";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useNow, useUrlParams } from "../hooks/useClient";
 import { useLocationPin } from "../hooks/useLocationPin";
-import { compositeOverlay, mixHex, rgbToHex, sampleTopEdgeColor, type Rgb } from "../backdropColor";
+import {
+  backdropSampleUrl,
+  compositeOverlay,
+  mixHex,
+  rgbToHex,
+  sampleTopEdgeColor,
+  type Rgb,
+} from "../backdropColor";
 import {
   transformResponse,
   formatDistKm,
@@ -86,17 +99,23 @@ export default function FilmPage({ data }: { data: FilmPageData }) {
                 <div className="empty-state empty-state--center">
                   {filmInPayload ? (
                     <>
-                      <div className="empty-state__overline">Finished its run</div>
-                      <div className="empty-state__heading">This film has wrapped</div>
+                      <div className="empty-state__overline">
+                        Finished its run
+                      </div>
+                      <div className="empty-state__heading">
+                        This film has wrapped
+                      </div>
                       <div className="empty-state__body">
-                        Its remaining showtimes have all passed. It may return — see
-                        what's on now.
+                        Its remaining showtimes have all passed. It may return —
+                        see what's on now.
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="empty-state__overline">Not found</div>
-                      <div className="empty-state__heading">This film isn't showing</div>
+                      <div className="empty-state__heading">
+                        This film isn't showing
+                      </div>
                       <div className="empty-state__body">
                         The link may be out of date.
                       </div>
@@ -145,7 +164,8 @@ function FilmView({
   // list's own history entry (and its params) untouched. Only honored if this
   // film actually plays that day.
   const rawDay = searchParams.get("day");
-  const parsedDay = rawDay !== null && !isNaN(Number(rawDay)) ? Number(rawDay) : null;
+  const parsedDay =
+    rawDay !== null && !isNaN(Number(rawDay)) ? Number(rawDay) : null;
   const selectedDay =
     parsedDay != null && movie.showtimes.some((s) => s.dayOffset === parsedDay)
       ? parsedDay
@@ -177,7 +197,8 @@ function FilmView({
   // referrer says we came from here.
   const onBack = () => {
     const cameFromApp =
-      document.referrer !== "" && new URL(document.referrer).origin === window.location.origin;
+      document.referrer !== "" &&
+      new URL(document.referrer).origin === window.location.origin;
     if (cameFromApp && window.history.length > 1) window.history.back();
     else window.location.assign("/");
   };
@@ -187,7 +208,10 @@ function FilmView({
     [movie.showtimes],
   );
 
-  const days = useMemo(() => generateDays(now, dayHorizon([movie])), [now, movie]);
+  const days = useMemo(
+    () => generateDays(now, dayHorizon([movie])),
+    [now, movie],
+  );
 
   // Sort nearest-first on live coords so order and distance labels agree. Coords
   // are null on the server + first client render (geolocation resolves in an
@@ -205,14 +229,19 @@ function FilmView({
   // Distinct cinemas across the whole run, not per day — a cinema showing the
   // film on three days is still one cinema in the summary line.
   const cinemaCount = useMemo(
-    () => new Set(daySections.flatMap((d) => d.cinemas.map((c) => c.theater.id))).size,
+    () =>
+      new Set(daySections.flatMap((d) => d.cinemas.map((c) => c.theater.id)))
+        .size,
     [daySections],
   );
 
   // Amber pills mean "bookable" — a colour-only code nothing on the page
   // explained. Only worth a legend when some row actually carries it.
   const anyBookable = useMemo(
-    () => daySections.some((d) => d.cinemas.some((c) => c.times.some((t) => t.bookingUrl))),
+    () =>
+      daySections.some((d) =>
+        d.cinemas.some((c) => c.times.some((t) => t.bookingUrl)),
+      ),
     [daySections],
   );
 
@@ -260,7 +289,9 @@ function FilmView({
   useEffect(() => {
     const el = backdropRef.current;
     if (el == null) return;
-    const meta = document.getElementById("theme-color-meta") as HTMLMetaElement | null;
+    const meta = document.getElementById(
+      "theme-color-meta",
+    ) as HTMLMetaElement | null;
     const applyMeta = () => {
       if (meta == null) return;
       const opacity = Math.max(0, 1 - window.scrollY / 130);
@@ -274,7 +305,8 @@ function FilmView({
     const apply = () => {
       rafRef.current = null;
       const opacity = Math.max(0, 1 - window.scrollY / 130);
-      if (!(opacity === 0 && el.style.opacity === "0")) el.style.opacity = String(opacity);
+      if (!(opacity === 0 && el.style.opacity === "0"))
+        el.style.opacity = String(opacity);
       applyMeta();
     };
     const onScroll = () => {
@@ -300,9 +332,15 @@ function FilmView({
   // <img> is deliberately a plain (no-CORS) load: putting crossOrigin on it
   // makes Safari refuse cache entries it stored without CORS headers, which
   // rendered the banner as a broken image. So the sample comes from a second,
-  // off-DOM Image with crossOrigin set — started after the visible one has
-  // loaded so it's served from cache — and any CORS failure only costs the
+  // off-DOM Image with crossOrigin set, and any CORS failure only costs the
   // tint, never the banner.
+  //
+  // The probe must not share a URL with the visible <img>: TMDb's CDN only
+  // sends Access-Control-Allow-Origin when the request carries an Origin, and
+  // doesn't Vary on it, so a CORS load of a URL already in the HTTP cache from
+  // the no-CORS render gets the header-less entry back and fails. A smaller
+  // size variant is a distinct URL (and a much cheaper download) — an averaged
+  // colour doesn't need w1280 pixels.
   useEffect(() => {
     const url = movie.backdrop_url;
     const img = backdropImgRef.current;
@@ -315,10 +353,14 @@ function FilmView({
         if (probe == null) return;
         const raw = sampleTopEdgeColor(probe);
         if (raw == null) return; // tainted canvas / no canvas backend: leave as-is
-        sampledColorRef.current = compositeOverlay(raw, { r: 0, g: 0, b: 0 }, 0.1);
+        sampledColorRef.current = compositeOverlay(
+          raw,
+          { r: 0, g: 0, b: 0 },
+          0.1,
+        );
         applyMetaRef.current?.();
       };
-      probe.src = url;
+      probe.src = backdropSampleUrl(url);
     };
     if (img.complete && img.naturalWidth > 0) sample();
     else img.addEventListener("load", sample);
@@ -335,7 +377,9 @@ function FilmView({
   // so hand the status bar back the plain page colour.
   useEffect(() => {
     return () => {
-      const meta = document.getElementById("theme-color-meta") as HTMLMetaElement | null;
+      const meta = document.getElementById(
+        "theme-color-meta",
+      ) as HTMLMetaElement | null;
       if (meta) meta.content = pageBgRef.current;
     };
   }, []);
@@ -407,7 +451,9 @@ function FilmView({
               {meta && <div className="detail-film-meta">{meta}</div>}
               <div className="detail-badges">
                 {movie.rating != null && (
-                  <div className="rating-badge">★ {movie.rating.toFixed(1)}</div>
+                  <div className="rating-badge">
+                    ★ {movie.rating.toFixed(1)}
+                  </div>
                 )}
                 {movie.trailer_url && (
                   <a
@@ -432,7 +478,9 @@ function FilmView({
             ) : (
               <p className="synopsis-empty">No synopsis available from TMDb.</p>
             )}
-            {(movie.director || (movie.cast && movie.cast.length > 0) || originalLanguage) && (
+            {(movie.director ||
+              (movie.cast && movie.cast.length > 0) ||
+              originalLanguage) && (
               <dl className="credits">
                 {movie.director && (
                   <div className="credits-row">
@@ -456,11 +504,27 @@ function FilmView({
             )}
             <div className="external-links">
               {movie.links.imdb && (
-                <FaviconLink icon="/imdb-favicon.png" label="IMDb" href={movie.links.imdb} />
+                <FaviconLink
+                  icon="/imdb-favicon.png"
+                  label="IMDb"
+                  href={movie.links.imdb}
+                />
               )}
-              <FaviconLink icon="/letterboxd-favicon.ico" label="Letterboxd" href={letterboxdHref} />
-              <FaviconLink icon="/rt-favicon.ico" label="Rotten Tomatoes" href={rtHref} />
-              <FaviconLink icon="/metacritic-favicon.ico" label="Metacritic" href={metacriticHref} />
+              <FaviconLink
+                icon="/letterboxd-favicon.ico"
+                label="Letterboxd"
+                href={letterboxdHref}
+              />
+              <FaviconLink
+                icon="/rt-favicon.ico"
+                label="Rotten Tomatoes"
+                href={rtHref}
+              />
+              <FaviconLink
+                icon="/metacritic-favicon.ico"
+                label="Metacritic"
+                href={metacriticHref}
+              />
             </div>
           </div>
 
@@ -486,7 +550,11 @@ function FilmView({
                   className={`cinema-count__order${locationActive ? " cinema-count__order--active" : ""}`}
                   onClick={onToggleLocation}
                   aria-pressed={locationActive}
-                  aria-label={locationActive ? "Sorted by distance" : "Sort cinemas by distance"}
+                  aria-label={
+                    locationActive
+                      ? "Sorted by distance"
+                      : "Sort cinemas by distance"
+                  }
                 >
                   {locationError
                     ? "No location"
@@ -502,13 +570,16 @@ function FilmView({
             {anyBookable && (
               <p className="showtimes-legend">
                 <span className="showtimes-legend__swatch" aria-hidden="true" />
-                Highlighted times book online. Tap any time for calendar options.
+                Highlighted times book online. Tap any time for calendar
+                options.
               </p>
             )}
 
             {selectedDay != null && daySections.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-state__body">No screenings on this day.</div>
+                <div className="empty-state__body">
+                  No screenings on this day.
+                </div>
               </div>
             ) : (
               daySections.map((section) => (
@@ -519,10 +590,16 @@ function FilmView({
                       people filter by first. */}
                   {selectedDay == null && (
                     <h3 className="day-section__h">
-                      <span className="day-section__label">{section.label}</span>
+                      <span className="day-section__label">
+                        {section.label}
+                      </span>
                       <span className="day-section__count">
-                        {section.cinemas.reduce((n, c) => n + c.times.length, 0)} showtimes ·{" "}
-                        {section.cinemas.length} cinema{section.cinemas.length !== 1 ? "s" : ""}
+                        {section.cinemas.reduce(
+                          (n, c) => n + c.times.length,
+                          0,
+                        )}{" "}
+                        showtimes · {section.cinemas.length} cinema
+                        {section.cinemas.length !== 1 ? "s" : ""}
                       </span>
                     </h3>
                   )}
@@ -531,7 +608,9 @@ function FilmView({
                     const dl = formatDistKm(distKm);
                     // "Book online" over-claimed when only some of a cinema's
                     // times were bookable — say which case it is.
-                    const bookableCount = times.filter((t) => t.bookingUrl).length;
+                    const bookableCount = times.filter(
+                      (t) => t.bookingUrl,
+                    ).length;
                     const bookLabel =
                       bookableCount === 0
                         ? null
@@ -542,14 +621,18 @@ function FilmView({
                     // (see .showtime__actions) rather than inside a grid cell —
                     // in-cell they stretched the entire grid row, leaving the
                     // sibling times floating above a void.
-                    const openTime = times.find((t) => panelId(theater.id, t.key) === selectedPillKey);
+                    const openTime = times.find(
+                      (t) => panelId(theater.id, t.key) === selectedPillKey,
+                    );
 
                     // Badge hoisting: one cinema on one day usually screens a
                     // single viewing language — say it once on the header
                     // instead of on every pill.
                     const langs = new Set(times.map((t) => t.lang));
                     const isUniform = langs.size === 1;
-                    const headerBadge = viewingLangLabel(isUniform ? [...langs][0] : null);
+                    const headerBadge = viewingLangLabel(
+                      isUniform ? [...langs][0] : null,
+                    );
 
                     return (
                       <div key={theater.id} className="cinema-row">
@@ -574,32 +657,48 @@ function FilmView({
                               })
                             }
                           >
-                            <span className="cinema-row__name">{theater.name}</span>
+                            <span className="cinema-row__name">
+                              {theater.name}
+                            </span>
                             <div className="cinema-row__right">
-                              {bookLabel && <span className="tag tag--accent">{bookLabel}</span>}
-                              {headerBadge && <span className="tag">{headerBadge}</span>}
-                              {dl && <span className="cinema-row__dist">{dl}</span>}
+                              {bookLabel && (
+                                <span className="tag tag--accent">
+                                  {bookLabel}
+                                </span>
+                              )}
+                              {headerBadge && (
+                                <span className="tag">{headerBadge}</span>
+                              )}
+                              {dl && (
+                                <span className="cinema-row__dist">{dl}</span>
+                              )}
                               <ChevronRightIcon />
                             </div>
                           </button>
                         </h4>
                         <div className="cinema-row__times">
                           <div className="showtime-grid">
-                            {times.map(({ key, t, bookingUrl, lang, formatBadge }) => (
-                              <Showtime
-                                key={key}
-                                panelId={panelId(theater.id, key)}
-                                selectedKey={selectedPillKey}
-                                onSelect={setSelectedPillKey}
-                                time={t}
-                                dayLabel={section.label}
-                                bookingUrl={bookingUrl}
-                                badge={isUniform ? null : viewingLangLabel(lang, "short")}
-                                formatBadge={formatBadge}
-                                film={movie.title}
-                                cinema={theater.name}
-                              />
-                            ))}
+                            {times.map(
+                              ({ key, t, bookingUrl, lang, formatBadge }) => (
+                                <Showtime
+                                  key={key}
+                                  panelId={panelId(theater.id, key)}
+                                  selectedKey={selectedPillKey}
+                                  onSelect={setSelectedPillKey}
+                                  time={t}
+                                  dayLabel={section.label}
+                                  bookingUrl={bookingUrl}
+                                  badge={
+                                    isUniform
+                                      ? null
+                                      : viewingLangLabel(lang, "short")
+                                  }
+                                  formatBadge={formatBadge}
+                                  film={movie.title}
+                                  cinema={theater.name}
+                                />
+                              ),
+                            )}
                           </div>
                           {openTime && (
                             <ShowtimeActions
@@ -693,8 +792,14 @@ function Showtime({
       <time className="showtime__time">{time}</time>
       {(badge || formatBadge) && (
         <span className="showtime__sub">
-          {badge && <span className="showtime__tag showtime__tag--subs">{badge}</span>}
-          {formatBadge && <span className="showtime__tag showtime__tag--format">{formatBadge}</span>}
+          {badge && (
+            <span className="showtime__tag showtime__tag--subs">{badge}</span>
+          )}
+          {formatBadge && (
+            <span className="showtime__tag showtime__tag--format">
+              {formatBadge}
+            </span>
+          )}
         </span>
       )}
     </>
@@ -785,7 +890,12 @@ function ShowtimeActions({
   const calName = `${film.replace(/\s+/g, "-").toLowerCase()}-${date}-${time.replace(":", "")}.ics`;
 
   return (
-    <div id={id} className="showtime__actions" role="group" aria-label={`Options for ${time}`}>
+    <div
+      id={id}
+      className="showtime__actions"
+      role="group"
+      aria-label={`Options for ${time}`}
+    >
       {/* Names its subject: the panel sits under a grid of times, so without it
           there is nothing saying which one was opened. */}
       <span className="showtime__actions-note">
@@ -804,10 +914,24 @@ function ShowtimeActions({
   );
 }
 
-function FaviconLink({ icon, label, href }: { icon: string; label: string; href: string }) {
+function FaviconLink({
+  icon,
+  label,
+  href,
+}: {
+  icon: string;
+  label: string;
+  href: string;
+}) {
   return (
     <a href={href} target="_blank" rel="noreferrer" className="ext-link">
-      <img src={icon} width={14} height={14} alt="" className="ext-link__icon" />
+      <img
+        src={icon}
+        width={14}
+        height={14}
+        alt=""
+        className="ext-link__icon"
+      />
       {label}
     </a>
   );

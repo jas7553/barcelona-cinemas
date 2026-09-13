@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { hexToRgb, rgbToHex, mixRgb, compositeOverlay, mixHex, sampleTopEdgeColor } from "./backdropColor";
+import {
+  hexToRgb,
+  rgbToHex,
+  mixRgb,
+  compositeOverlay,
+  mixHex,
+  sampleTopEdgeColor,
+  backdropSampleUrl,
+} from "./backdropColor";
 
 describe("hexToRgb / rgbToHex", () => {
   it("round-trips", () => {
@@ -36,7 +44,11 @@ describe("compositeOverlay", () => {
     const base = { r: 200, g: 200, b: 200 };
     const overlay = { r: 0, g: 0, b: 0 };
     // 10% black over light grey darkens it by 10%.
-    expect(compositeOverlay(base, overlay, 0.1)).toEqual({ r: 180, g: 180, b: 180 });
+    expect(compositeOverlay(base, overlay, 0.1)).toEqual({
+      r: 180,
+      g: 180,
+      b: 180,
+    });
   });
 
   it("is a no-op at alpha 0", () => {
@@ -56,5 +68,19 @@ describe("sampleTopEdgeColor", () => {
   it("returns null when canvas 2d context is unavailable (jsdom has no canvas backend)", () => {
     const img = document.createElement("img");
     expect(sampleTopEdgeColor(img)).toBeNull();
+  });
+});
+
+describe("backdropSampleUrl", () => {
+  it("swaps a TMDb backdrop to the w300 variant so the CORS probe never shares a cache entry with the visible image", () => {
+    expect(backdropSampleUrl("https://image.tmdb.org/t/p/w1280/abc.jpg")).toBe(
+      "https://image.tmdb.org/t/p/w300/abc.jpg",
+    );
+  });
+
+  it("leaves non-TMDb URLs alone", () => {
+    expect(backdropSampleUrl("https://example.com/w1280/abc.jpg")).toBe(
+      "https://example.com/w1280/abc.jpg",
+    );
   });
 });
