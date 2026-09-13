@@ -43,14 +43,33 @@ export function SeenFilmsProvider({ children }: { children: React.ReactNode }) {
   const initialized = useRef(false);
 
   useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIds(parseSeenIds(localStorage.getItem(STORAGE_KEY)));
-    } catch {
-      /* noop */
+    const readStorage = () => {
+      try {
+        setIds(parseSeenIds(localStorage.getItem(STORAGE_KEY)));
+      } catch {
+        /* noop */
+      }
+    };
+    if (!initialized.current) {
+      initialized.current = true;
+      readStorage();
     }
+    // The flag is written on the film page and read on the list page. iOS
+    // Safari swipe-back restores the list from bfcache with its pre-navigation
+    // React state, so a mount-only read leaves the just-marked film in the main
+    // list. Re-read on a persisted pageshow (and on cross-tab storage writes).
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) readStorage();
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === null || e.key === STORAGE_KEY) readStorage();
+    };
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   const seenSet = useMemo(() => new Set(ids), [ids]);
