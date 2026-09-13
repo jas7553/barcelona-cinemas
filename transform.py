@@ -23,6 +23,10 @@ logger = logging.getLogger(__name__)
 # Cap the excluded-title list so one bad refresh cannot balloon a log line.
 _MAX_LOGGED_TITLES = 25
 
+# Ratings backed by too few TMDb votes are statistically meaningless (e.g. a
+# single 10/10 vote) — suppress them rather than publish a misleading badge.
+MIN_VOTE_COUNT = 5
+
 _SLUG_STRIP_RE = re.compile(r"[^a-z0-9]+")
 
 
@@ -153,9 +157,10 @@ def _transform_movie(
         return None
 
     # A rating of 0.0 with zero votes means "not yet rated", not "rated zero" —
-    # suppress it so the frontend doesn't render a misleading "0.0" badge.
+    # and a rating from only a handful of votes is statistically meaningless.
+    # Suppress both so the frontend doesn't render a misleading badge.
     vote_count = movie.get("vote_count")
-    rating = movie.get("rating") if vote_count != 0 else None
+    rating = movie.get("rating") if vote_count is not None and vote_count >= MIN_VOTE_COUNT else None
 
     return {
         "id": str(tmdb_id) if tmdb_id is not None else _slugify(title),
