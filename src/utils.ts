@@ -250,15 +250,48 @@ export function formatDataAge(isoStr: string, now: Date = new Date()): string | 
   return `${diffD} day${diffD !== 1 ? "s" : ""} ago`;
 }
 
-// ── Last-chance detection ───────────────────────────────────────────────────
+// ── Screening kind: one-off vs. run ─────────────────────────────────────────
 
-/**
- * A film is "last chance" when it has only 1 unique cinema showing it
- * OR 3 or fewer total remaining showtimes.
- */
-export function isLastChance(movie: TransformedMovie): boolean {
-  const theaters = new Set(movie.showtimes.map((s) => s.theater.id));
-  return theaters.size <= 1 || movie.showtimes.length <= 3;
+export type ScreeningKind = "one-off" | "run";
+
+/** No `now`: a pure function of `movie.showtimes` so it doesn't flicker as showtimes fall off the horizon. */
+export function screeningKind(movie: TransformedMovie): ScreeningKind {
+  const dates = new Set(movie.showtimes.map((s) => s.date));
+  return dates.size <= 2 && movie.showtimes.length <= 3 ? "one-off" : "run";
+}
+
+/** Weekday abbreviation for a day offset, from the page's day chips (`days` prop). */
+function dayAbbrev(offset: number, days: Array<{ label: string; offset: number }>): string {
+  if (offset === 0) return "Today";
+  const label = days.find((d) => d.offset === offset)?.label;
+  return label ? label.split(" ")[0] : "";
+}
+
+/** Coverage label for an unfiltered run card — "Daily" / "Through Thu" / "From Fri" / "Tue · Thu · Sat". */
+export function runCoverageLabel(
+  movie: TransformedMovie,
+  days: Array<{ label: string; offset: number }>,
+): string {
+  const showingOffsets = [...new Set(movie.showtimes.map((s) => s.dayOffset))].sort((a, b) => a - b);
+  if (showingOffsets.length === 0) return "";
+
+  const horizonOffsets = days.map((d) => d.offset);
+  const horizonStart = horizonOffsets[0] ?? 0;
+  const horizonEnd = horizonOffsets[horizonOffsets.length - 1] ?? 0;
+
+  const isDaily = horizonOffsets.every((o) => showingOffsets.includes(o));
+  if (isDaily) return "Daily";
+
+  const first = showingOffsets[0];
+  const last = showingOffsets[showingOffsets.length - 1];
+  // Contiguous run of every horizon day from `first` through `last`: the gap
+  // (if any) is only at the edges, so "Through"/"From" reads honestly.
+  const contiguous = showingOffsets.length === last - first + 1;
+
+  if (contiguous && first > horizonStart) return `From ${dayAbbrev(first, days)}`;
+  if (contiguous && last < horizonEnd) return `Through ${dayAbbrev(last, days)}`;
+
+  return showingOffsets.map((o) => dayAbbrev(o, days)).join(" · ");
 }
 
 /**
@@ -365,6 +398,23 @@ export function sortMovies(
     }
     return a.title.localeCompare(b.title);
   });
+}
+
+/** Splits into the two By Film sections; one-offs sort chronologically by first showing, runs keep incoming order. */
+export function splitByScreeningKind(
+  movies: TransformedMovie[],
+): { runs: TransformedMovie[]; oneOffs: TransformedMovie[] } {
+  const runs: TransformedMovie[] = [];
+  const oneOffs: TransformedMovie[] = [];
+  for (const m of movies) (screeningKind(m) === "one-off" ? oneOffs : runs).push(m);
+
+  const chronoKey = (m: TransformedMovie): string => {
+    const s = m.showtimes[0];
+    return s ? `${String(s.dayOffset).padStart(2, "0")}${s.time}` : "";
+  };
+  oneOffs.sort((a, b) => chronoKey(a).localeCompare(chronoKey(b)) || a.title.localeCompare(b.title));
+
+  return { runs, oneOffs };
 }
 
 /**

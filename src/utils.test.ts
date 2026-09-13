@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import type { Listings, Movie, Showtime } from "./types";
-import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, viewingLang, viewingLangLabel, premiumFormatLabel, buildCinemaRows, buildCinemaGroups, buildDaySections, generateDays, dayHorizon, parseSortMode, sortMovies, movieMatchesQuery, normalizeForSearch } from "./utils";
+import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, viewingLang, viewingLangLabel, premiumFormatLabel, buildCinemaRows, buildCinemaGroups, buildDaySections, generateDays, dayHorizon, parseSortMode, sortMovies, movieMatchesQuery, normalizeForSearch, screeningKind, runCoverageLabel } from "./utils";
+import type { TransformedMovie, TransformedShowtime } from "./types";
 
 /** One Verdi theater and one movie; override only the movie fields a test asserts on. */
 function sampleListings(showtimes: Showtime[], movie: Partial<Movie> = {}): Listings {
@@ -526,6 +527,128 @@ describe("movieMatchesQuery", () => {
 
   it("returns false when nothing matches", () => {
     expect(matches("godzilla")).toBe(false);
+  });
+});
+
+// ── screeningKind / runCoverageLabel ────────────────────────────────────────
+
+const kindTestTheater = {
+  id: "verdi",
+  name: "Cinemes Verdi",
+  address: "Carrer de Verdi, 32",
+  neighborhood: "Gracia",
+  website_url: "https://cinesesverdi.com",
+  maps_url: "https://maps.google.com/?q=Verdi",
+  lat: null,
+  lng: null,
+};
+
+/** Build a minimal TransformedMovie from (dayOffset, date, time) triples. */
+function movieWithShowtimes(entries: Array<[number, string, string]>): TransformedMovie {
+  const showtimes: TransformedShowtime[] = entries.map(([dayOffset, date, time]) => ({
+    theater_id: kindTestTheater.id,
+    theater: kindTestTheater,
+    date,
+    time,
+    dayOffset,
+    language: "vo",
+  }));
+  return {
+    id: "m1",
+    title: "Test Film",
+    year: 2025,
+    runtime_minutes: null,
+    runtimeLabel: "",
+    poster_url: null,
+    backdrop_url: null,
+    trailer_url: null,
+    genres: [],
+    rating: null,
+    synopsis: "",
+    links: { imdb: null, imdb_id: null },
+    showtimes,
+  };
+}
+
+describe("screeningKind", () => {
+  it("is a one-off with a single date and few showtimes", () => {
+    const m = movieWithShowtimes([[0, "2026-03-29", "18:20"]]);
+    expect(screeningKind(m)).toBe("one-off");
+  });
+
+  it("is a one-off across two dates with 3 or fewer showtimes total", () => {
+    const m = movieWithShowtimes([
+      [0, "2026-03-29", "18:20"],
+      [1, "2026-03-30", "20:00"],
+    ]);
+    expect(screeningKind(m)).toBe("one-off");
+  });
+
+  it("is a run once a third date appears, even with few showtimes", () => {
+    const m = movieWithShowtimes([
+      [0, "2026-03-29", "18:20"],
+      [1, "2026-03-30", "20:00"],
+      [2, "2026-03-31", "20:00"],
+    ]);
+    expect(screeningKind(m)).toBe("run");
+  });
+
+  it("is a run once showtimes exceed 3, even on two dates", () => {
+    const m = movieWithShowtimes([
+      [0, "2026-03-29", "18:20"],
+      [0, "2026-03-29", "21:00"],
+      [1, "2026-03-30", "18:20"],
+      [1, "2026-03-30", "21:00"],
+    ]);
+    expect(screeningKind(m)).toBe("run");
+  });
+
+  it("is a run for a typical multi-cinema release", () => {
+    const m = movieWithShowtimes(
+      [0, 1, 2, 3, 4, 5, 6].map((o) => [o, `2026-03-2${9 + o}`, "18:00"] as [number, string, string]),
+    );
+    expect(screeningKind(m)).toBe("run");
+  });
+});
+
+describe("runCoverageLabel", () => {
+  const days = Array.from({ length: 7 }, (_, i) => ({
+    label:
+      i === 0
+        ? "Today"
+        : new Date(2026, 2, 29 + i).toLocaleDateString("en-GB", { weekday: "short", day: "numeric" }),
+    offset: i,
+  }));
+
+  it("reads Daily when every horizon day has a showing", () => {
+    const m = movieWithShowtimes(days.map((d) => [d.offset, "2026-03-29", "18:00"]));
+    expect(runCoverageLabel(m, days)).toBe("Daily");
+  });
+
+  it("reads Through <day> when the run ends before the horizon end", () => {
+    const m = movieWithShowtimes([0, 1, 2, 3].map((o) => [o, "2026-03-29", "18:00"]));
+    expect(runCoverageLabel(m, days)).toBe(`Through ${days[3].label.split(" ")[0]}`);
+  });
+
+  it("reads From <day> when the run starts after today", () => {
+    const m = movieWithShowtimes([4, 5, 6].map((o) => [o, "2026-03-29", "18:00"]));
+    expect(runCoverageLabel(m, days)).toBe(`From ${days[4].label.split(" ")[0]}`);
+  });
+
+  it("prefers From over Through when the run both starts late and ends early", () => {
+    const m = movieWithShowtimes([2, 3, 4].map((o) => [o, "2026-03-29", "18:00"]));
+    expect(runCoverageLabel(m, days)).toBe(`From ${days[2].label.split(" ")[0]}`);
+  });
+
+  it("lists gappy days by weekday abbreviation", () => {
+    const m = movieWithShowtimes([1, 3, 5].map((o) => [o, "2026-03-29", "18:00"]));
+    const expected = [1, 3, 5].map((o) => days[o].label.split(" ")[0]).join(" · ");
+    expect(runCoverageLabel(m, days)).toBe(expected);
+  });
+
+  it("returns empty string for a movie with no showtimes", () => {
+    const m = movieWithShowtimes([]);
+    expect(runCoverageLabel(m, days)).toBe("");
   });
 });
 
