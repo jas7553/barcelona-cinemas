@@ -198,6 +198,26 @@ def test_keeps_rating_when_vote_count_is_positive():
     assert out["vote_count"] == 42
 
 
+def test_suppresses_rating_when_vote_count_below_threshold():
+    """A handful of votes (e.g. 2) is statistically meaningless and can produce
+    a misleading extreme rating like 10.0 — suppress until MIN_VOTE_COUNT."""
+    movie = _movie(showtimes=[_showtime()], rating=10.0)
+    movie["vote_count"] = 4
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    out = result["movies"][0]
+    assert out["rating"] is None
+    assert out["vote_count"] == 4
+
+
+def test_keeps_rating_when_vote_count_meets_threshold():
+    movie = _movie(showtimes=[_showtime()], rating=7.5)
+    movie["vote_count"] = 5
+    result = to_api_response(_listings(movies=[movie]), CINEMAS)
+    out = result["movies"][0]
+    assert out["rating"] == 7.5
+    assert out["vote_count"] == 5
+
+
 # ── Top-level shape ───────────────────────────────────────────────────────────
 
 
@@ -339,6 +359,7 @@ def test_movie_fields_mapped_correctly():
         genres=["Action", "Sci-Fi"],
         showtimes=[_showtime()],
     )
+    movie["vote_count"] = 100
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     m = result["movies"][0]
     assert m["title"] == "Dune: Part Two"
