@@ -358,6 +358,13 @@ function ListView({
         <div className="list-controls">
           <DayPicker selectedDay={selectedDay} onSelect={setSelectedDay} activeDays={activeDays} days={days} />
 
+          <div className="result-row">
+            <div className="result-count" aria-live="polite">
+              {listCount} {listNoun}{atCinemas} {showingLabel}
+              <DataAge generatedAt={generatedAt} stale={stale} now={now} prefix=" · " />
+            </div>
+          </div>
+
           <div className="view-tabs">
             {(["film", "cinema"] as const).map((v) => (
               <button
@@ -384,13 +391,6 @@ function ListView({
                 {sort === "rating" ? "Top rated" : "Starting soonest"}
               </button>
             )}
-          </div>
-
-          <div className="result-row">
-            <div className="result-count" aria-live="polite">
-              {listCount} {listNoun}{atCinemas} {showingLabel}
-              <DataAge generatedAt={generatedAt} stale={stale} now={now} prefix=" · " />
-            </div>
             {view === "cinema" && (
               <button
                 className={`near-btn${locationActive ? " near-btn--active" : ""}`}

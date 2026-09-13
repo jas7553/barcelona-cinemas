@@ -255,11 +255,9 @@ img { display: block; }
   background: var(--bg);
   /* Own padding: it is a sibling of .main-header, not a child (see ListPage). */
   padding: 2px 16px 0;
-  /* The list passes *underneath* this block. Without an edge, cards were sliced
-     mid-title against an identically-coloured background and read as a broken
-     render rather than as an overlay. The hairline is what makes the occlusion
-     legible. */
-  border-bottom: 1px solid var(--border-lt);
+  /* Edge for the list sliding underneath; also the tab strip's baseline, since
+     the tabs are the last row. */
+  border-bottom: 1.5px solid var(--border);
 }
 
 /* ── Day chips ───────────────────────────────────────────────────────────────── */
@@ -315,17 +313,13 @@ img { display: block; }
 /* ── View tabs ───────────────────────────────────────────────────────────────── */
 .view-tabs {
   display: flex;
-  border-bottom: 1.5px solid var(--border);
-  margin-bottom: 4px;
+  align-items: center;
+  gap: 24px;
 }
 
 .view-tab {
-  /* 44px tap target. The negative top margin absorbs the extra padding so the
-     strip keeps its original height; the bottom one also laps the 1.5px rule. */
-  padding: 15px 0;
-  margin-top: -9px;
-  margin-bottom: -10.5px;
-  margin-right: 24px;
+  padding: 13px 0; /* 44px tap target */
+  margin-bottom: -1.5px; /* underline laps the .list-controls rule */
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
@@ -348,14 +342,11 @@ img { display: block; }
    action. Before this the list was rating-ordered with nothing saying so. */
 .sort-btn {
   margin-left: auto;
-  align-self: center;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  /* 44px tap target; no negative bottom margin, or the visible border overlaps the rule. */
-  min-height: 44px;
-  margin-top: -9px;
-  padding: 4px 10px;
+  min-height: 32px;
+  padding: 4px 12px;
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
   font-family: var(--font-ui);
@@ -368,24 +359,23 @@ img { display: block; }
 .result-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 30px;
+  min-height: 24px;
 }
 
 .result-count {
   font-size: 12px;
   color: var(--text-sub);
-  padding: 8px 0 10px;
   min-width: 0;
 }
 
 .near-btn {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  padding: 3px 10px;
+  min-height: 32px;
+  padding: 4px 12px;
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
   font-size: 12px;
@@ -431,7 +421,7 @@ img { display: block; }
   font-size: 13px;
   font-weight: 600;
   color: var(--text-sub);
-  padding: 0 16px;
+  padding: 14px 16px 0;
 }
 
 .film-section + .film-section {
@@ -1830,7 +1820,8 @@ img { display: block; }
 /* ── Responsive (≥640px) ─────────────────────────────────────────────────────── */
 @media (min-width: 640px) {
   .main-header,
-  .list-controls {
+  .list-controls,
+  .film-section__heading {
     padding-left: 24px;
     padding-right: 24px;
   }
