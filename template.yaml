@@ -466,7 +466,7 @@ Resources:
       ResponseHeadersPolicyConfig:
         Name: !Sub "${AWS::StackName}-security-headers"
         Comment: "Security headers for the static MPA (CSP: same-origin only)."
-        SecurityHeadersConfig: &securityHeaders
+        SecurityHeadersConfig:
           ContentSecurityPolicy:
             # script-src allows: bundled JS ('self'); the inline pre-paint theme
             # script; and the inline speculation rules. The hydration payload
@@ -518,7 +518,35 @@ Resources:
       ResponseHeadersPolicyConfig:
         Name: !Sub "${AWS::StackName}-static-assets-headers"
         Comment: "Security headers + immutable Cache-Control for content-hashed assets."
-        SecurityHeadersConfig: *securityHeaders
+        SecurityHeadersConfig:
+          ContentSecurityPolicy:
+            ContentSecurityPolicy: >-
+              default-src 'self';
+              base-uri 'self';
+              connect-src 'self';
+              font-src 'self';
+              form-action 'self';
+              frame-ancestors 'none';
+              img-src 'self' data: https:;
+              manifest-src 'self';
+              object-src 'none';
+              script-src 'self' 'sha256-UJ7YuwH97313GFUbDC38zVD8DwXulidM0MT7PafMtC0=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=';
+              style-src 'self';
+              upgrade-insecure-requests
+            Override: true
+          ContentTypeOptions:
+            Override: true
+          FrameOptions:
+            FrameOption: DENY
+            Override: true
+          ReferrerPolicy:
+            ReferrerPolicy: strict-origin-when-cross-origin
+            Override: true
+          StrictTransportSecurity:
+            AccessControlMaxAgeSec: 31536000
+            IncludeSubdomains: true
+            Preload: true
+            Override: true
         CustomHeadersConfig:
           Items:
             - Header: Cache-Control
