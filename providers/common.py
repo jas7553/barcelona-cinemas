@@ -1,6 +1,30 @@
 """Helpers shared by listing providers."""
 
+from datetime import UTC, date, datetime
+from zoneinfo import ZoneInfo
+
 from models import PREMIUM_FORMATS, Movie, Showtime
+
+MADRID_TZ = ZoneInfo("Europe/Madrid")
+
+
+def madrid_today(now: datetime | None = None) -> date:
+    """
+    Return "today" as a Madrid calendar date.
+
+    Showtime `date` strings are Madrid-local calendar dates, but the Lambda
+    runs on UTC (see template.yaml). Using `date.today()` yields the UTC
+    calendar day, which is wrong for roughly the last hour(s) of the Madrid
+    day (Madrid is UTC+1/+2). `now` is injectable for tests; defaults to the
+    real current instant (any aware or naive datetime — naive is treated as
+    UTC, matching `datetime.now(UTC)` producers like `fetched_at`).
+    """
+    if now is None:
+        now = datetime.now(MADRID_TZ)
+    elif now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    return now.astimezone(MADRID_TZ).date()
+
 
 DEFAULT_HEADERS = {
     "User-Agent": (

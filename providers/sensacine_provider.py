@@ -8,7 +8,13 @@ from datetime import date, timedelta
 import requests
 
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
-from providers.common import DEFAULT_HEADERS, base_movie, normalize_premium_format, normalize_subtitle_lang
+from providers.common import (
+    DEFAULT_HEADERS,
+    base_movie,
+    madrid_today,
+    normalize_premium_format,
+    normalize_subtitle_lang,
+)
 from reconcile import reconcile
 
 logger = logging.getLogger(__name__)
@@ -44,7 +50,7 @@ _FORMAT_TAG_PREFIX = "Format.Projection."
 
 
 def _fetch_dates() -> list[date]:
-    today = date.today()
+    today = madrid_today()
     return [today + timedelta(days=i) for i in range(_DAYS_AHEAD)]
 
 

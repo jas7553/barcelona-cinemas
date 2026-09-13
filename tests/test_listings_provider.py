@@ -23,9 +23,7 @@ _CINEMAS_PATH = pathlib.Path(__file__).parent.parent / "cinemas.json"
 
 
 def test_parse_showtime_label_standard():
-    with patch("providers.listings_provider.date") as mock_date:
-        mock_date.today.return_value = date(2026, 9, 13)
-        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+    with patch("providers.listings_provider.madrid_today", return_value=date(2026, 9, 13)):
         show_date, time_str = _parse_showtime_label("Sun 13 Sept 20:45")
     assert show_date == "2026-09-13"
     assert time_str == "20:45"
@@ -33,9 +31,7 @@ def test_parse_showtime_label_standard():
 
 def test_parse_showtime_label_next_year_rollover():
     """A Jan listing date seen in December should resolve to next year's January."""
-    with patch("providers.listings_provider.date") as mock_date:
-        mock_date.today.return_value = date(2026, 12, 28)
-        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
+    with patch("providers.listings_provider.madrid_today", return_value=date(2026, 12, 28)):
         show_date, time_str = _parse_showtime_label("Mon 5 Jan 18:00")
     # Jan 5 relative to Dec 28: candidate(2026-01-05) is ~357 days in the past → bump to 2027
     assert show_date == "2027-01-05"
@@ -170,15 +166,13 @@ def _mock_get(catalog_html: str, detail_html: str) -> Callable[..., MagicMock]:
 
 def test_fetch_returns_movie_with_title_from_catalog():
     with (
-        patch("providers.listings_provider.date") as mock_date,
+        patch("providers.listings_provider.madrid_today", return_value=date(2026, 3, 28)),
         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/films"),
         patch(
             "providers.listings_provider.requests.get",
             side_effect=_mock_get(CATALOG_HTML, FILM_DETAIL_HTML),
         ),
     ):
-        mock_date.today.return_value = date(2026, 3, 28)
-        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         movies = ListingsProvider().fetch(CINEMAS)
 
     assert len(movies) == 1
@@ -187,15 +181,13 @@ def test_fetch_returns_movie_with_title_from_catalog():
 
 def test_fetch_returns_correct_showtime():
     with (
-        patch("providers.listings_provider.date") as mock_date,
+        patch("providers.listings_provider.madrid_today", return_value=date(2026, 3, 28)),
         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/films"),
         patch(
             "providers.listings_provider.requests.get",
             side_effect=_mock_get(CATALOG_HTML, FILM_DETAIL_HTML),
         ),
     ):
-        mock_date.today.return_value = date(2026, 3, 28)
-        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         movies = ListingsProvider().fetch(CINEMAS)
 
     st = movies[0]["showtimes"][0]
@@ -208,15 +200,13 @@ def test_fetch_returns_correct_showtime():
 def test_fetch_ignores_unknown_cinemas(caplog):
     """Cinema names not in cinemas.json are excluded from showtimes and logged."""
     with (
-        patch("providers.listings_provider.date") as mock_date,
+        patch("providers.listings_provider.madrid_today", return_value=date(2026, 3, 28)),
         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/films"),
         patch(
             "providers.listings_provider.requests.get",
             side_effect=_mock_get(CATALOG_HTML, FILM_DETAIL_HTML),
         ),
     ):
-        mock_date.today.return_value = date(2026, 3, 28)
-        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         movies = ListingsProvider().fetch({})  # empty cinemas -> all unknown
 
     assert movies == []
@@ -243,15 +233,13 @@ def test_fetch_maps_alias_cinema_names_and_sets_vo_language():
     """
 
     with (
-        patch("providers.listings_provider.date") as mock_date,
+        patch("providers.listings_provider.madrid_today", return_value=date(2026, 3, 28)),
         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/films"),
         patch(
             "providers.listings_provider.requests.get",
             side_effect=_mock_get(CATALOG_HTML, detail_html),
         ),
     ):
-        mock_date.today.return_value = date(2026, 3, 28)
-        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         movies = ListingsProvider().fetch(CINEMAS)
 
     assert len(movies) == 1
@@ -269,15 +257,13 @@ def test_fetch_maps_alias_cinema_names_and_sets_vo_language():
 
 def test_fetch_uses_runtime_configured_url():
     with (
-        patch("providers.listings_provider.date") as mock_date,
+        patch("providers.listings_provider.madrid_today", return_value=date(2026, 3, 28)),
         patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/films") as mock_url,
         patch(
             "providers.listings_provider.requests.get",
             side_effect=_mock_get(CATALOG_HTML, FILM_DETAIL_HTML),
         ) as mock_get,
     ):
-        mock_date.today.return_value = date(2026, 3, 28)
-        mock_date.side_effect = lambda *a, **kw: date(*a, **kw)
         ListingsProvider().fetch(CINEMAS)
 
     mock_url.assert_called_once_with()

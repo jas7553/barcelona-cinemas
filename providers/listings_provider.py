@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup, Tag
 from listings_config import listings_feed_url
 from models import CinemaRegistry, Movie, Showtime
 from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
-from providers.common import DEFAULT_HEADERS, base_movie, normalize_premium_format
+from providers.common import DEFAULT_HEADERS, base_movie, madrid_today, normalize_premium_format
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ def _parse_showtime_label(label: str) -> tuple[str, str]:
         return "", ""
     time_str = parts[3]
 
-    today = date.today()
+    today = madrid_today()
     year = today.year
     try:
         # If candidate is more than 8 days in the past, the listing is rolling

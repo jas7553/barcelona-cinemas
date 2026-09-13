@@ -1,6 +1,7 @@
 import json
 import pathlib
 from collections.abc import Mapping
+from datetime import date
 from unittest.mock import MagicMock, patch
 
 from models import CinemaInfo, CinemaRegistry
@@ -8,6 +9,7 @@ from providers.sensacine_provider import (
     _SENSACINE_IDS,
     SensacineProvider,
     _booking_url,
+    _fetch_dates,
     _premium_format,
     _subtitle_lang,
 )
@@ -335,3 +337,17 @@ class TestMeliesRegistry:
 
         cinema_keys = {s["cinema"] for m in movies for s in m["showtimes"]}
         assert "Méliès" not in cinema_keys
+
+
+class TestFetchDates:
+    def test_picks_madrid_day_when_utc_still_on_previous_day(self) -> None:
+        """22:30 UTC in mid-July is already 2026-07-15 in Madrid (CEST, UTC+2)."""
+        with patch("providers.sensacine_provider.madrid_today", return_value=date(2026, 7, 15)):
+            dates = _fetch_dates()
+        assert dates[0] == date(2026, 7, 15)
+        assert len(dates) == 7
+
+    def test_uses_utc_day_away_from_midnight(self) -> None:
+        with patch("providers.sensacine_provider.madrid_today", return_value=date(2026, 7, 14)):
+            dates = _fetch_dates()
+        assert dates[0] == date(2026, 7, 14)
