@@ -5,10 +5,11 @@ import CinemaGroup from "../components/CinemaGroup";
 import CinemaSheet from "../components/CinemaSheet";
 import SiteFooter from "../components/Footer";
 import DataAge from "../components/DataAge";
-import { MoonIcon, SunIcon, SearchIcon, PinIcon } from "../components/Icons";
+import { MoonIcon, SunIcon, SearchIcon, PinIcon, ChevronDownIcon } from "../components/Icons";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useNow, useUrlParams } from "../hooks/useClient";
 import { useLocationPin } from "../hooks/useLocationPin";
+import { SeenFilmsProvider, useSeenFilms } from "../hooks/useSeenFilms";
 import {
   transformResponse,
   generateDays,
@@ -40,23 +41,25 @@ export default function ListPage({ data }: { data: ListPageData }) {
 
   return (
     <ThemeProvider>
-      <div className="app-wrapper">
-        <div className="app-shell">
-          <main className="screen">
-            <ListView
-              movies={movies}
-              generatedAt={data.listings.generated_at}
-              stale={data.listings.stale}
-              now={now}
-              coords={coords}
-              locationActive={active}
-              locationError={error}
-              locationResolving={resolving}
-              onToggleLocation={toggle}
-            />
-          </main>
+      <SeenFilmsProvider>
+        <div className="app-wrapper">
+          <div className="app-shell">
+            <main className="screen">
+              <ListView
+                movies={movies}
+                generatedAt={data.listings.generated_at}
+                stale={data.listings.stale}
+                now={now}
+                coords={coords}
+                locationActive={active}
+                locationError={error}
+                locationResolving={resolving}
+                onToggleLocation={toggle}
+              />
+            </main>
+          </div>
         </div>
-      </div>
+      </SeenFilmsProvider>
     </ThemeProvider>
   );
 }
@@ -85,6 +88,8 @@ function ListView({
   onToggleLocation,
 }: ListViewProps) {
   const { dark, toggle: toggleDark } = useTheme();
+  const { isSeen } = useSeenFilms();
+  const [seenExpanded, setSeenExpanded] = useState(false);
   const { params: searchParams, setParams } = useUrlParams();
   // Search lives in the URL (?q=) so returning from a film detail restores it
   const rawQuery = searchParams.get("q");
@@ -166,8 +171,22 @@ function ListView({
     return dayMovies.filter((m) => movieMatchesQuery(m, q));
   }, [dayMovies, searchInput]);
 
-  const daySections = useMemo(() => splitByScreeningKind(dayMovies), [dayMovies]);
-  const searchSections = useMemo(() => splitByScreeningKind(searchResults), [searchResults]);
+  // Seen films aren't removed — they're pulled out of the main list into a
+  // collapsed section at the bottom so they stop competing for attention
+  // while staying reachable and reversible.
+  const unseenDayMovies = useMemo(() => dayMovies.filter((m) => !isSeen(m.id)), [dayMovies, isSeen]);
+  const seenDayMovies = useMemo(() => dayMovies.filter((m) => isSeen(m.id)), [dayMovies, isSeen]);
+  const unseenSearchResults = useMemo(
+    () => searchResults.filter((m) => !isSeen(m.id)),
+    [searchResults, isSeen],
+  );
+  const seenSearchResults = useMemo(
+    () => searchResults.filter((m) => isSeen(m.id)),
+    [searchResults, isSeen],
+  );
+
+  const daySections = useMemo(() => splitByScreeningKind(unseenDayMovies), [unseenDayMovies]);
+  const searchSections = useMemo(() => splitByScreeningKind(unseenSearchResults), [unseenSearchResults]);
 
   const handleSetView = (v: "film" | "cinema") => {
     setParams((next) => {
@@ -409,12 +428,29 @@ function ListView({
       {searching ? (
         searchResults.length > 0 ? (
           <div id="film-list">
-            <FilmSections
-              runs={searchSections.runs}
-              oneOffs={searchSections.oneOffs}
+            {unseenSearchResults.length > 0 ? (
+              <FilmSections
+                runs={searchSections.runs}
+                oneOffs={searchSections.oneOffs}
+                selectedDay={selectedDay}
+                days={days}
+                search={search}
+              />
+            ) : (
+              <div className="empty-state">
+                <div className="empty-state__heading">
+                  All {searchResults.length} matching film{searchResults.length !== 1 ? "s" : ""}{" "}
+                  marked as seen
+                </div>
+              </div>
+            )}
+            <SeenSection
+              movies={seenSearchResults}
               selectedDay={selectedDay}
               days={days}
               search={search}
+              expanded={seenExpanded}
+              onToggle={() => setSeenExpanded((v) => !v)}
             />
           </div>
         ) : searchInput.trim().length > 0 ? (
@@ -463,12 +499,29 @@ function ListView({
           </div>
         ) : (
           <div id="film-list">
-            <FilmSections
-              runs={daySections.runs}
-              oneOffs={daySections.oneOffs}
+            {unseenDayMovies.length > 0 ? (
+              <FilmSections
+                runs={daySections.runs}
+                oneOffs={daySections.oneOffs}
+                selectedDay={selectedDay}
+                days={days}
+                search={search}
+              />
+            ) : (
+              <div className="empty-state">
+                <div className="empty-state__overline">All caught up</div>
+                <div className="empty-state__heading">
+                  All {dayMovies.length} film{dayMovies.length !== 1 ? "s" : ""} marked as seen
+                </div>
+              </div>
+            )}
+            <SeenSection
+              movies={seenDayMovies}
               selectedDay={selectedDay}
               days={days}
               search={search}
+              expanded={seenExpanded}
+              onToggle={() => setSeenExpanded((v) => !v)}
             />
           </div>
         )
@@ -556,5 +609,48 @@ function FilmSections({ runs, oneOffs, selectedDay, days, search }: FilmSections
         </section>
       )}
     </>
+  );
+}
+
+interface SeenSectionProps {
+  movies: TransformedMovie[];
+  selectedDay: number | null;
+  days: Array<{ label: string; offset: number }>;
+  search: string;
+  expanded: boolean;
+  onToggle: () => void;
+}
+
+/** Films marked seen: not removed, just pulled out of the main list so they
+ * stop competing for attention. Collapsed by default; always reachable. */
+function SeenSection({ movies, selectedDay, days, search, expanded, onToggle }: SeenSectionProps) {
+  if (movies.length === 0) return null;
+  return (
+    <section className="seen-section">
+      <button
+        type="button"
+        className="seen-section__toggle"
+        aria-expanded={expanded}
+        onClick={onToggle}
+      >
+        <span className="chevron"><ChevronDownIcon /></span>
+        Seen ({movies.length})
+      </button>
+      {expanded && (
+        <ul className="film-list">
+          {movies.map((m) => (
+            <li key={m.id}>
+              <FilmCard
+                movie={m}
+                dayOffset={selectedDay ?? undefined}
+                days={days}
+                search={search}
+                seen
+              />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
