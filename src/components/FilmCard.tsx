@@ -1,7 +1,8 @@
 import { memo } from "react";
 import PosterPlaceholder from "./PosterPlaceholder";
 import {
-  isLastChance,
+  screeningKind,
+  runCoverageLabel,
   formatMovieMeta,
   premiumFormatLabel,
   thumbPosterUrl,
@@ -11,14 +12,15 @@ import type { TransformedMovie } from "../types";
 interface Props {
   movie: TransformedMovie;
   dayOffset?: number;
-  /** Day chips from the page clock, for labelling the next showing. */
+  /** Day chips from the page clock, for labelling the next showing / coverage. */
   days?: Array<{ label: string; offset: number }>;
   /** Current list query string (e.g. "?day=2"), carried into the detail URL. */
   search?: string;
 }
 
 function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
-  const lc = isLastChance(movie);
+  const kind = screeningKind(movie);
+  const oneOff = kind === "one-off";
 
   const filtered =
     dayOffset != null
@@ -38,31 +40,23 @@ function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
   const meta = formatMovieMeta(movie);
   const showTimes = dayOffset !== undefined && dayTimes.length > 0;
 
-  // Unfiltered, the card used to carry no time at all — the default landing
-  // state was the least informative one. Times across a whole week can't be
-  // listed honestly, but the very next screening can.
-  const next = showTimes
-    ? null
-    : movie.showtimes.reduce<TransformedMovie["showtimes"][number] | null>(
-        (best, s) =>
-          best == null || s.dayOffset < best.dayOffset || (s.dayOffset === best.dayOffset && s.time < best.time)
-            ? s
-            : best,
-        null,
-      );
-  const nextLabel =
-    next && days ? `${days.find((d) => d.offset === next.dayOffset)?.label ?? ""} ${next.time}`.trim() : null;
-  const nextDateTime = next ? `${next.date}T${next.time}` : undefined;
-
   // Day-scoped for free: `filtered` is already the selected day's showtimes.
   const fmt = showTimes
     ? premiumFormatLabel(filtered.find((s) => s.premium_format)?.premium_format)
     : null;
 
+  const sortedShowtimes = [...movie.showtimes].sort(
+    (a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time),
+  );
+  const oneOffShowings = sortedShowtimes.slice(0, 2);
+  const dayLabel = (offset: number) => days?.find((d) => d.offset === offset)?.label ?? "";
+
+  const coverageLabel = !oneOff && !showTimes && days ? runCoverageLabel(movie, days) : null;
+
   return (
     <a
       href={`/film/${movie.id}${search}`}
-      className={`film-card${lc ? " film-card--lc" : ""}${showTimes ? " film-card--with-times" : ""}`}
+      className={`film-card${showTimes ? " film-card--with-times" : ""}`}
     >
       {movie.poster_url ? (
         <img
@@ -84,7 +78,6 @@ function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
         <div>
           <div className="film-card__title-row">
             <div className="film-card__title">{movie.title}</div>
-            {lc && <div className="leaving-soon-badge">Leaving soon</div>}
           </div>
           {meta && <div className="film-card__meta">{meta}</div>}
           <div className="film-card__rating">
@@ -92,33 +85,41 @@ function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
             {cinemaCount} {cinemaCount === 1 ? "cinema" : "cinemas"}
           </div>
         </div>
-        {showTimes && (
-          <div className="film-card__times">
-            {shownTimes.map((t) => {
-              const d = dateByTime.get(t);
-              return (
-                <time
-                  key={t}
-                  className={`time-pill${lc ? " time-pill--lc" : ""}`}
-                  dateTime={d ? `${d}T${t}` : t}
-                >
-                  {t}
-                </time>
-              );
-            })}
-            {extraTimes > 0 && (
-              <span className="time-pill time-pill--more">+{extraTimes} more</span>
-            )}
-            {fmt && <span className="tag">{fmt}</span>}
-          </div>
-        )}
-        {nextLabel && (
-          <div className="film-card__next">
-            Next{" "}
-            <time className={`time-pill${lc ? " time-pill--lc" : ""}`} dateTime={nextDateTime}>
-              {nextLabel}
-            </time>
-          </div>
+        {showTimes ? (
+          oneOff ? (
+            <>
+              {filtered.map((s) => (
+                <div key={`${s.date}-${s.time}-${s.theater.id}`} className="film-card__next">
+                  {s.time} · {s.theater.name}
+                </div>
+              ))}
+            </>
+          ) : (
+            <div className="film-card__times">
+              {shownTimes.map((t) => {
+                const d = dateByTime.get(t);
+                return (
+                  <time key={t} className="time-pill" dateTime={d ? `${d}T${t}` : t}>
+                    {t}
+                  </time>
+                );
+              })}
+              {extraTimes > 0 && (
+                <span className="time-pill time-pill--more">+{extraTimes} more</span>
+              )}
+              {fmt && <span className="tag">{fmt}</span>}
+            </div>
+          )
+        ) : oneOff ? (
+          <>
+            {oneOffShowings.map((s) => (
+              <div key={`${s.date}-${s.time}-${s.theater.id}`} className="film-card__next">
+                {dayLabel(s.dayOffset)} · {s.time} · {s.theater.name}
+              </div>
+            ))}
+          </>
+        ) : (
+          coverageLabel && <div className="film-card__next">{coverageLabel}</div>
         )}
       </div>
     </a>

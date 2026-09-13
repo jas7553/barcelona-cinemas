@@ -73,15 +73,8 @@
   --accent-ink:  #8f5620;
   --accent-bg:   #f5e8d4;
   --lc:          #d44e1e;
-  /* Same split for "leaving soon": --lc stays decorative, --lc-ink is the
-     AA-safe text colour (4.86:1 on --bg, 4.87:1 on --lc-bg) and --lc-solid the
-     AA-safe badge fill (4.77:1 under white). The ink is darker than the fill
-     because it is painted on tinted card backgrounds, not on white. */
+  /* AA-safe text colour for .result-count-age--stale (4.86:1 on --bg). */
   --lc-ink:      #c23f11;
-  --lc-solid:    #cc4413;
-  --lc-text:     #ffffff;
-  --lc-bg:       #fff5ee;
-  --lc-border:   #f0c0a0;
 
   --r-sm:   4px;
   --r-md:   6px;
@@ -110,13 +103,7 @@
   --accent-ink:  #d4924a;
   --accent-bg:   #2a1e0c;
   --lc:          #f08030;
-  /* On a dark page the bright orange is the readable text colour; as a badge
-     fill it needs black on top (7.8:1) — white would be 2.7:1. */
   --lc-ink:      #f08030;
-  --lc-solid:    #f08030;
-  --lc-text:     #000000;
-  --lc-bg:       #1e1208;
-  --lc-border:   #5a3010;
 }
 
 /* ── Resets ─────────────────────────────────────────────────────────────────── */
@@ -440,6 +427,18 @@ img { display: block; }
 
 .film-list > li > * { flex: 1; min-width: 0; }
 
+.film-section__heading {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+  padding: 0 16px;
+}
+
+.film-section + .film-section {
+  margin-top: -8px;
+}
+
 /* ── Film card ───────────────────────────────────────────────────────────────── */
 .film-card {
   display: flex;
@@ -488,11 +487,6 @@ img { display: block; }
 
 .film-card:active { opacity: 0.75; }
 
-.film-card--lc {
-  background: var(--lc-bg);
-  border-color: var(--lc-border);
-}
-
 .film-card__body {
   padding: 11px 12px 10px;
   flex: 1;
@@ -529,8 +523,6 @@ img { display: block; }
   margin-top: 2px;
 }
 
-.film-card--lc .film-card__rating { color: var(--lc-ink); }
-
 .film-card__times {
   display: flex;
   gap: 5px;
@@ -547,17 +539,6 @@ img { display: block; }
   color: var(--text-mute);
 }
 
-.leaving-soon-badge {
-  flex-shrink: 0;
-  padding: 2px 7px;
-  background: var(--lc-solid);
-  border-radius: var(--r-sm);
-  font-size: 10px;
-  color: var(--lc-text);
-  font-weight: 600;
-  margin-top: 2px;
-}
-
 /* ── Time pills ──────────────────────────────────────────────────────────────── */
 /* The showtime is the datum the whole app exists to deliver — it was set two
    steps below the film title. 12px is the floor for it. */
@@ -570,11 +551,6 @@ img { display: block; }
   font-weight: 500;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
-}
-
-.time-pill--lc {
-  border-color: var(--lc);
-  color: var(--lc-ink);
 }
 
 /* "+3 more" is a count, not a time. Bordered like its neighbours it read as a
@@ -857,6 +833,12 @@ img { display: block; }
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
+}
+
+.cinema-group__oneoff-tag {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-mute);
 }
 
 .cinema-group__film-times {
@@ -1818,7 +1800,7 @@ img { display: block; }
 .skip-link:focus-visible { top: calc(env(safe-area-inset-top, 0px) + 8px); }
 
 /* Windows high-contrast strips author colours: restore the borders that carry
-   selected/leaving-soon state, which were colour-only signals. */
+   selected state, which were colour-only signals. */
 @media (forced-colors: active) {
   .day-chip--active,
   .view-tab--active,
@@ -1829,13 +1811,6 @@ img { display: block; }
     forced-color-adjust: none;
     background: Highlight;
     color: HighlightText;
-  }
-
-  .leaving-soon-badge {
-    border: 1px solid CanvasText;
-    forced-color-adjust: none;
-    background: Canvas;
-    color: CanvasText;
   }
 
   :focus-visible { outline-color: Highlight; }

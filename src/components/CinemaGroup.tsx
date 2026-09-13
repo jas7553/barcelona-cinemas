@@ -1,7 +1,7 @@
 import { memo } from "react";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { ChevronRightIcon } from "./Icons";
-import { isLastChance, formatDistKm, thumbPosterUrl } from "../utils";
+import { screeningKind, formatDistKm, thumbPosterUrl } from "../utils";
 import type { CinemaViewGroup } from "../types";
 
 /** Day rows shown inline before the rest collapse into a "+N more days" note. */
@@ -34,7 +34,7 @@ function CinemaGroup({ group, onCinemaTap, days, search = "" }: Props) {
       </button>
 
       {group.films.map(({ movie, days: filmDays }) => {
-        const lc = isLastChance(movie);
+        const oneOff = screeningKind(movie) === "one-off";
         const shown = filmDays.slice(0, MAX_DAYS);
         const extraDays = filmDays.length - shown.length;
         return (
@@ -59,7 +59,7 @@ function CinemaGroup({ group, onCinemaTap, days, search = "" }: Props) {
             <div className="cinema-group__film-body">
               <div className="cinema-group__film-title-row">
                 <span className="cinema-group__film-title">{movie.title}</span>
-                {lc && <div className="leaving-soon-badge">Leaving soon</div>}
+                {oneOff && <span className="cinema-group__oneoff-tag">One-off</span>}
               </div>
               {shown.map(({ offset, times }) => (
                 <div key={offset} className="cinema-group__film-day">
@@ -70,7 +70,7 @@ function CinemaGroup({ group, onCinemaTap, days, search = "" }: Props) {
                   )}
                   <div className="cinema-group__film-times">
                     {times.map((t) => (
-                      <time key={t} className={`time-pill${lc ? " time-pill--lc" : ""}`}>
+                      <time key={t} className="time-pill">
                         {t}
                       </time>
                     ))}

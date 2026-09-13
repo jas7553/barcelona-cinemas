@@ -19,6 +19,7 @@ import {
   movieMatchesQuery,
   parseSortMode,
   sortMovies,
+  splitByScreeningKind,
 } from "../utils";
 import type { CinemaViewGroup, SheetVenueData, TransformedMovie, Listings } from "../types";
 
@@ -164,6 +165,9 @@ function ListView({
     if (!q) return dayMovies;
     return dayMovies.filter((m) => movieMatchesQuery(m, q));
   }, [dayMovies, searchInput]);
+
+  const daySections = useMemo(() => splitByScreeningKind(dayMovies), [dayMovies]);
+  const searchSections = useMemo(() => splitByScreeningKind(searchResults), [searchResults]);
 
   const handleSetView = (v: "film" | "cinema") => {
     setParams((next) => {
@@ -404,13 +408,15 @@ function ListView({
 
       {searching ? (
         searchResults.length > 0 ? (
-          <ul className="film-list" id="film-list">
-            {searchResults.map((m) => (
-              <li key={m.id}>
-                <FilmCard movie={m} dayOffset={selectedDay ?? undefined} days={days} search={search} />
-              </li>
-            ))}
-          </ul>
+          <div id="film-list">
+            <FilmSections
+              runs={searchSections.runs}
+              oneOffs={searchSections.oneOffs}
+              selectedDay={selectedDay}
+              days={days}
+              search={search}
+            />
+          </div>
         ) : searchInput.trim().length > 0 ? (
           <div className="empty-state">
             <div className="empty-state__heading">Nothing showing</div>
@@ -456,13 +462,15 @@ function ListView({
             )}
           </div>
         ) : (
-          <ul className="film-list" id="film-list">
-            {dayMovies.map((m) => (
-              <li key={m.id}>
-                <FilmCard movie={m} dayOffset={selectedDay ?? undefined} days={days} search={search} />
-              </li>
-            ))}
-          </ul>
+          <div id="film-list">
+            <FilmSections
+              runs={daySections.runs}
+              oneOffs={daySections.oneOffs}
+              selectedDay={selectedDay}
+              days={days}
+              search={search}
+            />
+          </div>
         )
       ) : locationResolving ? (
         <div className="loading-pulse loading-pulse--cinema" role="status" aria-label="Loading cinemas">
@@ -508,6 +516,45 @@ function ListView({
 
       <CinemaSheet venue={sheetVenue} onClose={() => setSheetVenue(null)} />
       <SiteFooter />
+    </>
+  );
+}
+
+interface FilmSectionsProps {
+  runs: TransformedMovie[];
+  oneOffs: TransformedMovie[];
+  selectedDay: number | null;
+  days: Array<{ label: string; offset: number }>;
+  search: string;
+}
+
+function FilmSections({ runs, oneOffs, selectedDay, days, search }: FilmSectionsProps) {
+  return (
+    <>
+      {runs.length > 0 && (
+        <section className="film-section">
+          <h2 className="film-section__heading">Now showing · {runs.length}</h2>
+          <ul className="film-list">
+            {runs.map((m) => (
+              <li key={m.id}>
+                <FilmCard movie={m} dayOffset={selectedDay ?? undefined} days={days} search={search} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      {oneOffs.length > 0 && (
+        <section className="film-section">
+          <h2 className="film-section__heading">Special screenings · {oneOffs.length}</h2>
+          <ul className="film-list">
+            {oneOffs.map((m) => (
+              <li key={m.id}>
+                <FilmCard movie={m} dayOffset={selectedDay ?? undefined} days={days} search={search} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </>
   );
 }

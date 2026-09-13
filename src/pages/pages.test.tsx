@@ -73,6 +73,11 @@ describe("ListPage", () => {
 
   it("renders the format chip in the card's times row when a day is selected", () => {
     const data = sampleListings();
+    // A run, not a one-off, so the card shows the pill row this test targets.
+    data.movies[0].showtimes.push(
+      { theater_id: "verdi", date: futureDate(3), time: "18:00", language: "vo" },
+      { theater_id: "verdi", date: futureDate(4), time: "18:00", language: "vo" },
+    );
     data.movies[0].showtimes[1].premium_format = "imax";
     selectDayOf(data);
     const { container } = render(<ListPage data={{ renderedAt, listings: data }} />);
