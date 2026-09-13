@@ -131,7 +131,7 @@ export default defineConfig(({ command }) => ({
     // real Madrid-vs-UTC bucketing bug could pass. Derived, not literal.
     env: { TZ: SITE_TIMEZONE },
     setupFiles: ["./src/test-setup.ts"],
-    exclude: [...configDefaults.exclude, ".aws-sam/**", "e2e/**"],
+    exclude: [...configDefaults.exclude, ".aws-sam/**", "e2e/**", ".claude/**"],
     coverage: {
       provider: "v8",
       include: ["src/**"],
