@@ -296,22 +296,39 @@ function FilmView({
     };
   }, [pageBg]);
 
-  // Sample the backdrop image's top edge once it's loaded (or immediately if
-  // already complete/cached), so the status-bar colour has something to mix
-  // toward. Re-applies through applyMetaRef rather than duplicating the mix
-  // logic here.
+  // Sample the backdrop's top edge for the status-bar colour. The visible
+  // <img> is deliberately a plain (no-CORS) load: putting crossOrigin on it
+  // makes Safari refuse cache entries it stored without CORS headers, which
+  // rendered the banner as a broken image. So the sample comes from a second,
+  // off-DOM Image with crossOrigin set — started after the visible one has
+  // loaded so it's served from cache — and any CORS failure only costs the
+  // tint, never the banner.
   useEffect(() => {
+    const url = movie.backdrop_url;
     const img = backdropImgRef.current;
-    if (img == null) return;
-    const onLoad = () => {
-      const raw = sampleTopEdgeColor(img);
-      if (raw == null) return; // tainted canvas / no canvas backend: leave as-is
-      sampledColorRef.current = compositeOverlay(raw, { r: 0, g: 0, b: 0 }, 0.1);
-      applyMetaRef.current?.();
+    if (url == null || img == null) return;
+    let probe: HTMLImageElement | null = null;
+    const sample = () => {
+      probe = new Image();
+      probe.crossOrigin = "anonymous";
+      probe.onload = () => {
+        if (probe == null) return;
+        const raw = sampleTopEdgeColor(probe);
+        if (raw == null) return; // tainted canvas / no canvas backend: leave as-is
+        sampledColorRef.current = compositeOverlay(raw, { r: 0, g: 0, b: 0 }, 0.1);
+        applyMetaRef.current?.();
+      };
+      probe.src = url;
     };
-    if (img.complete && img.naturalWidth > 0) onLoad();
-    else img.addEventListener("load", onLoad);
-    return () => img.removeEventListener("load", onLoad);
+    if (img.complete && img.naturalWidth > 0) sample();
+    else img.addEventListener("load", sample);
+    return () => {
+      img.removeEventListener("load", sample);
+      if (probe) {
+        probe.onload = null;
+        probe = null;
+      }
+    };
   }, [movie.backdrop_url]);
 
   // Leaving the film page: the list/home document has no backdrop to match,
@@ -340,11 +357,6 @@ function FilmView({
             fetchPriority="high"
             decoding="async"
             loading="lazy"
-            // TMDb's image CDN sends Access-Control-Allow-Origin: *, so this
-            // stays a normal <img> render while also letting canvas sampling
-            // (theme-color tinting, see the effects above) read its pixels
-            // without tainting the canvas.
-            crossOrigin="anonymous"
           />
         ) : (
           <BackdropPlaceholder w={430} h={200} id={movie.id} />
