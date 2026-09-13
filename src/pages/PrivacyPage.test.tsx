@@ -37,12 +37,21 @@ describe("PrivacyPage", () => {
     expect(screen.getByText(/no user accounts/i)).toBeInTheDocument();
   });
 
-  it("documents the three browser-storage keys", () => {
+  it("documents the browser-storage keys", () => {
     render(<PrivacyPage />);
     // Each key appears as <code> elements; getAllByText handles multiple occurrences
     expect(screen.getAllByText("btw-dark").length).toBeGreaterThan(0);
     expect(screen.getAllByText("location_active").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("btw-seen").length).toBeGreaterThan(0);
     expect(screen.getAllByText("btw-warmed").length).toBeGreaterThan(0);
+  });
+
+  it("offers a way to clear the seen-films list", () => {
+    localStorage.setItem("btw-seen", JSON.stringify(["1"]));
+    render(<PrivacyPage />);
+    const btn = screen.getByRole("button", { name: /clear seen films/i });
+    btn.click();
+    expect(localStorage.getItem("btw-seen")).toBeNull();
   });
 
   it("states coordinates are never sent anywhere", () => {

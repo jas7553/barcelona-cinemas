@@ -1337,6 +1337,73 @@ img { display: block; }
   text-decoration: none;
 }
 
+.seen-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  gap: 4px;
+  padding: 3px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  color: var(--text-sub);
+  cursor: pointer;
+  background: none;
+  font-family: inherit;
+}
+
+.seen-btn--active {
+  background: var(--accent-solid);
+  border-color: var(--accent-solid);
+  color: var(--accent-text);
+}
+
+/* ── Seen films (list) ───────────────────────────────────────────────────── */
+.seen-section {
+  margin-top: 10px;
+}
+
+.seen-section__toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 14px 16px 6px;
+  background: none;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+
+.seen-section__toggle .chevron {
+  transition: transform 0.15s;
+}
+
+.seen-section__toggle[aria-expanded="true"] .chevron {
+  transform: rotate(180deg);
+}
+
+.film-card--seen {
+  opacity: 0.55;
+}
+
+.seen-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--r-md);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-mute);
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
 /* Synopsis card */
 .synopsis-card {
   margin: 14px 16px 0;

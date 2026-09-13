@@ -7,14 +7,17 @@ import SiteFooter from "../components/Footer";
 import DataAge, { dataAgeLabel } from "../components/DataAge";
 import {
   BackIcon,
+  CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  EyeIcon,
   MoonIcon,
   SunIcon,
 } from "../components/Icons";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useNow, useUrlParams } from "../hooks/useClient";
 import { useLocationPin } from "../hooks/useLocationPin";
+import { SeenFilmsProvider, useSeenFilms } from "../hooks/useSeenFilms";
 import {
   backdropSampleUrl,
   compositeOverlay,
@@ -79,57 +82,59 @@ export default function FilmPage({ data }: { data: FilmPageData }) {
 
   return (
     <ThemeProvider>
-      <div className="app-wrapper">
-        <div className="app-shell">
-          <main className="screen">
-            {movie ? (
-              <FilmView
-                movie={movie}
-                coords={coords}
-                now={now}
-                generatedAt={data.listings.generated_at}
-                stale={data.listings.stale}
-                locationActive={active}
-                locationError={error}
-                locationResolving={resolving}
-                onToggleLocation={toggle}
-              />
-            ) : (
-              <div className="detail-screen">
-                <div className="empty-state empty-state--center">
-                  {filmInPayload ? (
-                    <>
-                      <div className="empty-state__overline">
-                        Finished its run
-                      </div>
-                      <div className="empty-state__heading">
-                        This film has wrapped
-                      </div>
-                      <div className="empty-state__body">
-                        Its remaining showtimes have all passed. It may return —
-                        see what's on now.
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="empty-state__overline">Not found</div>
-                      <div className="empty-state__heading">
-                        This film isn't showing
-                      </div>
-                      <div className="empty-state__body">
-                        The link may be out of date.
-                      </div>
-                    </>
-                  )}
-                  <a className="empty-state__btn" href="/">
-                    See what's on
-                  </a>
+      <SeenFilmsProvider>
+        <div className="app-wrapper">
+          <div className="app-shell">
+            <main className="screen">
+              {movie ? (
+                <FilmView
+                  movie={movie}
+                  coords={coords}
+                  now={now}
+                  generatedAt={data.listings.generated_at}
+                  stale={data.listings.stale}
+                  locationActive={active}
+                  locationError={error}
+                  locationResolving={resolving}
+                  onToggleLocation={toggle}
+                />
+              ) : (
+                <div className="detail-screen">
+                  <div className="empty-state empty-state--center">
+                    {filmInPayload ? (
+                      <>
+                        <div className="empty-state__overline">
+                          Finished its run
+                        </div>
+                        <div className="empty-state__heading">
+                          This film has wrapped
+                        </div>
+                        <div className="empty-state__body">
+                          Its remaining showtimes have all passed. It may return —
+                          see what's on now.
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="empty-state__overline">Not found</div>
+                        <div className="empty-state__heading">
+                          This film isn't showing
+                        </div>
+                        <div className="empty-state__body">
+                          The link may be out of date.
+                        </div>
+                      </>
+                    )}
+                    <a className="empty-state__btn" href="/">
+                      See what's on
+                    </a>
+                  </div>
                 </div>
-              </div>
-            )}
-          </main>
+              )}
+            </main>
+          </div>
         </div>
-      </div>
+      </SeenFilmsProvider>
     </ThemeProvider>
   );
 }
@@ -158,6 +163,8 @@ function FilmView({
   onToggleLocation,
 }: FilmViewProps) {
   const { dark, toggle: toggleDark } = useTheme();
+  const { isSeen, toggleSeen } = useSeenFilms();
+  const seen = isSeen(movie.id);
   const { params: searchParams, setParams } = useUrlParams();
   // The day filter lives in the URL (?day=): the list's filter carries over on
   // entry, and a changed day survives refresh/share. Replace-state keeps the
@@ -466,6 +473,23 @@ function FilmView({
                     ▶ Trailer
                   </a>
                 )}
+                <button
+                  type="button"
+                  className={`seen-btn${seen ? " seen-btn--active" : ""}`}
+                  onClick={() => toggleSeen(movie.id)}
+                  aria-pressed={seen}
+                  aria-label={seen ? "Mark as unseen" : "Mark as seen"}
+                >
+                  {seen ? (
+                    <>
+                      <CheckIcon size={13} /> Seen
+                    </>
+                  ) : (
+                    <>
+                      <EyeIcon size={13} /> Mark as seen
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

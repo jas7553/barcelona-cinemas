@@ -16,9 +16,11 @@ interface Props {
   days?: Array<{ label: string; offset: number }>;
   /** Current list query string (e.g. "?day=2"), carried into the detail URL. */
   search?: string;
+  /** Marked seen locally — de-emphasizes the card and adds a badge. */
+  seen?: boolean;
 }
 
-function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
+function FilmCard({ movie, dayOffset, days, search = "", seen = false }: Props) {
   const kind = screeningKind(movie);
   const oneOff = kind === "one-off";
 
@@ -56,7 +58,7 @@ function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
   return (
     <a
       href={`/film/${movie.id}${search}`}
-      className={`film-card${showTimes ? " film-card--with-times" : ""}`}
+      className={`film-card${showTimes ? " film-card--with-times" : ""}${seen ? " film-card--seen" : ""}`}
     >
       {movie.poster_url ? (
         <img
@@ -78,6 +80,7 @@ function FilmCard({ movie, dayOffset, days, search = "" }: Props) {
         <div>
           <div className="film-card__title-row">
             <div className="film-card__title">{movie.title}</div>
+            {seen && <span className="seen-badge">Seen</span>}
           </div>
           {meta && <div className="film-card__meta">{meta}</div>}
           <div className="film-card__rating">

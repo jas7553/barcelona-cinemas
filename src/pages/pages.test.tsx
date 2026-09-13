@@ -96,6 +96,25 @@ describe("ListPage", () => {
     const link = screen.getByRole("link", { name: /Project Hail Mary/ });
     expect(link.getAttribute("href")).toBe("/film/1");
   });
+
+  it("moves a film marked as seen into a collapsed Seen section", () => {
+    localStorage.setItem("btw-seen", JSON.stringify(["1"]));
+    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
+    // Not in the main list once seen…
+    expect(screen.queryByRole("link", { name: /Project Hail Mary/ })).not.toBeInTheDocument();
+    // …but reachable via the collapsed "Seen" toggle.
+    const toggle = screen.getByRole("button", { name: /Seen \(1\)/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("link", { name: /Project Hail Mary/ })).toBeInTheDocument();
+  });
+
+  it("shows an all-seen empty state when every film is marked seen", () => {
+    localStorage.setItem("btw-seen", JSON.stringify(["1"]));
+    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
+    expect(screen.getByText(/All 1 film marked as seen/)).toBeInTheDocument();
+  });
 });
 
 describe("FilmPage", () => {
@@ -184,6 +203,24 @@ describe("FilmPage", () => {
 
     expect(container.querySelectorAll(".showtime__box--selected")).toHaveLength(1);
     expect(container.querySelectorAll(".showtime__actions")).toHaveLength(1);
+  });
+
+  it("toggles a film's seen state and persists it to localStorage", () => {
+    const narrowed = filmListings(sampleListings(), "1")!;
+    render(<FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />);
+    const btn = screen.getByRole("button", { name: "Mark as seen" });
+    expect(btn).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(btn);
+    expect(screen.getByRole("button", { name: "Mark as unseen" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(JSON.parse(localStorage.getItem("btw-seen")!)).toEqual(["1"]);
+    fireEvent.click(screen.getByRole("button", { name: "Mark as unseen" }));
+    expect(screen.getByRole("button", { name: "Mark as seen" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
   });
 
   it("shows a not-found state when the film is absent", () => {

@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { MoonIcon, SunIcon } from "../components/Icons";
 import SiteFooter from "../components/Footer";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
+import { clearSeenFilms } from "../hooks/useSeenFilms";
 
 /** Absolute date this policy was last updated. A constant (not new Date()) so
  * SSG and hydration agree — matches the time-relative split rule in CLAUDE.md. */
@@ -27,6 +29,7 @@ export default function PrivacyPage() {
 
 function PrivacyContent() {
   const { dark, toggle } = useTheme();
+  const [seenCleared, setSeenCleared] = useState(false);
 
   return (
     <>
@@ -69,7 +72,7 @@ function PrivacyContent() {
           <h2 className="privacy-section-title" id="section-browser-storage">Stored only in your browser</h2>
           <div className="privacy-section-body">
             <p>
-              Three small items are stored locally in your browser for purely functional
+              A few small items are stored locally in your browser for purely functional
               purposes. None of them are ever transmitted to any server.
             </p>
             <ul>
@@ -84,6 +87,11 @@ function PrivacyContent() {
                 your coordinates (see Location below).
               </li>
               <li>
+                <code>btw-seen</code> (localStorage) — the ids of films you've marked as
+                "seen," so they can be moved out of the main list into a collapsed
+                section. Only film ids are stored — never titles or any other detail.
+              </li>
+              <li>
                 <code>btw-warmed</code> (sessionStorage) — a one-time flag that controls
                 a brief opening animation. It clears automatically when you close the tab.
               </li>
@@ -91,8 +99,18 @@ function PrivacyContent() {
             <p>
               You can remove all of these at any time by clearing site data in your
               browser settings (Settings → Safari → Advanced → Website Data, or
-              equivalent in your browser).
+              equivalent in your browser). Or just clear the "seen" list on its own:
             </p>
+            <button
+              type="button"
+              className="empty-state__btn"
+              onClick={() => {
+                clearSeenFilms();
+                setSeenCleared(true);
+              }}
+            >
+              {seenCleared ? "Cleared" : "Clear seen films"}
+            </button>
           </div>
         </section>
 
