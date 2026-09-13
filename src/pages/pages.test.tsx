@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import ListPage from "./ListPage";
 import FilmPage from "./FilmPage";
@@ -211,6 +211,31 @@ describe("FilmPage", () => {
       <FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />,
     );
     expect(container.querySelector(".site-footer")!.textContent).toContain("updated 5h ago");
+  });
+
+  describe("theme-color meta", () => {
+    let meta: HTMLMetaElement;
+
+    beforeEach(() => {
+      meta = document.createElement("meta");
+      meta.id = "theme-color-meta";
+      meta.content = "#faf6ef";
+      document.head.appendChild(meta);
+    });
+
+    afterEach(() => {
+      meta.remove();
+    });
+
+    it("restores the plain page background on unmount", () => {
+      const narrowed = filmListings(sampleListings(), "1")!;
+      meta.content = "#123456"; // simulate a tint left over from scrolling
+      const { unmount } = render(
+        <FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />,
+      );
+      unmount();
+      expect(meta.content).toBe("#faf6ef");
+    });
   });
 });
 
