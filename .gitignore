@@ -27,6 +27,7 @@ ssg-lambda/entry-server.js
 ssg-lambda/render-core.mjs
 ssg-lambda/template.mjs
 ssg-lambda/manifest.json
+ssg-lambda/site-constants.mjs
 ssg-lambda/node_modules/
 
 # AWS SAM
