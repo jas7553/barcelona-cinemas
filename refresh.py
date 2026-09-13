@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 from itertools import chain
 from typing import TYPE_CHECKING, NamedTuple, Protocol, TypedDict
 
@@ -191,8 +192,11 @@ def _collect_movies(providers: Sequence[ListingsSource], cinemas: CinemaRegistry
     provider_results: list[list[Movie]] = []
     failed_provider_count = 0
 
+    # ContextVars do not propagate into worker threads by default.
     with ThreadPoolExecutor(max_workers=len(providers) or 1) as executor:
-        futures = [executor.submit(_fetch_provider_movies, provider, cinemas) for provider in providers]
+        futures = [
+            executor.submit(copy_context().run, _fetch_provider_movies, provider, cinemas) for provider in providers
+        ]
 
     for future in futures:
         movies = future.result()

@@ -2,7 +2,7 @@
 
 ## Problem
 
-The app's data pipeline is two listings providers (`providers/`) refreshed every
+The app's data pipeline is the listings providers (`providers/`) refreshed every
 12h by EventBridge. The dominant failure mode is **silent rot**: an upstream feed
 changes shape or moves, refresh fails, the cache goes stale, and the app keeps
 serving old showtimes until the owner notices at the cinema. (This nearly
@@ -76,18 +76,31 @@ after a deploy, refresh hanging/timing out, EMF logging broken.
 - Note: with a 12h schedule there are 2 expected successes/day, so Sum < 1 over
   24h means both runs were lost. Tolerates one flaky run without paging.
 
-### 4. (Optional, low severity) Single-provider degradation alarm
+### 4. `ProviderDegradationAlarm`
 
-A refresh "succeeds" even when one of the two providers fails — coverage
-silently halves (e.g. all secondary-provider booking links vanish). If implemented:
+A refresh "succeeds" even when one provider fails — coverage silently drops.
 
-- Metric: `ProviderFailure`, `Statistic: Sum`, `Period: 86400`,
-  `EvaluationPeriods: 1`, `Threshold: 2`,
-  `ComparisonOperator: GreaterThanOrEqualToThreshold`,
+- Metric: `ProviderFailure`, Dimensions `Environment=prod`, `Trigger=schedule`.
+- `Statistic: Sum`, `Period: 86400`, `EvaluationPeriods: 2`,
+  `DatapointsToAlarm: 2`, `Threshold: 2`,
   `TreatMissingData: notBreaching`.
-- Threshold 2 ≈ a provider failed in both daily runs — persistent breakage,
-  not a transient timeout. Skip this alarm entirely if it can't be made
-  non-noisy; the owner prefers fewer alerts over more.
+- Fires on failure in both daily runs on two consecutive days.
+
+`ProviderFailure` is emitted from `ThreadPoolExecutor` workers; `_collect_movies`
+submits via `copy_context().run` so the `Trigger` ContextVar reaches them.
+Without that the metric lacks the `Trigger` dimension and the alarm never
+receives data (see #83).
+
+Sanity check that the metric is populated:
+
+```
+aws cloudwatch get-metric-statistics \
+  --namespace BarcelonaMovieDatabase \
+  --metric-name ProviderFailure \
+  --dimensions Name=Environment,Value=prod Name=Trigger,Value=schedule \
+  --start-time 2026-07-31T00:00:00Z --end-time 2026-08-01T00:00:00Z \
+  --period 86400 --statistics Sum
+```
 
 ## Constraints
 
