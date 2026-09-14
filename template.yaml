@@ -388,26 +388,6 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       TreatMissingData: notBreaching
 
-  CacheAgeAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmDescription: Cache age exceeded configured TTL
-      AlarmActions:
-        - !Ref AlertTopic
-      OKActions:
-        - !Ref AlertTopic
-      Namespace: BarcelonaMovieDatabase
-      MetricName: CacheAgeHours
-      Dimensions:
-        - Name: Environment
-          Value: prod
-      Statistic: Maximum
-      Period: 300
-      EvaluationPeriods: 2
-      Threshold: !Ref CacheTtlHours
-      ComparisonOperator: GreaterThanThreshold
-      TreatMissingData: notBreaching
-
   # Heartbeat: absence-of-signal alarm. Every other alarm only fires when code
   # runs; this one fires when nothing runs (schedule disabled, Lambda broken,
   # EMF logging dead). TreatMissingData MUST stay "breaching" — missing data

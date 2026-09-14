@@ -37,7 +37,6 @@ def test_template_includes_observability_resources() -> None:
     assert "LambdaErrorAlarm" in template
     assert "SsgErrorAlarm" in template
     assert "RefreshFailureAlarm" in template
-    assert "CacheAgeAlarm" in template
     assert "RefreshHeartbeatAlarm" in template
     assert "ProviderDegradationAlarm" in template
 
@@ -53,6 +52,20 @@ def test_every_alarm_notifies_the_alert_topic(template: dict[str, Any]) -> None:
     for name, properties in alarms.items():
         assert properties.get("AlarmActions"), f"{name} has no AlarmActions — it would flip state silently"
         assert properties.get("OKActions"), f"{name} has no OKActions — no recovery email"
+
+
+def test_custom_metric_alarms_match_emitted_dimensions(template: dict[str, Any]) -> None:
+    # emit_metric always tags refresh-path metrics with Trigger=schedule; an
+    # alarm keyed on Environment alone watches a series that never receives
+    # data and sits at OK forever (the former CacheAgeAlarm did exactly this).
+    for name, resource in template["Resources"].items():
+        if resource["Type"] != "AWS::CloudWatch::Alarm":
+            continue
+        properties = resource["Properties"]
+        if properties["Namespace"] != "BarcelonaMovieDatabase":
+            continue
+        dims = {dim["Name"]: dim["Value"] for dim in properties["Dimensions"]}
+        assert dims == {"Environment": "prod", "Trigger": "schedule"}, f"{name} watches dimensions nothing emits"
 
 
 def test_heartbeat_alarm_treats_missing_data_as_breaching(template: dict[str, Any]) -> None:
