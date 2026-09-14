@@ -35,6 +35,22 @@ def test_normalize_movie_keeps_poster_url() -> None:
     assert movie["poster_url"] == "https://image.tmdb.org/t/p/w342/dune.jpg"
 
 
+def test_normalize_movie_keeps_enriched_at() -> None:
+    """The S3 cache read must round-trip enriched_at, or every refresh re-fetches TMDb."""
+    movie = normalize_movie(
+        {
+            "title": "Dune: Part Two",
+            "tmdb_id": 693134,
+            "enriched_at": "2026-09-13T23:51:53.103695+00:00",
+            "showtimes": [],
+        },
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert movie["enriched_at"] == "2026-09-13T23:51:53.103695+00:00"
+
+
 def test_normalize_movie_discards_malformed_imdb_id() -> None:
     movie = normalize_movie(
         {

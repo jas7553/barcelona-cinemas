@@ -60,9 +60,7 @@ def get_listings() -> Listings:
     if cached is None:
         raise RuntimeError("Listings cache unavailable")
 
-    cache_age = cache.age_hours(cached)
-    emit_metric("CacheAgeHours", cache_age, unit="None")
-    if cache_age >= _CACHE_TTL_HOURS:
+    if cache.age_hours(cached) >= _CACHE_TTL_HOURS:
         return {**cached, "stale": True}
     return cached
 
@@ -79,7 +77,6 @@ def force_refresh() -> Listings:
     duration_ms = round(now_ms() - started_ms, 2)
     emit_metric("RefreshSuccess", 1)
     emit_metric("RefreshDurationMs", duration_ms, unit="Milliseconds")
-    emit_metric("CacheAgeHours", 0, unit="None")
     log_event("refresh_summary", trigger="schedule", duration_ms=duration_ms, success=True)
     _publish_static_site(result)
     return result
