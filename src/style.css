@@ -162,6 +162,9 @@ a {
 
 img { display: block; }
 
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+
 /* ── App wrapper + shell ─────────────────────────────────────────────────────── */
 .app-wrapper {
   min-height: 100dvh;
