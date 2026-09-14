@@ -284,8 +284,13 @@ function FilmView({
   // inside a rAF-throttled scroll listener. Same ramp as before (1 → 0 over the
   // first 130px). Once fully faded we stop touching the DOM until the user
   // scrolls back up into the ramp. The same listener drives the iOS status-bar
-  // colour (theme-color meta): it mixes from the sampled backdrop colour down
-  // to the plain page background as the backdrop fades.
+  // colour: it mixes from the sampled backdrop colour down to the plain page
+  // background as the backdrop fades.
+  //
+  // Two sinks: Safari ≤18 and Android Chrome read <meta name=theme-color>;
+  // Safari 26 ignores it and paints the strip from <body>'s background-color
+  // (verified on the iOS 26.5 simulator). .detail-screen paints its own
+  // var(--bg), so the body colour only ever shows in the strip and overscroll.
   useEffect(() => {
     const el = backdropRef.current;
     if (el == null) return;
@@ -293,12 +298,12 @@ function FilmView({
       "theme-color-meta",
     ) as HTMLMetaElement | null;
     const applyMeta = () => {
-      if (meta == null) return;
       const opacity = Math.max(0, 1 - window.scrollY / 130);
       const sampled = sampledColorRef.current;
       const hex = sampled ? mixHex(pageBg, rgbToHex(sampled), opacity) : pageBg;
       if (hex === lastMetaHexRef.current) return;
-      meta.content = hex;
+      if (meta) meta.content = hex;
+      document.body.style.backgroundColor = hex;
       lastMetaHexRef.current = hex;
     };
     applyMetaRef.current = applyMeta;
@@ -381,6 +386,7 @@ function FilmView({
         "theme-color-meta",
       ) as HTMLMetaElement | null;
       if (meta) meta.content = pageBgRef.current;
+      document.body.style.backgroundColor = "";
     };
   }, []);
 
