@@ -414,23 +414,98 @@ Resources:
       OKActions:
         - !Ref AlertTopic
 
+  # A single provider going dark — whether by raising (ProviderFailure) or by
+  # returning nothing usable (ProviderZeroResult, e.g. a fetch error swallowed
+  # inside the provider) — must alert within one refresh cycle, not after
+  # days of accumulated failures. Folding both metrics together via metric
+  # math is what makes that honest: before this change, a provider that
+  # returned an empty result after an upstream error counted as a "success"
+  # with zero movies and never contributed to the old ProviderFailure-only
+  # alarm at all.
+  #
+  # Period=3600 (1h) comfortably bounds a single refresh's runtime (well under
+  # a minute normally) without spanning into the next scheduled run 12h away,
+  # so one bad run cannot get diluted by a neighboring good one the way a
+  # 24h/2-consecutive-day window did. EvaluationPeriods=1/Threshold=1 means
+  # any failed-or-zero-result provider in any single run pages immediately.
+  # TreatMissingData=notBreaching: most hours have no refresh running at all,
+  # which is expected and covered separately by RefreshHeartbeatAlarm.
   ProviderDegradationAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmDescription: A listings provider failed in both daily refresh runs on two consecutive days — coverage degraded
+      AlarmDescription: >-
+        A listings provider failed or returned zero results in the most
+        recent scheduled refresh — coverage may be degraded. (Previously
+        required two consecutive full days of failures to fire; a single
+        provider going dark in one run now alerts immediately.)
+      Metrics:
+        - Id: failures
+          MetricStat:
+            Metric:
+              Namespace: BarcelonaMovieDatabase
+              MetricName: ProviderFailure
+              Dimensions:
+                - Name: Environment
+                  Value: prod
+                - Name: Trigger
+                  Value: schedule
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+        - Id: zero_results
+          MetricStat:
+            Metric:
+              Namespace: BarcelonaMovieDatabase
+              MetricName: ProviderZeroResult
+              Dimensions:
+                - Name: Environment
+                  Value: prod
+                - Name: Trigger
+                  Value: schedule
+            Period: 3600
+            Stat: Sum
+          ReturnData: false
+        - Id: degraded_providers
+          Expression: "FILL(failures, 0) + FILL(zero_results, 0)"
+          Label: Degraded providers (failed or zero-result) per hour
+          ReturnData: true
+      EvaluationPeriods: 1
+      DatapointsToAlarm: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
+  # Backstop for coverage collapsing without any single provider reporting
+  # failure or zero-result — e.g. every provider partially degrades at once,
+  # or a downstream bug (enrichment, English filter, reconciliation) drops
+  # movies after collection. Published movie counts normally sit in the
+  # 40-66 range; 30 sits below that whole normal band so ordinary week-to-week
+  # variation (fewer films some weeks) won't false-positive, while still
+  # catching a collapse a per-provider alarm might miss. Kept as a simple
+  # static floor rather than anomaly detection, which costs more for no real
+  # benefit on a dataset this small and slow-moving.
+  CoverageDropAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Published movie count fell below the expected floor (normal range 40-66) — listings coverage may have collapsed
       Namespace: BarcelonaMovieDatabase
-      MetricName: ProviderFailure
+      MetricName: MoviesPublished
       Dimensions:
         - Name: Environment
           Value: prod
         - Name: Trigger
           Value: schedule
-      Statistic: Sum
-      Period: 86400
-      EvaluationPeriods: 2
-      DatapointsToAlarm: 2
-      Threshold: 2
-      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Statistic: Minimum
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 30
+      ComparisonOperator: LessThanThreshold
+      # Missing data means no refresh ran this hour, which is normal and
+      # already covered by RefreshHeartbeatAlarm — don't double-alert on it.
       TreatMissingData: notBreaching
       AlarmActions:
         - !Ref AlertTopic

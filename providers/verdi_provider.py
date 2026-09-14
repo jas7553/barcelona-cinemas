@@ -184,11 +184,15 @@ class VerdiProvider:
         self._sala_map: Mapping[str, str] = sala_map or {}
 
     def fetch(self, cinemas: CinemaRegistry) -> list[Movie]:
-        try:
-            slugs = self._fetch_slugs()
-        except Exception as exc:
-            logger.warning("Verdi cartellera fetch failed: %s", exc)
-            return []
+        # The cartellera fetch is the one failure mode that means "Verdi is
+        # unreachable" (network/HTTP error) rather than "Verdi genuinely has
+        # no English screenings this week". Letting it propagate lets
+        # refresh.py's _fetch_provider_movies classify it as ProviderFailure
+        # instead of ProviderZeroResult — swallowed here, it previously looked
+        # identical to an honest empty cartellera and never tripped the
+        # degradation alarm. Per-film failures below stay swallowed: one bad
+        # film page shouldn't fail the whole provider.
+        slugs = self._fetch_slugs()
 
         # Copied: the fetch memoizes newly resolved sessions into it across
         # films, and the injected map belongs to the caller.
