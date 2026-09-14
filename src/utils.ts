@@ -461,7 +461,7 @@ export function sortMovies(
     const s = m.showtimes.find((x) => selectedDay == null || x.dayOffset === selectedDay);
     return s ? `${String(s.dayOffset).padStart(2, "0")}${s.time}` : null;
   };
-  return [...movies].sort((a, b) => {
+  return movies.toSorted((a, b) => {
     const ka = nextKey(a);
     const kb = nextKey(b);
     if (ka !== kb) {
@@ -629,7 +629,7 @@ export function buildCinemaRows(
   const rows = [...byTheater.values()].map(({ theater, groups }) => {
     const dayGroups: DayGroup[] = [...groups.values()]
       .sort((a, b) => a.offset - b.offset)
-      .map((g) => ({ ...g, times: [...g.times].sort((a, b) => a.t.localeCompare(b.t)) }));
+      .map((g) => ({ ...g, times: g.times.toSorted((a, b) => a.t.localeCompare(b.t)) }));
     const distKm =
       coords && theater.lat != null && theater.lng != null
         ? haversineKm(coords.lat, coords.lng, theater.lat, theater.lng)
@@ -698,7 +698,7 @@ export function buildCinemaGroups(
         movie,
         days: [...days.entries()]
           .sort(([a], [b]) => a - b)
-          .map(([offset, times]) => ({ offset, times: [...times].sort() })),
+          .map(([offset, times]) => ({ offset, times: times.toSorted() })),
       });
       theaterMap.set(theaterId, existing);
     }

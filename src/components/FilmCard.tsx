@@ -50,7 +50,7 @@ function FilmCard({ movie, dayOffset, days, search = "", seen = false, onToggleS
     ? premiumFormatLabel(filtered.find((s) => s.premium_format)?.premium_format)
     : null;
 
-  const sortedShowtimes = [...movie.showtimes].sort(
+  const sortedShowtimes = movie.showtimes.toSorted(
     (a, b) => a.dayOffset - b.dayOffset || a.time.localeCompare(b.time),
   );
   const oneOffShowings = sortedShowtimes.slice(0, 2);
