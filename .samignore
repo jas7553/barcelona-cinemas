@@ -28,6 +28,7 @@ cache/
 # SAM / git metadata
 .aws-sam/
 .git/
+.claude/
 .gitignore
 .samignore
 
