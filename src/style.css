@@ -1724,7 +1724,7 @@ img { display: block; }
 }
 
 .sheet-cta-primary--danger {
-  background: var(--danger, #c0392b);
+  background: #c0392b;
   color: #fff;
 }
 
