@@ -264,6 +264,15 @@ describe("FilmPage", () => {
       meta.remove();
     });
 
+    it("writes the strip colour to both theme-color and body background", () => {
+      // Safari ≤18 reads theme-color; Safari 26 reads body's background-color.
+      const narrowed = filmListings(sampleListings(), "1")!;
+      meta.content = "#123456";
+      render(<FilmPage data={{ renderedAt, listings: narrowed, filmId: "1" }} />);
+      expect(meta.content).toBe("#faf6ef");
+      expect(document.body.style.backgroundColor).toBe("rgb(250, 246, 239)");
+    });
+
     it("restores the plain page background on unmount", () => {
       const narrowed = filmListings(sampleListings(), "1")!;
       meta.content = "#123456"; // simulate a tint left over from scrolling
@@ -272,6 +281,7 @@ describe("FilmPage", () => {
       );
       unmount();
       expect(meta.content).toBe("#faf6ef");
+      expect(document.body.style.backgroundColor).toBe("");
     });
   });
 });
