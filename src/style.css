@@ -50,30 +50,38 @@
 }
 
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
+/* Light is the default; .dark is applied by the theme toggle (see
+   src/context/ThemeContext.tsx) and the pre-paint <head> script. Both states
+   pin an explicit `color-scheme` so light-dark() below always follows the
+   app's own toggle rather than the OS preference. */
 :root {
-  --bg:          #faf6ef;
-  --surface:     #ffffff;
-  --surface2:    #f0ece4;
-  --border:      #e0d8ce;
-  --border-lt:   #ede8e0;
-  --text:        #1a1a1a;
-  --text-sub:    #7a7062;
-  --text-mute:   #786f61;
-  --accent:      #c17f3a;
-  /* Filled surfaces only. --accent is a 3.3:1 decorative amber: fine for
+  color-scheme: light dark;
+
+  --bg:          light-dark(#faf6ef, #0f0e0c);
+  --surface:     light-dark(#ffffff, #1e1c18);
+  --surface2:    light-dark(#f0ece4, #2a2820);
+  --border:      light-dark(#e0d8ce, #3a3830);
+  --border-lt:   light-dark(#ede8e0, #302e28);
+  --text:        light-dark(#1a1a1a, #f0ece4);
+  --text-sub:    light-dark(#7a7062, #948c80);
+  --text-mute:   light-dark(#786f61, #8f857a);
+  --accent:      light-dark(#c17f3a, #d4924a);
+  /* Filled surfaces only. Light --accent is a 3.3:1 decorative amber: fine for
      borders and focus rings (3:1 floor for non-text UI), but it fails AA as
-     text and as a fill behind white text. Hence two darker siblings. */
-  --accent-solid: #a06626;
-  --accent-text: #ffffff;
+     text and as a fill behind white text — hence a darker sibling in light
+     mode. Dark accent + black text is already 8:1, so the dark fill token
+     matches --accent, and the same amber clears 6.4:1 as text on --surface. */
+  --accent-solid: light-dark(#a06626, #d4924a);
+  --accent-text: light-dark(#ffffff, #000000);
   /* Small accent text, on every light surface we actually paint it on:
      5.97:1 on --surface, 5.54:1 on --bg, 5.06:1 on --surface2, 4.94:1 on
      --accent-bg. Darker than --accent-solid on purpose — the active pills
      (.near-btn--active, .cinema-count__order--active) put this ink on
      --accent-bg, where the old #a06626 measured 3.93:1 and failed AA. */
-  --accent-ink:  #8f5620;
-  --accent-bg:   #f5e8d4;
+  --accent-ink:  light-dark(#8f5620, #d4924a);
+  --accent-bg:   light-dark(#f5e8d4, #2a1e0c);
   /* AA-safe text colour for .result-count-age--stale (4.86:1 on --bg). */
-  --lc-ink:      #c23f11;
+  --lc-ink:      light-dark(#c23f11, #f08030);
 
   --r-sm:   4px;
   --r-md:   6px;
@@ -85,35 +93,22 @@
 
   --shell-max: 840px;
   --backdrop-h: clamp(200px, 25vw, 300px);
-  --book-border: color-mix(in srgb, var(--accent) 55%, transparent);
-  --book-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  /* A 12% amber wash over a near-black surface is almost nothing, so on dark
+     the bookable pill was reading as *less* prominent than the inert ones
+     next to it — the primary action losing to the secondary. Push the mix
+     until the tint is actually visible there. */
+  --book-border: light-dark(
+    color-mix(in srgb, var(--accent) 55%, transparent),
+    color-mix(in srgb, var(--accent) 70%, transparent)
+  );
+  --book-bg: light-dark(
+    color-mix(in srgb, var(--accent) 12%, transparent),
+    color-mix(in srgb, var(--accent) 24%, transparent)
+  );
 }
 
-.dark {
-  --bg:          #0f0e0c;
-  --surface:     #1e1c18;
-  --surface2:    #2a2820;
-  --border:      #3a3830;
-  --border-lt:   #302e28;
-  --text:        #f0ece4;
-  --text-sub:    #948c80;
-  --text-mute:   #8f857a;
-  --accent:      #d4924a;
-  /* Dark accent + black text is already 8:1, so the fill token matches --accent,
-     and the same amber clears 6.4:1 as text on --surface. */
-  --accent-solid: #d4924a;
-  --accent-text: #000000;
-  --accent-ink:  #d4924a;
-  --accent-bg:   #2a1e0c;
-  --lc-ink:      #f08030;
-
-  /* A 12% amber wash over a near-black surface is almost nothing, so on dark the
-     bookable pill was reading as *less* prominent than the inert ones next to it
-     — the primary action losing to the secondary. Push the mix until the tint is
-     actually visible. */
-  --book-border: color-mix(in srgb, var(--accent) 70%, transparent);
-  --book-bg: color-mix(in srgb, var(--accent) 24%, transparent);
-}
+:root:not(.dark) { color-scheme: light; }
+.dark { color-scheme: dark; }
 
 /* ── Resets ─────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
