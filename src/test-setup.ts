@@ -12,3 +12,9 @@ if (typeof HTMLDialogElement !== "undefined") {
     this.dispatchEvent(new Event("close"));
   };
 }
+
+// jsdom doesn't implement scrollIntoView (DayPicker uses it to bring the
+// active day chip into view); stub it so effects that call it don't throw.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}

@@ -1,4 +1,19 @@
 
+/* ── Cross-document view transitions ─────────────────────────────────────────
+   Back/forward is skipped separately (scripts/template.mjs
+   VIEW_TRANSITION_SCRIPT), so bfcache restores stay an instant pop. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+}
+
+/* Avoids double-animating with the film page's own entrance animation
+   (.detail-screen, below) during the cross-document crossfade above. */
+html:active-view-transition .detail-screen {
+  animation: none;
+}
+
 /* ── Fonts (self-hosted, variable; latin preloaded from the page <head>) ─────── */
 @font-face {
   font-family: "DM Sans";

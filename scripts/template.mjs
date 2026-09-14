@@ -22,12 +22,18 @@ export const SPECULATION_RULES = JSON.stringify({
   prerender: [{ where: { href_matches: "/film/*" }, eagerness: "moderate" }],
 });
 
+// Skips the view transition on back/forward navigation, so bfcache restores
+// stay instant. Must be registered before `pagereveal` can fire, hence
+// inline in <head> rather than in the hydration entry.
+export const VIEW_TRANSITION_SCRIPT = `(function(){window.addEventListener("pagereveal",function(e){try{if(e.viewTransition&&navigation.activation&&navigation.activation.navigationType==="traverse")e.viewTransition.skipTransition();}catch(t){}});})();`;
+
 /** Every inline script body the site serves, keyed by name for error messages. */
 export const INLINE_SCRIPTS = Object.freeze({
   THEME_SCRIPT,
   // Carried in a `type="speculationrules"` block. Chrome enforces script-src
   // against it exactly like an executable inline script, so it needs a hash too.
   SPECULATION_RULES,
+  VIEW_TRANSITION_SCRIPT,
 });
 
 /**
@@ -70,6 +76,7 @@ export function renderDocument(o) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="google-site-verification" content="8TY-GdWfEzMusHB1CLdFZYqlrJIE-p0LsmxkoAeuK7M" />
     <script>${THEME_SCRIPT}</script>
+    <script>${VIEW_TRANSITION_SCRIPT}</script>
     <link rel="preload" href="/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/playfair-display-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=4" />
