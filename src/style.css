@@ -72,18 +72,21 @@
      --accent-bg, where the old #a06626 measured 3.93:1 and failed AA. */
   --accent-ink:  #8f5620;
   --accent-bg:   #f5e8d4;
-  --lc:          #d44e1e;
   /* AA-safe text colour for .result-count-age--stale (4.86:1 on --bg). */
   --lc-ink:      #c23f11;
 
   --r-sm:   4px;
   --r-md:   6px;
-  --r-lg:   10px;
   --r-xl:   12px;
   --r-pill: 20px;
 
   --font-display: "Playfair Display", Georgia, serif;
   --font-ui:      "DM Sans", system-ui, sans-serif;
+
+  --shell-max: 840px;
+  --backdrop-h: clamp(200px, 25vw, 300px);
+  --book-border: color-mix(in srgb, var(--accent) 55%, transparent);
+  --book-bg: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .dark {
@@ -102,20 +105,18 @@
   --accent-text: #000000;
   --accent-ink:  #d4924a;
   --accent-bg:   #2a1e0c;
-  --lc:          #f08030;
   --lc-ink:      #f08030;
+
+  /* A 12% amber wash over a near-black surface is almost nothing, so on dark the
+     bookable pill was reading as *less* prominent than the inert ones next to it
+     — the primary action losing to the secondary. Push the mix until the tint is
+     actually visible. */
+  --book-border: color-mix(in srgb, var(--accent) 70%, transparent);
+  --book-bg: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 /* ── Resets ─────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-.film-list-scroll::-webkit-scrollbar,
-.detail-content::-webkit-scrollbar,
-.day-chips::-webkit-scrollbar { display: none; }
-
-.film-list-scroll,
-.detail-content,
-.day-chips { scrollbar-width: none; }
 
 body {
   font-family: var(--font-ui);
@@ -161,7 +162,7 @@ img { display: block; }
 
 .app-shell {
   width: 100%;
-  max-width: 840px;
+  max-width: var(--shell-max);
   background: var(--bg);
   position: relative;
 }
@@ -271,7 +272,10 @@ img { display: block; }
   padding-right: 28px;
   mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  scrollbar-width: none;
 }
+
+.day-chips::-webkit-scrollbar { display: none; }
 
 .day-chip {
   flex-shrink: 0;
@@ -283,11 +287,9 @@ img { display: block; }
   padding: 5px 14px;
   border-radius: var(--r-pill);
   border: 1.5px solid var(--border);
-  background: transparent;
   color: var(--text-sub);
   font-size: 13px;
   font-weight: 400;
-  font-family: var(--font-ui);
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 
@@ -302,7 +304,6 @@ img { display: block; }
    (and dissolve the pill's shape); instead de-emphasize with an explicit
    lighter border at full opacity, keeping the label at the AA floor. */
 .day-chip--faded {
-  color: var(--text-sub);
   border-color: var(--border-lt);
   /* aria-disabled, not disabled (see DayPicker) — so it still takes focus and
      can announce "no screenings". The native pointer affordance has to go by
@@ -320,14 +321,10 @@ img { display: block; }
 .view-tab {
   padding: 13px 0; /* 44px tap target */
   margin-bottom: -1.5px; /* underline laps the .list-controls rule */
-  background: none;
-  border: none;
   border-bottom: 2px solid transparent;
   color: var(--text-sub);
   font-size: 14px;
   font-weight: 400;
-  font-family: var(--font-ui);
-  cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
 }
 
@@ -349,7 +346,6 @@ img { display: block; }
   padding: 4px 12px;
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
-  font-family: var(--font-ui);
   font-size: 12px;
   color: var(--text-sub);
   transition: background 0.12s, border-color 0.12s, color 0.12s;
@@ -380,7 +376,6 @@ img { display: block; }
   border-radius: var(--r-pill);
   font-size: 12px;
   color: var(--text-sub);
-  font-family: var(--font-ui);
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
 
@@ -394,18 +389,15 @@ img { display: block; }
 .result-count-age { color: var(--text-mute); }
 .result-count-age--stale { color: var(--lc-ink); }
 
-/* ── Film list scroll ────────────────────────────────────────────────────────── */
-.film-list-scroll {
-  /* structural wrapper only — page scrolls natively */
-}
-
-.film-list {
+.film-list,
+.loading-pulse {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 12px 16px 24px;
-  list-style: none;
 }
+
+.film-list { list-style: none; }
 
 /* The <li> is the flex/grid child; `flex: 1` on it makes the card fill the
    track so the two-column layout still bottom-aligns. */
@@ -435,27 +427,24 @@ img { display: block; }
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   overflow: hidden;
-  cursor: pointer;
   transition: opacity 0.12s;
-  color: inherit;
-  text-decoration: none;
+}
+
+.film-card__poster,
+.film-card__poster-wrap {
+  width: 72px;
+  flex-shrink: 0;
+  align-self: flex-start;
 }
 
 .film-card__poster {
-  width: 72px;
   height: 106px;
   object-fit: cover;
-  flex-shrink: 0;
-  align-self: flex-start;
-  display: block;
   background: var(--surface2);
 }
 
 .film-card__poster-wrap {
-  width: 72px;
   min-height: 106px;
-  flex-shrink: 0;
-  align-self: flex-start;
   overflow: hidden;
 }
 
@@ -464,14 +453,14 @@ img { display: block; }
   height: 100%;
 }
 
-.film-card--with-times .film-card__poster {
-  height: auto;
-  min-height: 106px;
+.film-card--with-times .film-card__poster,
+.film-card--with-times .film-card__poster-wrap {
   align-self: stretch;
 }
 
-.film-card--with-times .film-card__poster-wrap {
-  align-self: stretch;
+.film-card--with-times .film-card__poster {
+  height: auto;
+  min-height: 106px;
 }
 
 .film-card:active { opacity: 0.75; }
@@ -485,6 +474,7 @@ img { display: block; }
   min-width: 0;
 }
 
+.cinema-group__film-title-row,
 .film-card__title-row {
   display: flex;
   align-items: flex-start;
@@ -512,12 +502,14 @@ img { display: block; }
   margin-top: 2px;
 }
 
+.cinema-group__film-times,
 .film-card__times {
   display: flex;
   gap: 5px;
   flex-wrap: wrap;
-  margin-top: 7px;
 }
+
+.film-card__times { margin-top: 7px; }
 
 .film-card__next {
   display: flex;
@@ -547,8 +539,7 @@ img { display: block; }
 .time-pill--more {
   border-color: transparent;
   color: var(--text-sub);
-  padding-left: 2px;
-  padding-right: 2px;
+  padding-inline: 2px;
   font-size: 11px;
 }
 
@@ -603,17 +594,8 @@ img { display: block; }
 }
 
 .showtime__box--book {
-  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-}
-
-/* A 12% amber wash over a near-black surface is almost nothing, so on dark the
-   bookable pill was reading as *less* prominent than the inert ones next to it
-   — the primary action losing to the secondary. Push the mix until the tint is
-   actually visible. */
-.dark .showtime__box--book {
-  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  border-color: var(--book-border);
+  background: var(--book-bg);
 }
 
 .showtime__main {
@@ -625,12 +607,7 @@ img { display: block; }
   justify-content: center;
   gap: 2px;
   padding: 4px 6px;
-  border: none;
-  background: none;
-  font: inherit;
   color: var(--text);
-  text-decoration: none;
-  cursor: pointer;
   transition: opacity 0.12s;
 }
 
@@ -682,11 +659,8 @@ img { display: block; }
   justify-content: center;
   width: 44px;
   flex-shrink: 0;
-  border: none;
   border-left: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  background: none;
   color: var(--accent-ink);
-  cursor: pointer;
 }
 
 /* Rotate the glyph only — never the button box. The segment carries a
@@ -738,7 +712,6 @@ img { display: block; }
   font-size: 12px;
   font-weight: 500;
   color: var(--text-sub);
-  text-decoration: none;
   white-space: nowrap;
 }
 
@@ -764,7 +737,8 @@ img { display: block; }
 
 .cinema-group__header:active { opacity: 0.75; }
 
-.cinema-group__right {
+.cinema-group__right,
+.cinema-row__right {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -786,10 +760,7 @@ img { display: block; }
   align-items: center;
   padding: 9px 12px;
   gap: 10px;
-  cursor: pointer;
   transition: opacity 0.12s;
-  color: inherit;
-  text-decoration: none;
 }
 
 .cinema-group__film:active { opacity: 0.75; }
@@ -810,13 +781,6 @@ img { display: block; }
   border-top: 1px solid var(--border-lt);
 }
 
-.cinema-group__film-title-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 6px;
-}
-
 .cinema-group__film-title {
   font-family: var(--font-display);
   font-size: 14px;
@@ -828,12 +792,6 @@ img { display: block; }
   flex-shrink: 0;
   font-size: 11px;
   color: var(--text-mute);
-}
-
-.cinema-group__film-times {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
 }
 
 /* Each day gets its own labelled row. Undated pills used to imply a single
@@ -924,7 +882,6 @@ img { display: block; }
   padding: 0 12px;
   font-size: 12px;
   color: var(--text-mute);
-  text-decoration: none;
 }
 
 .site-footer__link:hover,
@@ -941,7 +898,6 @@ img { display: block; }
   align-items: center;
   gap: 4px;
   padding: 8px 0;
-  text-decoration: none;
 }
 
 .privacy-back-link:hover,
@@ -1070,22 +1026,12 @@ img { display: block; }
   padding: 8px 20px;
   background: var(--accent-solid);
   color: var(--accent-text);
-  border: none;
   border-radius: var(--r-pill);
   font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
-  font-family: var(--font-ui);
 }
 
 /* ── Loading skeleton ────────────────────────────────────────────────────────── */
-.loading-pulse {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 16px 24px;
-}
-
 .loading-card {
   height: 106px;
   background: var(--surface);
@@ -1136,7 +1082,6 @@ img { display: block; }
   font-size: 15px;
   color: var(--accent-ink);
   font-weight: 500;
-  font-family: var(--font-ui);
   white-space: nowrap;
   padding: 4px 0;
 }
@@ -1165,10 +1110,8 @@ img { display: block; }
 
 .detail-backdrop {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: clamp(200px, 25vw, 300px);
+  inset: 0 0 auto;
+  height: var(--backdrop-h);
   z-index: 1;
   pointer-events: none;
 }
@@ -1186,60 +1129,48 @@ img { display: block; }
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, var(--bg) 100%);
 }
 
-.detail-back-btn {
+.detail-back-btn,
+.detail-theme-btn {
   /* Scrolls away with the document — native back, iOS swipe-back and bfcache
      cover the deep-scroll case, so no fixed escape hatch is needed. */
   position: absolute;
   top: max(52px, calc(env(safe-area-inset-top, 0px) + 8px));
-  /* Align to the centered 840px shell, not the raw viewport, so on desktop the
-     pill sits over the banner's left edge. (840/2 = 420px.) */
-  left: max(12px, calc(50% - 420px + 12px));
   z-index: 20;
-  background: rgba(255, 255, 255, 0.82);
-  border: none;
-  border-radius: var(--r-pill);
   min-height: 44px;
-  padding: 4px 14px 4px 8px;
   display: flex;
   align-items: center;
-  gap: 2px;
-  cursor: pointer;
+  background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-  font-size: 14px;
   color: var(--text);
-  font-family: var(--font-ui);
-  font-weight: 500;
 }
 
-.dark .detail-back-btn { background: rgba(0, 0, 0, 0.6); }
-.detail-back-btn:active { opacity: 0.75; }
+.detail-back-btn {
+  /* Align to the centered shell, not the raw viewport, so on desktop the
+     pill sits over the banner's left edge. (840/2 = 420px.) */
+  left: max(12px, calc(50% - var(--shell-max) / 2 + 12px));
+  border-radius: var(--r-pill);
+  padding: 4px 14px 4px 8px;
+  gap: 2px;
+  font-size: 14px;
+  font-weight: 500;
+}
 
 /* Mirrors the back pill on the other edge of the banner. A film page is a
    landing page (shared links, search results) and used to be the one document
    with no way to change the theme. */
 .detail-theme-btn {
-  position: absolute;
-  top: max(52px, calc(env(safe-area-inset-top, 0px) + 8px));
-  right: max(12px, calc(50% - 420px + 12px));
-  z-index: 20;
-  display: flex;
-  align-items: center;
+  right: max(12px, calc(50% - var(--shell-max) / 2 + 12px));
   justify-content: center;
-  min-height: 44px;
   min-width: 44px;
-  border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
-  color: var(--text);
-  cursor: pointer;
 }
 
+.dark .detail-back-btn,
 .dark .detail-theme-btn { background: rgba(0, 0, 0, 0.6); }
+
+.detail-back-btn:active,
 .detail-theme-btn:active { opacity: 0.75; }
 
 .detail-content {
@@ -1251,7 +1182,7 @@ img { display: block; }
 }
 
 .detail-spacer {
-  height: clamp(200px, 25vw, 300px);
+  height: var(--backdrop-h);
   flex-shrink: 0;
 }
 
@@ -1322,21 +1253,7 @@ img { display: block; }
   font-weight: 600;
 }
 
-.trailer-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  gap: 4px;
-  padding: 3px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  font-size: 13px;
-  color: var(--text-sub);
-  cursor: pointer;
-  text-decoration: none;
-}
-
+.trailer-btn,
 .seen-btn {
   display: flex;
   align-items: center;
@@ -1348,9 +1265,6 @@ img { display: block; }
   border-radius: var(--r-md);
   font-size: 13px;
   color: var(--text-sub);
-  cursor: pointer;
-  background: none;
-  font-family: inherit;
 }
 
 .seen-btn--active {
@@ -1370,13 +1284,10 @@ img { display: block; }
   gap: 4px;
   width: 100%;
   padding: 14px 16px 6px;
-  background: none;
-  border: none;
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
   color: var(--text-sub);
-  cursor: pointer;
 }
 
 .seen-section__toggle .chevron {
@@ -1481,7 +1392,6 @@ img { display: block; }
   border-radius: var(--r-md);
   font-size: 12px;
   color: var(--text-sub);
-  text-decoration: none;
   transition: opacity 0.12s;
 }
 
@@ -1522,7 +1432,6 @@ img { display: block; }
   margin: -10px 0;
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
-  font-family: var(--font-ui);
   font-size: 11px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1553,13 +1462,8 @@ img { display: block; }
   width: 14px;
   height: 14px;
   border-radius: var(--r-sm);
-  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-}
-
-.dark .showtimes-legend__swatch {
-  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  background: color-mix(in srgb, var(--accent) 24%, transparent);
+  border: 1px solid var(--book-border);
+  background: var(--book-bg);
 }
 
 /* Cinema rows in film detail */
@@ -1582,12 +1486,9 @@ img { display: block; }
   width: 100%;
   min-height: 44px;
   padding: 9px 12px;
-  border: none;
   border-bottom: 1px solid var(--border-lt);
-  cursor: pointer;
   background: var(--surface2);
   text-align: left;
-  font: inherit;
   transition: opacity 0.12s;
 }
 
@@ -1597,12 +1498,6 @@ img { display: block; }
   font-size: 14px;
   font-weight: 600;
   color: var(--text);
-}
-
-.cinema-row__right {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .cinema-row__dist {
@@ -1617,24 +1512,6 @@ img { display: block; }
   flex-direction: column;
   gap: 12px;
   padding: 10px 12px 12px;
-}
-
-/* Day label sits on its own line rather than a fixed-width left column: the
-   hoisted badge needs the room, and the pill grid below stays full width so
-   times column-align across days. */
-.cinema-row__day-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-
-.cinema-row__day-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--text-mute);
 }
 
 /* ── Day sections (film detail, day-first) ───────────────────────────────────── */
@@ -1695,10 +1572,6 @@ img { display: block; }
   transform: none;
 }
 
-@starting-style {
-  .cinema-dialog[open] { opacity: 0; transform: scale(0.96); }
-}
-
 .cinema-dialog::backdrop {
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(2px);
@@ -1711,6 +1584,7 @@ img { display: block; }
 .cinema-dialog[open]::backdrop { opacity: 1; }
 
 @starting-style {
+  .cinema-dialog[open] { opacity: 0; transform: scale(0.96); }
   .cinema-dialog[open]::backdrop { opacity: 0; }
 }
 
@@ -1740,8 +1614,6 @@ img { display: block; }
 .cinema-dialog__close:hover { color: var(--text); }
 
 .cinema-dialog__close:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
   border-radius: var(--r-md);
 }
 
@@ -1771,34 +1643,25 @@ img { display: block; }
   gap: 10px;
 }
 
-.sheet-cta-primary {
-  padding: 13px;
-  border-radius: var(--r-xl);
-  border: none;
-  cursor: pointer;
-  background: var(--accent-solid);
-  color: var(--accent-text);
-  font-size: 15px;
-  font-weight: 600;
-  font-family: var(--font-ui);
-  text-align: center;
-  text-decoration: none;
-  display: block;
-}
-
+.sheet-cta-primary,
 .sheet-cta-secondary {
   padding: 13px;
   border-radius: var(--r-xl);
-  cursor: pointer;
-  background: transparent;
+  font-size: 15px;
+  text-align: center;
+  display: block;
+}
+
+.sheet-cta-primary {
+  background: var(--accent-solid);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.sheet-cta-secondary {
   border: 1px solid var(--border);
   color: var(--text);
-  font-size: 15px;
   font-weight: 500;
-  font-family: var(--font-ui);
-  text-align: center;
-  text-decoration: none;
-  display: block;
 }
 
 /* ── Hover (pointer devices only) ────────────────────────────────────────────── */
@@ -1845,7 +1708,6 @@ img { display: block; }
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: var(--r-sm);
 }
 
 /* Visible only while focused — the first tab stop on the list document. */
@@ -1882,18 +1744,6 @@ img { display: block; }
   :focus-visible { outline-color: Highlight; }
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
 /* ── Responsive (≥640px) ─────────────────────────────────────────────────────── */
 @media (min-width: 640px) {
   .main-header,
@@ -1903,24 +1753,15 @@ img { display: block; }
     padding-right: 24px;
   }
 
-  .film-list {
+  .film-list,
+  .loading-pulse {
     display: grid;
     grid-template-columns: 1fr 1fr;
     padding: 16px 24px 28px;
     gap: 12px;
   }
 
-  .film-list:has(.cinema-group) {
-    grid-template-columns: 1fr;
-  }
-
-  .loading-pulse {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 16px 24px;
-    gap: 12px;
-  }
-
+  .film-list:has(.cinema-group),
   .loading-pulse--cinema {
     grid-template-columns: 1fr;
   }
