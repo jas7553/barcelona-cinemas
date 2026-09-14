@@ -13,7 +13,7 @@ const VIEWPORTS = [
 
 async function gotoFirstFilm(page: Page): Promise<void> {
   await page.goto("/");
-  const href = await page.locator(".film-card").first().getAttribute("href");
+  const href = await page.locator(".film-card__link").first().getAttribute("href");
   expect(href, "no film card to open").toMatch(/^\/film\//);
   await page.goto(href!);
   await expect(page.locator(".detail-film-title")).toBeVisible();

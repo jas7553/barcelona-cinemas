@@ -102,8 +102,8 @@ describe("ListPage", () => {
     render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
     // Not in the main list once seen…
     expect(screen.queryByRole("link", { name: /Project Hail Mary/ })).not.toBeInTheDocument();
-    // …but reachable via the collapsed "Seen" toggle.
-    const toggle = screen.getByRole("button", { name: /Seen \(1\)/ });
+    // …but reachable via the collapsed "Seen" toggle. No count in the label.
+    const toggle = screen.getByRole("button", { name: "Seen" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
@@ -114,6 +114,35 @@ describe("ListPage", () => {
     localStorage.setItem("btw-seen", JSON.stringify(["1"]));
     render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
     expect(screen.getByText(/All 1 film marked as seen/)).toBeInTheDocument();
+  });
+
+  it("toggles a film's seen state from the list, moving it between sections", () => {
+    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
+    const toggleBtn = screen.getByRole("button", { name: "Mark as seen" });
+    fireEvent.click(toggleBtn);
+    expect(screen.queryByRole("link", { name: /Project Hail Mary/ })).not.toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("btw-seen")!)).toEqual(["1"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Seen" }));
+    const unseenBtn = screen.getByRole("button", { name: "Mark as unseen" });
+    fireEvent.click(unseenBtn);
+    expect(JSON.parse(localStorage.getItem("btw-seen")!)).toEqual([]);
+    expect(screen.getByRole("link", { name: /Project Hail Mary/ })).toBeInTheDocument();
+  });
+
+  it("resets seen films via the confirmation dialog, and cancel keeps them", () => {
+    localStorage.setItem("btw-seen", JSON.stringify(["1"]));
+    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Seen" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(JSON.parse(localStorage.getItem("btw-seen")!)).toEqual(["1"]);
+    expect(screen.getByText(/Project Hail Mary/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(JSON.parse(localStorage.getItem("btw-seen") ?? "[]")).toEqual([]);
   });
 });
 

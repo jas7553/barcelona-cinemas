@@ -1,5 +1,6 @@
 import { memo } from "react";
 import PosterPlaceholder from "./PosterPlaceholder";
+import { EyeIcon, CheckIcon } from "./Icons";
 import {
   screeningKind,
   runCoverageLabel,
@@ -18,9 +19,11 @@ interface Props {
   search?: string;
   /** Marked seen locally — de-emphasizes the card and adds a badge. */
   seen?: boolean;
+  /** When provided, renders a seen-toggle button on the card. */
+  onToggleSeen?: () => void;
 }
 
-function FilmCard({ movie, dayOffset, days, search = "", seen = false }: Props) {
+function FilmCard({ movie, dayOffset, days, search = "", seen = false, onToggleSeen }: Props) {
   const kind = screeningKind(movie);
   const oneOff = kind === "one-off";
 
@@ -56,76 +59,88 @@ function FilmCard({ movie, dayOffset, days, search = "", seen = false }: Props) 
   const coverageLabel = !oneOff && !showTimes && days ? runCoverageLabel(movie, days) : null;
 
   return (
-    <a
-      href={`/film/${movie.id}${search}`}
+    <div
       className={`film-card${showTimes ? " film-card--with-times" : ""}${seen ? " film-card--seen" : ""}`}
     >
-      {movie.poster_url ? (
-        <img
-          src={thumbPosterUrl(movie.poster_url)!}
-          alt={movie.title}
-          className="film-card__poster"
-          width={72}
-          height={106}
-          loading="lazy"
-          decoding="async"
-        />
-      ) : (
-        <div className="film-card__poster-wrap">
-          <PosterPlaceholder w={72} h={106} id={movie.id} />
-        </div>
+      {onToggleSeen && (
+        <button
+          type="button"
+          className="film-card__seen-toggle"
+          onClick={onToggleSeen}
+          aria-pressed={seen}
+          aria-label={seen ? "Mark as unseen" : "Mark as seen"}
+        >
+          {seen ? <CheckIcon size={14} /> : <EyeIcon size={14} />}
+        </button>
       )}
+      <a href={`/film/${movie.id}${search}`} className="film-card__link">
+        {movie.poster_url ? (
+          <img
+            src={thumbPosterUrl(movie.poster_url)!}
+            alt={movie.title}
+            className="film-card__poster"
+            width={72}
+            height={106}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <div className="film-card__poster-wrap">
+            <PosterPlaceholder w={72} h={106} id={movie.id} />
+          </div>
+        )}
 
-      <div className="film-card__body">
-        <div>
-          <div className="film-card__title-row">
-            <div className="film-card__title">{movie.title}</div>
-            {seen && <span className="seen-badge">Seen</span>}
+        <div className="film-card__body">
+          <div>
+            <div className="film-card__title-row">
+              <div className="film-card__title">{movie.title}</div>
+              {seen && <span className="seen-badge">Seen</span>}
+            </div>
+            {meta && <div className="film-card__meta">{meta}</div>}
+            <div className="film-card__rating">
+              {movie.rating != null && <>★ {movie.rating.toFixed(1)} · </>}
+              {cinemaCount} {cinemaCount === 1 ? "cinema" : "cinemas"}
+            </div>
           </div>
-          {meta && <div className="film-card__meta">{meta}</div>}
-          <div className="film-card__rating">
-            {movie.rating != null && <>★ {movie.rating.toFixed(1)} · </>}
-            {cinemaCount} {cinemaCount === 1 ? "cinema" : "cinemas"}
-          </div>
-        </div>
-        {showTimes ? (
-          oneOff ? (
+          {showTimes ? (
+            oneOff ? (
+              <>
+                {filtered.map((s) => (
+                  <div key={`${s.date}-${s.time}-${s.theater.id}`} className="film-card__next">
+                    {s.time} · {s.theater.name}
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="film-card__times">
+                {shownTimes.map((t) => {
+                  const d = dateByTime.get(t);
+                  return (
+                    <time key={t} className="time-pill" dateTime={d ? `${d}T${t}` : t}>
+                      {t}
+                    </time>
+                  );
+                })}
+                {extraTimes > 0 && (
+                  <span className="time-pill time-pill--more">+{extraTimes} more</span>
+                )}
+                {fmt && <span className="tag">{fmt}</span>}
+              </div>
+            )
+          ) : oneOff ? (
             <>
-              {filtered.map((s) => (
+              {oneOffShowings.map((s) => (
                 <div key={`${s.date}-${s.time}-${s.theater.id}`} className="film-card__next">
-                  {s.time} · {s.theater.name}
+                  {dayLabel(s.dayOffset)} · {s.time} · {s.theater.name}
                 </div>
               ))}
             </>
           ) : (
-            <div className="film-card__times">
-              {shownTimes.map((t) => {
-                const d = dateByTime.get(t);
-                return (
-                  <time key={t} className="time-pill" dateTime={d ? `${d}T${t}` : t}>
-                    {t}
-                  </time>
-                );
-              })}
-              {extraTimes > 0 && (
-                <span className="time-pill time-pill--more">+{extraTimes} more</span>
-              )}
-              {fmt && <span className="tag">{fmt}</span>}
-            </div>
-          )
-        ) : oneOff ? (
-          <>
-            {oneOffShowings.map((s) => (
-              <div key={`${s.date}-${s.time}-${s.theater.id}`} className="film-card__next">
-                {dayLabel(s.dayOffset)} · {s.time} · {s.theater.name}
-              </div>
-            ))}
-          </>
-        ) : (
-          coverageLabel && <div className="film-card__next">{coverageLabel}</div>
-        )}
-      </div>
-    </a>
+            coverageLabel && <div className="film-card__next">{coverageLabel}</div>
+          )}
+        </div>
+      </a>
+    </div>
   );
 }
 

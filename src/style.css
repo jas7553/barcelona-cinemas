@@ -422,12 +422,37 @@ img { display: block; }
 
 /* ── Film card ───────────────────────────────────────────────────────────────── */
 .film-card {
+  position: relative;
   display: flex;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   overflow: hidden;
   transition: opacity 0.12s;
+}
+
+.film-card__link {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+}
+
+.film-card__seen-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-mute);
+}
+
+.film-card__seen-toggle[aria-pressed="true"] {
+  color: var(--accent-ink);
 }
 
 .film-card__poster,
@@ -480,6 +505,11 @@ img { display: block; }
   align-items: flex-start;
   justify-content: space-between;
   gap: 6px;
+}
+
+.film-card__title-row {
+  /* Room for the absolutely-positioned seen-toggle button in the corner. */
+  padding-right: 36px;
 }
 
 .film-card__title {
@@ -1267,6 +1297,23 @@ img { display: block; }
   color: var(--text-sub);
 }
 
+/* Both labels stack in the same grid cell so the button's width is the max of
+   the two and never changes when the state toggles. */
+.seen-btn {
+  display: inline-grid;
+}
+
+.seen-btn__label {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.seen-btn__label[aria-hidden="true"] {
+  visibility: hidden;
+}
+
 .seen-btn--active {
   background: var(--accent-solid);
   border-color: var(--accent-solid);
@@ -1278,11 +1325,16 @@ img { display: block; }
   margin-top: 10px;
 }
 
+.seen-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .seen-section__toggle {
   display: flex;
   align-items: center;
   gap: 4px;
-  width: 100%;
   padding: 14px 16px 6px;
   font-family: var(--font-display);
   font-size: 13px;
@@ -1296,6 +1348,13 @@ img { display: block; }
 
 .seen-section__toggle[aria-expanded="true"] .chevron {
   transform: rotate(180deg);
+}
+
+.seen-section__reset {
+  padding: 14px 16px 6px;
+  font-size: 13px;
+  color: var(--text-mute);
+  text-decoration: underline;
 }
 
 .film-card--seen {
@@ -1662,6 +1721,17 @@ img { display: block; }
   border: 1px solid var(--border);
   color: var(--text);
   font-weight: 500;
+}
+
+.sheet-cta-primary--danger {
+  background: var(--danger, #c0392b);
+  color: #fff;
+}
+
+.seen-reset-dialog__body {
+  padding: 16px 20px 0;
+  font-size: 14px;
+  color: var(--text-sub);
 }
 
 /* ── Hover (pointer devices only) ────────────────────────────────────────────── */
