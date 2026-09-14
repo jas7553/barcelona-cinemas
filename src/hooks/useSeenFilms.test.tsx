@@ -75,6 +75,28 @@ describe("useSeenFilms", () => {
     expect(result.current.isSeen("0")).toBe(false);
   });
 
+  it("re-reads storage on a bfcache restore (persisted pageshow)", async () => {
+    const { result } = renderHook(() => useSeenFilms(), { wrapper });
+    await waitFor(() => expect(result.current.seenCount).toBe(0));
+    // Another document (the film page) wrote the flag while this one sat in
+    // bfcache; iOS Safari swipe-back restores it without remounting.
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(["7"]));
+    act(() => {
+      window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+    });
+    expect(result.current.isSeen("7")).toBe(true);
+  });
+
+  it("re-reads storage on a cross-tab storage event", async () => {
+    const { result } = renderHook(() => useSeenFilms(), { wrapper });
+    await waitFor(() => expect(result.current.seenCount).toBe(0));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(["8"]));
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }));
+    });
+    expect(result.current.isSeen("8")).toBe(true);
+  });
+
   it("clearSeenFilms removes the storage key", () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(["1"]));
     clearSeenFilms();
