@@ -1,5 +1,7 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from models import CinemaInfo, CinemaRegistry, Listings
 from providers.verdi_provider import (
     VerdiProvider,
@@ -253,12 +255,13 @@ def test_fetch_skips_showtime_when_sala_lookup_fails() -> None:
     assert movies == []
 
 
-def test_fetch_skips_film_when_cartellera_fetch_fails() -> None:
+def test_fetch_raises_when_cartellera_fetch_fails() -> None:
+    # An unreachable cartellera page is a provider failure, not an empty
+    # result — it must propagate so refresh.py counts it as ProviderFailure
+    # rather than silently classifying it as ProviderZeroResult.
     mock_get = MagicMock(side_effect=Exception("timeout"))
-    with patch("providers.verdi_provider.requests.get", mock_get):
-        movies = VerdiProvider().fetch(CINEMAS)
-
-    assert movies == []
+    with patch("providers.verdi_provider.requests.get", mock_get), pytest.raises(Exception, match="timeout"):
+        VerdiProvider().fetch(CINEMAS)
 
 
 def test_fetch_skips_film_when_film_page_fails() -> None:
