@@ -413,7 +413,6 @@ function FilmView({
             height={200}
             fetchPriority="high"
             decoding="async"
-            loading="lazy"
           />
         ) : (
           <BackdropPlaceholder w={430} h={200} id={movie.id} />
@@ -452,7 +451,7 @@ function FilmView({
                   alt={movie.title}
                   width={76}
                   height={112}
-                  loading="lazy"
+                  fetchPriority="high"
                   decoding="async"
                 />
               ) : (
