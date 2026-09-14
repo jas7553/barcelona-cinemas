@@ -271,7 +271,6 @@ img { display: block; }
      padding means fully-scrolled chips clear the faded zone. */
   padding-right: 28px;
   mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   scrollbar-width: none;
 }
 
@@ -1171,7 +1170,6 @@ img { display: block; }
   align-items: center;
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
   color: var(--text);
 }
