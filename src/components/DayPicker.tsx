@@ -22,16 +22,14 @@ export default function DayPicker({ selectedDay, onSelect, activeDays, days, hid
       : days;
 
   // Deep links like /?day=5 select a chip that sits offscreen in the
-  // scrollable row — bring it into view. Scroll the row only, by hand:
-  // scrollIntoView also scrolls the page vertically, which would clobber
-  // the list scroll restoration.
+  // scrollable row — bring it into view. `block: "nearest"` keeps this from
+  // touching vertical/page scroll (which would clobber list scroll
+  // restoration); `inline: "nearest"` matches the old "only scroll if it's
+  // actually out of view" behaviour instead of re-centering every time.
   useEffect(() => {
     const el = activeRef.current;
-    const row = el?.parentElement;
-    if (!el || !row) return;
-    if (el.offsetLeft < row.scrollLeft || el.offsetLeft + el.offsetWidth > row.scrollLeft + row.clientWidth) {
-      row.scrollLeft = el.offsetLeft - 16;
-    }
+    if (!el) return;
+    el.scrollIntoView({ inline: "nearest", block: "nearest" });
   }, [selectedDay]);
 
   return (
