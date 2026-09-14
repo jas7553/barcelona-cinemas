@@ -102,4 +102,15 @@ describe("useSeenFilms", () => {
     clearSeenFilms();
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
+
+  it("clearAll empties in-memory state and storage", () => {
+    const { result } = renderHook(() => useSeenFilms(), { wrapper });
+    act(() => result.current.toggleSeen("1"));
+    act(() => result.current.toggleSeen("2"));
+    expect(result.current.seenCount).toBe(2);
+    act(() => result.current.clearAll());
+    expect(result.current.seenCount).toBe(0);
+    expect(result.current.isSeen("1")).toBe(false);
+    expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
 });

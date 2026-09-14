@@ -486,15 +486,12 @@ function FilmView({
                   aria-pressed={seen}
                   aria-label={seen ? "Mark as unseen" : "Mark as seen"}
                 >
-                  {seen ? (
-                    <>
-                      <CheckIcon size={13} /> Seen
-                    </>
-                  ) : (
-                    <>
-                      <EyeIcon size={13} /> Mark as seen
-                    </>
-                  )}
+                  <span className="seen-btn__label" aria-hidden={seen}>
+                    <EyeIcon size={13} /> Mark as seen
+                  </span>
+                  <span className="seen-btn__label" aria-hidden={!seen}>
+                    <CheckIcon size={13} /> Seen
+                  </span>
                 </button>
               </div>
             </div>

@@ -3,6 +3,7 @@ import DayPicker from "../components/DayPicker";
 import FilmCard from "../components/FilmCard";
 import CinemaGroup from "../components/CinemaGroup";
 import CinemaSheet from "../components/CinemaSheet";
+import SeenResetDialog from "../components/SeenResetDialog";
 import SiteFooter from "../components/Footer";
 import DataAge from "../components/DataAge";
 import { MoonIcon, SunIcon, SearchIcon, PinIcon, ChevronDownIcon } from "../components/Icons";
@@ -88,8 +89,9 @@ function ListView({
   onToggleLocation,
 }: ListViewProps) {
   const { dark, toggle: toggleDark } = useTheme();
-  const { isSeen } = useSeenFilms();
+  const { isSeen, toggleSeen, clearAll, seenCount } = useSeenFilms();
   const [seenExpanded, setSeenExpanded] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
   const { params: searchParams, setParams } = useUrlParams();
   // Search lives in the URL (?q=) so returning from a film detail restores it
   const rawQuery = searchParams.get("q");
@@ -435,6 +437,7 @@ function ListView({
                 selectedDay={selectedDay}
                 days={days}
                 search={search}
+                onToggleSeen={toggleSeen}
               />
             ) : (
               <div className="empty-state">
@@ -451,6 +454,8 @@ function ListView({
               search={search}
               expanded={seenExpanded}
               onToggle={() => setSeenExpanded((v) => !v)}
+              onToggleSeen={toggleSeen}
+              onReset={() => setResetOpen(true)}
             />
           </div>
         ) : searchInput.trim().length > 0 ? (
@@ -506,6 +511,7 @@ function ListView({
                 selectedDay={selectedDay}
                 days={days}
                 search={search}
+                onToggleSeen={toggleSeen}
               />
             ) : (
               <div className="empty-state">
@@ -522,6 +528,8 @@ function ListView({
               search={search}
               expanded={seenExpanded}
               onToggle={() => setSeenExpanded((v) => !v)}
+              onToggleSeen={toggleSeen}
+              onReset={() => setResetOpen(true)}
             />
           </div>
         )
@@ -568,6 +576,15 @@ function ListView({
       )}
 
       <CinemaSheet venue={sheetVenue} onClose={() => setSheetVenue(null)} />
+      <SeenResetDialog
+        open={resetOpen}
+        count={seenCount}
+        onCancel={() => setResetOpen(false)}
+        onConfirm={() => {
+          clearAll();
+          setResetOpen(false);
+        }}
+      />
       <SiteFooter />
     </>
   );
@@ -579,9 +596,10 @@ interface FilmSectionsProps {
   selectedDay: number | null;
   days: Array<{ label: string; offset: number }>;
   search: string;
+  onToggleSeen: (id: string) => void;
 }
 
-function FilmSections({ runs, oneOffs, selectedDay, days, search }: FilmSectionsProps) {
+function FilmSections({ runs, oneOffs, selectedDay, days, search, onToggleSeen }: FilmSectionsProps) {
   return (
     <>
       {runs.length > 0 && (
@@ -590,7 +608,13 @@ function FilmSections({ runs, oneOffs, selectedDay, days, search }: FilmSections
           <ul className="film-list">
             {runs.map((m) => (
               <li key={m.id}>
-                <FilmCard movie={m} dayOffset={selectedDay ?? undefined} days={days} search={search} />
+                <FilmCard
+                  movie={m}
+                  dayOffset={selectedDay ?? undefined}
+                  days={days}
+                  search={search}
+                  onToggleSeen={() => onToggleSeen(m.id)}
+                />
               </li>
             ))}
           </ul>
@@ -602,7 +626,13 @@ function FilmSections({ runs, oneOffs, selectedDay, days, search }: FilmSections
           <ul className="film-list">
             {oneOffs.map((m) => (
               <li key={m.id}>
-                <FilmCard movie={m} dayOffset={selectedDay ?? undefined} days={days} search={search} />
+                <FilmCard
+                  movie={m}
+                  dayOffset={selectedDay ?? undefined}
+                  days={days}
+                  search={search}
+                  onToggleSeen={() => onToggleSeen(m.id)}
+                />
               </li>
             ))}
           </ul>
@@ -619,23 +649,41 @@ interface SeenSectionProps {
   search: string;
   expanded: boolean;
   onToggle: () => void;
+  onToggleSeen: (id: string) => void;
+  onReset: () => void;
 }
 
 /** Films marked seen: not removed, just pulled out of the main list so they
  * stop competing for attention. Collapsed by default; always reachable. */
-function SeenSection({ movies, selectedDay, days, search, expanded, onToggle }: SeenSectionProps) {
+function SeenSection({
+  movies,
+  selectedDay,
+  days,
+  search,
+  expanded,
+  onToggle,
+  onToggleSeen,
+  onReset,
+}: SeenSectionProps) {
   if (movies.length === 0) return null;
   return (
     <section className="seen-section">
-      <button
-        type="button"
-        className="seen-section__toggle"
-        aria-expanded={expanded}
-        onClick={onToggle}
-      >
-        <span className="chevron"><ChevronDownIcon /></span>
-        Seen ({movies.length})
-      </button>
+      <div className="seen-section__header">
+        <button
+          type="button"
+          className="seen-section__toggle"
+          aria-expanded={expanded}
+          onClick={onToggle}
+        >
+          <span className="chevron"><ChevronDownIcon /></span>
+          Seen
+        </button>
+        {expanded && (
+          <button type="button" className="seen-section__reset" onClick={onReset}>
+            Reset
+          </button>
+        )}
+      </div>
       {expanded && (
         <ul className="film-list">
           {movies.map((m) => (
@@ -646,6 +694,7 @@ function SeenSection({ movies, selectedDay, days, search, expanded, onToggle }: 
                 days={days}
                 search={search}
                 seen
+                onToggleSeen={() => onToggleSeen(m.id)}
               />
             </li>
           ))}

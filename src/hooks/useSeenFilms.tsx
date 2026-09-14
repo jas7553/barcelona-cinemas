@@ -8,12 +8,14 @@ const MAX_SEEN = 2000;
 interface SeenFilmsCtx {
   isSeen: (id: string) => boolean;
   toggleSeen: (id: string) => void;
+  clearAll: () => void;
   seenCount: number;
 }
 
 const SeenFilmsContext = createContext<SeenFilmsCtx>({
   isSeen: () => false,
   toggleSeen: () => {},
+  clearAll: () => {},
   seenCount: 0,
 });
 
@@ -90,9 +92,14 @@ export function SeenFilmsProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const clearAll = useCallback(() => {
+    setIds([]);
+    clearSeenFilms();
+  }, []);
+
   const value = useMemo(
-    () => ({ isSeen, toggleSeen, seenCount: ids.length }),
-    [isSeen, toggleSeen, ids.length],
+    () => ({ isSeen, toggleSeen, clearAll, seenCount: ids.length }),
+    [isSeen, toggleSeen, clearAll, ids.length],
   );
 
   return <SeenFilmsContext.Provider value={value}>{children}</SeenFilmsContext.Provider>;

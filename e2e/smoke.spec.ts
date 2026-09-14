@@ -58,7 +58,7 @@ test("core mobile journey", async ({ page }) => {
   });
 
   await test.step("open a card — real nav, day param carried in the URL", async () => {
-    await page.locator(".film-card").first().click();
+    await page.locator(".film-card__link").first().click();
     await expect(page).toHaveURL(/\/film\/.+day=1/);
     await expect(page.locator(".detail-film-title")).toBeVisible();
     await expect(page.locator(".detail-screen .day-chip--active")).toHaveCount(1);
@@ -76,7 +76,7 @@ test("core mobile journey", async ({ page }) => {
     await page.locator('button[aria-label="Search films"]').click();
     await page.locator(".search-input").fill("a");
     await expect(page).toHaveURL(/q=a/);
-    await page.locator(".film-card").first().click();
+    await page.locator(".film-card__link").first().click();
     await expect(page.locator(".detail-film-title")).toBeVisible();
     await page.goBack();
     await expect(page.locator(".search-input")).toHaveValue("a");
@@ -128,7 +128,7 @@ test("core mobile journey", async ({ page }) => {
 // data embedded — no list visit, no fetch.
 test("film deep link renders standalone", async ({ page }) => {
   await page.goto("/");
-  const href = await page.locator(".film-card").first().getAttribute("href");
+  const href = await page.locator(".film-card__link").first().getAttribute("href");
   expect(href).toMatch(/^\/film\//);
 
   await page.goto(href!);
@@ -151,7 +151,7 @@ test("premium format chip renders on the film page", async ({ page }) => {
 // distinguish one day from another.
 test("film page exposes a11y structure", async ({ page }) => {
   await page.goto("/");
-  const href = await page.locator(".film-card").first().getAttribute("href");
+  const href = await page.locator(".film-card__link").first().getAttribute("href");
   await page.goto(href!);
 
   await expect(page.locator(".detail-film-title")).toBeVisible();
@@ -201,7 +201,7 @@ test("back restores list scroll position", async ({ page }) => {
       return r.top >= top && r.bottom <= window.innerHeight;
     });
   });
-  await page.locator(".film-card").nth(visibleIdx).click();
+  await page.locator(".film-card__link").nth(visibleIdx).click();
   await expect(page.locator(".detail-film-title")).toBeVisible();
 
   await page.goBack();
