@@ -242,6 +242,18 @@ describe("buildIcs", () => {
     expect(ics).toContain("DTEND:20260615T233000Z"); // 01:30+02:00 next day Madrid = 23:30Z same UTC day
   });
 
+  it("gives the same film/time at different cinemas distinct UIDs", () => {
+    const uid = (ics: string) => ics.match(/^UID:(.*)$/m)?.[1];
+    const a = buildIcs({ ...base, runtimeMinutes: 90 });
+    const b = buildIcs({ ...base, location: "Cinesa Diagonal, Carrer de Santa Fe 12", runtimeMinutes: 90 });
+    expect(uid(a)).not.toBe(uid(b));
+  });
+
+  it("keeps the UID to safe ASCII characters", () => {
+    const ics = buildIcs({ ...base, title: "Amélie; Or, Fate", location: "Glòries", runtimeMinutes: 90 });
+    expect(ics).toMatch(/^UID:20260615T193000Z-amelie-or-fate-glories@barcelona-movie-database\r?$/m);
+  });
+
   it("escapes commas in TEXT fields", () => {
     const ics = buildIcs({ ...base, title: "Dune, Part Two", runtimeMinutes: 90 });
     expect(ics).toContain("SUMMARY:Dune\\, Part Two");
