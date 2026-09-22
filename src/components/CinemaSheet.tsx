@@ -39,6 +39,8 @@ export default function CinemaSheet({ venue, onClose }: Props) {
       aria-labelledby="cinema-dialog-name"
       onClose={onClose}
       closedby="any"
+      // Safari lacks closedby; fall back to closing on a backdrop tap.
+      onClick={(e) => { if (e.target === dialogRef.current) onClose(); }}
     >
       <div className="cinema-dialog__inner">
         <div className="cinema-dialog__header">
