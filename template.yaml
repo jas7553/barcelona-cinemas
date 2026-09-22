@@ -523,11 +523,12 @@ Resources:
         SecurityHeadersConfig:
           ContentSecurityPolicy:
             # script-src allows: bundled JS ('self'); the inline pre-paint theme
-            # script; and the inline speculation rules. The hydration payload
+            # script; the inline speculation rules; and the inline
+            # view-transition script. The hydration payload
             # and any ld+json are inert data blocks, so they need no allowance.
             #
-            # Both sha256 values below are DERIVED from the script bodies in
-            # scripts/template.mjs (THEME_SCRIPT, SPECULATION_RULES) — that
+            # All sha256 values below are DERIVED from the script bodies in
+            # scripts/template.mjs (INLINE_SCRIPTS) — that
             # module is the single owner, and the generated 404 page reuses the
             # same THEME_SCRIPT string rather than a copy. Change a body and
             # scripts/template.test.mjs fails with the replacement hashes to
