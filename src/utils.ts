@@ -183,6 +183,11 @@ function escapeIcsText(s: string): string {
     .replace(/\r?\n/g, "\\n");
 }
 
+/** Lowercase ASCII-alphanumeric slug, safe in a UID without TEXT escaping. */
+function icsUidSlug(s: string): string {
+  return normalizeForSearch(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 /** UTC stamp "YYYYMMDDTHHMMSSZ" for DTSTAMP. */
 function icsUtcStamp(dt: Date): string {
   return (
@@ -214,7 +219,9 @@ export function buildIcs(
   const start = madridWallToInstant(opts.date, opts.time);
   const minutes = opts.runtimeMinutes && opts.runtimeMinutes > 0 ? opts.runtimeMinutes : ICS_FALLBACK_RUNTIME;
   const end = new Date(start.getTime() + minutes * 60000);
-  const uid = `${icsUtcStamp(start)}-${opts.title.replace(/\s+/g, "-").toLowerCase()}@barcelona-movie-database`;
+  // Location is part of the identity: calendars treat a repeated UID as an
+  // update, so the same film/time at two cinemas would overwrite each other.
+  const uid = `${icsUtcStamp(start)}-${icsUidSlug(`${opts.title} ${opts.location}`)}@barcelona-movie-database`;
 
   return [
     "BEGIN:VCALENDAR",
