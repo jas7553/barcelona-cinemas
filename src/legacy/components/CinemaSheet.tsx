@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { SheetVenueData } from "../types";
+import type { SheetVenueData } from "../../types";
 
 interface Props {
   venue: SheetVenueData | null;

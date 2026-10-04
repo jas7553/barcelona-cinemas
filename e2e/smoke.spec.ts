@@ -66,7 +66,7 @@ test("core mobile journey", async ({ page }) => {
   });
 
   await test.step("back returns to the list with its filter", async () => {
-    await page.goBack();
+    await page.goBack({ waitUntil: "commit" });
     await expect(page.locator(".film-card").first()).toBeVisible();
     await expect(page).toHaveURL(/day=1/);
   });
@@ -78,7 +78,7 @@ test("core mobile journey", async ({ page }) => {
     await expect(page).toHaveURL(/q=a/);
     await page.locator(".film-card__link").first().click();
     await expect(page.locator(".detail-film-title")).toBeVisible();
-    await page.goBack();
+    await page.goBack({ waitUntil: "commit" });
     await expect(page.locator(".search-input")).toHaveValue("a");
     await page.locator(".search-cancel").click();
     await expect(page).not.toHaveURL(/q=/);
@@ -108,15 +108,19 @@ test("core mobile journey", async ({ page }) => {
   await test.step("deep-linked day chip scrolls into view", async () => {
     await page.goto("/?day=6");
     await expect(page.locator(".day-chip--active")).toBeVisible();
-    const chipVisible = await page.evaluate(() => {
-      const el = document.querySelector(".day-chip--active");
-      const row = el?.parentElement;
-      if (!el || !row) return false;
-      const er = el.getBoundingClientRect();
-      const rr = row.getBoundingClientRect();
-      return er.left >= rr.left && er.right <= rr.right + 1;
-    });
-    expect(chipVisible).toBe(true);
+    // The chip row scrolls smoothly, so poll until it settles.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const el = document.querySelector(".day-chip--active");
+          const row = el?.parentElement;
+          if (!el || !row) return false;
+          const er = el.getBoundingClientRect();
+          const rr = row.getBoundingClientRect();
+          return er.left >= rr.left && er.right <= rr.right + 1;
+        }),
+      )
+      .toBe(true);
   });
 
   await test.step("no console errors", () => {
@@ -204,7 +208,7 @@ test("back restores list scroll position", async ({ page }) => {
   await page.locator(".film-card__link").nth(visibleIdx).click();
   await expect(page.locator(".detail-film-title")).toBeVisible();
 
-  await page.goBack();
+  await page.goBack({ waitUntil: "commit" });
   await expect(page.locator(".film-card").first()).toBeVisible();
   await expect
     .poll(() => page.evaluate(() => window.scrollY), { timeout: 3000 })

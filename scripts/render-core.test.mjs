@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { assets, renderAll } from "./render-core.mjs";
 
-// Regression guard: Vite hoists the global style.css (imported by both entries)
+// Regression guard: Vite hoists the global style.css (imported by both legacy entries)
 // into a shared chunk — here the useLocationPin chunk, whose JS we deliberately
 // skip preloading. The skip must NOT also drop its CSS, or every page renders
 // unstyled (the stylesheet vanishes from the document <head>).
@@ -45,14 +45,18 @@ describe("assets()", () => {
 
 describe("renderAll() sitemap", () => {
   const manifest = {
-    "src/entry-list.tsx": { file: "assets/list.js", isEntry: true },
-    "src/entry-film.tsx": { file: "assets/film.js", isEntry: true },
-    "src/entry-privacy.tsx": { file: "assets/privacy.js", isEntry: true },
+    "src/legacy/entry-list.tsx": { file: "assets/list.js", isEntry: true },
+    "src/legacy/entry-film.tsx": { file: "assets/film.js", isEntry: true },
+    "src/client.tsx": { file: "assets/client.js", isEntry: true },
   };
   const server = {
     renderList: () => ({ html: "<main></main>", title: "T", headExtra: "" }),
     renderFilm: () => ({ html: "<main></main>", title: "F", headExtra: "" }),
-    renderPrivacy: () => ({ html: "<main></main>", title: "P", headExtra: "" }),
+    sitePages: (_listings, renderedAt) => [
+      { path: "privacy.html", data: { page: "privacy", renderedAt } },
+      { path: "404.html", data: { page: "not-found", renderedAt } },
+    ],
+    renderPage: (data) => ({ html: `<main>${data.page}</main>`, title: data.page, headExtra: "" }),
     filmListings: (full, id) => {
       const movie = full.movies.find((m) => m.id === id);
       return movie ? { ...full, movies: [movie] } : null;
@@ -83,16 +87,24 @@ describe("renderAll() sitemap", () => {
     expect(sm).toContain("<lastmod>2026-06-27</lastmod>");
   });
 
-  it("includes /privacy in the sitemap with low priority and yearly changefreq", async () => {
+  it("includes /privacy/ in the sitemap with low priority and yearly changefreq", async () => {
     const sm = (await run("https://x.test")).get("sitemap.xml");
-    expect(sm).toContain("<loc>https://x.test/privacy</loc>");
+    expect(sm).toContain("<loc>https://x.test/privacy/</loc>");
     expect(sm).toContain("<priority>0.3</priority>");
     expect(sm).toContain("<changefreq>yearly</changefreq>");
   });
 
-  it("renders privacy.html", async () => {
+  it("renders every page sitePages lists on the shared client entry", async () => {
     const writes = await run("https://x.test");
-    expect(writes.has("privacy.html")).toBe(true);
+    expect(writes.get("privacy.html")).toContain('<script type="module" src="/assets/client.js">');
+    expect(writes.get("privacy.html")).toContain("<main>privacy</main>");
+  });
+
+  it("writes the 404 page with the current bundle and the expired-page redirect", async () => {
+    const notFound = (await run("https://x.test")).get("404.html");
+    expect(notFound).toContain('src="/assets/client.js"');
+    expect(notFound).toContain("location.replace");
+    expect((await run("https://x.test")).get("privacy.html")).not.toContain("location.replace");
   });
 
   it("keeps ended films out of the list page's embedded data", async () => {
@@ -114,14 +126,18 @@ describe("renderAll() sitemap", () => {
 // "Today"; the sibling JSON just accumulates in the bucket.
 describe("renderAll() prune", () => {
   const manifest = {
-    "src/entry-list.tsx": { file: "assets/list.js", isEntry: true },
-    "src/entry-film.tsx": { file: "assets/film.js", isEntry: true },
-    "src/entry-privacy.tsx": { file: "assets/privacy.js", isEntry: true },
+    "src/legacy/entry-list.tsx": { file: "assets/list.js", isEntry: true },
+    "src/legacy/entry-film.tsx": { file: "assets/film.js", isEntry: true },
+    "src/client.tsx": { file: "assets/client.js", isEntry: true },
   };
   const server = {
     renderList: () => ({ html: "<main></main>", title: "T", headExtra: "" }),
     renderFilm: () => ({ html: "<main></main>", title: "F", headExtra: "" }),
-    renderPrivacy: () => ({ html: "<main></main>", title: "P", headExtra: "" }),
+    sitePages: (_listings, renderedAt) => [
+      { path: "privacy.html", data: { page: "privacy", renderedAt } },
+      { path: "404.html", data: { page: "not-found", renderedAt } },
+    ],
+    renderPage: (data) => ({ html: `<main>${data.page}</main>`, title: data.page, headExtra: "" }),
     filmListings: (full, id) => ({ ...full, movies: full.movies.filter((m) => m.id === id) }),
   };
   function listings() {

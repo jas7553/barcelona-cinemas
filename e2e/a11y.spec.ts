@@ -103,35 +103,40 @@ async function contrast(page: Page, sel: string): Promise<number | null> {
   }, sel);
 }
 
-for (const theme of ["light", "dark"] as const) {
-  test(`film page: text meets 4.5:1 in ${theme} theme`, async ({ page }) => {
-    await page.addInitScript((t) => {
-      localStorage.setItem("btw-dark", String(t === "dark"));
-    }, theme);
-    await gotoFirstFilm(page);
+test.describe("film page contrast", () => {
+  // The probe injects a stylesheet, which the production CSP (e2e/serve.mjs) blocks.
+  test.use({ bypassCSP: true });
 
-    // WCAG cares about steady-state colors. Freeze transitions/animations so the
-    // probe can't sample a chip mid-transition: the clock swap (renderedAt → live)
-    // re-flows the day chips in a post-mount effect, and their .12s background
-    // transition passes through an alpha < 1 frame, which the walk-up would read
-    // as the light page bg — a false failure.
-    await page.addStyleTag({
-      content: "*,*::before,*::after{transition:none!important;animation:none!important}",
+  for (const theme of ["light", "dark"] as const) {
+    test(`film page: text meets 4.5:1 in ${theme} theme`, async ({ page }) => {
+      await page.addInitScript((t) => {
+        localStorage.setItem("btw-dark", String(t === "dark"));
+      }, theme);
+      await gotoFirstFilm(page);
+
+      // WCAG cares about steady-state colors. Freeze transitions/animations so the
+      // probe can't sample a chip mid-transition: the clock swap (renderedAt → live)
+      // re-flows the day chips in a post-mount effect, and their .12s background
+      // transition passes through an alpha < 1 frame, which the walk-up would read
+      // as the light page bg — a false failure.
+      await page.addStyleTag({
+        content: "*,*::before,*::after{transition:none!important;animation:none!important}",
+      });
+
+      // Always present on the film page.
+      for (const sel of [".day-chip--active", ".sheet-cinema-meta"]) {
+        const c = await contrast(page, sel);
+        expect(c, `${sel} not found`).not.toBeNull();
+        expect(c!, `${sel} contrast`).toBeGreaterThanOrEqual(4.5);
+      }
+      // Data-dependent (a film may lack credits or skip a day); assert when shown.
+      for (const sel of [".credits-label", ".day-chip--faded"]) {
+        const c = await contrast(page, sel);
+        if (c !== null) expect(c, `${sel} contrast`).toBeGreaterThanOrEqual(4.5);
+      }
     });
-
-    // Always present on the film page.
-    for (const sel of [".day-chip--active", ".sheet-cinema-meta"]) {
-      const c = await contrast(page, sel);
-      expect(c, `${sel} not found`).not.toBeNull();
-      expect(c!, `${sel} contrast`).toBeGreaterThanOrEqual(4.5);
-    }
-    // Data-dependent (a film may lack credits or skip a day); assert when shown.
-    for (const sel of [".credits-label", ".day-chip--faded"]) {
-      const c = await contrast(page, sel);
-      if (c !== null) expect(c, `${sel} contrast`).toBeGreaterThanOrEqual(4.5);
-    }
-  });
-}
+  }
+});
 
 test("film page: no horizontal overflow or clipped text at 200% zoom", async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 });

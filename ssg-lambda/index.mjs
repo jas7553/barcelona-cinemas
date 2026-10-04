@@ -5,7 +5,7 @@
 // invalidates CloudFront. No public HTTP surface.
 //
 // Packaged files (copied in by deploy.sh after `npm run build`):
-//   entry-server.js     self-contained React SSR bundle (dist-ssr/)
+//   entry-server.js     self-contained Preact SSR bundle (dist-ssr/)
 //   render-core.mjs     shared render loop (scripts/)
 //   template.mjs        HTML document template (scripts/)
 //   site-constants.mjs  timezone + prune prefixes (scripts/)
@@ -196,7 +196,9 @@ async function render(refreshId, startedMs) {
         DistributionId: DIST,
         InvalidationBatch: {
           CallerReference: String(Date.now()),
-          Paths: { Quantity: 3, Items: ["/", "/index.html", "/film/*"] },
+          // Every page is rewritten on each render, and the dated ones live
+          // at many paths; a wildcard counts as a single invalidation path.
+          Paths: { Quantity: 1, Items: ["/*"] },
         },
       }),
     );

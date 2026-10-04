@@ -1,9 +1,10 @@
 import { renderToString } from "preact-render-to-string";
-import ListPage, { type ListPageData } from "./pages/ListPage";
-import FilmPage, { type FilmPageData } from "./pages/FilmPage";
-import PrivacyPage from "./pages/PrivacyPage";
+import { App } from "./App";
+import ListPage, { type ListPageData } from "./legacy/pages/ListPage";
+import FilmPage, { type FilmPageData } from "./legacy/pages/FilmPage";
+import { premiumFormatLabel } from "./legacy/utils";
+import type { PageData } from "./pageData";
 import type { Listings, Movie, Theater } from "./types";
-import { premiumFormatLabel } from "./utils";
 
 const SITE_NAME = "Barcelona This Week";
 const DEFAULT_DESC =
@@ -181,20 +182,39 @@ export function renderFilm(data: FilmPageData, siteUrl?: string): RenderedPage {
   };
 }
 
-export function renderPrivacy(siteUrl?: string): RenderedPage {
-  const title = `Privacy · ${SITE_NAME}`;
-  const description =
-    "No cookies, no analytics, no tracking. Barcelona This Week is a static site — it sets no cookies and collects no personal data.";
-  return {
-    html: renderToString(<PrivacyPage />),
-    title,
-    headExtra: metaTags({
-      title,
-      description,
-      url: siteUrl ? `${siteUrl}/privacy` : undefined,
-      canonical: siteUrl ? `${siteUrl}/privacy` : undefined,
-    }),
-  };
+/** Every page the new front end renders, keyed by its output path. */
+export function sitePages(listings: Listings, renderedAt: string): { path: string; data: PageData }[] {
+  const base = { renderedAt, generatedAt: listings.generated_at, stale: listings.stale };
+  return [
+    { path: "privacy.html", data: { ...base, page: "privacy" } },
+    { path: "404.html", data: { ...base, page: "not-found" } },
+  ];
+}
+
+export function renderPage(data: PageData, siteUrl?: string): RenderedPage {
+  const html = renderToString(<App data={data} />);
+  switch (data.page) {
+    case "privacy": {
+      const title = `Privacy · ${SITE_NAME}`;
+      const url = siteUrl ? `${siteUrl}/privacy/` : undefined;
+      return {
+        html,
+        title,
+        headExtra: metaTags({
+          title,
+          description: "No accounts, no cookies, no analytics, no tracking. Home, seen films and My cinemas stay on your device.",
+          url,
+          canonical: url,
+        }),
+      };
+    }
+    case "not-found":
+      return {
+        html,
+        title: `Not showing · ${SITE_NAME}`,
+        headExtra: metaTags({ title: `Not showing · ${SITE_NAME}`, description: DEFAULT_DESC, noindex: true }),
+      };
+  }
 }
 
 /** Build a per-film payload (one movie + the theaters it uses) from full listings. */

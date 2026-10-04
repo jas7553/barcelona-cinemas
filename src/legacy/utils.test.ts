@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import type { Listings, Movie, Showtime } from "./types";
+import type { Listings, Movie, Showtime } from "../types";
 import { formatDayLabel, formatRuntime, transformResponse, haversineKm, formatLanguage, buildIcs, viewingLang, viewingLangLabel, premiumFormatLabel, buildCinemaRows, buildCinemaGroups, buildDaySections, generateDays, dayHorizon, parseSortMode, sortMovies, movieMatchesQuery, normalizeForSearch, screeningKind, runCoverageLabel, madridDateKey, madridWallToInstant } from "./utils";
-import type { TransformedMovie, TransformedShowtime } from "./types";
+import type { TransformedMovie, TransformedShowtime } from "../types";
 
 /** One Verdi theater and one movie; override only the movie fields a test asserts on. */
 function sampleListings(showtimes: Showtime[], movie: Partial<Movie> = {}): Listings {

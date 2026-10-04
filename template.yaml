@@ -522,16 +522,16 @@ Resources:
         Comment: "Security headers for the static MPA (CSP: same-origin only)."
         SecurityHeadersConfig:
           ContentSecurityPolicy:
-            # script-src allows: bundled JS ('self'); the inline pre-paint theme
-            # script; and the inline speculation rules. The hydration payload
-            # and any ld+json are inert data blocks, so they need no allowance.
+            # script-src allows: bundled JS ('self'); the inline pre-paint prefs
+            # script; the 404 page's expired-page redirect; the speculation
+            # rules; and the view-transition script. The hydration payload and
+            # any ld+json are inert data blocks, so they need no allowance.
             #
-            # Both sha256 values below are DERIVED from the script bodies in
-            # scripts/template.mjs (THEME_SCRIPT, SPECULATION_RULES) — that
-            # module is the single owner, and the generated 404 page reuses the
-            # same THEME_SCRIPT string rather than a copy. Change a body and
-            # scripts/template.test.mjs fails with the replacement hashes to
-            # paste here. Do not hand-edit these without running that test:
+            # Every sha256 value below is DERIVED from the script bodies in
+            # scripts/template.mjs (INLINE_SCRIPTS) — that module is the single
+            # owner. Change a body and scripts/template.test.mjs fails with the
+            # replacement hashes to paste here. Do not hand-edit these without
+            # running that test:
             # a stale hash is invisible in dev (no CSP) and only breaks in prod.
             ContentSecurityPolicy: >-
               default-src 'self';
@@ -543,7 +543,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-UJ7YuwH97313GFUbDC38zVD8DwXulidM0MT7PafMtC0=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-jBj6N49FwSBjGqkTPm6zy8BEq7bHJqVhesj5vDOswvo=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-yW1slQtaZ9pvxC1kYUOQ9g7tlXpbhQKTaYfdhCvyqGE=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true
@@ -584,7 +584,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-UJ7YuwH97313GFUbDC38zVD8DwXulidM0MT7PafMtC0=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-jBj6N49FwSBjGqkTPm6zy8BEq7bHJqVhesj5vDOswvo=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-yW1slQtaZ9pvxC1kYUOQ9g7tlXpbhQKTaYfdhCvyqGE=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true

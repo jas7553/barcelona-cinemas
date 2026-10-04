@@ -38,7 +38,7 @@ import {
   icsHref,
   viewingLangLabel,
 } from "../utils";
-import type { Listings, TransformedMovie, SheetVenueData } from "../types";
+import type { Listings, TransformedMovie, SheetVenueData } from "../../types";
 
 export interface FilmPageData {
   /** Instant the page was pre-rendered (SSG); seeds the hydration clock. */

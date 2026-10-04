@@ -2,7 +2,7 @@ import { memo } from "react";
 import PosterPlaceholder from "./PosterPlaceholder";
 import { ChevronRightIcon } from "./Icons";
 import { screeningKind, formatDistKm, thumbPosterUrl } from "../utils";
-import type { CinemaViewGroup } from "../types";
+import type { CinemaViewGroup } from "../../types";
 
 /** Day rows shown inline before the rest collapse into a "+N more days" note. */
 const MAX_DAYS = 2;

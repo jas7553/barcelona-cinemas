@@ -23,7 +23,7 @@ import {
   sortMovies,
   splitByScreeningKind,
 } from "../utils";
-import type { CinemaViewGroup, SheetVenueData, TransformedMovie, Listings } from "../types";
+import type { CinemaViewGroup, SheetVenueData, TransformedMovie, Listings } from "../../types";
 
 export interface ListPageData {
   /** Instant the page was pre-rendered (SSG); seeds the hydration clock. */

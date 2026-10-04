@@ -1,94 +1,25 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/preact";
-import PrivacyPage from "./PrivacyPage";
+import { fireEvent, render, screen } from "@testing-library/preact";
+import { afterEach, describe, expect, it } from "vitest";
+import { PREF_KEYS } from "../domain/prefs";
+import { PrivacyPage } from "./PrivacyPage";
+
+const data = { renderedAt: "2026-10-04T10:19:00Z", generatedAt: "2026-10-04T08:19:00Z", stale: false };
+
+afterEach(() => localStorage.clear());
 
 describe("PrivacyPage", () => {
-  beforeEach(() => {
-    localStorage.clear();
+  it("forgets everything stored on the device, and says so", () => {
+    localStorage.setItem(PREF_KEYS.home, '{"lat":41.4,"lng":2.15}');
+    localStorage.setItem(PREF_KEYS.seen, '["1"]');
+    render(<PrivacyPage data={data} />);
+    fireEvent.click(screen.getByRole("button", { name: "Forget all of it" }));
+    expect(localStorage.length).toBe(0);
+    expect(screen.getByText("Done. Nothing is stored on this device now.")).toBeInTheDocument();
   });
 
-  it("renders the main heading", () => {
-    render(<PrivacyPage />);
-    expect(screen.getByRole("heading", { name: "Privacy", level: 1 })).toBeInTheDocument();
-  });
-
-  it("renders all major section headings", () => {
-    render(<PrivacyPage />);
-    expect(screen.getByRole("heading", { name: /what this site does not do/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /stored only in your browser/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /location/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /other sites your browser contacts/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /hosting and search/i })).toBeInTheDocument();
-  });
-
-  it("accurately claims no cookies", () => {
-    render(<PrivacyPage />);
-    // The first list item starts with "No cookies" — test for the list item text
-    expect(screen.getAllByText(/no cookies/i).length).toBeGreaterThan(0);
-  });
-
-  it("accurately claims no analytics", () => {
-    render(<PrivacyPage />);
-    expect(screen.getByText(/no analytics/i)).toBeInTheDocument();
-  });
-
-  it("accurately claims no user accounts", () => {
-    render(<PrivacyPage />);
-    expect(screen.getByText(/no user accounts/i)).toBeInTheDocument();
-  });
-
-  it("documents the browser-storage keys", () => {
-    render(<PrivacyPage />);
-    // Each key appears as <code> elements; getAllByText handles multiple occurrences
-    expect(screen.getAllByText("btw-dark").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("location_active").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("btw-seen").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("btw-warmed").length).toBeGreaterThan(0);
-  });
-
-  it("offers a way to clear the seen-films list", () => {
-    localStorage.setItem("btw-seen", JSON.stringify(["1"]));
-    render(<PrivacyPage />);
-    const btn = screen.getByRole("button", { name: /clear seen films/i });
-    btn.click();
-    expect(localStorage.getItem("btw-seen")).toBeNull();
-  });
-
-  it("states coordinates are never sent anywhere", () => {
-    render(<PrivacyPage />);
-    expect(screen.getByText(/never sent to any server/i)).toBeInTheDocument();
-  });
-
-  it("mentions TMDb image hosting", () => {
-    render(<PrivacyPage />);
-    expect(screen.getByText(/image\.tmdb\.org/)).toBeInTheDocument();
-  });
-
-  it("mentions CloudFront access logging is disabled", () => {
-    render(<PrivacyPage />);
-    expect(screen.getByText(/access logging is disabled/i)).toBeInTheDocument();
-  });
-
-  it("has a back-link to the home page", () => {
-    render(<PrivacyPage />);
-    const backLink = screen.getByRole("link", { name: /back to barcelona this week/i });
-    expect(backLink).toHaveAttribute("href", "/");
-  });
-
-  it("has a footer link to /privacy", () => {
-    render(<PrivacyPage />);
-    const privacyLinks = screen.getAllByRole("link", { name: /privacy/i });
-    const footerLink = privacyLinks.find((el) => el.getAttribute("href") === "/privacy");
-    expect(footerLink).toBeDefined();
-  });
-
-  it("includes a theme toggle button", () => {
-    render(<PrivacyPage />);
-    expect(screen.getByRole("button", { name: /toggle dark mode/i })).toBeInTheDocument();
-  });
-
-  it("shows the effective date", () => {
-    render(<PrivacyPage />);
-    expect(screen.getByText(/effective:/i)).toBeInTheDocument();
+  it("opens the Home sheet from the header", () => {
+    render(<PrivacyPage data={data} />);
+    fireEvent.click(screen.getByRole("button", { name: /home/i }));
+    expect(screen.getByRole("dialog", { name: "Home" })).toBeInTheDocument();
   });
 });

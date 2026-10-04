@@ -75,3 +75,19 @@ export function prunePrefixesS3() {
 export function prunePrefixesIamGlobs() {
   return PRUNE_PREFIXES.map(({ prefix }) => `${prefix}/*`);
 }
+
+/**
+ * The bucket key a request path is served from: the same mapping as the
+ * CloudFront Function in template.yaml (CleanUrlFunction). The dev server and
+ * the e2e static server resolve URLs through this, so they route like
+ * production; site-constants.test.mjs runs the deployed function against it.
+ *
+ * @param {string} uri  Request path, e.g. "/film/1248832/".
+ * @returns {string}    Key without a leading slash, e.g. "film/1248832.html".
+ */
+export function objectKeyFor(uri) {
+  if (uri === "/" || uri === "") return "index.html";
+  const clean = uri.replace(/\/$/, "");
+  const last = clean.slice(clean.lastIndexOf("/") + 1);
+  return (last.includes(".") ? clean : `${clean}.html`).slice(1);
+}

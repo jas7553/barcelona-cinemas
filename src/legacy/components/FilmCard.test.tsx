@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/preact";
 import FilmCard from "./FilmCard";
 import { transformResponse } from "../utils";
-import type { Listings } from "../types";
+import type { Listings } from "../../types";
 
 function futureDate(offsetDays: number): string {
   const d = new Date();

@@ -21,6 +21,7 @@ import {
   PRUNE_PREFIXES,
   SITE_TIMEZONE,
   assertSiteTimezone,
+  objectKeyFor,
   prunePrefixesFs,
   prunePrefixesIamGlobs,
   prunePrefixesS3,
@@ -122,5 +123,32 @@ describe("FACT C — the prune prefixes", () => {
       expect(glob.endsWith("/*")).toBe(true);
       expect(glob).not.toBe("*");
     }
+  });
+});
+
+describe("FACT D — clean URLs", () => {
+  /** template.yaml's UrlRewriteFunction, run as CloudFront would run it. */
+  function deployedRewrite(uri) {
+    const block = TEMPLATE_YAML.match(/UrlRewriteFunction:[\s\S]*?FunctionCode: \|\n([\s\S]*?)\n\n/);
+    if (!block) throw new Error("no UrlRewriteFunction code found in template.yaml");
+    const handler = new Function(`${block[1]}; return handler;`)();
+    return handler({ request: { uri } }).uri;
+  }
+
+  it.each([
+    "/",
+    "/privacy",
+    "/privacy/",
+    "/film/1248832",
+    "/film/1248832/",
+    "/film/1248832/2026-10-05/",
+    "/day/2026-10-05/",
+    "/cinema/verdi-park/",
+    "/cinemas/",
+    "/assets/client-abc123.js",
+    "/data/listings.json",
+    "/404.html",
+  ])("objectKeyFor(%j) resolves like the deployed function", (uri) => {
+    expect(`/${objectKeyFor(uri)}`).toBe(deployedRewrite(uri));
   });
 });

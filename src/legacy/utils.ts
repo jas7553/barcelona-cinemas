@@ -1,4 +1,4 @@
-import type { Listings, Theater, TransformedMovie, TransformedShowtime, CinemaViewGroup } from "./types";
+import type { Listings, Theater, TransformedMovie, TransformedShowtime, CinemaViewGroup } from "../types";
 
 // ── Barcelona wall-clock ↔ instant conversions ──────────────────────────────
 //

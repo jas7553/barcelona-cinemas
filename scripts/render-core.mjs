@@ -28,8 +28,9 @@ export function assets(manifest, entryKey) {
  * @param {object} o
  * @param {object} o.listings   Public listings payload ({generated_at, stale, theaters, movies}).
  * @param {object} o.manifest   Vite client build manifest.
- * @param {object} o.server     The entry-server module (renderList/renderFilm/renderPrivacy/filmListings).
+ * @param {object} o.server     The entry-server module (sitePages/renderPage, plus the legacy renderList/renderFilm/filmListings).
  * @param {string} [o.siteUrl]  Absolute origin for OpenGraph og:url.
+ * @param {string} [o.renderedAt]  ISO instant to render at (default: now). Pinned only for visual comparison.
  * @param {(relPath: string, contents: string, contentType: string) => (void|Promise<void>)} o.write
  * @param {(keepRelPaths: Set<string>) => (void|Promise<void>)} [o.prune]
  *   Optional sink for deleting stale output. Called exactly once, only after
@@ -41,11 +42,18 @@ export function assets(manifest, entryKey) {
  *   behaviour).
  * @returns {Promise<{filmCount: number}>}
  */
-export async function renderAll({ listings, manifest, server, siteUrl = "", write, prune }) {
-  const renderedAt = new Date().toISOString();
-  const listAssets = assets(manifest, "src/entry-list.tsx");
-  const filmAssets = assets(manifest, "src/entry-film.tsx");
-  const privacyAssets = assets(manifest, "src/entry-privacy.tsx");
+export async function renderAll({
+  listings,
+  manifest,
+  server,
+  siteUrl = "",
+  renderedAt = new Date().toISOString(),
+  write,
+  prune,
+}) {
+  const listAssets = assets(manifest, "src/legacy/entry-list.tsx");
+  const filmAssets = assets(manifest, "src/legacy/entry-film.tsx");
+  const clientAssets = assets(manifest, "src/client.tsx");
 
   // List page. Ended films only ever get their own page, so keep them out of
   // the embedded payload.
@@ -67,21 +75,25 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
   );
   await write("data/listings.json", JSON.stringify(listings), "application/json");
 
-  // Privacy page (static prose — no per-render data, always present)
-  const privacyPage = server.renderPrivacy(siteUrl);
-  await write(
-    "privacy.html",
-    renderDocument({
-      title: privacyPage.title,
-      headExtra: privacyPage.headExtra,
-      bodyHtml: privacyPage.html,
-      data: null,
-      entrySrc: privacyAssets.js,
-      cssHrefs: privacyAssets.css,
-      preload: privacyAssets.preload,
-    }),
-    "text/html; charset=utf-8",
-  );
+  // Pages of the new front end, 404.html included: it links the current
+  // hashed bundle, so it has to be rewritten with every render.
+  for (const { path, data } of server.sitePages(listings, renderedAt)) {
+    const page = server.renderPage(data, siteUrl);
+    await write(
+      path,
+      renderDocument({
+        title: page.title,
+        headExtra: page.headExtra,
+        bodyHtml: page.html,
+        data,
+        entrySrc: clientAssets.js,
+        cssHrefs: clientAssets.css,
+        preload: clientAssets.preload,
+        notFound: data.page === "not-found",
+      }),
+      "text/html; charset=utf-8",
+    );
+  }
 
   // Film pages — render all synchronously then flush all writes in parallel.
   const filmOutputs = new Set();
@@ -118,7 +130,7 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
     const entries = [
       { loc: `${siteUrl}/`, priority: "1.0", changefreq: "daily" },
       ...showing.map((m) => ({ loc: `${siteUrl}/film/${m.id}`, priority: "0.7", changefreq: "daily" })),
-      { loc: `${siteUrl}/privacy`, priority: "0.3", changefreq: "yearly" },
+      { loc: `${siteUrl}/privacy/`, priority: "0.3", changefreq: "yearly" },
     ];
     const urls = entries
       .map(

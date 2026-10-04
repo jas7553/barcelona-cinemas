@@ -115,9 +115,6 @@ aws s3 sync static/ "s3://$BUCKET" \
   --exclude "*.html" --exclude "data/*" \
   --cache-control "no-cache"
 
-# 404 page: public/ static HTML, not owned by the SSG Lambda render path
-aws s3 cp static/404.html "s3://$BUCKET/404.html" --cache-control "no-cache"
-
 echo "==> 5/6 Invalidate CloudFront cache"
 DIST=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \

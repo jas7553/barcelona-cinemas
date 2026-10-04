@@ -4,9 +4,9 @@ import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { configDefaults } from "vitest/config";
 // @ts-expect-error — plain ESM helper, no types
-import { renderDocument, render404Document } from "./scripts/template.mjs";
+import { renderDocument } from "./scripts/template.mjs";
 // @ts-expect-error — plain ESM helper, no types
-import { SITE_TIMEZONE } from "./scripts/site-constants.mjs";
+import { SITE_TIMEZONE, objectKeyFor } from "./scripts/site-constants.mjs";
 
 const DATA_FILE = path.resolve(__dirname, "static/data/listings.json");
 
@@ -25,9 +25,10 @@ function readListings(): {
 }
 
 /**
- * Dev-server MPA middleware. Renders `/` and `/film/<id>` on the fly through the
- * same entry-server used for SSG, so the dev page mirrors the built page. The
- * client entry is loaded from source (HMR via transformIndexHtml).
+ * Dev-server MPA middleware. Resolves each request to its bucket key the way
+ * CloudFront does, then renders that page on the fly through the same
+ * entry-server used for SSG, so the dev page mirrors the built one. The client
+ * entry is loaded from source (HMR via transformIndexHtml).
  */
 function ssgDevServer(): Plugin {
   return {
@@ -35,62 +36,36 @@ function ssgDevServer(): Plugin {
     apply: "serve",
     configureServer(server: ViteDevServer) {
       server.middlewares.use(async (req, res, next) => {
-        const url = (req.url || "/").split("?")[0];
-        const isList = url === "/" || url === "/index.html";
-        const filmMatch = url.match(/^\/film\/([^/]+?)(?:\.html)?$/);
-        const isPrivacy = url === "/privacy" || url === "/privacy.html";
-        // 404.html is generated at build time (scripts/render.mjs), not shipped
-        // from public/, so dev has to serve it from the same template.
-        if (url === "/404.html") {
-          res.statusCode = 200;
-          res.setHeader("Content-Type", "text/html");
-          res.end(render404Document());
-          return;
-        }
-        if (!isList && !filmMatch && !isPrivacy) return next();
-
+        const key: string = objectKeyFor(decodeURIComponent((req.url || "/").split("?")[0]));
+        if (!key.endsWith(".html")) return next();
         try {
           const mod = await server.ssrLoadModule("/src/entry-server.tsx");
           const listings = readListings();
           const renderedAt = new Date().toISOString();
+          const filmId = key.match(/^film\/([^/]+)\.html$/)?.[1];
+          const site = (mod.sitePages(listings, renderedAt) as { path: string; data: { page: string } }[]).find(
+            (p) => p.path === key,
+          );
 
-          let html: string;
-          if (isList) {
+          let doc;
+          if (site) {
+            const page = mod.renderPage(site.data);
+            doc = { ...page, data: site.data, entrySrc: "/src/client.tsx", notFound: site.data.page === "not-found" };
+          } else if (key === "index.html") {
             const data = { renderedAt, listings };
-            const page = mod.renderList(data);
-            html = renderDocument({
-              title: page.title,
-              headExtra: page.headExtra,
-              bodyHtml: page.html,
-              data,
-              entrySrc: "/src/entry-list.tsx",
-            });
-          } else if (isPrivacy) {
-            const page = mod.renderPrivacy();
-            html = renderDocument({
-              title: page.title,
-              headExtra: page.headExtra,
-              bodyHtml: page.html,
-              data: null,
-              entrySrc: "/src/entry-privacy.tsx",
-            });
-          } else {
-            const filmId = decodeURIComponent(filmMatch![1]);
+            doc = { ...mod.renderList(data), data, entrySrc: "/src/legacy/entry-list.tsx" };
+          } else if (filmId) {
             const filmListings = mod.filmListings(listings, filmId);
             if (!filmListings) return next();
             const data = { renderedAt, listings: filmListings, filmId };
-            const page = mod.renderFilm(data);
-            html = renderDocument({
-              title: page.title,
-              headExtra: page.headExtra,
-              bodyHtml: page.html,
-              data,
-              entrySrc: "/src/entry-film.tsx",
-            });
+            doc = { ...mod.renderFilm(data), data, entrySrc: "/src/legacy/entry-film.tsx" };
+          } else {
+            return next();
           }
 
+          const html = renderDocument({ ...doc, bodyHtml: doc.html });
           const transformed = await server.transformIndexHtml(req.url || "/", html);
-          res.statusCode = 200;
+          res.statusCode = doc.notFound ? 404 : 200;
           res.setHeader("Content-Type", "text/html");
           res.end(transformed);
         } catch (e) {
@@ -129,9 +104,9 @@ export default defineConfig(({ command }) => ({
     manifest: true,
     rollupOptions: {
       input: {
-        "entry-list": path.resolve(__dirname, "src/entry-list.tsx"),
-        "entry-film": path.resolve(__dirname, "src/entry-film.tsx"),
-        "entry-privacy": path.resolve(__dirname, "src/entry-privacy.tsx"),
+        client: path.resolve(__dirname, "src/client.tsx"),
+        "entry-list": path.resolve(__dirname, "src/legacy/entry-list.tsx"),
+        "entry-film": path.resolve(__dirname, "src/legacy/entry-film.tsx"),
       },
     },
   },

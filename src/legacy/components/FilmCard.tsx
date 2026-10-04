@@ -8,7 +8,7 @@ import {
   premiumFormatLabel,
   thumbPosterUrl,
 } from "../utils";
-import type { TransformedMovie } from "../types";
+import type { TransformedMovie } from "../../types";
 
 interface Props {
   movie: TransformedMovie;

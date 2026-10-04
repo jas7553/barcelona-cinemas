@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/preact";
 import ListPage from "./ListPage";
 import FilmPage from "./FilmPage";
-import { renderList, renderFilm, renderPrivacy, filmListings } from "../entry-server";
-import type { Listings } from "../types";
+import { renderList, renderFilm, filmListings } from "../../entry-server";
+import type { Listings } from "../../types";
 import * as utils from "../utils";
 import { transformResponse } from "../utils";
 
@@ -386,33 +386,6 @@ describe("entry-server (SSG)", () => {
     expect(out.headExtra).toContain('name="robots" content="noindex"');
     expect(out.headExtra).not.toContain('rel="canonical"');
     expect(out.headExtra).not.toContain("application/ld+json");
-  });
-
-  it("renderPrivacy produces a correct title", () => {
-    const out = renderPrivacy();
-    expect(out.title).toBe("Privacy · Barcelona This Week");
-  });
-
-  it("renderPrivacy emits a canonical link when given a siteUrl", () => {
-    const out = renderPrivacy("https://example.com");
-    expect(out.headExtra).toContain('rel="canonical" href="https://example.com/privacy"');
-  });
-
-  it("renderPrivacy emits an og:url when given a siteUrl", () => {
-    const out = renderPrivacy("https://example.com");
-    expect(out.headExtra).toContain('property="og:url" content="https://example.com/privacy"');
-  });
-
-  it("renderPrivacy is NOT noindex", () => {
-    const out = renderPrivacy("https://example.com");
-    expect(out.headExtra).not.toContain("noindex");
-  });
-
-  it("renderPrivacy html contains key privacy claims", () => {
-    const out = renderPrivacy();
-    expect(out.html).toContain("No cookies");
-    expect(out.html).toContain("No analytics");
-    expect(out.html).toContain("btw-dark");
   });
 
   it("filmListings narrows movies to one and keeps only used theaters", () => {
