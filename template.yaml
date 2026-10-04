@@ -544,7 +544,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-Sh2P5OZoH/IoW9FGXvPaBIytoe+sAvSFxlUdg5eEmu4=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-K1uS9U2pIxKpxfx5wdfzAAEZpsVLlLYnU6/5t1ynhYQ=' 'sha256-S/kuBBJV2y1VnfJ0Z2h40dcRIqKRhYIksLFOI4feylY=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true
@@ -585,7 +585,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-Sh2P5OZoH/IoW9FGXvPaBIytoe+sAvSFxlUdg5eEmu4=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-K1uS9U2pIxKpxfx5wdfzAAEZpsVLlLYnU6/5t1ynhYQ=' 'sha256-S/kuBBJV2y1VnfJ0Z2h40dcRIqKRhYIksLFOI4feylY=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true

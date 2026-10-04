@@ -56,8 +56,7 @@ describe("renderPage", () => {
   });
 });
 
-describe("list pages", () => {
-  const full: Listings = {
+const full: Listings = {
     ...listings,
     theaters: [
       { id: "verdi", name: "Cines Verdi", address: "", neighborhood: "Gràcia", website_url: "", maps_url: "", lat: 41.4, lng: 2.15 },
@@ -84,6 +83,7 @@ describe("list pages", () => {
     ],
   };
 
+describe("list pages", () => {
   it("renders This week at the root and a page for each of the next 8 days", () => {
     const paths = sitePages(full, renderedAt).map((p) => p.path);
     expect(paths).toContain("index.html");
@@ -122,6 +122,64 @@ describe("list pages", () => {
 
   it("never emits a style attribute on list pages either", () => {
     for (const { data } of sitePages(full, renderedAt)) {
+      expect(renderPage(data).html).not.toMatch(/\sstyle=/);
+    }
+  });
+});
+
+describe("film pages", () => {
+  const withEnded: Listings = {
+    ...full,
+    movies: full.movies.map((m) => ({
+      ...m,
+      synopsis: "A spoiler-laden synopsis.",
+      cast: ["A", "B", "C", "D", "E"],
+      links: { imdb: "https://imdb/x", imdb_id: "tt1" },
+    })),
+    ended_movies: [{ ...full.movies[0], id: "9", title: "Over", showtimes: [], last_showing: "2026-10-01" }],
+  };
+  const pages = sitePages(withEnded, renderedAt);
+
+  it("renders an undated page and one per rendered day, and only the undated one for an ended film", () => {
+    const paths = pages.map((p) => p.path).filter((p) => p.startsWith("film/"));
+    expect(paths.filter((p) => p.startsWith("film/1"))).toHaveLength(9);
+    expect(paths).toContain("film/1.html");
+    expect(paths).toContain("film/1/2026-10-11.html");
+    expect(paths.filter((p) => p.startsWith("film/9"))).toEqual(["film/9.html"]);
+  });
+
+  it("carries the ticket's fields for showings in range, the first 4 of the cast, and the outside links", () => {
+    const data = pages.find((p) => p.path === "film/1.html")!.data;
+    if (data.page !== "film") throw new Error("not a film page");
+    expect(data.film.showtimes).toEqual([
+      { theater_id: "verdi", date: "2026-10-04", time: "21:30", booking_url: "https://b/1", audio_lang: "en" },
+    ]);
+    expect(data.film.cast).toEqual(["A", "B", "C", "D"]);
+    expect(data.film.letterboxd).toBe("https://letterboxd.com/imdb/tt1/");
+    expect(data.theaters.map((t) => t.id)).toEqual(["verdi"]);
+  });
+
+  it("keeps the synopsis out of share previews and points dated pages at the undated one", () => {
+    const dated = renderPage(pages.find((p) => p.path === "film/1/2026-10-05.html")!.data, "https://x.test");
+    expect(dated.title).toBe("Aftersun · Barcelona This Week");
+    expect(dated.headExtra).toContain('content="Aftersun · 2022 · Drama"');
+    expect(dated.headExtra).not.toContain("spoiler");
+    expect(dated.headExtra).toContain('rel="canonical" href="https://x.test/film/1/"');
+    expect(dated.headExtra).not.toContain("ld+json");
+    expect(renderPage(pages.find((p) => p.path === "film/1.html")!.data, "https://x.test").headExtra).toContain(
+      "ScreeningEvent",
+    );
+  });
+
+  it("marks an ended film's page noindex", () => {
+    const over = renderPage(pages.find((p) => p.path === "film/9.html")!.data, "https://x.test");
+    expect(over.headExtra).toContain('name="robots" content="noindex"');
+    expect(over.headExtra).not.toContain("canonical");
+    expect(over.html).toContain("No more showings");
+  });
+
+  it("never emits a style attribute", () => {
+    for (const { data } of pages.filter((p) => p.data.page === "film")) {
       expect(renderPage(data).html).not.toMatch(/\sstyle=/);
     }
   });

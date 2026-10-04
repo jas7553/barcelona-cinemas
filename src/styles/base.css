@@ -170,6 +170,7 @@ p {
   border: 1px solid var(--border);
   background: var(--surface);
 }
+/* Reaches 44px from the padding box. Wrapped rows of pills need a 14px gap to keep these apart. */
 .pill::before {
   content: "";
   position: absolute;
@@ -275,4 +276,103 @@ html:not(.has-home) .if-home,
 /* Author display values (.film is a grid) would otherwise beat the UA rule. */
 [hidden] {
   display: none !important;
+}
+
+/* Pre-paint order for cinema lists (ORDER_SCRIPT in scripts/template.mjs). */
+[data-sort] {
+  display: flex;
+  flex-direction: column;
+}
+[data-o] {
+  order: 99;
+}
+[data-o="1"] {
+  order: 1;
+}
+[data-o="2"] {
+  order: 2;
+}
+[data-o="3"] {
+  order: 3;
+}
+[data-o="4"] {
+  order: 4;
+}
+[data-o="5"] {
+  order: 5;
+}
+[data-o="6"] {
+  order: 6;
+}
+[data-o="7"] {
+  order: 7;
+}
+[data-o="8"] {
+  order: 8;
+}
+[data-o="9"] {
+  order: 9;
+}
+[data-o="10"] {
+  order: 10;
+}
+[data-o="11"] {
+  order: 11;
+}
+[data-o="12"] {
+  order: 12;
+}
+[data-o="13"] {
+  order: 13;
+}
+[data-o="14"] {
+  order: 14;
+}
+[data-o="15"] {
+  order: 15;
+}
+[data-o="16"] {
+  order: 16;
+}
+[data-o="17"] {
+  order: 17;
+}
+[data-o="18"] {
+  order: 18;
+}
+[data-o="19"] {
+  order: 19;
+}
+[data-o="20"] {
+  order: 20;
+}
+[data-o="21"] {
+  order: 21;
+}
+[data-o="22"] {
+  order: 22;
+}
+[data-o="23"] {
+  order: 23;
+}
+[data-o="24"] {
+  order: 24;
+}
+[data-o="25"] {
+  order: 25;
+}
+[data-o="26"] {
+  order: 26;
+}
+[data-o="27"] {
+  order: 27;
+}
+[data-o="28"] {
+  order: 28;
+}
+[data-o="29"] {
+  order: 29;
+}
+[data-o="30"] {
+  order: 30;
 }

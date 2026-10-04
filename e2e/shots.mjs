@@ -36,6 +36,10 @@ if (process.argv[2] === "--data") {
       if (imaxFilms.has(m.id) && imaxAt.has(s.theater_id) && s.time >= "19:00") s.premium_format = "imax";
     }
   }
+  // 13: a film whose run is over, kept as an ended film. 16: the same film with no art.
+  const masters = data.movies.find((m) => m.id === "454639");
+  data.ended_movies = [{ ...masters, id: "454639-over", showtimes: [], last_showing: "2026-10-03" }];
+  Object.assign(masters, { poster_url: null, backdrop_url: null, runtime_minutes: null });
   fs.writeFileSync(DATA_OUT, JSON.stringify(data));
   console.log(`[shots] wrote ${DATA_OUT}`);
   process.exit(0);
@@ -48,6 +52,7 @@ const SIZES = { m: { width: 390, height: 844 }, d: { width: 1280, height: 860 } 
 const SHOTS = {
   "01-m-week": ["m", "/", null, { fullPage: true }],
   "02-m-day": ["m", "/day/2026-10-06/"],
+  "03-m-film": ["m", "/film/1275779/2026-10-05/", null, { fullPage: true }],
   "04-m-ticket-book": ["m", "/day/2026-10-04/", ticket("Book at")],
   "05-m-ticket-nobook": ["m", "/day/2026-10-04/", ticket("website")],
   "06-m-ticket-imax": ["m", "/day/2026-10-06/", ticket("IMAX")],
@@ -58,11 +63,14 @@ const SHOTS = {
     await page.getByText("Location access is off").waitFor();
   }],
   "12-m-not-out": ["m", "/day/2026-10-10/"],
+  "13-m-film-over": ["m", "/film/454639-over/"],
+  "16-m-missing-art": ["m", "/film/454639/"],
   "15-m-no-home": ["m", "/", null, { home: false }],
   "17-m-privacy": ["m", "/privacy/"],
   "18-m-404": ["m", "/no-such-page/"],
   "19-d-week": ["d", "/"],
   "20-d-day": ["d", "/day/2026-10-06/"],
+  "21-d-film": ["d", "/film/1275779/2026-10-05/"],
   "22-d-ticket": ["d", "/day/2026-10-04/", ticket("Book at")],
   "25-d-home": ["d", "/privacy/", openHome],
 };

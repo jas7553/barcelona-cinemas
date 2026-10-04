@@ -1,66 +1,35 @@
 import { describe, it, expect } from "vitest";
 import { assets, renderAll } from "./render-core.mjs";
 
-// Regression guard: Vite hoists the global style.css (imported by both legacy entries)
-// into a shared chunk — here the useLocationPin chunk, whose JS we deliberately
-// skip preloading. The skip must NOT also drop its CSS, or every page renders
-// unstyled (the stylesheet vanishes from the document <head>).
-const HOISTED_CSS = "assets/style-abc123.css";
-
-function manifestWithHoistedCss() {
-  return {
-    "src/entry-list.tsx": {
-      file: "assets/entry-list-xxx.js",
-      isEntry: true,
-      imports: ["_useLocationPin-yyy.js"],
-      // No own css — the global stylesheet was hoisted onto the import below.
-    },
-    "_useLocationPin-yyy.js": {
-      file: "assets/useLocationPin-yyy.js",
-      css: [HOISTED_CSS],
-    },
-  };
-}
-
 describe("assets()", () => {
-  it("keeps CSS hoisted into the skipped useLocationPin chunk", () => {
-    const { css, preload } = assets(manifestWithHoistedCss(), "src/entry-list.tsx");
-    // The stylesheet must survive...
-    expect(css).toContain("/" + HOISTED_CSS);
-    // ...even though the hook's JS is excluded from module preloads.
-    expect(preload.some((p) => p.includes("useLocationPin"))).toBe(false);
-  });
-
-  it("never resolves an entry to an empty stylesheet set", () => {
-    // Any entry that transitively imports CSS must surface at least one href;
-    // an empty result means the page would ship without styles.
-    const { css } = assets(manifestWithHoistedCss(), "src/entry-list.tsx");
-    expect(css.length).toBeGreaterThan(0);
+  it("keeps CSS Vite hoisted into a shared chunk, and preloads the chunk", () => {
+    const manifest = {
+      "src/client.tsx": { file: "assets/client-x.js", isEntry: true, imports: ["_runtime-y.js"] },
+      "_runtime-y.js": { file: "assets/runtime-y.js", css: ["assets/style-z.css"] },
+    };
+    const { css, preload } = assets(manifest, "src/client.tsx");
+    expect(css).toEqual(["/assets/style-z.css"]);
+    expect(preload).toEqual(["/assets/runtime-y.js"]);
   });
 
   it("throws a build-hint error for a missing entry", () => {
-    expect(() => assets({}, "src/entry-list.tsx")).toThrow(/manifest missing entry/);
+    expect(() => assets({}, "src/client.tsx")).toThrow(/manifest missing entry/);
   });
 });
 
 describe("renderAll() sitemap", () => {
-  const manifest = {
-    "src/legacy/entry-film.tsx": { file: "assets/film.js", isEntry: true },
-    "src/client.tsx": { file: "assets/client.js", isEntry: true },
-  };
+  const manifest = { "src/client.tsx": { file: "assets/client.js", isEntry: true } };
   const server = {
-    renderFilm: () => ({ html: "<main></main>", title: "F", headExtra: "" }),
     sitePages: (_listings, renderedAt) => [
       { path: "index.html", data: { page: "week", renderedAt } },
       { path: "day/2026-06-28.html", data: { page: "day", renderedAt } },
+      { path: "film/1.html", data: { page: "film", renderedAt } },
+      { path: "film/1/2026-06-28.html", data: { page: "film", renderedAt } },
+      { path: "film/2.html", data: { page: "film", renderedAt } },
       { path: "privacy.html", data: { page: "privacy", renderedAt } },
       { path: "404.html", data: { page: "not-found", renderedAt } },
     ],
     renderPage: (data) => ({ html: `<main>${data.page}</main>`, title: data.page, headExtra: "" }),
-    filmListings: (full, id) => {
-      const movie = full.movies.find((m) => m.id === id);
-      return movie ? { ...full, movies: [movie] } : null;
-    },
   };
   function listings() {
     return {
@@ -82,7 +51,7 @@ describe("renderAll() sitemap", () => {
   it("lists the index + only films with showtimes, using absolute URLs", async () => {
     const sm = (await run("https://x.test")).get("sitemap.xml");
     expect(sm).toContain("<loc>https://x.test/</loc>");
-    expect(sm).toContain("<loc>https://x.test/film/1</loc>");
+    expect(sm).toContain("<loc>https://x.test/film/1/</loc>");
     expect(sm).not.toContain("/film/2"); // zero-showtime film is noindex, not in the sitemap
     expect(sm).toContain("<lastmod>2026-06-27</lastmod>");
   });
@@ -119,25 +88,23 @@ describe("renderAll() sitemap", () => {
   });
 });
 
-// Per-film output for movies that drops out of the listings used to live
+// Film pages for movies that drop out of the listings used to live
 // forever: the page 200s while its hashed /assets/* bundle is deleted by the
 // next deploy, so it never hydrates and serves frozen showtimes still labelled
 // "Today"; the sibling JSON just accumulates in the bucket.
 describe("renderAll() prune", () => {
-  const manifest = {
-    "src/legacy/entry-film.tsx": { file: "assets/film.js", isEntry: true },
-    "src/client.tsx": { file: "assets/client.js", isEntry: true },
-  };
+  const manifest = { "src/client.tsx": { file: "assets/client.js", isEntry: true } };
   const server = {
-    renderFilm: () => ({ html: "<main></main>", title: "F", headExtra: "" }),
     sitePages: (_listings, renderedAt) => [
       { path: "index.html", data: { page: "week", renderedAt } },
       { path: "day/2026-06-28.html", data: { page: "day", renderedAt } },
+      { path: "film/1.html", data: { page: "film", renderedAt } },
+      { path: "film/1/2026-06-28.html", data: { page: "film", renderedAt } },
+      { path: "film/2.html", data: { page: "film", renderedAt } },
       { path: "privacy.html", data: { page: "privacy", renderedAt } },
       { path: "404.html", data: { page: "not-found", renderedAt } },
     ],
     renderPage: (data) => ({ html: `<main>${data.page}</main>`, title: data.page, headExtra: "" }),
-    filmListings: (full, id) => ({ ...full, movies: full.movies.filter((m) => m.id === id) }),
   };
   function listings() {
     return {
@@ -164,7 +131,7 @@ describe("renderAll() prune", () => {
     return paths;
   }
 
-  it("hands prune exactly the per-film and per-day paths this render wrote", async () => {
+  it("hands prune exactly the film and day paths this render wrote", async () => {
     let keep;
     await renderAll({
       listings: listings(),
@@ -176,15 +143,8 @@ describe("renderAll() prune", () => {
         keep = k;
       },
     });
-    // Every prefix, and zero-showtime films still get a (noindex) page + JSON,
-    // so their paths must be kept too.
-    expect([...keep].sort()).toEqual([
-      "data/film/1.json",
-      "data/film/2.json",
-      "day/2026-06-28.html",
-      "film/1.html",
-      "film/2.html",
-    ]);
+    // Ended films still get a (noindex) page, so their paths are kept too.
+    expect([...keep].sort()).toEqual(["day/2026-06-28.html", "film/1.html", "film/1/2026-06-28.html", "film/2.html"]);
   });
 
   it("keeps the shared documents out of the set — they live outside every prefix", async () => {
@@ -206,7 +166,7 @@ describe("renderAll() prune", () => {
     }
   });
 
-  it("keeps every per-film and per-day path it wrote — nothing live is ever swept", async () => {
+  it("keeps every film and day path it wrote — nothing live is ever swept", async () => {
     let keep;
     await renderAll({
       listings: listings(),
@@ -221,7 +181,7 @@ describe("renderAll() prune", () => {
     // The real invariant: any written path under a swept prefix must be in the
     // keep set, or this render would delete output it just produced.
     const swept = [...(await writtenPaths())].filter(
-      (p) => p.startsWith("film/") || p.startsWith("data/film/") || p.startsWith("day/"),
+      (p) => p.startsWith("film/") || p.startsWith("day/"),
     );
     expect(swept.length).toBeGreaterThan(0);
     for (const p of swept) expect(keep.has(p)).toBe(true);
@@ -290,8 +250,7 @@ describe("renderAll() prune", () => {
       write: (p, c) => writes.set(p, c),
     });
     expect(writes.has("film/1.html")).toBe(true);
-    expect(writes.has("film/2.html")).toBe(true);
-    expect(writes.has("data/film/1.json")).toBe(true);
+    expect(writes.has("film/1/2026-06-28.html")).toBe(true);
     expect(writes.has("index.html")).toBe(true);
   });
 });

@@ -35,12 +35,36 @@ export interface ListData {
   calendar: CalendarDay[];
 }
 
+/** Everything the film page shows. Cast is cut to the 4 it names. */
+export type FilmDetail = ListFilm &
+  Pick<Movie, "year" | "backdrop_url" | "trailer_url" | "synopsis"> & {
+    tagline: string | null;
+    director: string | null;
+    cast: string[];
+    imdb: string | null;
+    letterboxd: string;
+  };
+
+/**
+ * A film page: the film, its showings over the rendered days with what the
+ * ticket needs, and the cinemas they're at. `date` is null on the undated page,
+ * which opens on the first day with showings left.
+ */
+export type FilmPageData = PageBase & {
+  page: "film";
+  film: FilmDetail;
+  theaters: Theater[];
+  calendar: CalendarDay[];
+  date: DateKey | null;
+};
+
 export type WeekPageData = PageBase & ListData & { page: "week" };
 export type DayPageData = PageBase & ListData & { page: "day"; date: DateKey };
 
 export type PageData =
   | WeekPageData
   | DayPageData
+  | FilmPageData
   | (PageBase & { page: "privacy" })
   | (PageBase & { page: "not-found" });
 

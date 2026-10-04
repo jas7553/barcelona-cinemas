@@ -18,10 +18,20 @@ import { createHash } from "node:crypto";
 export const PREFS_SCRIPT = `(function(){try{if(localStorage.getItem("btw-home"))document.documentElement.classList.add("has-home");}catch(e){}})();`;
 
 // Runs right after the server markup, before first paint: hides rows for films
-// marked seen, which hydration then moves into the Seen group. Without it they
-// paint in place and the list jumps up as they leave (requirements 11.2). The
-// key must match PREF_KEYS.seen in src/domain/prefs.ts (template.test.mjs checks).
-export const SEEN_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem("btw-seen")||"[]");if(!s.length)return;var l=document.querySelectorAll("li[data-film]");for(var i=0;i<l.length;i++)if(s.indexOf(l[i].getAttribute("data-film"))>=0)l[i].hidden=true;}catch(e){}})();`;
+// marked seen, which hydration then moves into the Seen group, and presses the
+// film page's Seen toggle. Without it the rows paint in place and the list
+// jumps up as they leave (requirements 11.2). Hydration leaves attributes it
+// didn't render alone. The key must match PREF_KEYS.seen in
+// src/domain/prefs.ts (template.test.mjs checks).
+export const SEEN_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem("btw-seen")||"[]");if(!s.length)return;var l=document.querySelectorAll("[data-film]");for(var i=0;i<l.length;i++)if(s.indexOf(l[i].getAttribute("data-film"))>=0){if(l[i].tagName==="LI")l[i].hidden=true;else l[i].setAttribute("aria-pressed","true");}}catch(e){}})();`;
+
+// Runs after the server markup, before first paint: orders lists of cinemas the
+// way the page will once Home and My cinemas load — favourites first, then the
+// nearest, then data-t, then the id — by setting CSS `order` through data-o.
+// The rows themselves stay put so hydration matches the markup; the page drops
+// data-o once its own render has caught up (src/client/prefs.ts). Keys must
+// match PREF_KEYS, and the order must match byCinema in src/domain/film.ts.
+export const ORDER_SCRIPT = `(function(){try{var h=JSON.parse(localStorage.getItem("btw-home")||"null"),f=JSON.parse(localStorage.getItem("btw-fav")||"[]");if(!h||typeof h.lat!=="number"||typeof h.lng!=="number")h=null;if(!Array.isArray(f))f=[];if(!h&&!f.length)return;var r=Math.PI/180;function km(e){var a=parseFloat(e.getAttribute("data-lat")),b=parseFloat(e.getAttribute("data-lng"));if(!h||isNaN(a)||isNaN(b))return Infinity;var x=Math.sin((a-h.lat)*r/2),y=Math.sin((b-h.lng)*r/2);return 12742*Math.asin(Math.sqrt(x*x+Math.cos(h.lat*r)*Math.cos(a*r)*y*y));}function c(a,b){return a<b?-1:a>b?1:0;}var L=document.querySelectorAll("[data-sort]");for(var i=0;i<L.length;i++){var k=[];for(var j=0;j<L[i].children.length;j++){var e=L[i].children[j],id=e.getAttribute("data-id")||"";k.push({e:e,f:f.indexOf(id)<0?1:0,d:km(e),t:e.getAttribute("data-t")||"",id:id});}k.sort(function(a,b){return a.f-b.f||c(a.d,b.d)||c(a.t,b.t)||c(a.id,b.id);});for(j=0;j<k.length;j++)k[j].e.setAttribute("data-o",j+1);}}catch(e){}})();`;
 
 // 404 page only. Dated pages (/day/<date>/, /film/<id>/<date>/,
 // /cinema/<id>/<date>/) are dropped once their day passes, so a shared or
@@ -45,6 +55,7 @@ export const VIEW_TRANSITION_SCRIPT = `(function(){function skip(e,a){try{var v=
 export const INLINE_SCRIPTS = Object.freeze({
   PREFS_SCRIPT,
   SEEN_SCRIPT,
+  ORDER_SCRIPT,
   EXPIRED_REDIRECT_SCRIPT,
   // Carried in a `type="speculationrules"` block. Chrome enforces script-src
   // against it exactly like an executable inline script, so it needs a hash too.
@@ -114,6 +125,7 @@ export function renderDocument(o) {
   <body>
     <div id="root">${o.bodyHtml}</div>
     <script>${SEEN_SCRIPT}</script>
+    <script>${ORDER_SCRIPT}</script>
     <script type="application/json" id="__APP_DATA__">${dataJson}</script>
     <script type="speculationrules">${SPECULATION_RULES}</script>
     <script type="module" src="${o.entrySrc}"></script>

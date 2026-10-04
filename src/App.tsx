@@ -1,5 +1,6 @@
 import type { PageData } from "./pageData";
 import { DayPage } from "./pages/DayPage";
+import { FilmPage } from "./pages/FilmPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { WeekPage } from "./pages/WeekPage";
@@ -11,6 +12,8 @@ export function App({ data }: { data: PageData }) {
       return <WeekPage data={data} />;
     case "day":
       return <DayPage data={data} />;
+    case "film":
+      return <FilmPage data={data} />;
     case "privacy":
       return <PrivacyPage data={data} />;
     case "not-found":

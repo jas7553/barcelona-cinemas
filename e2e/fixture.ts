@@ -50,7 +50,7 @@ export function buildFixtureCache(): string {
   // committed snapshot usually carries none — inject one so the chip's coverage
   // is deterministic. Mark the last showtime of the first film: the date-shift
   // lands the earliest showtimes on today, which the app filters out once their
-  // time has passed. `premiumFormatFilmId` finds it back for the spec.
+  // time has passed. `premiumShowing` finds it back for the spec.
   const showtimes: FixtureShowtime[] = data.movies[0].showtimes;
   const latest = showtimes.reduce((a, b) => (`${b.date}${b.time}` > `${a.date}${a.time}` ? b : a));
   latest.premium_format ??= "imax";
@@ -61,18 +61,13 @@ export function buildFixtureCache(): string {
   return cacheDir;
 }
 
-/**
- * Id of the film `buildFixtureCache` marked premium, read back from the
- * published listings the dev SSG server renders from. Cross-process: the
- * config builds the cache, the spec runs elsewhere, so the id can't be a
- * module constant.
- */
-export function premiumFormatFilmId(): string {
+/** The injected IMAX showing's film and date, for the dated film page that shows it. */
+export function premiumShowing(): { id: string; date: string } {
   const published = path.join(ROOT, "static", "data", "listings.json");
   const data = JSON.parse(fs.readFileSync(published, "utf8"));
-  const film = data.movies.find((m: { showtimes: FixtureShowtime[] }) =>
-    m.showtimes.some((s) => s.premium_format === "imax"),
-  );
-  if (!film) throw new Error("e2e: published listings carry no injected IMAX showtime");
-  return film.id;
+  for (const m of data.movies as { id: string; showtimes: FixtureShowtime[] }[]) {
+    const s = m.showtimes.find((x) => x.premium_format === "imax");
+    if (s) return { id: m.id, date: s.date };
+  }
+  throw new Error("e2e: published listings carry no injected IMAX showtime");
 }

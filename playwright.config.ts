@@ -50,8 +50,6 @@ export default defineConfig({
     {
       name: "mobile-webkit",
       use: { ...devices["iPhone 13"] },
-      // Specs for the old pages, which never ran on WebKit; they go with those pages.
-      testIgnore: ["**/smoke.spec.ts", "**/a11y.spec.ts"],
     },
   ],
 

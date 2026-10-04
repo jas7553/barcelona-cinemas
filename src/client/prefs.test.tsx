@@ -1,7 +1,7 @@
 import { act, render, screen } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { PREF_KEYS } from "../domain/prefs";
-import { forgetAll, removeObsoleteKeys, setHome, usePrefs } from "./prefs";
+import { forgetAll, removeObsoleteKeys, setHome, toggleFavourite, toggleSeen, usePrefs } from "./prefs";
 
 function HomeProbe() {
   const { home, seen } = usePrefs();
@@ -54,6 +54,17 @@ describe("usePrefs", () => {
       window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
     });
     expect(screen.getByText("41.4,2.15 · 0 seen")).toBeInTheDocument();
+  });
+
+  it("toggles a film's seen mark and a favourite cinema, keeping the rest", () => {
+    localStorage.setItem(PREF_KEYS.seen, '["1"]');
+    render(<HomeProbe />);
+    void act(() => toggleSeen("2"));
+    expect(screen.getByText("no home · 2 seen")).toBeInTheDocument();
+    void act(() => toggleSeen("1"));
+    expect(JSON.parse(localStorage.getItem(PREF_KEYS.seen)!)).toEqual(["2"]);
+    toggleFavourite("verdi");
+    expect(JSON.parse(localStorage.getItem(PREF_KEYS.favourites)!)).toEqual(["verdi"]);
   });
 
   it("forgets everything this site stores", () => {

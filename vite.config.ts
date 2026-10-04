@@ -42,23 +42,13 @@ function ssgDevServer(): Plugin {
           const mod = await server.ssrLoadModule("/src/entry-server.tsx");
           const listings = readListings();
           const renderedAt = new Date().toISOString();
-          const filmId = key.match(/^film\/([^/]+)\.html$/)?.[1];
           const site = (mod.sitePages(listings, renderedAt) as { path: string; data: { page: string } }[]).find(
             (p) => p.path === key,
           );
 
-          let doc;
-          if (site) {
-            const page = mod.renderPage(site.data);
-            doc = { ...page, data: site.data, entrySrc: "/src/client.tsx", notFound: site.data.page === "not-found" };
-          } else if (filmId) {
-            const filmListings = mod.filmListings(listings, filmId);
-            if (!filmListings) return next();
-            const data = { renderedAt, listings: filmListings, filmId };
-            doc = { ...mod.renderFilm(data), data, entrySrc: "/src/legacy/entry-film.tsx" };
-          } else {
-            return next();
-          }
+          if (!site) return next();
+          const page = mod.renderPage(site.data);
+          const doc = { ...page, data: site.data, entrySrc: "/src/client.tsx", notFound: site.data.page === "not-found" };
 
           const html = renderDocument({ ...doc, bodyHtml: doc.html });
           const transformed = await server.transformIndexHtml(req.url || "/", html);
@@ -76,22 +66,8 @@ function ssgDevServer(): Plugin {
 
 export default defineConfig(({ command }) => ({
   plugins: [ssgDevServer()],
-  // Interim (UI rewrite slice 0): the old React pages run on Preact via compat.
-  // Removed once the last old page is replaced.
-  resolve: {
-    alias: [
-      { find: /^react$/, replacement: "preact/compat" },
-      { find: /^react\/jsx-runtime$/, replacement: "preact/compat/jsx-runtime" },
-      { find: /^react\/jsx-dev-runtime$/, replacement: "preact/compat/jsx-dev-runtime" },
-      { find: /^react-dom$/, replacement: "preact/compat" },
-      { find: /^react-dom\/client$/, replacement: "preact/compat/client" },
-      { find: /^react-dom\/server$/, replacement: "preact/compat/server" },
-      { find: /^react-dom\/test-utils$/, replacement: "preact/test-utils" },
-    ],
-  },
-  // For the production SSR build, bundle everything (incl. React) so the Node SSG
-  // Lambda is self-contained. In dev, leave deps external — Vite's ESM module
-  // runner can't execute react-dom/server's CommonJS `require` if it's inlined.
+  // For the production SSR build, bundle everything (Preact included) so the
+  // Node SSG Lambda is self-contained. In dev, leave deps external.
   ssr: {
     noExternal: command === "build" ? true : [],
   },
@@ -102,7 +78,6 @@ export default defineConfig(({ command }) => ({
     rollupOptions: {
       input: {
         client: path.resolve(__dirname, "src/client.tsx"),
-        "entry-film": path.resolve(__dirname, "src/legacy/entry-film.tsx"),
       },
     },
   },

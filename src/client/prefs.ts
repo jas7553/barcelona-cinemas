@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useState } from "preact/hooks";
 import { NO_PREFS, OBSOLETE_KEYS, PREF_KEYS, readPrefs, type LatLng, type Prefs } from "../domain/prefs";
 
 const listeners = new Set<(prefs: Prefs) => void>();
@@ -38,6 +38,17 @@ export function setHome(home: LatLng | null): void {
   publish();
 }
 
+function toggle(key: "seen" | "favourites", id: string): void {
+  const ids = new Set(load()[key]);
+  if (ids.has(id)) ids.delete(id);
+  else ids.add(id);
+  store(PREF_KEYS[key], [...ids]);
+  publish();
+}
+
+export const toggleSeen = (filmId: string) => toggle("seen", filmId);
+export const toggleFavourite = (theaterId: string) => toggle("favourites", theaterId);
+
 export function forgetAll(): void {
   for (const key of KEYS) store(key, null);
   publish();
@@ -76,4 +87,17 @@ export function usePrefs(): Prefs {
     };
   }, []);
   return prefs;
+}
+
+/**
+ * Before first paint, ORDER_SCRIPT (scripts/template.mjs) orders cinema lists by
+ * the stored prefs through CSS, leaving the markup as rendered. Once the page
+ * has rendered with those prefs its DOM order agrees, so the CSS order comes
+ * off before the browser paints again.
+ */
+export function useSettledOrder(prefs: Prefs): void {
+  useLayoutEffect(() => {
+    if (prefs === NO_PREFS) return;
+    for (const el of document.querySelectorAll("[data-o]")) el.removeAttribute("data-o");
+  }, [prefs]);
 }

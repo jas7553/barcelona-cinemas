@@ -42,10 +42,16 @@ export function subtitleLabel(s: Pick<Showtime, "audio_lang" | "subtitle_lang">)
   return SUBTITLE_LABEL[s.subtitle_lang];
 }
 
-// TMDb serves fixed widths; list and ticket posters are at most 56 CSS px wide.
-const POSTER_SIZE = /\/t\/p\/w\d+\//;
+// TMDb serves fixed widths. List and ticket posters are at most 56 CSS px
+// wide, the film page's at most 180.
+const POSTER_SIZE = /\/t\/p\/(?:w\d+|original)\//;
 
 /** A TMDb poster URL resized for a small slot. */
 export function smallPoster(url: string): string {
   return url.replace(POSTER_SIZE, "/t/p/w154/");
+}
+
+/** A TMDb poster URL resized for the film page. */
+export function largePoster(url: string): string {
+  return url.replace(POSTER_SIZE, "/t/p/w342/");
 }

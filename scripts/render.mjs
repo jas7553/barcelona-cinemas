@@ -49,8 +49,8 @@ const { filmCount } = await renderAll({
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, contents);
   },
-  // Delete per-film output left over from a previous render whose movie has
-  // since dropped out of the listings, and day pages now in the past — mirrors the S3 prune in
+  // Delete film pages left over from a previous render whose movie has since
+  // dropped out of the listings, and day pages now in the past — mirrors the S3 prune in
   // ssg-lambda/index.mjs. Each prefix only ever sweeps its own file type, so
   // anything else living under these dirs is left alone.
   prune(keepRelPaths) {
@@ -58,7 +58,8 @@ const { filmCount } = await renderAll({
       const dir = path.join(OUT, prefix);
       let names;
       try {
-        names = fs.readdirSync(dir);
+        // Recursive: dated film pages sit one level down, at film/<id>/<date>.html.
+        names = fs.readdirSync(dir, { recursive: true });
       } catch {
         continue; // dir not there yet (first render, or vite build emptied static/)
       }
@@ -73,4 +74,4 @@ const { filmCount } = await renderAll({
 });
 
 const pruned = prunedCount ? `, pruned ${prunedCount} stale page object(s)` : "";
-console.log(`[render] wrote index.html, day pages, privacy.html, 404.html + ${filmCount} film page(s) → static/${pruned}`);
+console.log(`[render] wrote index.html, day pages, privacy.html, 404.html + pages for ${filmCount} film(s) → static/${pruned}`);

@@ -116,32 +116,6 @@ test.describe("ticket sheet", () => {
   });
 });
 
-test("Back restores This week from bfcache with a film marked seen elsewhere", async ({ page, browserName }) => {
-  test.skip(browserName !== "chromium", "Playwright's WebKit never restores from bfcache");
-  const errors = collectErrors(page);
-  await page.addInitScript(() => {
-    window.addEventListener("pageshow", (e) => {
-      (window as unknown as { restored: boolean }).restored = e.persisted;
-    });
-  });
-  await page.goto("/");
-  await expect(page.locator("details.seen")).toHaveCount(0);
-  const title = (await rows(page).first().locator("h3").textContent())!;
-  await rows(page).first().locator("h3 a").click();
-  await expect(page).toHaveURL(/\/film\//);
-
-  // The film page is still the old one, but it writes the same key.
-  await page.getByRole("button", { name: "Mark as seen" }).click();
-  await page.goBack({ waitUntil: "commit" });
-  await expect.poll(() => page.evaluate(() => (window as unknown as { restored?: boolean }).restored)).toBe(true);
-  const seen = page.locator("details.seen");
-  await expect(seen.locator("summary")).toHaveText("Seen (1)");
-  // Collapsed, so out of the accessibility tree: match the markup.
-  await expect(seen.locator("h3", { hasText: title })).toBeAttached();
-  expect(JSON.parse((await page.evaluate((k) => localStorage.getItem(k), SEEN_KEY))!)).toHaveLength(1);
-  expect(errors).toEqual([]);
-});
-
 test("timetable cells and showtime chips have 44px hit areas", async ({ page }) => {
   await page.goto("/");
   for (const el of [page.locator("a.cell--on").first(), strip(page).getByRole("link").nth(1)]) {
