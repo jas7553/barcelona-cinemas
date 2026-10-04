@@ -310,7 +310,7 @@ function ListView({
                   ref={searchInputRef}
                   className="search-input"
                   value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
+                  onChange={(e) => setSearchInput(e.currentTarget.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") e.currentTarget.blur();
                     if (e.key === "Escape") closeSearch();

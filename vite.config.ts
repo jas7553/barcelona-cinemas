@@ -2,7 +2,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
-import react from "@vitejs/plugin-react";
 import { configDefaults } from "vitest/config";
 // @ts-expect-error — plain ESM helper, no types
 import { renderDocument, render404Document } from "./scripts/template.mjs";
@@ -104,7 +103,20 @@ function ssgDevServer(): Plugin {
 }
 
 export default defineConfig(({ command }) => ({
-  plugins: [react(), ssgDevServer()],
+  plugins: [ssgDevServer()],
+  // Interim (UI rewrite slice 0): the old React pages run on Preact via compat.
+  // Removed once the last old page is replaced.
+  resolve: {
+    alias: [
+      { find: /^react$/, replacement: "preact/compat" },
+      { find: /^react\/jsx-runtime$/, replacement: "preact/compat/jsx-runtime" },
+      { find: /^react\/jsx-dev-runtime$/, replacement: "preact/compat/jsx-dev-runtime" },
+      { find: /^react-dom$/, replacement: "preact/compat" },
+      { find: /^react-dom\/client$/, replacement: "preact/compat/client" },
+      { find: /^react-dom\/server$/, replacement: "preact/compat/server" },
+      { find: /^react-dom\/test-utils$/, replacement: "preact/test-utils" },
+    ],
+  },
   // For the production SSR build, bundle everything (incl. React) so the Node SSG
   // Lambda is self-contained. In dev, leave deps external — Vite's ESM module
   // runner can't execute react-dom/server's CommonJS `require` if it's inlined.

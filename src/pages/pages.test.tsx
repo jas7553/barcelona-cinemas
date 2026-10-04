@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/preact";
 import ListPage from "./ListPage";
 import FilmPage from "./FilmPage";
 import { renderList, renderFilm, renderPrivacy, filmListings } from "../entry-server";

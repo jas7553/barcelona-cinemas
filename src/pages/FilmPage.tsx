@@ -808,7 +808,7 @@ function Showtime({
   const isSelected = panelId === selectedKey;
   const when = dayLabel ? `${time} on ${dayLabel}` : time;
 
-  const handleToggle = (e: React.MouseEvent) => {
+  const handleToggle = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation();
     onSelect(isSelected ? null : panelId);
   };

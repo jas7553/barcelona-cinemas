@@ -1,4 +1,4 @@
-import { renderToString } from "react-dom/server";
+import { renderToString } from "preact-render-to-string";
 import ListPage, { type ListPageData } from "./pages/ListPage";
 import FilmPage, { type FilmPageData } from "./pages/FilmPage";
 import PrivacyPage from "./pages/PrivacyPage";

@@ -1,4 +1,4 @@
-import { renderHook, act } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/preact";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useLocationPin } from "./useLocationPin";
 
@@ -34,7 +34,7 @@ describe("useLocationPin", () => {
       success({ coords: { latitude: 41.4035, longitude: 2.1580 } } as GeolocationPosition);
     });
     const { result } = renderHook(() => useLocationPin());
-    act(() => { result.current.toggle(); });
+    void act(() => { result.current.toggle(); });
     expect(result.current.active).toBe(true);
     expect(result.current.coords).toEqual({ lat: 41.4035, lng: 2.1580 });
     expect(localStorage.getItem("location_active")).toBe("true");
@@ -48,11 +48,11 @@ describe("useLocationPin", () => {
       },
     );
     const { result } = renderHook(() => useLocationPin());
-    act(() => { result.current.toggle(); });
+    void act(() => { result.current.toggle(); });
     expect(result.current.error).toBe(true);
     expect(result.current.active).toBe(false);
     expect(localStorage.getItem("location_active")).toBeNull();
-    act(() => { vi.advanceTimersByTime(3000); });
+    void act(() => { vi.advanceTimersByTime(3000); });
     expect(result.current.error).toBe(false);
   });
 
@@ -61,8 +61,8 @@ describe("useLocationPin", () => {
       success({ coords: { latitude: 41.4035, longitude: 2.1580 } } as GeolocationPosition);
     });
     const { result } = renderHook(() => useLocationPin());
-    act(() => { result.current.toggle(); }); // activate
-    act(() => { result.current.toggle(); }); // deactivate
+    void act(() => { result.current.toggle(); }); // activate
+    void act(() => { result.current.toggle(); }); // deactivate
     expect(result.current.active).toBe(false);
     expect(result.current.coords).toBeNull();
     expect(localStorage.getItem("location_active")).toBeNull();

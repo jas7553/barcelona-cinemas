@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act, waitFor } from "@testing-library/preact";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SeenFilmsProvider, useSeenFilms, clearSeenFilms } from "./useSeenFilms";
 
@@ -33,15 +33,15 @@ describe("useSeenFilms", () => {
 
   it("toggleSeen marks a film seen and persists it", () => {
     const { result } = renderHook(() => useSeenFilms(), { wrapper });
-    act(() => result.current.toggleSeen("42"));
+    void act(() => result.current.toggleSeen("42"));
     expect(result.current.isSeen("42")).toBe(true);
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual(["42"]);
   });
 
   it("toggleSeen again marks it unseen and removes it from storage", () => {
     const { result } = renderHook(() => useSeenFilms(), { wrapper });
-    act(() => result.current.toggleSeen("42"));
-    act(() => result.current.toggleSeen("42"));
+    void act(() => result.current.toggleSeen("42"));
+    void act(() => result.current.toggleSeen("42"));
     expect(result.current.isSeen("42")).toBe(false);
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toEqual([]);
   });
@@ -81,7 +81,7 @@ describe("useSeenFilms", () => {
     // Another document (the film page) wrote the flag while this one sat in
     // bfcache; iOS Safari swipe-back restores it without remounting.
     localStorage.setItem(STORAGE_KEY, JSON.stringify(["7"]));
-    act(() => {
+    void act(() => {
       window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
     });
     expect(result.current.isSeen("7")).toBe(true);
@@ -91,7 +91,7 @@ describe("useSeenFilms", () => {
     const { result } = renderHook(() => useSeenFilms(), { wrapper });
     await waitFor(() => expect(result.current.seenCount).toBe(0));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(["8"]));
-    act(() => {
+    void act(() => {
       window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY }));
     });
     expect(result.current.isSeen("8")).toBe(true);
@@ -105,10 +105,10 @@ describe("useSeenFilms", () => {
 
   it("clearAll empties in-memory state and storage", () => {
     const { result } = renderHook(() => useSeenFilms(), { wrapper });
-    act(() => result.current.toggleSeen("1"));
-    act(() => result.current.toggleSeen("2"));
+    void act(() => result.current.toggleSeen("1"));
+    void act(() => result.current.toggleSeen("2"));
     expect(result.current.seenCount).toBe(2);
-    act(() => result.current.clearAll());
+    void act(() => result.current.clearAll());
     expect(result.current.seenCount).toBe(0);
     expect(result.current.isSeen("1")).toBe(false);
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
