@@ -50,7 +50,7 @@ const { filmCount } = await renderAll({
     fs.writeFileSync(filePath, contents);
   },
   // Delete per-film output left over from a previous render whose movie has
-  // since dropped out of the listings — mirrors the S3 prune in
+  // since dropped out of the listings, and day pages now in the past — mirrors the S3 prune in
   // ssg-lambda/index.mjs. Each prefix only ever sweeps its own file type, so
   // anything else living under these dirs is left alone.
   prune(keepRelPaths) {
@@ -72,5 +72,5 @@ const { filmCount } = await renderAll({
   },
 });
 
-const pruned = prunedCount ? `, pruned ${prunedCount} stale film object(s)` : "";
-console.log(`[render] wrote index.html, privacy.html, 404.html + ${filmCount} film page(s) → static/${pruned}`);
+const pruned = prunedCount ? `, pruned ${prunedCount} stale page object(s)` : "";
+console.log(`[render] wrote index.html, day pages, privacy.html, 404.html + ${filmCount} film page(s) → static/${pruned}`);

@@ -76,16 +76,17 @@ const DELETE_BATCH = 1000;
 const PRUNE_PREFIXES = prunePrefixesS3();
 
 /**
- * Delete per-film objects for movies no longer in the listings.
+ * Delete per-film objects for movies no longer in the listings, and day pages
+ * now in the past.
  *
  * Only ever touches keys under the PRUNE_PREFIXES above, and only those with
  * that prefix's expected extension — the hashed /assets/* bundles,
  * data/listings.json, and the root documents are all off limits (and the IAM
- * policy scopes DeleteObject to these two prefixes besides). Called by
+ * policy scopes DeleteObject to these prefixes besides). Called by
  * renderAll only after every page write succeeded, so an empty keep set can
  * only mean the listings really are empty.
  *
- * @param {Set<string>} keepRelPaths  Per-film keys this render just wrote.
+ * @param {Set<string>} keepRelPaths  Per-film and per-day keys this render just wrote.
  * @returns {Promise<number>} objects deleted
  */
 async function pruneStaleFilmPages(keepRelPaths) {

@@ -38,6 +38,101 @@ html:has(dialog.sheet[open]) {
   margin: 4px 0 14px;
 }
 
+/* Ticket stub (guidelines §4) */
+.stub {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.stub:focus {
+  outline: none;
+}
+.stub-top {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+}
+.stub-title {
+  font-size: 20px;
+  line-height: 1.1;
+}
+.stub-top p {
+  font-size: 13px;
+  margin-top: 3px;
+}
+/* The perforation, with a half-circle notch cut into each edge. */
+.perf {
+  position: relative;
+  margin: 0 14px;
+  border-top: 2px dashed var(--border);
+}
+.perf::before,
+.perf::after {
+  content: "";
+  position: absolute;
+  top: -11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.perf::before {
+  left: -25px;
+  clip-path: inset(0 0 0 50%);
+}
+.perf::after {
+  right: -25px;
+  clip-path: inset(0 50% 0 0);
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 14px;
+}
+.facts dt {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sub);
+}
+.facts dd {
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.where {
+  padding: 0 14px 14px;
+}
+.where a {
+  position: relative;
+  font-size: 15px;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+}
+.where a::before {
+  content: "";
+  position: absolute;
+  inset: -12px -4px;
+}
+.where b {
+  font-weight: 600;
+}
+.where .fav {
+  color: var(--ink);
+  margin-left: 4px;
+}
+.where p {
+  font-size: 13px;
+  margin-top: 2px;
+}
+.stub + .cta {
+  margin-top: 14px;
+}
+
 /* Actions */
 .cta {
   display: block;
@@ -49,6 +144,16 @@ html:has(dialog.sheet[open]) {
   font-size: 16px;
   padding: 14px;
   border-radius: 12px;
+}
+.cta--plain {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.cta .icon,
+.cta2 .icon {
+  display: inline-block;
+  vertical-align: -0.15em;
 }
 .note {
   font-size: 12px;

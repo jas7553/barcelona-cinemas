@@ -27,3 +27,25 @@ export function IconHome() {
     </Icon>
   );
 }
+
+/** Ratings and favourite cinemas. Filled, so it reads at meta-line size. */
+export function IconStar() {
+  return (
+    <Icon>
+      <path
+        d="m12 3.5 2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"
+        fill="currentColor"
+      />
+    </Icon>
+  );
+}
+
+/** Ends every link that leaves the site (guidelines §7). */
+export function IconExternal() {
+  return (
+    <Icon>
+      <path d="M8 16 16 8" />
+      <path d="M9 8h7v7" />
+    </Icon>
+  );
+}

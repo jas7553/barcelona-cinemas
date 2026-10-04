@@ -45,14 +45,14 @@ describe("assets()", () => {
 
 describe("renderAll() sitemap", () => {
   const manifest = {
-    "src/legacy/entry-list.tsx": { file: "assets/list.js", isEntry: true },
     "src/legacy/entry-film.tsx": { file: "assets/film.js", isEntry: true },
     "src/client.tsx": { file: "assets/client.js", isEntry: true },
   };
   const server = {
-    renderList: () => ({ html: "<main></main>", title: "T", headExtra: "" }),
     renderFilm: () => ({ html: "<main></main>", title: "F", headExtra: "" }),
     sitePages: (_listings, renderedAt) => [
+      { path: "index.html", data: { page: "week", renderedAt } },
+      { path: "day/2026-06-28.html", data: { page: "day", renderedAt } },
       { path: "privacy.html", data: { page: "privacy", renderedAt } },
       { path: "404.html", data: { page: "not-found", renderedAt } },
     ],
@@ -107,11 +107,10 @@ describe("renderAll() sitemap", () => {
     expect((await run("https://x.test")).get("privacy.html")).not.toContain("location.replace");
   });
 
-  it("keeps ended films out of the list page's embedded data", async () => {
+  it("republishes the listings whole, ended films included", async () => {
     const writes = new Map();
     const withEnded = { ...listings(), ended_movies: [{ id: "9", title: "Over", showtimes: [], last_showing: "2026-06-01" }] };
     await renderAll({ listings: withEnded, manifest, server, siteUrl: "", write: (p, c) => writes.set(p, c) });
-    expect(writes.get("index.html")).not.toContain("ended_movies");
     expect(JSON.parse(writes.get("data/listings.json")).ended_movies).toHaveLength(1);
   });
 
@@ -126,14 +125,14 @@ describe("renderAll() sitemap", () => {
 // "Today"; the sibling JSON just accumulates in the bucket.
 describe("renderAll() prune", () => {
   const manifest = {
-    "src/legacy/entry-list.tsx": { file: "assets/list.js", isEntry: true },
     "src/legacy/entry-film.tsx": { file: "assets/film.js", isEntry: true },
     "src/client.tsx": { file: "assets/client.js", isEntry: true },
   };
   const server = {
-    renderList: () => ({ html: "<main></main>", title: "T", headExtra: "" }),
     renderFilm: () => ({ html: "<main></main>", title: "F", headExtra: "" }),
     sitePages: (_listings, renderedAt) => [
+      { path: "index.html", data: { page: "week", renderedAt } },
+      { path: "day/2026-06-28.html", data: { page: "day", renderedAt } },
       { path: "privacy.html", data: { page: "privacy", renderedAt } },
       { path: "404.html", data: { page: "not-found", renderedAt } },
     ],
@@ -165,7 +164,7 @@ describe("renderAll() prune", () => {
     return paths;
   }
 
-  it("hands prune exactly the per-film paths this render wrote", async () => {
+  it("hands prune exactly the per-film and per-day paths this render wrote", async () => {
     let keep;
     await renderAll({
       listings: listings(),
@@ -177,17 +176,18 @@ describe("renderAll() prune", () => {
         keep = k;
       },
     });
-    // Both prefixes, and zero-showtime films still get a (noindex) page + JSON,
-    // so all four paths must be kept.
+    // Every prefix, and zero-showtime films still get a (noindex) page + JSON,
+    // so their paths must be kept too.
     expect([...keep].sort()).toEqual([
       "data/film/1.json",
       "data/film/2.json",
+      "day/2026-06-28.html",
       "film/1.html",
       "film/2.html",
     ]);
   });
 
-  it("keeps the shared documents out of the set — they live outside both prefixes", async () => {
+  it("keeps the shared documents out of the set — they live outside every prefix", async () => {
     let keep;
     await renderAll({
       listings: listings(),
@@ -206,7 +206,7 @@ describe("renderAll() prune", () => {
     }
   });
 
-  it("keeps every per-film path it wrote — nothing live is ever swept", async () => {
+  it("keeps every per-film and per-day path it wrote — nothing live is ever swept", async () => {
     let keep;
     await renderAll({
       listings: listings(),
@@ -221,7 +221,7 @@ describe("renderAll() prune", () => {
     // The real invariant: any written path under a swept prefix must be in the
     // keep set, or this render would delete output it just produced.
     const swept = [...(await writtenPaths())].filter(
-      (p) => p.startsWith("film/") || p.startsWith("data/film/"),
+      (p) => p.startsWith("film/") || p.startsWith("data/film/") || p.startsWith("day/"),
     );
     expect(swept.length).toBeGreaterThan(0);
     for (const p of swept) expect(keep.has(p)).toBe(true);

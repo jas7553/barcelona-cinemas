@@ -51,9 +51,6 @@ function ssgDevServer(): Plugin {
           if (site) {
             const page = mod.renderPage(site.data);
             doc = { ...page, data: site.data, entrySrc: "/src/client.tsx", notFound: site.data.page === "not-found" };
-          } else if (key === "index.html") {
-            const data = { renderedAt, listings };
-            doc = { ...mod.renderList(data), data, entrySrc: "/src/legacy/entry-list.tsx" };
           } else if (filmId) {
             const filmListings = mod.filmListings(listings, filmId);
             if (!filmListings) return next();
@@ -105,7 +102,6 @@ export default defineConfig(({ command }) => ({
     rollupOptions: {
       input: {
         client: path.resolve(__dirname, "src/client.tsx"),
-        "entry-list": path.resolve(__dirname, "src/legacy/entry-list.tsx"),
         "entry-film": path.resolve(__dirname, "src/legacy/entry-film.tsx"),
       },
     },

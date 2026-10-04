@@ -16,6 +16,7 @@ import {
   EXPIRED_REDIRECT_SCRIPT,
   INLINE_SCRIPTS,
   PREFS_SCRIPT,
+  SEEN_SCRIPT,
   SPECULATION_RULES,
   cspScriptHashes,
   renderDocument,
@@ -96,6 +97,7 @@ describe("CSP inline-script hashes", () => {
 describe("pre-paint prefs script", () => {
   it("reads the same key the prefs store writes", () => {
     expect(PREFS_SCRIPT).toContain(`"${PREF_KEYS.home}"`);
+    expect(SEEN_SCRIPT).toContain(`"${PREF_KEYS.seen}"`);
   });
 });
 

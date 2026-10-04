@@ -17,6 +17,12 @@ import { createHash } from "node:crypto";
 // The key must match PREF_KEYS.home in src/domain/prefs.ts (template.test.mjs checks).
 export const PREFS_SCRIPT = `(function(){try{if(localStorage.getItem("btw-home"))document.documentElement.classList.add("has-home");}catch(e){}})();`;
 
+// Runs right after the server markup, before first paint: hides rows for films
+// marked seen, which hydration then moves into the Seen group. Without it they
+// paint in place and the list jumps up as they leave (requirements 11.2). The
+// key must match PREF_KEYS.seen in src/domain/prefs.ts (template.test.mjs checks).
+export const SEEN_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem("btw-seen")||"[]");if(!s.length)return;var l=document.querySelectorAll("li[data-film]");for(var i=0;i<l.length;i++)if(s.indexOf(l[i].getAttribute("data-film"))>=0)l[i].hidden=true;}catch(e){}})();`;
+
 // 404 page only. Dated pages (/day/<date>/, /film/<id>/<date>/,
 // /cinema/<id>/<date>/) are dropped once their day passes, so a shared or
 // bookmarked one lands here; send it on to the undated page instead.
@@ -30,13 +36,15 @@ export const SPECULATION_RULES = JSON.stringify({
 
 // Skips the view transition on back/forward navigation, so bfcache restores
 // stay instant. Must be registered before `pagereveal` can fire, hence
-// inline in <head> rather than in the hydration entry.
-// Skipping rejects the transition's `ready` promise, so that's caught too.
-export const VIEW_TRANSITION_SCRIPT = `(function(){window.addEventListener("pagereveal",function(e){try{var v=e.viewTransition;if(v&&navigation.activation&&navigation.activation.navigationType==="traverse"){v.ready.catch(function(){});v.skipTransition();}}catch(t){}});})();`;
+// inline in <head> rather than in the hydration entry. Both sides skip: the
+// outgoing page (`pageswap`) and the incoming one (`pagereveal`). Skipping
+// rejects each side's `ready` promise, so that's caught too.
+export const VIEW_TRANSITION_SCRIPT = `(function(){function skip(e,a){try{var v=e.viewTransition;if(!v)return;v.ready.catch(function(){});if(a&&a.navigationType==="traverse")v.skipTransition();}catch(t){}}window.addEventListener("pageswap",function(e){skip(e,e.activation);});window.addEventListener("pagereveal",function(e){skip(e,navigation.activation);});})();`;
 
 /** Every inline script body the site serves, keyed by name for error messages. */
 export const INLINE_SCRIPTS = Object.freeze({
   PREFS_SCRIPT,
+  SEEN_SCRIPT,
   EXPIRED_REDIRECT_SCRIPT,
   // Carried in a `type="speculationrules"` block. Chrome enforces script-src
   // against it exactly like an executable inline script, so it needs a hash too.
@@ -105,6 +113,7 @@ export function renderDocument(o) {
   </head>
   <body>
     <div id="root">${o.bodyHtml}</div>
+    <script>${SEEN_SCRIPT}</script>
     <script type="application/json" id="__APP_DATA__">${dataJson}</script>
     <script type="speculationrules">${SPECULATION_RULES}</script>
     <script type="module" src="${o.entrySrc}"></script>

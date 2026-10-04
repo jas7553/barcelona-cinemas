@@ -1,0 +1,363 @@
+/* This week and Day: the timetable grid (guidelines §3), shared by the sticky
+   strip and every film row so the day columns line up down the page. */
+.tt {
+  --days: 7;
+  display: grid;
+  grid-template-columns: 60px repeat(var(--days), minmax(0, 1fr));
+  column-gap: 4px;
+}
+
+.label {
+  padding: 22px 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sub);
+}
+.title p {
+  font-size: 13px;
+  margin-top: 6px;
+}
+.notice {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--wash);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Day strip */
+.strip {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin-top: 16px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+.strip .tt {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.sd {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 0;
+  border-radius: 10px;
+  font-size: 11px;
+  color: var(--sub);
+}
+.sd b {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+.sd--wk {
+  align-items: flex-start;
+  width: 56px;
+  padding-left: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.sd[aria-current] {
+  background: var(--text);
+  color: var(--bg);
+}
+.sd[aria-current] b {
+  color: var(--bg);
+}
+.sd--empty {
+  opacity: 0.35;
+}
+.sd--unpub {
+  outline: 1px dashed var(--border);
+  outline-offset: -3px;
+}
+.sd--unpub b {
+  color: var(--sub);
+}
+.sd--unpub[aria-current] {
+  outline-color: var(--bg);
+}
+.sd--unpub[aria-current] b {
+  color: var(--bg);
+}
+
+/* Film rows */
+.films {
+  list-style: none;
+}
+.film {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+}
+.film-p {
+  grid-column: 1;
+  grid-row: 1 / span 4;
+  width: 52px;
+}
+.film-h {
+  grid-column: 2 / -1;
+  grid-row: 1;
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1.15;
+}
+.film .meta {
+  grid-column: 2 / -1;
+  grid-row: 2;
+}
+.film-sum {
+  grid-column: 2 / -1;
+  grid-row: 4;
+  font-size: 12px;
+  margin-top: 6px;
+}
+.meta {
+  font-size: 12px;
+  margin-top: 2px;
+}
+.rating {
+  color: var(--ink);
+  font-weight: 600;
+}
+.rating .icon,
+.fav .icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  margin-right: 2px;
+  vertical-align: -0.1em;
+}
+
+.poster {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--surface2);
+}
+.poster--none {
+  display: flex;
+  align-items: flex-end;
+  padding: 4px;
+  background: linear-gradient(160deg, var(--surface2), var(--wash));
+  border: 1px solid var(--line);
+}
+.poster--none span {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 8px;
+  line-height: 1.1;
+  color: var(--ink);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+}
+
+/* Timetable cells: 28px tall, with the hit area stretched to 44px */
+.cell {
+  position: relative;
+  grid-row: 3;
+  margin-top: 8px;
+  height: 28px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cell::after {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.cell--on {
+  background: var(--wash);
+  color: var(--ink);
+}
+.cell--on::before {
+  content: "";
+  position: absolute;
+  inset: -8px -2px;
+}
+.cell--on::after,
+.cell--unpub::after {
+  display: none;
+}
+.cell--unpub {
+  background: repeating-linear-gradient(135deg, transparent 0 4px, var(--line) 4px 5px);
+}
+
+/* Showtime chips (Day) */
+.chips {
+  grid-column: 2 / -1;
+  grid-row: 3;
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Bleed to the screen edge so a cut-off chip shows there's more. */
+  margin-right: calc(-1 * var(--pad));
+  padding-right: var(--pad);
+}
+.chips::-webkit-scrollbar {
+  display: none;
+}
+.chip {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  text-align: left;
+}
+.chip-t {
+  display: flex;
+  align-items: center;
+  color: var(--text);
+}
+.chip-t b {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.chip-w {
+  font-size: 11px;
+  color: var(--sub);
+  white-space: nowrap;
+}
+.chip--more {
+  justify-content: center;
+  border-style: dashed;
+  background: none;
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 600;
+}
+.chip--wide,
+.chip--d {
+  display: none;
+}
+.tag {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  padding: 0 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--body);
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.tag--imax {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+/* Seen group */
+.seen {
+  border-bottom: 1px solid var(--line);
+}
+.seen summary {
+  list-style: none;
+  cursor: pointer;
+  padding-bottom: 10px;
+}
+.seen summary::-webkit-details-marker {
+  display: none;
+}
+.seen summary::after {
+  content: " ▾";
+}
+.seen[open] summary::after {
+  content: " ▴";
+}
+.seen .film {
+  opacity: 0.6;
+}
+
+.empty-t {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  text-wrap: balance;
+}
+.empty .pill {
+  margin-top: 16px;
+}
+
+@media (min-width: 900px) {
+  .tt {
+    grid-template-columns: 72px minmax(0, 1fr) repeat(var(--days), 64px);
+    column-gap: 6px;
+  }
+  .sd--wk {
+    grid-column: 1 / 3;
+  }
+  .film {
+    padding: 12px 0;
+  }
+  .film-p {
+    grid-row: 1 / span 3;
+    width: 56px;
+  }
+  .film-h,
+  .film .meta,
+  .film-sum {
+    grid-column: 2;
+  }
+  .film-h {
+    font-size: 20px;
+  }
+  .film-sum {
+    grid-row: 3;
+  }
+  .cell {
+    grid-row: 1 / span 3;
+    align-self: center;
+    margin: 0;
+    height: 40px;
+    font-size: 13px;
+  }
+  .chips {
+    flex-wrap: wrap;
+    overflow: visible;
+    margin-right: 0;
+    padding-right: 0;
+  }
+  .chip--wide,
+  .chip--d {
+    display: flex;
+  }
+  .chip--m {
+    display: none;
+  }
+}
+
+/* A section whose every row the pre-paint seen script hid. */
+section:has(> .films):not(:has(> .films > li:not([hidden]))) {
+  display: none;
+}

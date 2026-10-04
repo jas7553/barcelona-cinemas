@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderPage, sitePages } from "./entry-server";
+import { listData, renderPage, sitePages } from "./entry-server";
 import type { Listings } from "./types";
 
 const listings: Listings = { generated_at: "2026-10-04T08:19:00Z", stale: false, theaters: [], movies: [] };
@@ -51,6 +51,77 @@ describe("renderPage", () => {
 
   it("never emits a style attribute, which the CSP would block", () => {
     for (const { data } of sitePages(listings, renderedAt)) {
+      expect(renderPage(data).html).not.toMatch(/\sstyle=/);
+    }
+  });
+});
+
+describe("list pages", () => {
+  const full: Listings = {
+    ...listings,
+    theaters: [
+      { id: "verdi", name: "Cines Verdi", address: "", neighborhood: "Gràcia", website_url: "", maps_url: "", lat: 41.4, lng: 2.15 },
+      { id: "unused", name: "Unused", address: "", neighborhood: "", website_url: "", maps_url: "", lat: null, lng: null },
+    ],
+    movies: [
+      {
+        id: "1",
+        title: "Aftersun",
+        year: 2022,
+        runtime_minutes: 102,
+        poster_url: null,
+        backdrop_url: null,
+        trailer_url: null,
+        genres: ["Drama"],
+        rating: 7.7,
+        synopsis: "Not in any list payload.",
+        links: { imdb: null, imdb_id: null },
+        showtimes: [
+          { theater_id: "verdi", date: "2026-10-04", time: "21:30", language: "vo", booking_url: "https://b/1", audio_lang: "en", subtitle_lang: null, premium_format: null },
+          { theater_id: "verdi", date: "2026-10-20", time: "21:30", language: "vo" },
+        ],
+      },
+    ],
+  };
+
+  it("renders This week at the root and a page for each of the next 8 days", () => {
+    const paths = sitePages(full, renderedAt).map((p) => p.path);
+    expect(paths).toContain("index.html");
+    expect(paths.filter((p) => p.startsWith("day/"))).toEqual(
+      ["04", "05", "06", "07", "08", "09", "10", "11"].map((d) => `day/2026-10-${d}.html`),
+    );
+  });
+
+  it("carries only timetable fields on This week, and the ticket's on a Day", () => {
+    const week = listData(full, ["2026-10-04"], false);
+    expect(week.films[0]).not.toHaveProperty("synopsis");
+    expect(week.films[0].showtimes).toEqual([{ theater_id: "verdi", date: "2026-10-04", time: "21:30" }]);
+    const day = listData(full, ["2026-10-04"], true);
+    expect(day.films[0].showtimes).toEqual([
+      { theater_id: "verdi", date: "2026-10-04", time: "21:30", booking_url: "https://b/1", audio_lang: "en" },
+    ]);
+    expect(day.theaters.map((t) => t.id)).toEqual(["verdi"]);
+  });
+
+  it("counts every published day in the calendar, in range or not", () => {
+    expect(listData(full, ["2026-10-05"], false)).toMatchObject({
+      films: [],
+      calendar: [
+        { date: "2026-10-04", cinemas: 1, last: "21:30" },
+        { date: "2026-10-20", cinemas: 1, last: "21:30" },
+      ],
+    });
+  });
+
+  it("titles a Day page by its date, with a trailing-slash canonical", () => {
+    const day = sitePages(full, renderedAt).find((p) => p.path === "day/2026-10-06.html")!;
+    const out = renderPage(day.data, "https://example.com");
+    expect(out.title).toBe("Tuesday 6 October · Barcelona This Week");
+    expect(out.headExtra).toContain('rel="canonical" href="https://example.com/day/2026-10-06/"');
+  });
+
+  it("never emits a style attribute on list pages either", () => {
+    for (const { data } of sitePages(full, renderedAt)) {
       expect(renderPage(data).html).not.toMatch(/\sstyle=/);
     }
   });

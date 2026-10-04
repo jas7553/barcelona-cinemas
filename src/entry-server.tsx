@@ -1,10 +1,10 @@
 import { renderToString } from "preact-render-to-string";
 import { App } from "./App";
-import ListPage, { type ListPageData } from "./legacy/pages/ListPage";
 import FilmPage, { type FilmPageData } from "./legacy/pages/FilmPage";
 import { premiumFormatLabel } from "./legacy/utils";
-import type { PageData } from "./pageData";
-import type { Listings, Movie, Theater } from "./types";
+import { addDays, formatDayMonth, formatWeekdayLong, madridDateKey, type DateKey } from "./domain/time";
+import type { CalendarDay, ListData, ListFilm, PageData, Showing } from "./pageData";
+import type { Listings, Movie, Showtime, Theater } from "./types";
 
 const SITE_NAME = "Barcelona This Week";
 const DEFAULT_DESC =
@@ -142,20 +142,6 @@ function filmJsonLd(movie: Movie, theaters: Theater[], url: string | undefined):
   return jsonLdScript({ "@context": "https://schema.org", "@graph": [movieNode, ...events] });
 }
 
-export function renderList(data: ListPageData, siteUrl?: string): RenderedPage {
-  return {
-    html: renderToString(<ListPage data={data} />),
-    title: SITE_NAME,
-    headExtra: metaTags({
-      title: SITE_NAME,
-      description: DEFAULT_DESC,
-      image: siteUrl ? `${siteUrl}${OG_IMAGE_PATH}` : OG_IMAGE_PATH,
-      url: siteUrl || undefined,
-      canonical: siteUrl ? `${siteUrl}/` : undefined,
-    }),
-  };
-}
-
 export function renderFilm(data: FilmPageData, siteUrl?: string): RenderedPage {
   const movie = data.listings.movies[0];
   const title = movie ? `${movie.title} · ${SITE_NAME}` : SITE_NAME;
@@ -182,10 +168,69 @@ export function renderFilm(data: FilmPageData, siteUrl?: string): RenderedPage {
   };
 }
 
+// Day pages and the timetable cover today plus 7: one more than the horizon, so
+// a page still open after midnight has the day that rolls into view.
+const RENDERED_DAYS = 8;
+
+/** Showings per day across every film: how much of each day is published. */
+function calendar(movies: Movie[]): CalendarDay[] {
+  const days = new Map<DateKey, { cinemas: Set<string>; last: string }>();
+  for (const s of movies.flatMap((m) => m.showtimes)) {
+    const day = days.get(s.date) ?? { cinemas: new Set(), last: s.time };
+    day.cinemas.add(s.theater_id);
+    if (s.time > day.last) day.last = s.time;
+    days.set(s.date, day);
+  }
+  return [...days]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, d]) => ({ date, cinemas: d.cinemas.size, last: d.last }));
+}
+
+/** A showtime with only the fields a list page reads, and none that are empty. */
+function showing(s: Showtime, forTicket: boolean): Showing {
+  const out: Showing = { theater_id: s.theater_id, date: s.date, time: s.time };
+  if (s.premium_format) out.premium_format = s.premium_format;
+  if (forTicket) {
+    if (s.booking_url) out.booking_url = s.booking_url;
+    if (s.audio_lang) out.audio_lang = s.audio_lang;
+    if (s.subtitle_lang) out.subtitle_lang = s.subtitle_lang;
+  }
+  return out;
+}
+
+/**
+ * The payload for This week (every day in range, timetable fields only) or one
+ * Day (that day, plus what the ticket sheet needs). Films with nothing in range
+ * are left out, and so are cinemas nothing in range is at.
+ */
+export function listData(listings: Listings, days: DateKey[], forTicket: boolean): ListData {
+  const inRange = new Set(days);
+  const films: ListFilm[] = [];
+  for (const m of listings.movies) {
+    const showtimes = m.showtimes.filter((s) => inRange.has(s.date)).map((s) => showing(s, forTicket));
+    if (showtimes.length === 0) continue;
+    const { id, title, poster_url, rating, genres, runtime_minutes } = m;
+    films.push({ id, title, poster_url, rating, genres, runtime_minutes, showtimes });
+  }
+  const used = new Set(films.flatMap((f) => f.showtimes.map((s) => s.theater_id)));
+  return {
+    films,
+    theaters: listings.theaters.filter((t) => used.has(t.id)),
+    calendar: calendar(listings.movies),
+  };
+}
+
 /** Every page the new front end renders, keyed by its output path. */
 export function sitePages(listings: Listings, renderedAt: string): { path: string; data: PageData }[] {
   const base = { renderedAt, generatedAt: listings.generated_at, stale: listings.stale };
+  const today = madridDateKey(new Date(renderedAt));
+  const days = Array.from({ length: RENDERED_DAYS }, (_, i) => addDays(today, i));
   return [
+    { path: "index.html", data: { ...base, page: "week", ...listData(listings, days, false) } },
+    ...days.map((date) => ({
+      path: `day/${date}.html`,
+      data: { ...base, page: "day" as const, date, ...listData(listings, [date], true) },
+    })),
     { path: "privacy.html", data: { ...base, page: "privacy" } },
     { path: "404.html", data: { ...base, page: "not-found" } },
   ];
@@ -194,6 +239,34 @@ export function sitePages(listings: Listings, renderedAt: string): { path: strin
 export function renderPage(data: PageData, siteUrl?: string): RenderedPage {
   const html = renderToString(<App data={data} />);
   switch (data.page) {
+    case "week":
+      return {
+        html,
+        title: SITE_NAME,
+        headExtra: metaTags({
+          title: SITE_NAME,
+          description: DEFAULT_DESC,
+          image: siteUrl ? `${siteUrl}${OG_IMAGE_PATH}` : OG_IMAGE_PATH,
+          url: siteUrl || undefined,
+          canonical: siteUrl ? `${siteUrl}/` : undefined,
+        }),
+      };
+    case "day": {
+      // The weekday and date, not "Today": the page outlives the day it was rendered on.
+      const title = `${formatWeekdayLong(data.date)} ${formatDayMonth(data.date)} · ${SITE_NAME}`;
+      const url = siteUrl ? `${siteUrl}/day/${data.date}/` : undefined;
+      return {
+        html,
+        title,
+        headExtra: metaTags({
+          title,
+          description: DEFAULT_DESC,
+          image: siteUrl ? `${siteUrl}${OG_IMAGE_PATH}` : OG_IMAGE_PATH,
+          url,
+          canonical: url,
+        }),
+      };
+    }
     case "privacy": {
       const title = `Privacy · ${SITE_NAME}`;
       const url = siteUrl ? `${siteUrl}/privacy/` : undefined;

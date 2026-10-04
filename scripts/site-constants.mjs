@@ -44,7 +44,7 @@ export function assertSiteTimezone(context) {
 }
 
 /**
- * Per-film output locations the render prune is allowed to sweep, each paired
+ * Per-film and per-day output locations the render prune is allowed to sweep, each paired
  * with the only file extension it may delete there.
  *
  * Canonical form: no leading and no trailing slash. Each sink normalises:
@@ -52,13 +52,14 @@ export function assertSiteTimezone(context) {
  *   - S3 (ssg-lambda/index.mjs) needs a TRAILING SLASH, because ListObjectsV2
  *     matches a literal prefix and a bare `film` would also match `filmy/…`
  *     while `film/` correctly excludes `data/film/` (which needs its own pass)
- *   - template.yaml scopes s3:DeleteObject to `<prefix>/*` for the same two
+ *   - template.yaml scopes s3:DeleteObject to `<prefix>/*` for the same prefixes
  *
  * Widening this widens a delete permission. Don't.
  */
 export const PRUNE_PREFIXES = Object.freeze([
   Object.freeze({ prefix: "film", ext: ".html" }),
   Object.freeze({ prefix: "data/film", ext: ".json" }),
+  Object.freeze({ prefix: "day", ext: ".html" }),
 ]);
 
 /** Prune targets as POSIX-ish relative dirs, for the filesystem renderer. */

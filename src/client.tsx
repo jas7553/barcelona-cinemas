@@ -3,6 +3,7 @@ import { App } from "./App";
 import { removeObsoleteKeys } from "./client/prefs";
 import type { PageData } from "./pageData";
 import "./styles/base.css";
+import "./styles/list.css";
 import "./styles/sheet.css";
 
 // The payload is inert JSON (type="application/json"), so the CSP needs no hash for it.

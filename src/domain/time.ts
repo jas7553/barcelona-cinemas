@@ -125,3 +125,17 @@ const STALE_AFTER_MS = 24 * HOUR_MS;
 export function isStale(listings: { generated_at: string; stale: boolean }, now: Date): boolean {
   return listings.stale || now.getTime() - Date.parse(listings.generated_at) > STALE_AFTER_MS;
 }
+
+const monthLong = new Intl.DateTimeFormat("en-GB", { month: "long", timeZone: "UTC" });
+
+/** "6 October" */
+export function formatDayMonth(key: DateKey): string {
+  return `${Number(key.slice(8))} ${monthLong.format(keyToUtcMs(key))}`;
+}
+
+/** "Sun 4 – Sat 10 Oct", with the first month only when the range spans two. */
+export function formatRange(first: DateKey, last: DateKey): string {
+  const start = `${formatWeekday(first)} ${Number(first.slice(8))}`;
+  const month = first.slice(5, 7) === last.slice(5, 7) ? "" : ` ${monthShort.format(keyToUtcMs(first))}`;
+  return `${start}${month} – ${formatDateLong(last)}`;
+}

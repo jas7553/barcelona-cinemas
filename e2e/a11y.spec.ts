@@ -5,6 +5,7 @@
 //   npm run e2e
 
 import { test, expect, type Page } from "@playwright/test";
+import { premiumFormatFilmId } from "./fixture";
 
 const VIEWPORTS = [
   { name: "393x852", width: 393, height: 852 },
@@ -12,10 +13,7 @@ const VIEWPORTS = [
 ];
 
 async function gotoFirstFilm(page: Page): Promise<void> {
-  await page.goto("/");
-  const href = await page.locator(".film-card__link").first().getAttribute("href");
-  expect(href, "no film card to open").toMatch(/^\/film\//);
-  await page.goto(href!);
+  await page.goto(`/film/${premiumFormatFilmId()}`);
   await expect(page.locator(".detail-film-title")).toBeVisible();
 }
 

@@ -1,11 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/preact";
-import ListPage from "./ListPage";
 import FilmPage from "./FilmPage";
-import { renderList, renderFilm, filmListings } from "../../entry-server";
+import { renderFilm, filmListings } from "../../entry-server";
 import type { Listings } from "../../types";
 import * as utils from "../utils";
-import { transformResponse } from "../utils";
 
 function futureDate(offsetDays: number): string {
   const d = new Date();
@@ -53,98 +51,6 @@ function sampleListings(): Listings {
 }
 
 const renderedAt = new Date().toISOString();
-
-describe("ListPage", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    window.history.replaceState({}, "", "/");
-  });
-
-  it("renders film cards from embedded data with no fetch", () => {
-    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
-    expect(screen.getByText("Project Hail Mary")).toBeInTheDocument();
-  });
-
-  // The card's times row (and so the chip) only renders with a day selected.
-  function selectDayOf(data: Listings): void {
-    const [movie] = transformResponse(data, new Date(renderedAt));
-    window.history.replaceState({}, "", `/?day=${movie.showtimes[0].dayOffset}`);
-  }
-
-  it("renders the format chip in the card's times row when a day is selected", () => {
-    const data = sampleListings();
-    // A run, not a one-off, so the card shows the pill row this test targets.
-    data.movies[0].showtimes.push(
-      { theater_id: "verdi", date: futureDate(3), time: "18:00", language: "vo" },
-      { theater_id: "verdi", date: futureDate(4), time: "18:00", language: "vo" },
-    );
-    data.movies[0].showtimes[1].premium_format = "imax";
-    selectDayOf(data);
-    const { container } = render(<ListPage data={{ renderedAt, listings: data }} />);
-    expect(container.querySelectorAll(".film-card__times .tag")).toHaveLength(1);
-  });
-
-  it("renders no format chip when no showtime carries one", () => {
-    const data = sampleListings();
-    selectDayOf(data);
-    const { container } = render(<ListPage data={{ renderedAt, listings: data }} />);
-    expect(container.querySelectorAll(".film-card__times .tag")).toHaveLength(0);
-  });
-
-  it("links each card to its film page", () => {
-    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
-    const link = screen.getByRole("link", { name: /Project Hail Mary/ });
-    expect(link.getAttribute("href")).toBe("/film/1");
-  });
-
-  it("moves a film marked as seen into a collapsed Seen section", () => {
-    localStorage.setItem("btw-seen", JSON.stringify(["1"]));
-    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
-    // Not in the main list once seen…
-    expect(screen.queryByRole("link", { name: /Project Hail Mary/ })).not.toBeInTheDocument();
-    // …but reachable via the collapsed "Seen" toggle. No count in the label.
-    const toggle = screen.getByRole("button", { name: "Seen" });
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(toggle);
-    expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("link", { name: /Project Hail Mary/ })).toBeInTheDocument();
-  });
-
-  it("shows an all-seen empty state when every film is marked seen", () => {
-    localStorage.setItem("btw-seen", JSON.stringify(["1"]));
-    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
-    expect(screen.getByText(/All 1 film marked as seen/)).toBeInTheDocument();
-  });
-
-  it("toggles a film's seen state from the list, moving it between sections", () => {
-    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
-    const toggleBtn = screen.getByRole("button", { name: "Mark as seen" });
-    fireEvent.click(toggleBtn);
-    expect(screen.queryByRole("link", { name: /Project Hail Mary/ })).not.toBeInTheDocument();
-    expect(JSON.parse(localStorage.getItem("btw-seen")!)).toEqual(["1"]);
-
-    fireEvent.click(screen.getByRole("button", { name: "Seen" }));
-    const unseenBtn = screen.getByRole("button", { name: "Mark as unseen" });
-    fireEvent.click(unseenBtn);
-    expect(JSON.parse(localStorage.getItem("btw-seen")!)).toEqual([]);
-    expect(screen.getByRole("link", { name: /Project Hail Mary/ })).toBeInTheDocument();
-  });
-
-  it("resets seen films via the confirmation dialog, and cancel keeps them", () => {
-    localStorage.setItem("btw-seen", JSON.stringify(["1"]));
-    render(<ListPage data={{ renderedAt, listings: sampleListings() }} />);
-    fireEvent.click(screen.getByRole("button", { name: "Seen" }));
-
-    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(JSON.parse(localStorage.getItem("btw-seen")!)).toEqual(["1"]);
-    expect(screen.getByText(/Project Hail Mary/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
-    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
-    expect(JSON.parse(localStorage.getItem("btw-seen") ?? "[]")).toEqual([]);
-  });
-});
 
 describe("FilmPage", () => {
   beforeEach(() => {
@@ -316,19 +222,6 @@ describe("FilmPage", () => {
 });
 
 describe("entry-server (SSG)", () => {
-  it("renderList produces real markup + site title", () => {
-    const out = renderList({ renderedAt, listings: sampleListings() });
-    expect(out.title).toBe("Barcelona This Week");
-    expect(out.html).toContain("Project Hail Mary");
-  });
-
-  it("renderList emits canonical + social cards when given a siteUrl", () => {
-    const out = renderList({ renderedAt, listings: sampleListings() }, "https://example.com");
-    expect(out.headExtra).toContain('rel="canonical" href="https://example.com/"');
-    expect(out.headExtra).toContain('property="og:image" content="https://example.com/apple-touch-icon.png"');
-    expect(out.headExtra).toContain('name="twitter:card" content="summary"');
-  });
-
   it("renderFilm produces a per-film title + OpenGraph", () => {
     const narrowed = filmListings(sampleListings(), "1")!;
     const out = renderFilm({ renderedAt, listings: narrowed, filmId: "1" }, "https://example.com");

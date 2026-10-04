@@ -12,10 +12,12 @@ interface Props {
   section?: "cinemas";
   /** The page's title block, rendered inside the header under the bar. */
   heading?: ComponentChildren;
+  /** Full-width bar between the header and the content: the list pages' sticky day strip. */
+  strip?: ComponentChildren;
   children: ComponentChildren;
 }
 
-export function Layout({ data, now, section, heading, children }: Props) {
+export function Layout({ data, now, section, heading, strip, children }: Props) {
   const { home } = usePrefs();
   const [homeOpen, setHomeOpen] = useState(false);
   return (
@@ -23,6 +25,7 @@ export function Layout({ data, now, section, heading, children }: Props) {
       <Header section={section} onHome={() => setHomeOpen(true)}>
         {heading}
       </Header>
+      {strip}
       <main class="wrap">{children}</main>
       <Footer generatedAt={data.generatedAt} now={now} />
       {homeOpen && <HomeSheet home={home} onClose={() => setHomeOpen(false)} />}
