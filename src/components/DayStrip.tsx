@@ -6,17 +6,20 @@ interface Props {
   today: DateKey;
   /** The Day page's date; absent on This week. */
   current?: DateKey;
+  /** Where "Week" and each day lead: This week and the Day pages, or a cinema's. */
+  weekHref?: string;
+  dayHref?: (date: DateKey) => string;
 }
 
 /**
  * The sticky header of the timetable: "Week", then one column per day. Shares
  * the film rows' grid so the columns line up down the page.
  */
-export function DayStrip({ days, today, current }: Props) {
+export function DayStrip({ days, today, current, weekHref = "/", dayHref = (date) => `/day/${date}/` }: Props) {
   return (
     <nav class="strip" aria-label="Days">
       <div class="wrap tt">
-        <a class="sd sd--wk" href="/" aria-current={current ? undefined : "page"}>
+        <a class="sd sd--wk" href={weekHref} aria-current={current ? undefined : "page"}>
           Week
         </a>
         {days.map(({ date, status }) => {
@@ -38,7 +41,7 @@ export function DayStrip({ days, today, current }: Props) {
             <a
               key={date}
               class={status === "not-out" ? "sd sd--unpub" : "sd"}
-              href={`/day/${date}/`}
+              href={dayHref(date)}
               aria-current={date === current ? "date" : undefined}
             >
               {label}

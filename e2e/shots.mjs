@@ -56,6 +56,9 @@ const SHOTS = {
   "04-m-ticket-book": ["m", "/day/2026-10-04/", ticket("Book at")],
   "05-m-ticket-nobook": ["m", "/day/2026-10-04/", ticket("website")],
   "06-m-ticket-imax": ["m", "/day/2026-10-06/", ticket("IMAX")],
+  "07-m-cinema-week": ["m", "/cinema/verdi/"],
+  "08-m-cinema-day": ["m", "/cinema/verdi/2026-10-05/"],
+  "09-m-cinemas": ["m", "/cinemas/"],
   "10-m-home": ["m", "/privacy/", openHome],
   "11-m-home-denied": ["m", "/privacy/", async (page) => {
     await openHome(page);
@@ -72,6 +75,8 @@ const SHOTS = {
   "20-d-day": ["d", "/day/2026-10-06/"],
   "21-d-film": ["d", "/film/1275779/2026-10-05/"],
   "22-d-ticket": ["d", "/day/2026-10-04/", ticket("Book at")],
+  "23-d-cinema": ["d", "/cinema/verdi/"],
+  "24-d-cinemas": ["d", "/cinemas/"],
   "25-d-home": ["d", "/privacy/", openHome],
 };
 

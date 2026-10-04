@@ -184,3 +184,40 @@ describe("film pages", () => {
     }
   });
 });
+
+describe("cinema pages", () => {
+  const pages = sitePages(full, renderedAt);
+
+  it("renders a week view and a Day view per rendered day for every cinema, and the index", () => {
+    const paths = pages.map((p) => p.path);
+    expect(paths.filter((p) => p.startsWith("cinema/verdi"))).toHaveLength(9);
+    expect(paths).toContain("cinema/unused.html");
+    expect(paths).toContain("cinemas.html");
+  });
+
+  it("carries this cinema's showings in range, with what the ticket needs", () => {
+    const data = pages.find((p) => p.path === "cinema/verdi.html")!.data;
+    if (data.page !== "cinema") throw new Error("not a cinema page");
+    expect(data.films.map((f) => f.showtimes)).toEqual([
+      [{ theater_id: "verdi", date: "2026-10-04", time: "21:30", booking_url: "https://b/1", audio_lang: "en" }],
+    ]);
+  });
+
+  it("gives the index each film's last showing per cinema", () => {
+    const data = pages.find((p) => p.path === "cinemas.html")!.data;
+    if (data.page !== "cinemas") throw new Error("not the index");
+    expect(data.lastShowings).toEqual({ verdi: ["2026-10-04T21:30"] });
+  });
+
+  it("points a cinema's Day views at its week view", () => {
+    const out = renderPage(pages.find((p) => p.path === "cinema/verdi/2026-10-05.html")!.data, "https://x.test");
+    expect(out.title).toBe("Cines Verdi · Barcelona This Week");
+    expect(out.headExtra).toContain('rel="canonical" href="https://x.test/cinema/verdi/"');
+  });
+
+  it("never emits a style attribute", () => {
+    for (const { data } of pages.filter((p) => p.data.page === "cinema" || p.data.page === "cinemas")) {
+      expect(renderPage(data).html).not.toMatch(/\sstyle=/);
+    }
+  });
+});

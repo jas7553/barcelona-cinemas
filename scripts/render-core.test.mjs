@@ -101,6 +101,9 @@ describe("renderAll() prune", () => {
       { path: "film/1.html", data: { page: "film", renderedAt } },
       { path: "film/1/2026-06-28.html", data: { page: "film", renderedAt } },
       { path: "film/2.html", data: { page: "film", renderedAt } },
+      { path: "cinema/x.html", data: { page: "cinema", renderedAt } },
+      { path: "cinema/x/2026-06-28.html", data: { page: "cinema", renderedAt } },
+      { path: "cinemas.html", data: { page: "cinemas", renderedAt } },
       { path: "privacy.html", data: { page: "privacy", renderedAt } },
       { path: "404.html", data: { page: "not-found", renderedAt } },
     ],
@@ -144,7 +147,14 @@ describe("renderAll() prune", () => {
       },
     });
     // Ended films still get a (noindex) page, so their paths are kept too.
-    expect([...keep].sort()).toEqual(["day/2026-06-28.html", "film/1.html", "film/1/2026-06-28.html", "film/2.html"]);
+    expect([...keep].sort()).toEqual([
+      "cinema/x.html",
+      "cinema/x/2026-06-28.html",
+      "day/2026-06-28.html",
+      "film/1.html",
+      "film/1/2026-06-28.html",
+      "film/2.html",
+    ]);
   });
 
   it("keeps the shared documents out of the set — they live outside every prefix", async () => {
@@ -161,7 +171,7 @@ describe("renderAll() prune", () => {
     });
     // data/listings.json sits under data/ but NOT under data/film/, so the
     // sweep can never reach it — but a stray keep-set entry would be a smell.
-    for (const p of ["index.html", "privacy.html", "sitemap.xml", "data/listings.json"]) {
+    for (const p of ["index.html", "privacy.html", "cinemas.html", "sitemap.xml", "data/listings.json"]) {
       expect(keep.has(p)).toBe(false);
     }
   });
@@ -181,7 +191,7 @@ describe("renderAll() prune", () => {
     // The real invariant: any written path under a swept prefix must be in the
     // keep set, or this render would delete output it just produced.
     const swept = [...(await writtenPaths())].filter(
-      (p) => p.startsWith("film/") || p.startsWith("day/"),
+      (p) => /^(film|day|cinema)\//.test(p),
     );
     expect(swept.length).toBeGreaterThan(0);
     for (const p of swept) expect(keep.has(p)).toBe(true);

@@ -1,7 +1,17 @@
 import { renderToString } from "preact-render-to-string";
 import { App } from "./App";
 import { addDays, formatDayMonth, formatWeekdayLong, madridDateKey, type DateKey } from "./domain/time";
-import type { CalendarDay, FilmDetail, FilmPageData, ListData, ListFilm, PageData, Showing } from "./pageData";
+import type {
+  CalendarDay,
+  CinemaPageData,
+  FilmDetail,
+  FilmPageData,
+  ListData,
+  ListFilm,
+  PageBase,
+  PageData,
+  Showing,
+} from "./pageData";
 import type { Listings, Movie, Showtime, Theater } from "./types";
 
 const SITE_NAME = "Barcelona This Week";
@@ -238,6 +248,49 @@ function filmPages(
   });
 }
 
+/** A cinema's pages: the week view, plus a Day view for each rendered day. */
+function cinemaPages(listings: Listings, base: PageBase, days: DateKey[], cal: CalendarDay[]) {
+  const inRange = new Set(days);
+  return listings.theaters.flatMap((theater) => {
+    const films: ListFilm[] = [];
+    for (const m of listings.movies) {
+      const showtimes = m.showtimes
+        .filter((s) => s.theater_id === theater.id && inRange.has(s.date))
+        .map((s) => showing(s, true));
+      if (showtimes.length === 0) continue;
+      const { id, title, poster_url, rating, genres, runtime_minutes } = m;
+      films.push({ id, title, poster_url, rating, genres, runtime_minutes, showtimes });
+    }
+    const page: Omit<CinemaPageData, "date"> = {
+      ...base,
+      page: "cinema",
+      theaterId: theater.id,
+      films,
+      theaters: listings.theaters,
+      calendar: cal,
+    };
+    return [
+      { path: `cinema/${theater.id}.html`, data: { ...page, date: null } },
+      ...days.map((date) => ({ path: `cinema/${theater.id}/${date}.html`, data: { ...page, date } })),
+    ];
+  });
+}
+
+/** Each cinema's films by the start of their last showing there. */
+function lastShowings(listings: Listings, days: DateKey[]): Record<string, string[]> {
+  const inRange = new Set(days);
+  const out: Record<string, string[]> = {};
+  for (const m of listings.movies) {
+    const last = new Map<string, string>();
+    for (const s of m.showtimes.filter((s) => inRange.has(s.date))) {
+      const at = `${s.date}T${s.time}`;
+      if (at > (last.get(s.theater_id) ?? "")) last.set(s.theater_id, at);
+    }
+    for (const [theaterId, at] of last) (out[theaterId] ??= []).push(at);
+  }
+  return out;
+}
+
 /** Every page the new front end renders, keyed by its output path. */
 export function sitePages(listings: Listings, renderedAt: string): { path: string; data: PageData }[] {
   const base = { renderedAt, generatedAt: listings.generated_at, stale: listings.stale };
@@ -251,6 +304,11 @@ export function sitePages(listings: Listings, renderedAt: string): { path: strin
       data: { ...base, page: "day" as const, date, ...listData(listings, [date], true) },
     })),
     ...filmPages(listings, base, days, cal),
+    ...cinemaPages(listings, base, days, cal),
+    {
+      path: "cinemas.html",
+      data: { ...base, page: "cinemas", theaters: listings.theaters, lastShowings: lastShowings(listings, days) },
+    },
     { path: "privacy.html", data: { ...base, page: "privacy" } },
     { path: "404.html", data: { ...base, page: "not-found" } },
   ];
@@ -307,6 +365,35 @@ export function renderPage(data: PageData, siteUrl?: string): RenderedPage {
             canonical: showing ? undated : undefined,
             noindex: !showing,
           }) + (showing && !date ? filmJsonLd(film, data.theaters, undated) : ""),
+      };
+    }
+    case "cinema": {
+      const theater = data.theaters.find((t) => t.id === data.theaterId)!;
+      const title = `${theater.name} · ${SITE_NAME}`;
+      const url = siteUrl ? `${siteUrl}/cinema/${theater.id}/` : undefined;
+      return {
+        html,
+        title,
+        headExtra: metaTags({
+          title,
+          description: `English-language showtimes at ${theater.name}, ${theater.neighborhood}, this week.`,
+          url: data.date && siteUrl ? `${siteUrl}/cinema/${theater.id}/${data.date}/` : url,
+          canonical: url,
+        }),
+      };
+    }
+    case "cinemas": {
+      const title = `Cinemas · ${SITE_NAME}`;
+      const url = siteUrl ? `${siteUrl}/cinemas/` : undefined;
+      return {
+        html,
+        title,
+        headExtra: metaTags({
+          title,
+          description: "The Barcelona cinemas showing English-language films this week.",
+          url,
+          canonical: url,
+        }),
       };
     }
     case "privacy": {

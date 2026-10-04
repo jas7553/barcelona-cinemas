@@ -58,6 +58,30 @@ export type FilmPageData = PageBase & {
   date: DateKey | null;
 };
 
+/**
+ * A cinema's programme: its films with their showings here over the rendered
+ * days, with what the ticket needs. `theaters` is every cinema, for the
+ * locator map. `date` is null on the week view.
+ */
+export type CinemaPageData = PageBase & {
+  page: "cinema";
+  theaterId: string;
+  films: ListFilm[];
+  theaters: Theater[];
+  calendar: CalendarDay[];
+  date: DateKey | null;
+};
+
+/**
+ * Every cinema, and for each the start of every film's last showing there
+ * ("YYYY-MM-DDTHH:MM"): enough to count the films it still has on this week.
+ */
+export type CinemasPageData = PageBase & {
+  page: "cinemas";
+  theaters: Theater[];
+  lastShowings: Record<string, string[]>;
+};
+
 export type WeekPageData = PageBase & ListData & { page: "week" };
 export type DayPageData = PageBase & ListData & { page: "day"; date: DateKey };
 
@@ -65,6 +89,8 @@ export type PageData =
   | WeekPageData
   | DayPageData
   | FilmPageData
+  | CinemaPageData
+  | CinemasPageData
   | (PageBase & { page: "privacy" })
   | (PageBase & { page: "not-found" });
 

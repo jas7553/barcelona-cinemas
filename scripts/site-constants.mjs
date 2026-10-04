@@ -44,7 +44,7 @@ export function assertSiteTimezone(context) {
 }
 
 /**
- * Per-film and per-day output locations the render prune is allowed to sweep, each paired
+ * Film, day and cinema page locations the render prune is allowed to sweep, each paired
  * with the only file extension it may delete there.
  *
  * Canonical form: no leading and no trailing slash. Each sink normalises:
@@ -60,6 +60,7 @@ export const PRUNE_PREFIXES = Object.freeze([
   Object.freeze({ prefix: "film", ext: ".html" }),
   Object.freeze({ prefix: "data/film", ext: ".json" }),
   Object.freeze({ prefix: "day", ext: ".html" }),
+  Object.freeze({ prefix: "cinema", ext: ".html" }),
 ]);
 
 /** Prune targets as POSIX-ish relative dirs, for the filesystem renderer. */

@@ -7,8 +7,8 @@ import type { Theater } from "../types";
 import { IconStar } from "./Icons";
 import { Poster } from "./Poster";
 
-/** Rating · up to 2 genres · runtime */
-export function FilmMeta({ film }: { film: ListFilm }) {
+/** Rating · up to 2 genres · runtime, and anything the caller adds */
+export function FilmMeta({ film, extra }: { film: ListFilm; extra?: string }) {
   const rest = [...film.genres.slice(0, 2), film.runtime_minutes ? formatRuntime(film.runtime_minutes) : null].filter(
     Boolean,
   );
@@ -22,6 +22,7 @@ export function FilmMeta({ film }: { film: ListFilm }) {
       )}
       {film.rating != null && rest.length > 0 && " · "}
       {rest.join(" · ")}
+      {extra}
     </p>
   );
 }
@@ -30,13 +31,17 @@ interface RowProps {
   film: ListFilm;
   href: string;
   eager: boolean;
+  /** Seen films on a cinema page stay in the list, faded, rather than move to a group. */
+  seen?: boolean;
+  /** The Day view's anchor, which the cinema's week cells link to. */
+  id?: string;
   children: ComponentChildren;
 }
 
 /** Poster, title and meta on the timetable grid; the caller adds cells or chips. */
-function Row({ film, href, eager, children }: RowProps) {
+export function Row({ film, href, eager, seen, id, children }: RowProps) {
   return (
-    <li class="film tt" data-film={film.id}>
+    <li class={seen ? "film film--seen tt" : "film tt"} data-film={film.id} id={id}>
       {/* The title link right beside it is the one assistive tech gets. */}
       <a class="film-p" href={href} tabIndex={-1} aria-hidden="true">
         <Poster film={film} eager={eager} />
@@ -44,7 +49,7 @@ function Row({ film, href, eager, children }: RowProps) {
       <h3 class="film-h">
         <a href={href}>{film.title}</a>
       </h3>
-      <FilmMeta film={film} />
+      <FilmMeta film={film} extra={seen ? " · Seen" : undefined} />
       {children}
     </li>
   );
@@ -54,14 +59,17 @@ interface WeekRowProps {
   row: FilmRow;
   days: { date: DateKey; status: DayStatus }[];
   today: DateKey;
-  summary: string;
+  summary: ComponentChildren;
   eager: boolean;
+  seen?: boolean;
+  /** Where a filled cell leads: the film on that day, or the cinema's Day view. */
+  cellHref?: (date: DateKey) => string;
 }
 
-export function WeekRow({ row, days, today, summary, eager }: WeekRowProps) {
+export function WeekRow({ row, days, today, summary, eager, seen, cellHref }: WeekRowProps) {
   const { film } = row;
   return (
-    <Row film={film} href={`/film/${film.id}/`} eager={eager}>
+    <Row film={film} href={`/film/${film.id}/`} eager={eager} seen={seen}>
       {days.map(({ date, status }) => {
         const n = row.showings.filter((s) => s.date === date).length;
         if (n > 0) {
@@ -69,7 +77,7 @@ export function WeekRow({ row, days, today, summary, eager }: WeekRowProps) {
             <a
               key={date}
               class="cell cell--on"
-              href={`/film/${film.id}/${date}/`}
+              href={cellHref ? cellHref(date) : `/film/${film.id}/${date}/`}
               aria-label={`${dayTitle(date, today)}: ${plural(n, "showing")}`}
             >
               {n}

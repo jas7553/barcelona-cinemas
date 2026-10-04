@@ -32,9 +32,9 @@ export function assets(manifest, entryKey) {
  * @param {(relPath: string, contents: string, contentType: string) => (void|Promise<void>)} o.write
  * @param {(keepRelPaths: Set<string>) => (void|Promise<void>)} [o.prune]
  *   Optional sink for deleting stale output. Called exactly once, only after
- *   every write above has resolved, with the full set of film and day paths
- *   this render produced — `film/<id>.html`, `film/<id>/<date>.html` and
- *   `day/<date>.html`. Sinks sweep those prefixes and delete anything not in
+ *   every write above has resolved, with the full set of film, day and cinema
+ *   paths this render produced — `film/<id>.html`, `film/<id>/<date>.html`,
+ *   `day/<date>.html`, `cinema/<id>.html` and `cinema/<id>/<date>.html`. Sinks sweep those prefixes and delete anything not in
  *   the set; `data/film/` is still swept, and nothing is kept there. A partial
  *   render must never delete anything, so a throwing write short-circuits
  *   before prune ever runs. Omit it and nothing is deleted (previous
@@ -55,11 +55,11 @@ export async function renderAll({
   await write("data/listings.json", JSON.stringify(listings), "application/json");
 
   // Every page, 404.html included: it links the current hashed bundle, so it
-  // has to be rewritten with every render. Day and film pages come and go with
-  // the listings, so they go through the prune.
+  // has to be rewritten with every render. Day, film and cinema pages come and
+  // go with the listings, so they go through the prune.
   const prunable = new Set();
   for (const { path, data } of server.sitePages(listings, renderedAt)) {
-    if (path.startsWith("day/") || path.startsWith("film/")) prunable.add(path);
+    if (/^(day|film|cinema)\//.test(path)) prunable.add(path);
     const page = server.renderPage(data, siteUrl);
     await write(
       path,
@@ -86,6 +86,10 @@ export async function renderAll({
     const entries = [
       { loc: `${siteUrl}/`, priority: "1.0", changefreq: "daily" },
       ...showing.map((m) => ({ loc: `${siteUrl}/film/${m.id}/`, priority: "0.7", changefreq: "daily" })),
+      { loc: `${siteUrl}/cinemas/`, priority: "0.5", changefreq: "weekly" },
+      ...[...new Set(showing.flatMap((m) => m.showtimes.map((s) => s.theater_id)))]
+        .sort()
+        .map((id) => ({ loc: `${siteUrl}/cinema/${id}/`, priority: "0.5", changefreq: "daily" })),
       { loc: `${siteUrl}/privacy/`, priority: "0.3", changefreq: "yearly" },
     ];
     const urls = entries

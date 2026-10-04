@@ -254,9 +254,9 @@ Resources:
                 - s3:GetObject
                 - s3:PutObject
               Resource: !Sub "${FrontendBucket.Arn}/*"
-            # Prune stale output: list film/, data/film/ and day/ to find pages
-            # whose movie left the listings or whose day has passed, then delete
-            # them. Delete is scoped to those prefixes only — the renderer must
+            # Prune stale output: list film/, data/film/, day/ and cinema/ to
+            # find pages whose movie left the listings or whose day has passed,
+            # then delete them. Delete is scoped to those prefixes only — the renderer must
             # stay unable to remove data/listings.json, the hashed assets, or
             # the root documents, so do not widen this to the whole bucket.
             # The globs below must match PRUNE_PREFIXES in
@@ -274,6 +274,7 @@ Resources:
                 - !Sub "${FrontendBucket.Arn}/film/*"
                 - !Sub "${FrontendBucket.Arn}/data/film/*"
                 - !Sub "${FrontendBucket.Arn}/day/*"
+                - !Sub "${FrontendBucket.Arn}/cinema/*"
             - Sid: CloudFrontInvalidate
               Effect: Allow
               Action:
@@ -544,7 +545,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-K1uS9U2pIxKpxfx5wdfzAAEZpsVLlLYnU6/5t1ynhYQ=' 'sha256-S/kuBBJV2y1VnfJ0Z2h40dcRIqKRhYIksLFOI4feylY=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-v0gZHuEDjFPP8UO3jR+TNz5aTJNbBBZKHkpuy/Dl3dk=' 'sha256-ooBWtd5UoB+TnoSjynpAxpeta9GqwWMnVk9I4s5BGxM=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true
@@ -585,7 +586,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-K1uS9U2pIxKpxfx5wdfzAAEZpsVLlLYnU6/5t1ynhYQ=' 'sha256-S/kuBBJV2y1VnfJ0Z2h40dcRIqKRhYIksLFOI4feylY=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-v0gZHuEDjFPP8UO3jR+TNz5aTJNbBBZKHkpuy/Dl3dk=' 'sha256-ooBWtd5UoB+TnoSjynpAxpeta9GqwWMnVk9I4s5BGxM=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true

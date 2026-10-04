@@ -90,14 +90,15 @@ export function usePrefs(): Prefs {
 }
 
 /**
- * Before first paint, ORDER_SCRIPT (scripts/template.mjs) orders cinema lists by
- * the stored prefs through CSS, leaving the markup as rendered. Once the page
- * has rendered with those prefs its DOM order agrees, so the CSS order comes
- * off before the browser paints again.
+ * Before first paint, the scripts in scripts/template.mjs order lists by the
+ * stored prefs through CSS (data-o, data-seen), leaving the markup as
+ * rendered. Once the page has rendered with those prefs its DOM order agrees,
+ * so the CSS order comes off before the browser paints again.
  */
 export function useSettledOrder(prefs: Prefs): void {
   useLayoutEffect(() => {
     if (prefs === NO_PREFS) return;
     for (const el of document.querySelectorAll("[data-o]")) el.removeAttribute("data-o");
+    for (const el of document.querySelectorAll("[data-seen]")) el.removeAttribute("data-seen");
   }, [prefs]);
 }
