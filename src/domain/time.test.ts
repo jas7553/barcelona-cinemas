@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
-  daysBetween,
   formatDataAge,
   formatDateLong,
   formatWeekday,
@@ -9,7 +8,6 @@ import {
   isStale,
   madridDateKey,
   madridTime,
-  madridWallToInstant,
 } from "./time";
 
 describe("Madrid wall clock", () => {
@@ -19,15 +17,6 @@ describe("Madrid wall clock", () => {
     expect(madridDateKey(instant)).toBe("2026-10-04");
     expect(madridTime(instant)).toBe("01:30");
   });
-
-  it("converts wall-clock times on both sides of the October DST change", () => {
-    expect(madridWallToInstant("2026-10-24", "21:30").toISOString()).toBe("2026-10-24T19:30:00.000Z");
-    expect(madridWallToInstant("2026-10-25", "21:30").toISOString()).toBe("2026-10-25T20:30:00.000Z");
-  });
-
-  it("converts a time just after the March spring-forward", () => {
-    expect(madridWallToInstant("2026-03-29", "03:30").toISOString()).toBe("2026-03-29T01:30:00.000Z");
-  });
 });
 
 describe("date keys", () => {
@@ -35,11 +24,6 @@ describe("date keys", () => {
     expect(addDays("2026-10-30", 3)).toBe("2026-11-02");
     expect(addDays("2026-10-24", 1)).toBe("2026-10-25");
     expect(addDays("2026-10-04", -4)).toBe("2026-09-30");
-  });
-
-  it("counts whole days between keys", () => {
-    expect(daysBetween("2026-10-04", "2026-10-10")).toBe(6);
-    expect(daysBetween("2026-10-25", "2026-10-26")).toBe(1);
   });
 
   it("formats weekdays and long dates", () => {

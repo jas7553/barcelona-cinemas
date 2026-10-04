@@ -204,7 +204,7 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
  * shows the one for aria-pressed, which the pre-paint script sets for a
  * favourite, so the pill is right before the bundle runs.
  */
-export function FavouriteToggle({ id, on }: { id: string; on: boolean }) {
+function FavouriteToggle({ id, on }: { id: string; on: boolean }) {
   return (
     <button type="button" class="pill pill--fav" data-fav={id} aria-pressed={on} onClick={() => toggleFavourite(id)}>
       <span class="if-fav">★ My cinema</span>

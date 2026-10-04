@@ -8,7 +8,7 @@ import { IconStar } from "./Icons";
 import { Poster } from "./Poster";
 
 /** Rating · up to 2 genres · runtime, and anything the caller adds */
-export function FilmMeta({ film, extra }: { film: ListFilm; extra?: string }) {
+function FilmMeta({ film, extra }: { film: ListFilm; extra?: string }) {
   const rest = [...film.genres.slice(0, 2), film.runtime_minutes ? formatRuntime(film.runtime_minutes) : null].filter(
     Boolean,
   );

@@ -17,7 +17,6 @@ const madridPartsFormatter = new Intl.DateTimeFormat("en-US", {
   day: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
-  second: "2-digit",
   hourCycle: "h23",
 });
 
@@ -27,17 +26,16 @@ interface MadridParts {
   d: number;
   h: number;
   mi: number;
-  s: number;
 }
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-export function madridParts(instant: Date): MadridParts {
+function madridParts(instant: Date): MadridParts {
   const parts = madridPartsFormatter.formatToParts(instant);
   const get = (type: string): number => Number(parts.find((p) => p.type === type)?.value ?? 0);
-  return { y: get("year"), mo: get("month"), d: get("day"), h: get("hour"), mi: get("minute"), s: get("second") };
+  return { y: get("year"), mo: get("month"), d: get("day"), h: get("hour"), mi: get("minute") };
 }
 
 export function madridDateKey(instant: Date): DateKey {
@@ -51,26 +49,6 @@ export function madridTime(instant: Date): string {
   return `${pad2(h)}:${pad2(mi)}`;
 }
 
-function madridOffsetMsAt(instantMs: number): number {
-  const p = madridParts(new Date(instantMs));
-  return Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi, p.s) - instantMs;
-}
-
-/**
- * The instant a Barcelona wall-clock date/time names, correct across DST.
- * Guess-and-correct: read the components as UTC, measure Madrid's offset there,
- * then re-measure at the corrected instant so a guess on the wrong side of a
- * transition still converges (the offset only takes two values).
- */
-export function madridWallToInstant(date: DateKey, time: string): Date {
-  const [y, mo, d] = date.split("-").map(Number);
-  const [h, mi] = time.split(":").map(Number);
-  const asUtc = Date.UTC(y, mo - 1, d, h, mi, 0);
-  let instant = asUtc - madridOffsetMsAt(asUtc);
-  instant = asUtc - madridOffsetMsAt(instant);
-  return new Date(instant);
-}
-
 function keyToUtcMs(key: DateKey): number {
   const [y, mo, d] = key.split("-").map(Number);
   return Date.UTC(y, mo - 1, d);
@@ -78,11 +56,6 @@ function keyToUtcMs(key: DateKey): number {
 
 export function addDays(key: DateKey, n: number): DateKey {
   return new Date(keyToUtcMs(key) + n * DAY_MS).toISOString().slice(0, 10);
-}
-
-/** Whole days from `a` to `b`. */
-export function daysBetween(a: DateKey, b: DateKey): number {
-  return Math.round((keyToUtcMs(b) - keyToUtcMs(a)) / DAY_MS);
 }
 
 // Date keys are formatted as UTC midnights in UTC, so no zone can roll them

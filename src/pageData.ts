@@ -94,4 +94,3 @@ export type PageData =
   | (PageBase & { page: "privacy"; theaters: Theater[] })
   | (PageBase & { page: "not-found"; theaters: Theater[] });
 
-export type PageName = PageData["page"];

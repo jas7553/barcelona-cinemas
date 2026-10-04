@@ -1,7 +1,7 @@
 # Barcelona Movie Database — Context
 
 Domain language for the listings pipeline: how raw cinema feeds become the
-deduplicated, enriched movie data served to the SPA.
+deduplicated, enriched movie data the site is rendered from.
 
 ## Language
 
@@ -18,7 +18,7 @@ One screening of a **Movie** at one **Cinema** on a date/time, in a language
 
 **Subtitle version**:
 The viewing-language axis of a **Showtime**, modelled as a normalized
-(`audio_lang`, `subtitle_lang`) pair and surfaced to the SPA as one badge.
+(`audio_lang`, `subtitle_lang`) pair and surfaced on the site as one badge.
 - `audio_lang`: `en` | `other` | absent (unknown).
 - `subtitle_lang`: `en` | `es` | `ca` | absent (unknown).
 
@@ -27,9 +27,10 @@ Taxonomy decision (the HITL gate for this feature):
   free-text (audio, subtitle) pair in mixed Catalan/Spanish/English (e.g.
   "Anglès" / "Español"), and the primary feed carries **no** subtitle data at
   all. So the model is the pair, not a single 3-value code.
-- Badge derivation, for an English speaker: English audio → **"English"**;
-  else English subtitles → **"English subs"**; else Spanish → **"Spanish subs"**;
-  else Catalan → **"Catalan subs"**; else **no badge**.
+- Badge derivation, for an English speaker: English audio is the site's
+  norm and gets **no badge**. Non-English audio gets its subtitle language:
+  **"English subs"**, **"Spanish subs"** or **"Catalan subs"**; with unknown
+  subtitles, **no badge** (requirements 6).
 - Unknown is never guessed. Empty/unrecognized source values and every
   primary-feed showtime stay unknown and show no badge — absence of a badge
   means "we don't know," not "no subtitles."
