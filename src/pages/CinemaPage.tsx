@@ -3,7 +3,7 @@ import { useNow } from "../client/clock";
 import { toggleFavourite, usePrefs, useSettledOrder } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
 import { DayStrip } from "../components/DayStrip";
-import { Row, Tags, WeekRow } from "../components/FilmRow";
+import { Row, ShowingChip, Tags, WeekRow } from "../components/FilmRow";
 import { IconExternal } from "../components/Icons";
 import { Layout } from "../components/Layout";
 import { TicketSheet } from "../components/TicketSheet";
@@ -227,13 +227,13 @@ function DayRow({ row, eager, seen, onShowing }: DayRowProps) {
     <Row film={film} href={`/film/${film.id}/${showings[0].date}/`} eager={eager} seen={seen} id={`f${film.id}`}>
       <div class="chips">
         {showings.map((s, i) => (
-          <button key={i} type="button" class="chip" aria-haspopup="dialog" onClick={() => onShowing(film, s)}>
+          <ShowingChip key={i} href={`/film/${film.id}/${s.date}/`} onOpen={() => onShowing(film, s)}>
             <span class="chip-t">
               <b>{s.time}</b>
               <Tags s={s} />
             </span>
             <span class="chip-w">{s.booking_url ? "Book" : "Details"}</span>
-          </button>
+          </ShowingChip>
         ))}
       </div>
     </Row>

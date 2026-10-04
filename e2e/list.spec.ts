@@ -61,7 +61,7 @@ test.describe("ticket sheet", () => {
     const errors = collectErrors(page);
     await gotoTomorrow(page);
     const url = page.url();
-    const chip = rows(page).first().locator("button.chip").first();
+    const chip = rows(page).first().locator("a.chip[aria-haspopup]").first();
     const time = (await chip.locator(".chip-t b").textContent())!;
     await chip.click();
 
@@ -90,10 +90,22 @@ test.describe("ticket sheet", () => {
     expect(errors).toEqual([]);
   });
 
+  test("a showtime tapped before the bundle runs still leads to the film on that day", async ({ page }) => {
+    await page.goto("/");
+    const href = (await strip(page).getByRole("link").nth(2).getAttribute("href"))!;
+    await page.route(/\/assets\/.*\.js$/, (route) => route.abort());
+    await page.goto(href);
+    const chip = rows(page).first().locator("a.chip[aria-haspopup]").first();
+    const target = (await chip.getAttribute("href"))!;
+    expect(target).toMatch(/^\/film\/[^/]+\/\d{4}-\d{2}-\d{2}\/$/);
+    await chip.click();
+    await expect(page).toHaveURL(target);
+  });
+
   test("Back closes the ticket and stays on the day", async ({ page }) => {
     await gotoTomorrow(page);
     const url = page.url();
-    await rows(page).first().locator("button.chip").first().click();
+    await rows(page).first().locator("a.chip[aria-haspopup]").first().click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await page.goBack();
     await expect(page.getByRole("dialog")).toBeHidden();
@@ -108,7 +120,7 @@ test.describe("ticket sheet", () => {
     });
     await gotoTomorrow(page);
     const title = (await rows(page).first().locator("h3").textContent())!;
-    await rows(page).first().locator("button.chip").first().click();
+    await rows(page).first().locator("a.chip[aria-haspopup]").first().click();
     await page.getByRole("dialog").getByRole("button", { name: "Share" }).click();
     await expect(page.getByRole("dialog").getByRole("button", { name: "Copied" })).toBeVisible();
     const copied = await page.evaluate(() => navigator.clipboard.readText());
@@ -128,7 +140,7 @@ test("timetable cells and showtime chips have 44px hit areas", async ({ page }) 
     expect(ok, `${await el.getAttribute("class")} hit area is under 44px tall`).toBe(true);
   }
   await gotoTomorrow(page);
-  const box = await rows(page).first().locator("button.chip").first().boundingBox();
+  const box = await rows(page).first().locator("a.chip[aria-haspopup]").first().boundingBox();
   expect(box!.height).toBeGreaterThanOrEqual(44);
 });
 

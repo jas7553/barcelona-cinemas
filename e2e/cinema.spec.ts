@@ -30,7 +30,7 @@ test("the ticket's cinema link opens that cinema's day, under the production CSP
   const day = (await page.getByRole("navigation", { name: "Days" }).getByRole("link").nth(2).getAttribute("href"))!;
   await page.goto(day);
   await page.waitForLoadState("networkidle");
-  await page.locator("li.film button.chip").first().click();
+  await page.locator("li.film a.chip[aria-haspopup]").first().click();
   const cinema = page.getByRole("dialog").locator(".where a");
   const href = (await cinema.getAttribute("href"))!;
   await cinema.click();
@@ -50,7 +50,7 @@ test("a week cell leads to the Day view, at that film", async ({ page }) => {
   expect(href).toMatch(/^\/cinema\/[^/]+\/\d{4}-\d{2}-\d{2}\/#f.+$/);
   await cell.click();
   await expect(page.locator(href.slice(href.indexOf("#")))).toBeVisible();
-  await expect(page.locator(`${href.slice(href.indexOf("#"))} button.chip`).first()).toBeVisible();
+  await expect(page.locator(`${href.slice(href.indexOf("#"))} a.chip[aria-haspopup]`).first()).toBeVisible();
 });
 
 test("a dot on the Cinemas map opens that cinema", async ({ page }) => {

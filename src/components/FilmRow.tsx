@@ -120,12 +120,11 @@ export function DayRow({ row, date, theaters, where, eager, onShowing }: DayRowP
         {showings.slice(0, CHIPS_DESKTOP).map((s, i) => {
           const theater = theaters.get(s.theater_id);
           return (
-            <button
+            <ShowingChip
               key={i}
-              type="button"
+              href={href}
               class={i < CHIPS_MOBILE ? "chip" : "chip chip--wide"}
-              aria-haspopup="dialog"
-              onClick={() => onShowing(film, s)}
+              onOpen={() => onShowing(film, s)}
             >
               <span class="chip-t">
                 <b>{s.time}</b>
@@ -134,13 +133,42 @@ export function DayRow({ row, date, theaters, where, eager, onShowing }: DayRowP
               <span class="chip-w">
                 {theater ? shortName(theater) : s.theater_id} · {where(s.theater_id)}
               </span>
-            </button>
+            </ShowingChip>
           );
         })}
         {more(CHIPS_MOBILE, "chip--m")}
         {more(CHIPS_DESKTOP, "chip--d")}
       </div>
     </Row>
+  );
+}
+
+interface ShowingChipProps {
+  /** Where a tap goes before the bundle runs, and with a modifier key after. */
+  href: string;
+  class?: string;
+  onOpen: () => void;
+  children: ComponentChildren;
+}
+
+/**
+ * A showtime chip. It's a real link, so a tap before the bundle runs still
+ * goes somewhere useful; once it runs, a plain tap opens the ticket in place.
+ */
+export function ShowingChip({ href, class: cls = "chip", onOpen, children }: ShowingChipProps) {
+  return (
+    <a
+      class={cls}
+      href={href}
+      aria-haspopup="dialog"
+      onClick={(e) => {
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        onOpen();
+      }}
+    >
+      {children}
+    </a>
   );
 }
 

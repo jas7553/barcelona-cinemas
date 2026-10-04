@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { useNow } from "../client/clock";
 import { toggleSeen, usePrefs, useSettledOrder } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
-import { Tags } from "../components/FilmRow";
+import { ShowingChip, Tags } from "../components/FilmRow";
 import { Footer } from "../components/Footer";
 import { IconExternal, IconStar } from "../components/Icons";
 import { TicketSheet } from "../components/TicketSheet";
@@ -346,12 +346,18 @@ function DayShowings({ film, date, today, unpub, groups, theaters, where, favour
                     <span class="vh">(started)</span>
                   </span>
                 ) : (
-                  <button key={i} type="button" class="chip chip--t" aria-haspopup="dialog" onClick={() => onShowing(s)}>
+                  // Before the bundle runs, straight to what the ticket would offer first.
+                  <ShowingChip
+                    key={i}
+                    href={s.booking_url ?? theater.website_url}
+                    class="chip chip--t"
+                    onOpen={() => onShowing(s)}
+                  >
                     <span class="chip-t">
                       <b>{s.time}</b>
                       <Tags s={s} />
                     </span>
-                  </button>
+                  </ShowingChip>
                 ),
               )}
             </div>

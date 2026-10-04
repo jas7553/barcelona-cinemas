@@ -39,7 +39,7 @@ test("a film page renders its showings by cinema and hydrates under the producti
 
 test("a showtime opens its ticket, with this showing's booking link or the cinema website", async ({ page }) => {
   await gotoPremium(page);
-  const chip = panel(page).locator("button.chip").first();
+  const chip = panel(page).locator("a.chip[aria-haspopup]").first();
   const time = (await chip.locator("b").textContent())!;
   await chip.click();
   const ticket = page.getByRole("dialog");
@@ -62,7 +62,7 @@ test("the undated page opens on the first day with showings left", async ({ page
   await page.goto(`/film/${id}/`);
   const current = panel(page).getByRole("navigation", { name: "Days" }).locator('[aria-current="date"]');
   await expect(current).toHaveCount(1);
-  await expect(panel(page).locator("button.chip").first()).toBeVisible();
+  await expect(panel(page).locator("a.chip[aria-haspopup]").first()).toBeVisible();
 });
 
 test("Seen it? marks the film, and This week shows it in Seen after Back from bfcache", async ({ page, browserName }) => {
@@ -124,7 +124,7 @@ test("film page controls have 44px hit areas", async ({ page }) => {
     page.locator(".actions .pill").first(),
     panel(page).locator(".days a").first(),
     panel(page).locator(".crow-h").first(),
-    panel(page).locator("button.chip").first(),
+    panel(page).locator("a.chip[aria-haspopup]").first(),
   ];
   for (const el of targets) {
     await el.scrollIntoViewIfNeeded();

@@ -74,7 +74,7 @@ describe("Day", () => {
 
   it("opens the ticket for a showing, with Book as the primary action", () => {
     render(<DayPage data={dayData} />);
-    fireEvent.click(screen.getByRole("button", { name: /21:30/ }));
+    fireEvent.click(screen.getByRole("link", { name: /21:30/ }));
     const ticket = screen.getByRole("dialog", { name: "Aftersun" });
     const book = within(ticket).getByRole("link", { name: "Book at Verdi" });
     expect(book).toHaveAttribute("href", "https://verdi.example/book/1");
@@ -85,7 +85,7 @@ describe("Day", () => {
 
   it("falls back to the cinema website when the showing has no booking link", () => {
     render(<DayPage data={dayData} />);
-    fireEvent.click(screen.getByRole("button", { name: /19:00/ }));
+    fireEvent.click(screen.getByRole("link", { name: /19:00/ }));
     const ticket = screen.getByRole("dialog", { name: "Drive" });
     expect(within(ticket).getByRole("link", { name: "Girona website" })).toHaveAttribute("href", "https://girona.example");
     expect(ticket).toHaveTextContent("No direct booking link for this showing");
@@ -97,7 +97,7 @@ describe("Day", () => {
     localStorage.setItem(PREF_KEYS.home, JSON.stringify({ lat: 41.4021, lng: 2.1558 }));
     localStorage.setItem(PREF_KEYS.seen, JSON.stringify(["drive"]));
     render(<DayPage data={dayData} />);
-    expect(screen.getByRole("button", { name: /21:30/ })).toHaveTextContent("Verdi · 250 m");
+    expect(screen.getByRole("link", { name: /21:30/ })).toHaveTextContent("Verdi · 250 m");
     const seen = screen.getByText("Seen (1)").closest("details")!;
     expect(within(seen).getByRole("heading", { name: "Drive" })).toBeInTheDocument();
   });

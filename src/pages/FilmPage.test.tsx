@@ -76,7 +76,7 @@ describe("Film page", () => {
     expect(screen.getByRole("link", { current: "date" })).toHaveAttribute("href", "/film/aftersun/2026-10-04/");
     expect(cinemaRows().map((li) => li.dataset.id)).toEqual(["girona", "verdi"]);
     expect(screen.getByText("16:00").closest(".chip")).toHaveClass("chip--past");
-    expect(screen.queryByRole("button", { name: /16:00/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /16:00/ })).toBeNull();
     expect(screen.getByRole("link", { name: /Cines Verdi/ })).toHaveAttribute("href", "/cinema/verdi/2026-10-04/");
   });
 
@@ -114,7 +114,10 @@ describe("Film page", () => {
 
   it("opens the ticket for a showing, with Book as the primary action", () => {
     render(<FilmPage data={data} />);
-    fireEvent.click(screen.getByRole("button", { name: /21:30/ }));
+    const chip = screen.getByRole("link", { name: /21:30/ });
+    // Before the bundle runs, the chip goes straight to the booking link.
+    expect(chip).toHaveAttribute("href", "https://verdi.example/book/1");
+    fireEvent.click(chip);
     const ticket = screen.getByRole("dialog", { name: "Aftersun" });
     expect(within(ticket).getByRole("link", { name: "Book at Verdi" })).toHaveAttribute(
       "href",

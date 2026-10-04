@@ -115,8 +115,10 @@ describe("Cinema, day", () => {
     expect(filmTitles()).toEqual(["Small", "Big"]);
     const big = screen.getByRole("heading", { name: "Big" }).closest("li")!;
     expect(big).toHaveAttribute("id", "fbig");
-    expect(within(big).getAllByRole("button").map((b) => b.textContent)).toEqual(["20:00Book", "22:00IMAXDetails"]);
-    fireEvent.click(within(big).getByRole("button", { name: /20:00/ }));
+    const chips = within(big).getAllByRole("link").filter((a) => a.classList.contains("chip"));
+    expect(chips.map((b) => b.textContent)).toEqual(["20:00Book", "22:00IMAXDetails"]);
+    expect(chips[0]).toHaveAttribute("href", "/film/big/2026-10-05/");
+    fireEvent.click(within(big).getByRole("link", { name: /20:00/ }));
     expect(within(screen.getByRole("dialog")).getByRole("link", { name: "Book at Verdi" })).toHaveAttribute(
       "href",
       "https://verdi.example/b",
