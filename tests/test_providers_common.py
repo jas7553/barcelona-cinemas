@@ -76,3 +76,9 @@ def test_madrid_today_matches_utc_day_when_not_near_midnight() -> None:
 def test_madrid_today_treats_naive_datetime_as_utc() -> None:
     now = datetime(2026, 7, 14, 22, 30)
     assert madrid_today(now) == date(2026, 7, 15)
+
+
+def test_madrid_today_winter_offset_is_one_hour() -> None:
+    """In CET (UTC+1) the rollover happens at 23:00 UTC, not 22:00 as in summer."""
+    assert madrid_today(datetime(2026, 1, 14, 22, 30, tzinfo=UTC)) == date(2026, 1, 14)
+    assert madrid_today(datetime(2026, 1, 14, 23, 30, tzinfo=UTC)) == date(2026, 1, 15)
