@@ -36,6 +36,12 @@ Taxonomy decision (the HITL gate for this feature):
 - When both feeds report the same screening, **Reconciliation** keeps the copy
   with the known subtitle (see `_showtime_info_score`).
 
+**Ended film**:
+A **Movie** that has dropped out of the listings. Kept in the cache (`ended`)
+and published (`ended_movies`) for 30 days after its `last_showing`, with no
+**Showtimes**, so a shared film link keeps rendering "No more showings" instead
+of a 404. A film that comes back is listed again, not ended.
+
 **Provider**:
 A source of raw **Movies** scraped from one upstream feed. Implements
 `ListingsSource.fetch`.

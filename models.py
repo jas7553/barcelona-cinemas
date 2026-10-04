@@ -42,15 +42,23 @@ class Movie(TypedDict):
     showtimes: list[Showtime]
 
 
+class EndedMovie(Movie):
+    """A Movie no longer in the listings, kept so its film page outlives the run."""
+
+    last_showing: str  # YYYY-MM-DD, Madrid calendar date
+
+
 class Listings(TypedDict):
     fetched_at: str  # ISO 8601 datetime
     stale: bool
     movies: list[Movie]
+    ended: NotRequired[list[EndedMovie]]  # absent in caches predating film retention
 
 
 class CinemaInfo(TypedDict):
     id: str
     name: str
+    short_name: NotRequired[str]  # "Verdi" for "Cines Verdi"; chips and maps
     address: str
     neighborhood: str
     website_url: str

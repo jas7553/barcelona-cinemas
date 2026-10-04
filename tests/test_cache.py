@@ -182,3 +182,50 @@ def test_read_keeps_older_showtimes_without_language_field(tmp_cache: Path) -> N
             "time": "18:00",
         }
     ]
+
+
+def _ended_payload(**overrides: object) -> dict[str, object]:
+    return {
+        "title": "Aftersun",
+        "tmdb_id": 965150,
+        "imdb_id": None,
+        "year": 2022,
+        "poster_url": None,
+        "synopsis": None,
+        "rating": None,
+        "runtime_mins": 102,
+        "genres": ["Drama"],
+        "showtimes": [],
+        "last_showing": "2026-03-20",
+        **overrides,
+    }
+
+
+def test_read_round_trips_ended_films(tmp_cache: Path) -> None:
+    listings = _make_listings()
+    tmp_cache.write_text(json.dumps({**listings, "ended": [_ended_payload()]}))
+
+    result = cache.read()
+
+    assert result is not None
+    assert [(m["title"], m["last_showing"]) for m in result.get("ended", [])] == [("Aftersun", "2026-03-20")]
+
+
+def test_read_drops_ended_films_without_a_valid_last_showing(tmp_cache: Path) -> None:
+    listings = _make_listings()
+    ended = [_ended_payload(last_showing="soon"), _ended_payload(title="Kept"), {"last_showing": "2026-03-20"}]
+    tmp_cache.write_text(json.dumps({**listings, "ended": ended}))
+
+    result = cache.read()
+
+    assert result is not None
+    assert [m["title"] for m in result.get("ended", [])] == ["Kept"]
+
+
+def test_read_accepts_a_cache_predating_ended_films(tmp_cache: Path) -> None:
+    tmp_cache.write_text(json.dumps(_make_listings()))
+
+    result = cache.read()
+
+    assert result is not None
+    assert "ended" not in result

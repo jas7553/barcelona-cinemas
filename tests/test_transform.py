@@ -3,7 +3,8 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from models import CinemaInfo, CinemaRegistry, Listings, Movie, Showtime
+from models import CinemaInfo, CinemaRegistry, EndedMovie, Listings, Movie, Showtime
+from pipeline import load_cinemas
 from transform import to_api_response
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -530,3 +531,57 @@ def test_transform_summary_counts_malformed_entries(find_event):
         + summary["excluded_no_showtimes"]
         == summary["movies_in"]
     )
+
+
+# ── short names and ended films ───────────────────────────────────────────────
+
+
+def test_theater_short_name_falls_back_to_the_full_name() -> None:
+    cinemas: CinemaRegistry = {**CINEMAS, "Verdi": CinemaInfo(**{**CINEMAS["Verdi"], "short_name": "Verdi"})}
+    movie = _movie(showtimes=[_showtime(cinema="Verdi"), _showtime(cinema="FdC")])
+
+    theaters = {t["id"]: t for t in to_api_response(_listings(movies=[movie]), cinemas)["theaters"]}
+
+    assert theaters["verdi"]["short_name"] == "Verdi"
+    assert theaters["filmoteca"]["short_name"] == "Filmoteca de Catalunya"
+
+
+def test_every_registry_cinema_has_a_short_name() -> None:
+    assert all(info.get("short_name") for info in load_cinemas().values())
+
+
+def _with_ended(movies: list[Movie], ended: list[EndedMovie]) -> Listings:
+    listings = _listings(movies=movies)
+    listings["ended"] = ended
+    return listings
+
+
+def _ended(title: str, last_showing: str = "2026-03-20", **kwargs: Any) -> EndedMovie:
+    return EndedMovie(**_movie(title, **kwargs), last_showing=last_showing)
+
+
+def test_ended_films_are_published_without_showtimes() -> None:
+    listings = _with_ended([], [_ended("Aftersun", tmdb_id=965150, synopsis="Calum and Sophie.")])
+
+    result = to_api_response(listings, CINEMAS)
+
+    assert result["movies"] == []
+    [ended] = result["ended_movies"]
+    assert ended["id"] == "965150"
+    assert ended["last_showing"] == "2026-03-20"
+    assert ended["showtimes"] == []
+    assert ended["synopsis"] == "Calum and Sophie."
+
+
+def test_an_ended_film_whose_id_is_listed_again_is_not_published_twice() -> None:
+    listed = _movie("Aftersun", showtimes=[_showtime()], tmdb_id=965150)
+    listings = _with_ended([listed], [_ended("Aftersun", tmdb_id=965150)])
+
+    result = to_api_response(listings, CINEMAS)
+
+    assert [m["id"] for m in result["movies"]] == ["965150"]
+    assert result["ended_movies"] == []
+
+
+def test_a_cache_predating_ended_films_publishes_an_empty_list() -> None:
+    assert to_api_response(_listings(), CINEMAS)["ended_movies"] == []

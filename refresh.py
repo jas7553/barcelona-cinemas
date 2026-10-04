@@ -32,6 +32,10 @@ closes:
       - post_enrichment_merged_count
       - non_english_dropped_count
       == published_movie_count
+
+Movies that drop out are carried in `Listings.ended` for
+`ENDED_RETENTION_DAYS` after their last showing, so a shared film link keeps
+rendering ("No more showings") instead of hitting the 404.
 """
 
 from __future__ import annotations
@@ -39,12 +43,14 @@ from __future__ import annotations
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
+from datetime import date, timedelta
 from itertools import chain
 from typing import TYPE_CHECKING, NamedTuple, Protocol, TypedDict
 
-from models import CinemaRegistry, Listings, Movie
+from models import CinemaRegistry, EndedMovie, Listings, Movie
 from observability import emit_metric, log_event, now_ms
-from reconcile import reconcile
+from providers.common import madrid_today
+from reconcile import reconcile, same_movie
 from validation import normalize_movies
 
 if TYPE_CHECKING:
@@ -55,6 +61,8 @@ if TYPE_CHECKING:
     from providers import ListingsSource
 
 logger = logging.getLogger(__name__)
+
+ENDED_RETENTION_DAYS = 30
 
 
 class RefreshStats(TypedDict):
@@ -76,6 +84,7 @@ class RefreshStats(TypedDict):
     non_english_dropped_count: int
     published_movie_count: int
     published_showtime_count: int
+    ended_movie_count: int
     tmdb_enriched_count: int
     tmdb_reenriched_count: int
     tmdb_cache_hit_count: int
@@ -126,10 +135,13 @@ def build_listings(
     reconciled = reconcile(enriched, stage="post_enrichment")
     published, non_english_dropped = _filter_english(reconciled)
 
+    ended = carry_ended(published, cached, madrid_today(now))
+
     listings: Listings = {
         "fetched_at": now.isoformat(),
         "stale": False,
         "movies": published,
+        "ended": ended,
     }
     stats: RefreshStats = {
         "provider_success_count": collection.success_count,
@@ -141,11 +153,43 @@ def build_listings(
         "non_english_dropped_count": non_english_dropped,
         "published_movie_count": len(published),
         "published_showtime_count": sum(len(movie["showtimes"]) for movie in published),
+        "ended_movie_count": len(ended),
         **enrichment_stats,
     }
     _emit_refresh_metrics(stats)
     log_event("refresh_stats", **stats)
     return listings, stats
+
+
+def carry_ended(published: list[Movie], cached: Listings | None, today: date) -> list[EndedMovie]:
+    """
+    The ended films to keep: every Movie the previous refresh had (listed or
+    already ended) that this one no longer lists, until `ENDED_RETENTION_DAYS`
+    after its last showing. A film that comes back is listed again, not ended.
+    """
+    if cached is None:
+        return []
+    candidates: list[EndedMovie] = list(cached.get("ended", []))
+    for movie in cached["movies"]:
+        if movie["showtimes"]:
+            last_showing = max(showtime["date"] for showtime in movie["showtimes"])
+            candidates.append({**movie, "showtimes": [], "last_showing": last_showing})
+
+    oldest_kept = today - timedelta(days=ENDED_RETENTION_DAYS)
+    ended: list[EndedMovie] = []
+    for candidate in candidates:
+        if date.fromisoformat(candidate["last_showing"]) < oldest_kept:
+            continue
+        if any(same_movie(candidate, movie) for movie in published):
+            continue
+        for index, kept in enumerate(ended):
+            if same_movie(kept, candidate):
+                if candidate["last_showing"] > kept["last_showing"]:
+                    ended[index] = candidate
+                break
+        else:
+            ended.append(candidate)
+    return ended
 
 
 def _emit_refresh_metrics(stats: RefreshStats) -> None:

@@ -2,6 +2,7 @@
   "Verdi": {
     "id": "verdi",
     "name": "Cines Verdi",
+    "short_name": "Verdi",
     "address": "Carrer de Verdi, 32",
     "neighborhood": "Gràcia",
     "website_url": "https://barcelona.cines-verdi.com",
@@ -15,6 +16,7 @@
   "VP": {
     "id": "verdi-park",
     "name": "Verdi Park",
+    "short_name": "Verdi Park",
     "address": "Carrer de Torrijos, 49",
     "neighborhood": "Gràcia",
     "website_url": "https://barcelona.cines-verdi.com",
@@ -28,6 +30,7 @@
   "Malda": {
     "id": "malda",
     "name": "Cinema Maldà",
+    "short_name": "Maldà",
     "address": "Carrer del Pi, 5",
     "neighborhood": "Gothic Quarter",
     "website_url": "https://www.cinemamalda.com",
@@ -41,6 +44,7 @@
   "FdC": {
     "id": "filmoteca",
     "name": "Filmoteca de Catalunya",
+    "short_name": "Filmoteca",
     "address": "Plaça de Salvador Seguí, 1-9",
     "neighborhood": "El Raval",
     "website_url": "https://www.filmoteca.cat/web/en/",
@@ -54,6 +58,7 @@
   "CinDiag": {
     "id": "diagonal",
     "name": "Cinesa Diagonal",
+    "short_name": "Diagonal",
     "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
     "neighborhood": "Les Corts",
     "website_url": "https://www.cinesa.es/cines/diagonal/",
@@ -67,6 +72,7 @@
   "CinDigMar": {
     "id": "diagonal-mar",
     "name": "Cinesa Diagonal Mar",
+    "short_name": "Diagonal Mar",
     "address": "Avinguda Diagonal, 3",
     "neighborhood": "Diagonal Mar",
     "website_url": "https://www.cinesa.es/cines/diagonal-mar/",
@@ -80,6 +86,7 @@
   "SOM": {
     "id": "som-multiespai",
     "name": "Cinesa SOM Multiespai",
+    "short_name": "SOM",
     "address": "Avinguda de Rio de Janeiro, 42",
     "neighborhood": "Porta",
     "website_url": "https://www.cinesa.es/cines/som-multiespai/",
@@ -93,6 +100,7 @@
   "Glòries": {
     "id": "glories",
     "name": "Mooby Glòries",
+    "short_name": "Glòries",
     "address": "Avinguda Diagonal, 208",
     "neighborhood": "Poble-Nou",
     "website_url": "https://www.moobycinemas.com/glories?setLang=en",
@@ -106,6 +114,7 @@
   "Aribau": {
     "id": "aribau",
     "name": "Mooby Aribau",
+    "short_name": "Aribau",
     "address": "Carrer d'Aribau, 8-10",
     "neighborhood": "Eixample",
     "website_url": "https://www.moobycinemas.com/aribau?setLang=en",
@@ -119,6 +128,7 @@
   "Arenas": {
     "id": "arenas",
     "name": "Mooby Arenas",
+    "short_name": "Arenas",
     "address": "Gran Via de les Corts Catalanes, 385",
     "neighborhood": "Eixample",
     "website_url": "https://www.moobycinemas.com/arenas?setLang=en",
@@ -133,6 +143,7 @@
   "Balmes": {
     "id": "balmes",
     "name": "Mooby Balmes",
+    "short_name": "Balmes",
     "address": "Carrer de Balmes, 422-424",
     "neighborhood": "Sarrià-Sant Gervasi",
     "website_url": "https://www.moobycinemas.com/balmes?setLang=en",
@@ -146,6 +157,7 @@
   "Bosque": {
     "id": "bosque",
     "name": "Mooby Bosque",
+    "short_name": "Bosque",
     "address": "Rambla de Prat, 16",
     "neighborhood": "Gràcia",
     "website_url": "https://www.moobycinemas.com/bosque?setLang=en",
@@ -159,6 +171,7 @@
   "Girona": {
     "id": "girona",
     "name": "Cinemes Girona",
+    "short_name": "Girona",
     "address": "Carrer de Girona, 175",
     "neighborhood": "Dreta de l'Eixample",
     "website_url": "https://www.cinemesgirona.cat",
@@ -172,6 +185,7 @@
   "RenFlo": {
     "id": "renoir-floridablanca",
     "name": "Renoir Floridablanca",
+    "short_name": "Renoir",
     "address": "Carrer de Floridablanca, 135",
     "neighborhood": "Sant Antoni",
     "website_url": "https://www.cinesrenoir.com/cine/renoir-floridablanca/cartelera/",
@@ -185,6 +199,7 @@
   "EspaiTexas": {
     "id": "espai-texas",
     "name": "Espai Texas",
+    "short_name": "Texas",
     "address": "Carrer de Bailèn, 205",
     "neighborhood": "Vila de Gràcia",
     "website_url": "https://espaitexas.cat/",
@@ -198,6 +213,7 @@
   "Maquinista": {
     "id": "maquinista",
     "name": "Yelmo Westfield La Maquinista",
+    "short_name": "Maquinista",
     "address": "Passeig de Potosí, 2",
     "neighborhood": "Bon Pastor",
     "website_url": "https://www.yelmocines.es/en/cartelera/barcelona/westfield-la-maquinista",
@@ -211,6 +227,7 @@
   "Filmax": {
     "id": "filmax-granvia",
     "name": "Cines Filmax Gran Vía",
+    "short_name": "Filmax",
     "address": "Avinguda de la Granvia de l'Hospitalet, 75",
     "neighborhood": "L'Hospitalet de Llobregat",
     "website_url": "https://cinesfilmax.com",
@@ -224,6 +241,7 @@
   "Sarrià": {
     "id": "sarria",
     "name": "Mooby Sarrià",
+    "short_name": "Sarrià",
     "address": "Ronda del General Mitre, 38-44",
     "neighborhood": "Sarrià-Sant Gervasi",
     "website_url": "https://www.moobycinemas.com/sarria?setLang=en",
@@ -238,6 +256,7 @@
   "Zumzeig": {
     "id": "zumzeig",
     "name": "Zumzeig Cinecooperativa",
+    "short_name": "Zumzeig",
     "address": "Carrer de Béjar, 53",
     "neighborhood": "Hostafrancs",
     "website_url": "https://zumzeigcine.coop",
@@ -251,6 +270,7 @@
   "Phenomena": {
     "id": "phenomena",
     "name": "Sala Phenomena Experience",
+    "short_name": "Phenomena",
     "address": "Carrer de Sant Antoni Maria Claret, 168",
     "neighborhood": "Sagrada Família",
     "website_url": "https://phenomena-experience.com",
@@ -261,6 +281,7 @@
   "Méliès": {
     "id": "melies",
     "name": "Cinemes Méliès",
+    "short_name": "Méliès",
     "address": "Carrer de Villarroel, 102",
     "neighborhood": "Eixample",
     "website_url": "https://www.meliescinemes.com",

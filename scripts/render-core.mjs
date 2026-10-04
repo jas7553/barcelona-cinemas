@@ -47,8 +47,10 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
   const filmAssets = assets(manifest, "src/entry-film.tsx");
   const privacyAssets = assets(manifest, "src/entry-privacy.tsx");
 
-  // List page
-  const listData = { renderedAt, listings };
+  // List page. Ended films only ever get their own page, so keep them out of
+  // the embedded payload.
+  const { ended_movies: _ended, ...currentListings } = listings;
+  const listData = { renderedAt, listings: currentListings };
   const listPage = server.renderList(listData, siteUrl);
   await write(
     "index.html",

@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
@@ -26,7 +26,7 @@ import cache
 import observability
 import refresh
 from enricher import EnrichmentStats
-from models import Listings, Movie
+from models import EndedMovie, Listings, Movie
 
 from .conftest import FindEvent
 
@@ -498,3 +498,69 @@ def test_provider_metrics_carry_the_trigger_dimension_set_on_the_calling_thread(
 
     (success_payload,) = _find_metrics(caplog, "ProviderSuccess")
     assert success_payload["Trigger"] == "schedule"
+
+
+# ── ended films ───────────────────────────────────────────────────────────────
+
+TODAY = date(2026, 3, 27)
+
+
+def _movie(title: str, dates: list[str], **overrides: Any) -> Movie:
+    return cast(Movie, _raw_movie(title, [_showtime(date=d) for d in dates], **overrides))
+
+
+def _ended(title: str, last_showing: str, **overrides: Any) -> EndedMovie:
+    return cast(EndedMovie, {**_raw_movie(title, []), "last_showing": last_showing, **overrides})
+
+
+def _cached(movies: list[Movie], ended: list[EndedMovie] | None = None) -> Listings:
+    listings: Listings = {"fetched_at": NOW.isoformat(), "stale": False, "movies": movies}
+    if ended is not None:
+        listings["ended"] = ended
+    return listings
+
+
+def test_a_film_that_drops_out_is_ended_on_its_last_showing_date() -> None:
+    cached = _cached([_movie("Aftersun", ["2026-03-25", "2026-03-26"])])
+
+    ended = refresh.carry_ended([], cached, TODAY)
+
+    assert [(m["title"], m["last_showing"], m["showtimes"]) for m in ended] == [("Aftersun", "2026-03-26", [])]
+
+
+def test_a_film_still_listed_is_not_ended() -> None:
+    cached = _cached([_movie("Aftersun", ["2026-03-26"])], ended=[_ended("Aftersun", "2026-03-01")])
+
+    assert refresh.carry_ended([_movie("aftersun", ["2026-03-28"])], cached, TODAY) == []
+
+
+def test_an_ended_film_is_kept_for_30_days_after_its_last_showing() -> None:
+    cached = _cached([], ended=[_ended("Kept", "2026-02-25"), _ended("Dropped", "2026-02-24")])
+
+    ended = refresh.carry_ended([], cached, TODAY)
+
+    assert [m["title"] for m in ended] == ["Kept"]
+
+
+def test_the_same_film_ended_twice_keeps_the_later_last_showing() -> None:
+    cached = _cached(
+        [_movie("Aftersun", ["2026-03-26"], imdb_id="tt19770238")],
+        ended=[_ended("Aftersun", "2026-03-10", imdb_id="tt19770238")],
+    )
+
+    ended = refresh.carry_ended([], cached, TODAY)
+
+    assert [m["last_showing"] for m in ended] == ["2026-03-26"]
+
+
+def test_a_cold_cache_has_no_ended_films() -> None:
+    assert refresh.carry_ended([], None, TODAY) == []
+
+
+def test_build_listings_carries_dropped_films_into_ended_and_counts_them() -> None:
+    cached = _cached([_movie("Gone", ["2026-03-26"])])
+
+    listings, stats = _build([_provider("p", [_raw_movie("Still On")])], cached=cached)
+
+    assert [m["title"] for m in listings.get("ended", [])] == ["Gone"]
+    assert stats["ended_movie_count"] == 1

@@ -56,6 +56,7 @@ class _TransformStats:
 
     movies_in: int = 0
     movies_out: int = 0
+    ended_out: int = 0
     excluded_no_title: int = 0
     excluded_no_showtimes: int = 0
     excluded_malformed: int = 0
@@ -80,7 +81,7 @@ class _TransformStats:
 def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegistry) -> dict[str, Any]:
     """
     Convert an internal Listings dict to the spec-compliant API shape:
-      { generated_at, stale, theaters[], movies[] }
+      { generated_at, stale, theaters[], movies[], ended_movies[] }
 
     Safe to call with old cached data that predates the year/imdb_id fields —
     missing values are treated as None.
@@ -103,7 +104,14 @@ def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegis
         if transformed is not None:
             movies_out.append(transformed)
 
+    ended_raw = listings.get("ended")
+    ended_out = _transform_ended(
+        ended_raw if isinstance(ended_raw, list) else [],
+        {movie["id"] for movie in movies_out},
+    )
+
     stats.movies_out = len(movies_out)
+    stats.ended_out = len(ended_out)
     stats.log()
 
     theaters_out = _build_theaters(cinemas, seen_theater_ids)
@@ -113,6 +121,7 @@ def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegis
         "stale": stale,
         "theaters": theaters_out,
         "movies": movies_out,
+        "ended_movies": ended_out,
     }
 
 
@@ -149,9 +158,6 @@ def _transform_movie(
         stats.excluded_no_title += 1
         return None
 
-    tmdb_id: int | None = movie.get("tmdb_id")
-    imdb_id: str | None = movie.get("imdb_id")
-
     showtimes_out = _transform_showtimes(
         movie.get("showtimes") or [],
         cinema_lookup,
@@ -165,6 +171,13 @@ def _transform_movie(
         stats.excluded_titles.append(title)
         return None
 
+    return {**_movie_fields(movie, title), "showtimes": showtimes_out}
+
+
+def _movie_fields(movie: Movie | Mapping[str, Any], title: str) -> dict[str, Any]:
+    """Everything public about a Movie except its showtimes."""
+    tmdb_id: int | None = movie.get("tmdb_id")
+    imdb_id: str | None = movie.get("imdb_id")
     # A rating of 0.0 with zero votes means "not yet rated", not "rated zero" —
     # and a rating from only a handful of votes is statistically meaningless.
     # Suppress both so the frontend doesn't render a misleading badge.
@@ -191,8 +204,28 @@ def _transform_movie(
             "imdb": f"https://www.imdb.com/title/{imdb_id}" if imdb_id else None,
             "imdb_id": imdb_id,
         },
-        "showtimes": showtimes_out,
     }
+
+
+def _transform_ended(ended: list[Any], listed_ids: set[str]) -> list[dict[str, Any]]:
+    """
+    Public shape for ended films: a Movie with no showtimes plus `last_showing`.
+    An id that is listed again wins over its ended copy.
+    """
+    out: list[dict[str, Any]] = []
+    for movie in ended:
+        if not isinstance(movie, Mapping):
+            continue
+        title: str = movie.get("english_title") or movie.get("title", "")
+        last_showing = movie.get("last_showing")
+        if not title or not isinstance(last_showing, str):
+            continue
+        fields = _movie_fields(movie, title)
+        if fields["id"] in listed_ids:
+            continue
+        listed_ids.add(fields["id"])
+        out.append({**fields, "showtimes": [], "last_showing": last_showing})
+    return out
 
 
 def _transform_showtimes(
@@ -276,6 +309,7 @@ def _build_theaters(
                 {
                     "id": info["id"],
                     "name": info["name"],
+                    "short_name": info.get("short_name") or info["name"],
                     "address": info["address"],
                     "neighborhood": info["neighborhood"],
                     "website_url": info["website_url"],

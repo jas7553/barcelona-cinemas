@@ -3,6 +3,8 @@
 export interface Theater {
   id: string;
   name: string;
+  /** "Verdi" for "Cines Verdi". Optional: older published data predates it. */
+  short_name?: string;
   address: string;
   neighborhood: string;
   website_url: string;
@@ -57,11 +59,18 @@ export interface Movie {
   showtimes: Showtime[];
 }
 
+/** A film no longer in the listings, kept for 30 days so its page outlives the run. */
+export interface EndedMovie extends Movie {
+  last_showing: string; // YYYY-MM-DD
+}
+
 export interface Listings {
   generated_at: string;   // ISO 8601
   stale: boolean;
   theaters: Theater[];
   movies: Movie[];
+  /** Optional: older published data predates it. */
+  ended_movies?: EndedMovie[];
 }
 
 // Client-side transformed types (post-transformResponse())

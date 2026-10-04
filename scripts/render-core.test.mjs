@@ -95,6 +95,14 @@ describe("renderAll() sitemap", () => {
     expect(writes.has("privacy.html")).toBe(true);
   });
 
+  it("keeps ended films out of the list page's embedded data", async () => {
+    const writes = new Map();
+    const withEnded = { ...listings(), ended_movies: [{ id: "9", title: "Over", showtimes: [], last_showing: "2026-06-01" }] };
+    await renderAll({ listings: withEnded, manifest, server, siteUrl: "", write: (p, c) => writes.set(p, c) });
+    expect(writes.get("index.html")).not.toContain("ended_movies");
+    expect(JSON.parse(writes.get("data/listings.json")).ended_movies).toHaveLength(1);
+  });
+
   it("omits the sitemap for a local build with no SITE_URL", async () => {
     expect((await run("")).has("sitemap.xml")).toBe(false);
   });
