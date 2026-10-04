@@ -1,13 +1,17 @@
 import { useNow } from "../client/clock";
 import { toggleFavourite, usePrefs, useSettledOrder } from "../client/prefs";
+import { CityMap } from "../components/CityMap";
 import { IconStar } from "../components/Icons";
 import { Layout } from "../components/Layout";
 import { cinemaOrder, filmsLeft } from "../domain/cinema";
 import { distanceKm } from "../domain/distance";
-import { formatDistance, plural } from "../domain/format";
+import { formatDistance, plural, shortName } from "../domain/format";
 import { clockAt, ranking } from "../domain/schedule";
 import type { CinemasPageData } from "../pageData";
 import type { Theater } from "../types";
+
+// With a Home, the map frames the cinemas this close and pins the rest to its edge.
+const FRAME_KM = 4;
 
 /**
  * Every cinema with something on, My cinemas first (requirements 5.5).
@@ -67,6 +71,29 @@ export function CinemasPage({ data }: { data: CinemasPageData }) {
       }
     >
       <div class="idx">
+        <div class="idx-map">
+          <CityMap
+            label={`Map of the ${showing.length} cinemas${prefs.home ? " around Home" : ""}`}
+            mobile={[358, 300]}
+            desktop={[560, 450]}
+            theaters={showing.map((c) => c.theater)}
+            frame={showing
+              .filter((c) => {
+                const d = distanceKm(prefs.home, c.theater);
+                return d == null || d < FRAME_KM;
+              })
+              .map((c) => c.theater.id)}
+            minSpan={3}
+            areas
+            edges
+            home={prefs.home}
+            favourites={prefs.favourites}
+            name={shortName}
+            distance={km}
+            km={(t) => distanceKm(prefs.home, t)}
+            link
+          />
+        </div>
         <ul class="cinemas" data-sort data-has-fav={mine.length > 0 ? "" : undefined}>
           <li class="label" data-head="mine" hidden={mine.length === 0}>
             My cinemas

@@ -2,12 +2,13 @@ import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
 import { usePrefs } from "../client/prefs";
 import type { PageBase } from "../pageData";
+import type { Theater } from "../types";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
 import { HomeSheet } from "./HomeSheet";
 
 interface Props {
-  data: PageBase;
+  data: PageBase & { theaters: Theater[] };
   now: Date;
   section?: "cinemas";
   /** The page's title block, rendered inside the header under the bar. */
@@ -28,7 +29,7 @@ export function Layout({ data, now, section, heading, strip, children }: Props) 
       {strip}
       <main class="wrap">{children}</main>
       <Footer generatedAt={data.generatedAt} now={now} />
-      {homeOpen && <HomeSheet home={home} onClose={() => setHomeOpen(false)} />}
+      {homeOpen && <HomeSheet home={home} theaters={data.theaters} onClose={() => setHomeOpen(false)} />}
     </>
   );
 }

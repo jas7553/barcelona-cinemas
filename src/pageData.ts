@@ -91,7 +91,7 @@ export type PageData =
   | FilmPageData
   | CinemaPageData
   | CinemasPageData
-  | (PageBase & { page: "privacy" })
-  | (PageBase & { page: "not-found" });
+  | (PageBase & { page: "privacy"; theaters: Theater[] })
+  | (PageBase & { page: "not-found"; theaters: Theater[] });
 
 export type PageName = PageData["page"];

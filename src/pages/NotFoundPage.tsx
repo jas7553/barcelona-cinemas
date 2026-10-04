@@ -1,8 +1,9 @@
 import { useNow } from "../client/clock";
 import { Layout } from "../components/Layout";
 import type { PageBase } from "../pageData";
+import type { Theater } from "../types";
 
-export function NotFoundPage({ data }: { data: PageBase }) {
+export function NotFoundPage({ data }: { data: PageBase & { theaters: Theater[] } }) {
   const now = useNow(data.renderedAt);
   return (
     <Layout data={data} now={now}>

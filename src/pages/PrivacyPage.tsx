@@ -3,8 +3,9 @@ import { useNow } from "../client/clock";
 import { forgetAll } from "../client/prefs";
 import { Layout } from "../components/Layout";
 import type { PageBase } from "../pageData";
+import type { Theater } from "../types";
 
-export function PrivacyPage({ data }: { data: PageBase }) {
+export function PrivacyPage({ data }: { data: PageBase & { theaters: Theater[] } }) {
   const now = useNow(data.renderedAt);
   const [forgotten, setForgotten] = useState(false);
   return (

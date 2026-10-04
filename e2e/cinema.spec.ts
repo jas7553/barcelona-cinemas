@@ -53,6 +53,16 @@ test("a week cell leads to the Day view, at that film", async ({ page }) => {
   await expect(page.locator(`${href.slice(href.indexOf("#"))} button.chip`).first()).toBeVisible();
 });
 
+test("a dot on the Cinemas map opens that cinema", async ({ page }) => {
+  await page.goto("/cinemas/");
+  await page.waitForLoadState("networkidle");
+  // Dots in a cluster overlap, so the one on top may be a neighbour's: any cinema will do.
+  const dot = page.locator("svg.map:visible a").first();
+  await expect(dot).toHaveAttribute("href", /^\/cinema\/[^/]+\/$/);
+  await dot.locator(".m-hit").click({ force: true });
+  await expect(page).toHaveURL(/\/cinema\/[^/]+\/$/);
+});
+
 test("starring a cinema puts it under My cinemas on the index", async ({ page }) => {
   await page.goto("/cinemas/");
   const last = (await paintedCinemas(page)).at(-1)!;

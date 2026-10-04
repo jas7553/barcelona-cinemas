@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { setHome } from "../client/prefs";
+import { distanceKm } from "../domain/distance";
+import { shortName } from "../domain/format";
 import type { LatLng } from "../domain/prefs";
+import type { Theater } from "../types";
+import { CityMap } from "./CityMap";
 import { Sheet } from "./Sheet";
+
+// The pick map's frame is fixed, so it doesn't jump as the pin moves: the
+// cinemas this close to the centre of town.
+const CENTRE = { lat: 41.395, lng: 2.165 };
+const FRAME_KM = 4.5;
 
 export const HOME_STATUS = {
   locating: "Finding you…",
@@ -9,14 +18,17 @@ export const HOME_STATUS = {
   denied: "Location access is off for this site. Tap the map instead, or allow it in Settings › Apps › Safari › Location.",
   failed: "Couldn't find your location. Try again, or tap the map instead.",
   unsupported: "This browser can't share your location. Tap the map instead.",
+  picked: "Pin dropped. Save to use it as Home.",
 } as const;
 
 interface Props {
   home: LatLng | null;
+  /** The cinemas to show on the pick map. */
+  theaters: Theater[];
   onClose: () => void;
 }
 
-export function HomeSheet({ home, onClose }: Props) {
+export function HomeSheet({ home, theaters, onClose }: Props) {
   const [pending, setPending] = useState<LatLng | null>(null);
   const [status, setStatus] = useState("");
   const mounted = useRef(true);
@@ -64,6 +76,28 @@ export function HomeSheet({ home, onClose }: Props) {
       <p class="note sub" role="status">
         {status}
       </p>
+      <p class="label">Or tap the map</p>
+      <CityMap
+        label="Map of central Barcelona: tap to put Home there"
+        mobile={[358, 280]}
+        desktop={[380, 280]}
+        theaters={theaters}
+        frame={theaters.filter((t) => (distanceKm(CENTRE, t) ?? Infinity) < FRAME_KM).map((t) => t.id)}
+        focus={new Set()}
+        minSpan={3}
+        areas
+        rings={false}
+        fitHome={false}
+        home={pending ?? home}
+        favourites={new Set()}
+        name={shortName}
+        distance={() => null}
+        km={(t) => distanceKm(CENTRE, t)}
+        onPick={(place) => {
+          setPending(place);
+          setStatus(HOME_STATUS.picked);
+        }}
+      />
       <div class="cta2">
         <button type="button" disabled={!pending} onClick={() => save(pending)}>
           Save home here

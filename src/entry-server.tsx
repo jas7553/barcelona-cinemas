@@ -309,8 +309,9 @@ export function sitePages(listings: Listings, renderedAt: string): { path: strin
       path: "cinemas.html",
       data: { ...base, page: "cinemas", theaters: listings.theaters, lastShowings: lastShowings(listings, days) },
     },
-    { path: "privacy.html", data: { ...base, page: "privacy" } },
-    { path: "404.html", data: { ...base, page: "not-found" } },
+    // For the Home sheet's map.
+    { path: "privacy.html", data: { ...base, page: "privacy", theaters: listings.theaters } },
+    { path: "404.html", data: { ...base, page: "not-found", theaters: listings.theaters } },
   ];
 }
 

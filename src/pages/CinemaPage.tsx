@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 import { useNow } from "../client/clock";
 import { toggleFavourite, usePrefs, useSettledOrder } from "../client/prefs";
+import { CityMap } from "../components/CityMap";
 import { DayStrip } from "../components/DayStrip";
 import { Row, Tags, WeekRow } from "../components/FilmRow";
 import { IconExternal } from "../components/Icons";
@@ -133,23 +134,43 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
       now={now}
       section="cinemas"
       heading={
-        <div class="title cin-head">
-          <h1 class="display">{theater.name}</h1>
-          <p class="sub">
-            {[theater.address, theater.neighborhood, km == null ? null : `${formatDistance(km)} from home`]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-          <div class="actions">
-            <FavouriteToggle id={theater.id} on={favourite} />
-            <a class="pill" href={theater.website_url}>
-              Website <IconExternal />
-            </a>
-            <a class="pill" href={theater.maps_url}>
-              Directions <IconExternal />
-            </a>
+        <div class="cin-top">
+          <div class="title cin-head">
+            <h1 class="display">{theater.name}</h1>
+            <p class="sub">
+              {[theater.address, theater.neighborhood, km == null ? null : `${formatDistance(km)} from home`]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+            <div class="actions">
+              <FavouriteToggle id={theater.id} on={favourite} />
+              <a class="pill" href={theater.website_url}>
+                Website <IconExternal />
+              </a>
+              <a class="pill" href={theater.maps_url}>
+                Directions <IconExternal />
+              </a>
+            </div>
+            <StaleNotice data={data} now={now} />
           </div>
-          <StaleNotice data={data} now={now} />
+          {theater.lat != null && (
+            <div class="cin-map">
+              <CityMap
+                label={`Map of ${theater.name}${prefs.home ? " and Home" : ""}, with the cinemas nearby`}
+                mobile={[358, 180]}
+                desktop={[480, 240]}
+                theaters={data.theaters}
+                frame={[theater.id]}
+                minSpan={3.2}
+                home={prefs.home}
+                favourites={prefs.favourites}
+                name={shortName}
+                distance={() => null}
+                km={(t) => distanceKm(prefs.home, t)}
+                link
+              />
+            </div>
+          )}
         </div>
       }
       strip={

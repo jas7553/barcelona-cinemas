@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { PREF_KEYS } from "../domain/prefs";
 import { PrivacyPage } from "./PrivacyPage";
 
-const data = { renderedAt: "2026-10-04T10:19:00Z", generatedAt: "2026-10-04T08:19:00Z", stale: false };
+const data = { renderedAt: "2026-10-04T10:19:00Z", generatedAt: "2026-10-04T08:19:00Z", stale: false, theaters: [] };
 
 afterEach(() => localStorage.clear());
 

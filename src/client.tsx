@@ -6,6 +6,7 @@ import "./styles/base.css";
 import "./styles/cinema.css";
 import "./styles/film.css";
 import "./styles/list.css";
+import "./styles/map.css";
 import "./styles/sheet.css";
 
 // The payload is inert JSON (type="application/json"), so the CSP needs no hash for it.

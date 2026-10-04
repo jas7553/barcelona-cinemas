@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { useNow } from "../client/clock";
 import { toggleSeen, usePrefs, useSettledOrder } from "../client/prefs";
+import { CityMap } from "../components/CityMap";
 import { Tags } from "../components/FilmRow";
 import { Footer } from "../components/Footer";
 import { IconExternal, IconStar } from "../components/Icons";
 import { TicketSheet } from "../components/TicketSheet";
 import { distanceKm, whereLabel } from "../domain/distance";
 import { byCinema, firstDayLeft } from "../domain/film";
-import { formatDistance, formatRuntime, largePoster, shortName } from "../domain/format";
+import { formatDistance, formatRuntime, largePoster, plural, shortName } from "../domain/format";
 import { clockAt, dayShort, dayStatus, dayTitle, hasStarted, horizon, notOutFrom, ranking } from "../domain/schedule";
 import type { DateKey } from "../domain/time";
 import type { FilmDetail, FilmPageData, Showing } from "../pageData";
@@ -32,6 +33,13 @@ export function FilmPage({ data }: { data: FilmPageData }) {
   const first = firstDayLeft(film.showtimes, days, clock);
   const date = data.date && data.date >= clock.today ? data.date : first;
   const [ticket, setTicket] = useState<Showing | null>(null);
+  const groups = date ? byCinema(film.showtimes, date, rank) : [];
+  // Each cinema on the map with its first showing left and how many more: "18:00 +2".
+  const notes: Record<string, string> = {};
+  for (const g of groups) {
+    const left = g.showings.filter((s) => !hasStarted(s, clock));
+    if (left.length) notes[g.theaterId] = `${left[0].time}${left.length > 1 ? ` +${left.length - 1}` : ""}`;
+  }
 
   const ticketTheater = ticket && theaters.get(ticket.theater_id);
   const ticketKm = ticketTheater ? distanceKm(prefs.home, ticketTheater) : null;
@@ -92,13 +100,37 @@ export function FilmPage({ data }: { data: FilmPageData }) {
                 date={date}
                 today={clock.today}
                 unpub={dayStatus(date, data.calendar, clock, notOut) === "not-out"}
-                groups={byCinema(film.showtimes, date, rank)}
+                groups={groups}
                 theaters={theaters}
                 where={(t) => whereLabel(prefs.home, t)}
                 favourite={(id) => prefs.favourites.has(id)}
                 started={(s) => hasStarted(s, clock)}
                 onShowing={setTicket}
               />
+              {Object.keys(notes).length > 0 && (
+                <div class="map-wrap">
+                  <h3>Where, {date === clock.today ? "today" : dayTitle(date, clock.today)}</h3>
+                  <CityMap
+                    label={`Map of the ${plural(Object.keys(notes).length, "cinema")} showing ${film.title} ${date === clock.today ? "today" : `on ${dayTitle(date, clock.today)}`}`}
+                    mobile={[358, 230]}
+                    desktop={[398, 240]}
+                    theaters={data.theaters}
+                    frame={Object.keys(notes)}
+                    notes={notes}
+                    minSpan={2.5}
+                    others={false}
+                    home={prefs.home}
+                    favourites={prefs.favourites}
+                    name={shortName}
+                    distance={(t) => {
+                      const km = distanceKm(prefs.home, t);
+                      return km == null ? null : formatDistance(km);
+                    }}
+                    km={(t) => distanceKm(prefs.home, t)}
+                    link
+                  />
+                </div>
+              )}
             </>
           )}
         </section>

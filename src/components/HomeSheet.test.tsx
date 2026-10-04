@@ -12,7 +12,7 @@ function Harness({ home = null }: { home?: LatLng | null }) {
   return (
     <>
       <button onClick={() => setOpen(true)}>Open</button>
-      {open && <HomeSheet home={home} onClose={() => setOpen(false)} />}
+      {open && <HomeSheet home={home} theaters={[]} onClose={() => setOpen(false)} />}
     </>
   );
 }
@@ -42,6 +42,19 @@ describe("HomeSheet", () => {
     fireEvent.click(save);
     expect(JSON.parse(localStorage.getItem(PREF_KEYS.home)!)).toEqual({ lat: 41.4009, lng: 2.1601 });
     expect(dialog()).toBeNull();
+  });
+
+  it("drops a pin where the map is tapped, and saves it as Home", () => {
+    render(<Harness />);
+    const [map] = screen.getAllByRole("img", { name: /tap to put Home there/ });
+    vi.spyOn(map, "getBoundingClientRect").mockReturnValue({ left: 0, top: 0, width: 358, height: 280 } as DOMRect);
+    fireEvent.click(map, { clientX: 179, clientY: 140 });
+    expect(screen.getByRole("status")).toHaveTextContent(HOME_STATUS.picked);
+    fireEvent.click(screen.getByRole("button", { name: "Save home here" }));
+    const saved = JSON.parse(localStorage.getItem(PREF_KEYS.home)!) as LatLng;
+    // The middle of the map is the middle of town.
+    expect(saved.lat).toBeCloseTo(41.395, 2);
+    expect(saved.lng).toBeCloseTo(2.165, 2);
   });
 
   it("says so when location permission is refused, instead of failing silently", () => {

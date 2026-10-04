@@ -61,6 +61,21 @@ test.describe("Home sheet", () => {
     });
   });
 
+  test("drops a pin where the map is tapped, and saves it as Home", async ({ page }) => {
+    await page.goto("/privacy/");
+    await homePill(page).click();
+    await page.waitForFunction(() => document.getAnimations().length === 0);
+    const map = homeSheet(page).locator("svg.map:visible");
+    await map.click({ position: { x: 120, y: 90 } });
+    await expect(homeSheet(page).getByRole("status")).toHaveText("Pin dropped. Save to use it as Home.");
+    await expect(map.locator(".m-home")).toHaveCount(1);
+    await homeSheet(page).getByRole("button", { name: "Save home here" }).click();
+    await expect(homePill(page)).toHaveAccessibleName("Home");
+    const home = JSON.parse((await page.evaluate((k) => localStorage.getItem(k), HOME_KEY))!);
+    expect(home.lat).toBeGreaterThan(41.3);
+    expect(home.lat).toBeLessThan(41.5);
+  });
+
   test("says so when location access is refused", async ({ page }) => {
     await page.goto("/privacy/");
     await homePill(page).click();
