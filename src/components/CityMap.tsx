@@ -80,9 +80,9 @@ function Drawing({ model: m, label, link, onPick, cls }: DrawingProps) {
             r={d.focus ? 5 : 3.5}
           />
         );
-        // The list beside every map has the same links, so these stay out of the tab order.
+        // The list beside every map has the same links, so these stay out of the tab order and the accessibility tree.
         return link ? (
-          <a key={d.id} href={`/cinema/${d.id}/`} tabIndex={-1}>
+          <a key={d.id} href={`/cinema/${d.id}/`} tabIndex={-1} aria-hidden="true">
             <circle class="m-hit" cx={d.x.toFixed(1)} cy={d.y.toFixed(1)} r={12} />
             {dot}
           </a>

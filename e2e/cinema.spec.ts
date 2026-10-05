@@ -2,7 +2,7 @@
 // CSP, on the date-shifted fixture.
 
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors, expectHit44, HOME, readCls, seedPrefs, slowBundle, watchCls } from "./helpers";
+import { collectErrors, expectHit44, HOME, readCls, seedPrefs, slowBundle, trackViewTransitions, viewTransitionDone, watchCls } from "./helpers";
 
 /** The cinemas on the index, top to bottom as painted (CSS order included). */
 async function paintedCinemas(page: Page): Promise<string[]> {
@@ -125,11 +125,12 @@ test("cinema controls have 44px hit areas", async ({ page }) => {
   const check = async (selectors: string[]) => {
     for (const selector of selectors) await expectHit44(page.locator(selector).first(), selector);
   };
+  await trackViewTransitions(page);
   await page.goto("/cinemas/");
   await check(["li.cinema a", ".star"]);
   await page.locator("li.cinema a").first().click();
   await expect(page.locator(".pill--fav")).toBeVisible();
   // The cross-document view transition's overlay takes every hit until it ends.
-  await page.waitForFunction(() => document.getAnimations().length === 0);
+  await viewTransitionDone(page);
   await check([".pill--fav", "a.cell--on"]);
 });

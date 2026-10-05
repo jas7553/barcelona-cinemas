@@ -25,6 +25,27 @@ export async function seedPrefs(page: Page, prefs: { home?: object; seen?: strin
   }, entries);
 }
 
+/**
+ * Records the incoming page's view transition; call before navigating. Waiting for
+ * `getAnimations()` to empty isn't enough: WebKit can report none before the
+ * transition's animations start, and its overlay then takes every hit.
+ */
+export async function trackViewTransitions(page: Page) {
+  await page.addInitScript(() => {
+    const w = window as unknown as { revealed?: Promise<unknown> };
+    addEventListener("pagereveal", (e) => {
+      const vt = (e as Event & { viewTransition?: { finished: Promise<unknown> } }).viewTransition;
+      w.revealed = vt ? vt.finished.catch(() => {}) : Promise.resolve();
+    });
+  });
+}
+
+/** Resolves once the current page's view transition (if any) has finished. */
+export async function viewTransitionDone(page: Page) {
+  await page.waitForFunction(() => !("onpagereveal" in window) || (window as unknown as { revealed?: Promise<unknown> }).revealed);
+  await page.evaluate(() => (window as unknown as { revealed?: Promise<unknown> }).revealed);
+}
+
 /** Paint well before hydration, as a phone on 4G would. */
 export async function slowBundle(page: Page) {
   await page.route(/\/assets\/.*\.js$/, async (route) => {
