@@ -15,6 +15,8 @@ import type {
 import type { Listings, Movie, Showtime, Theater } from "./types";
 
 const SITE_NAME = "Barcelona This Week";
+// The home page's title: the site name, then the words people search for.
+const HOME_TITLE = `${SITE_NAME} · English-language movies at Barcelona cinemas`;
 const DEFAULT_DESC =
   "English-language (VO) cinema showtimes across Barcelona this week — what's on, where, and when.";
 // 256×256 app icon.
@@ -114,6 +116,11 @@ function filmJsonLd(movie: FilmDetail, theaters: Theater[], url: string | undefi
   });
 
   return jsonLdScript({ "@context": "https://schema.org", "@graph": [movieNode, ...events] });
+}
+
+/** schema.org WebSite — what Google reads for the site name in results. */
+function websiteJsonLd(url: string): string {
+  return jsonLdScript({ "@context": "https://schema.org", "@type": "WebSite", name: SITE_NAME, url });
 }
 
 // Day pages and the timetable cover today plus 7: one more than the horizon, so
@@ -289,14 +296,15 @@ export function renderPage(data: PageData, siteUrl?: string): RenderedPage {
     case "week":
       return {
         html,
-        title: SITE_NAME,
-        headExtra: metaTags({
-          title: SITE_NAME,
-          description: DEFAULT_DESC,
-          image: siteUrl ? `${siteUrl}${OG_IMAGE_PATH}` : OG_IMAGE_PATH,
-          url: siteUrl || undefined,
-          canonical: siteUrl ? `${siteUrl}/` : undefined,
-        }),
+        title: HOME_TITLE,
+        headExtra:
+          metaTags({
+            title: HOME_TITLE,
+            description: DEFAULT_DESC,
+            image: siteUrl ? `${siteUrl}${OG_IMAGE_PATH}` : OG_IMAGE_PATH,
+            url: siteUrl || undefined,
+            canonical: siteUrl ? `${siteUrl}/` : undefined,
+          }) + (siteUrl ? websiteJsonLd(`${siteUrl}/`) : ""),
       };
     case "day": {
       // The weekday and date, not "Today": the page outlives the day it was rendered on.

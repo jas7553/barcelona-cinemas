@@ -113,6 +113,18 @@ describe("list pages", () => {
     });
   });
 
+  it("titles the home page for search and names the site in WebSite ld+json", () => {
+    const out = renderPage(page("week").data, "https://example.com");
+    expect(out.title).toBe("Barcelona This Week · English-language movies at Barcelona cinemas");
+    const ld = out.headExtra.match(/<script type="application\/ld\+json">(.*?)<\/script>/)![1];
+    expect(JSON.parse(ld)).toEqual({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Barcelona This Week",
+      url: "https://example.com/",
+    });
+  });
+
   it("titles a Day page by its date, with a trailing-slash canonical", () => {
     const day = sitePages(full, renderedAt).find((p) => p.path === "day/2026-10-06.html")!;
     const out = renderPage(day.data, "https://example.com");
