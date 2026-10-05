@@ -93,8 +93,10 @@ jobs:
 
       # Playwright boots the Flask API itself (playwright.config.ts webServer),
       # against the committed e2e/fixtures/listings.json — no TMDb access needed.
-      - name: Install Playwright Chromium
-        run: npx playwright install --with-deps chromium
+      # One browser per project in playwright.config.ts: mobile-chromium and
+      # mobile-webkit.
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Run e2e
         run: npm run e2e
