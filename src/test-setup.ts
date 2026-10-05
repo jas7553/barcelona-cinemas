@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 
 // jsdom lacks the <dialog> modal methods (Sheet).
 if (typeof HTMLDialogElement !== "undefined") {
