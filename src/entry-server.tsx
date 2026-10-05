@@ -1,6 +1,6 @@
 import { renderToString } from "preact-render-to-string";
 import { App } from "./App";
-import { addDays, formatDayMonth, formatWeekdayLong, madridDateKey, type DateKey } from "./domain/time";
+import { addDays, formatDayMonth, formatWeekdayLong, madridDateKey, madridOffset, type DateKey } from "./domain/time";
 import type {
   CalendarDay,
   CinemaPageData,
@@ -17,14 +17,11 @@ import type { Listings, Movie, Showtime, Theater } from "./types";
 const SITE_NAME = "Barcelona This Week";
 const DEFAULT_DESC =
   "English-language (VO) cinema showtimes across Barcelona this week — what's on, where, and when.";
-// Brand image for social/link previews. 256×256 app icon — swap for a dedicated
-// 1200×630 card if one is ever produced (Twitter then upgrades to large_image).
+// 256×256 app icon.
 const OG_IMAGE_PATH = "/apple-touch-icon.png";
 
-export interface RenderedPage {
-  /** Server-rendered markup for the #root container. */
+interface RenderedPage {
   html: string;
-  /** Contents for <title>. */
   title: string;
   /** Extra <head> tags (description, OpenGraph). */
   headExtra: string;
@@ -69,31 +66,10 @@ function metaTags(opts: {
   return tags.join("\n    ");
 }
 
-/** Serialize an object as an inert ld+json data block. Like #__APP_DATA__ it is
- * not executed, so the CSP script-src needs no hash; only escape the "<" so a
- * synopsis containing "</script>" cannot break out of the element. */
+/** An inert ld+json block, escaped like #__APP_DATA__. */
 function jsonLdScript(obj: unknown): string {
   const json = JSON.stringify(obj).replace(/</g, "\\u003c");
   return `\n    <script type="application/ld+json">${json}</script>`;
-}
-
-/** Europe/Madrid UTC offset ("+02:00"/"+01:00") for a given YYYY-MM-DD, DST-aware.
- *
- * Deliberately independent of process TZ — this is the correctness anchor for
- * the ScreeningEvent startDate. The literal below must equal SITE_TIMEZONE in
- * scripts/site-constants.mjs (a .mjs the client bundle must not import, so it
- * stays a literal); scripts/site-constants.test.mjs fails if it drifts. */
-function madridOffset(dateStr: string): string {
-  try {
-    const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: "Europe/Madrid",
-      timeZoneName: "longOffset",
-    }).formatToParts(new Date(`${dateStr}T12:00:00Z`));
-    const off = (parts.find((p) => p.type === "timeZoneName")?.value ?? "").replace("GMT", "");
-    return off || "+00:00";
-  } catch {
-    return "+00:00";
-  }
 }
 
 /** schema.org Movie + one ScreeningEvent per showtime — feeds Google's showtime rich results. */
@@ -175,21 +151,19 @@ function showing(s: Showtime, forTicket: boolean): Showing {
  * Day (that day, plus what the ticket sheet needs). Films with nothing in range
  * are left out, and so are cinemas nothing in range is at.
  */
-export function listData(listings: Listings, days: DateKey[], forTicket: boolean): ListData {
+export function listData(listings: Listings, days: DateKey[], forTicket: boolean, cal = calendar(listings.movies)): ListData {
   const inRange = new Set(days);
-  const films: ListFilm[] = [];
-  for (const m of listings.movies) {
-    const showtimes = m.showtimes.filter((s) => inRange.has(s.date)).map((s) => showing(s, forTicket));
-    if (showtimes.length === 0) continue;
-    const { id, title, poster_url, rating, genres, runtime_minutes } = m;
-    films.push({ id, title, poster_url, rating, genres, runtime_minutes, showtimes });
-  }
+  const films = listings.movies.flatMap((m) => listFilm(m, (s) => inRange.has(s.date), forTicket) ?? []);
   const used = new Set(films.flatMap((f) => f.showtimes.map((s) => s.theater_id)));
-  return {
-    films,
-    theaters: listings.theaters.filter((t) => used.has(t.id)),
-    calendar: calendar(listings.movies),
-  };
+  return { films, theaters: listings.theaters.filter((t) => used.has(t.id)), calendar: cal };
+}
+
+/** A film's list fields with the showtimes `keep` picks, or null when it picks none. */
+function listFilm(m: Movie, keep: (s: Showtime) => boolean, forTicket: boolean): ListFilm | null {
+  const showtimes = m.showtimes.filter(keep).map((s) => showing(s, forTicket));
+  if (showtimes.length === 0) return null;
+  const { id, title, poster_url, rating, genres, runtime_minutes } = m;
+  return { id, title, poster_url, rating, genres, runtime_minutes, showtimes };
 }
 
 /** "Aftersun · 2022 · Drama". No synopsis: share previews stay spoiler-free (requirements 7.5). */
@@ -252,15 +226,9 @@ function filmPages(
 function cinemaPages(listings: Listings, base: PageBase, days: DateKey[], cal: CalendarDay[]) {
   const inRange = new Set(days);
   return listings.theaters.flatMap((theater) => {
-    const films: ListFilm[] = [];
-    for (const m of listings.movies) {
-      const showtimes = m.showtimes
-        .filter((s) => s.theater_id === theater.id && inRange.has(s.date))
-        .map((s) => showing(s, true));
-      if (showtimes.length === 0) continue;
-      const { id, title, poster_url, rating, genres, runtime_minutes } = m;
-      films.push({ id, title, poster_url, rating, genres, runtime_minutes, showtimes });
-    }
+    const films = listings.movies.flatMap(
+      (m) => listFilm(m, (s) => s.theater_id === theater.id && inRange.has(s.date), true) ?? [],
+    );
     const page: Omit<CinemaPageData, "date"> = {
       ...base,
       page: "cinema",
@@ -291,17 +259,17 @@ function lastShowings(listings: Listings, days: DateKey[]): Record<string, strin
   return out;
 }
 
-/** Every page the new front end renders, keyed by its output path. */
+/** Every page, keyed by output path. */
 export function sitePages(listings: Listings, renderedAt: string): { path: string; data: PageData }[] {
   const base = { renderedAt, generatedAt: listings.generated_at, stale: listings.stale };
   const today = madridDateKey(new Date(renderedAt));
   const days = Array.from({ length: RENDERED_DAYS }, (_, i) => addDays(today, i));
   const cal = calendar(listings.movies);
   return [
-    { path: "index.html", data: { ...base, page: "week", ...listData(listings, days, false) } },
+    { path: "index.html", data: { ...base, page: "week", ...listData(listings, days, false, cal) } },
     ...days.map((date) => ({
       path: `day/${date}.html`,
-      data: { ...base, page: "day" as const, date, ...listData(listings, [date], true) },
+      data: { ...base, page: "day" as const, date, ...listData(listings, [date], true, cal) },
     })),
     ...filmPages(listings, base, days, cal),
     ...cinemaPages(listings, base, days, cal),

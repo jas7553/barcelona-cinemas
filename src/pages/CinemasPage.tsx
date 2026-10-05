@@ -1,47 +1,36 @@
 import { useNow } from "../client/clock";
-import { toggleFavourite, usePrefs, useSettledOrder } from "../client/prefs";
+import { toggleFavourite, usePrefs } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
 import { IconStar } from "../components/Icons";
 import { Layout } from "../components/Layout";
 import { cinemaOrder, filmsLeft } from "../domain/cinema";
-import { distanceKm } from "../domain/distance";
-import { formatDistance, plural, shortName } from "../domain/format";
+import { distanceKm, distanceLabel } from "../domain/distance";
+import { plural } from "../domain/format";
 import { clockAt, ranking } from "../domain/schedule";
 import type { CinemasPageData } from "../pageData";
-import type { Theater } from "../types";
 
 // With a Home, the map frames the cinemas this close and pins the rest to its edge.
 const FRAME_KM = 4;
 
-/**
- * Every cinema with something on, My cinemas first (requirements 5.5).
- *
- * One list, headings included, so the pre-paint script can put My cinemas
- * first with CSS order alone: each heading sorts to the top of its group.
- */
+/** Every cinema with something on, My cinemas first (requirements 5.5). One list, headings included, so ORDER_SCRIPT can reorder it. */
 export function CinemasPage({ data }: { data: CinemasPageData }) {
   const now = useNow(data.renderedAt);
   const prefs = usePrefs();
-  useSettledOrder(prefs);
   const clock = clockAt(now);
   const rank = ranking(data.theaters, prefs.home, prefs.favourites);
+  const order = cinemaOrder(rank);
   const showing = data.theaters
     .map((t) => ({ theater: t, films: filmsLeft(data.lastShowings[t.id], clock) }))
     .filter((c) => c.films > 0)
-    .sort((a, b) => cinemaOrder(rank)(a.theater, b.theater));
+    .sort((a, b) => order(a.theater, b.theater));
   const mine = showing.filter((c) => prefs.favourites.has(c.theater.id));
   const rest = showing.filter((c) => !prefs.favourites.has(c.theater.id));
 
-  const km = (t: Theater) => {
-    const d = distanceKm(prefs.home, t);
-    return d == null ? null : formatDistance(d);
-  };
-
   const row = ({ theater: t, films }: (typeof showing)[number]) => (
-    <li key={t.id} class="cinema" data-id={t.id} data-lat={t.lat ?? undefined} data-lng={t.lng ?? undefined} data-t={t.name}>
+    <li key={t.id} class="cinema" data-id={t.id} data-lat={t.lat ?? undefined} data-lng={t.lng ?? undefined}>
       <a href={`/cinema/${t.id}/`}>
         <b>{t.name}</b>
-        <span class="sub">{[t.neighborhood, km(t), `${plural(films, "film")} this week`].filter(Boolean).join(" · ")}</span>
+        <span class="sub">{[t.neighborhood, distanceLabel(prefs.home, t), `${plural(films, "film")} this week`].filter(Boolean).join(" · ")}</span>
       </a>
       <button
         type="button"
@@ -88,14 +77,11 @@ export function CinemasPage({ data }: { data: CinemasPageData }) {
             edges
             home={prefs.home}
             favourites={prefs.favourites}
-            name={shortName}
-            distance={km}
-            km={(t) => distanceKm(prefs.home, t)}
             link
           />
         </div>
-        <ul class="cinemas" data-sort data-has-fav={mine.length > 0 ? "" : undefined}>
-          <li class="label" data-head="mine" hidden={mine.length === 0}>
+        <ul class="cinemas" data-sort>
+          <li class="label" data-head="mine">
             My cinemas
           </li>
           {mine.map(row)}

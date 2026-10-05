@@ -88,10 +88,7 @@ describe("renderAll() sitemap", () => {
   });
 });
 
-// Film pages for movies that drop out of the listings used to live
-// forever: the page 200s while its hashed /assets/* bundle is deleted by the
-// next deploy, so it never hydrates and serves frozen showtimes still labelled
-// "Today"; the sibling JSON just accumulates in the bucket.
+// A stale page 200s with a dead hashed bundle, so the prune must drop it.
 describe("renderAll() prune", () => {
   const manifest = { "src/client.tsx": { file: "assets/client.js", isEntry: true } };
   const server = {

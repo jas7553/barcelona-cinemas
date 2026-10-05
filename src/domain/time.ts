@@ -81,7 +81,7 @@ export function formatDateLong(key: DateKey): string {
 
 const HOUR_MS = 3_600_000;
 
-/** "Updated 2 h ago". `now` is threaded in so the first render matches the server's. */
+/** "Updated 2 h ago" */
 export function formatDataAge(generatedAt: string, now: Date): string {
   const ms = Math.max(0, now.getTime() - Date.parse(generatedAt));
   if (ms < 60_000) return "Updated just now";
@@ -111,4 +111,12 @@ export function formatRange(first: DateKey, last: DateKey): string {
   const start = `${formatWeekday(first)} ${Number(first.slice(8))}`;
   const month = first.slice(5, 7) === last.slice(5, 7) ? "" : ` ${monthShort.format(keyToUtcMs(first))}`;
   return `${start}${month} – ${formatDateLong(last)}`;
+}
+
+const offsetFormatter = new Intl.DateTimeFormat("en-US", { timeZone: MADRID_TZ, timeZoneName: "longOffset" });
+
+/** Madrid's UTC offset on a date, "+02:00", whatever the process TZ. */
+export function madridOffset(date: DateKey): string {
+  const part = offsetFormatter.formatToParts(new Date(`${date}T12:00:00Z`)).find((p) => p.type === "timeZoneName");
+  return part?.value.replace("GMT", "") || "+00:00";
 }

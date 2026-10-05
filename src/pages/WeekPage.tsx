@@ -6,10 +6,7 @@ import { plural } from "../domain/format";
 import { filmRows, rowSummary, weekSections, type FilmRow } from "../domain/schedule";
 import { formatRange } from "../domain/time";
 import type { WeekPageData } from "../pageData";
-import { StaleNotice, useListView } from "./listView";
-
-// Rows whose posters are likely above the fold on a phone.
-const EAGER_ROWS = 4;
+import { EAGER_ROWS, PUBLISH_NOTE, StaleNotice, useListView } from "./listView";
 
 export function WeekPage({ data }: { data: WeekPageData }) {
   const { now, clock, prefs, theaters, rank, days, notOutNote } = useListView(data);
@@ -46,7 +43,7 @@ export function WeekPage({ data }: { data: WeekPageData }) {
       {rows.length === 0 ? (
         <div class="empty">
           <p class="empty-t">Nothing left this week</p>
-          {notOutNote && <p class="sub">Cinemas usually publish a few days ahead. Check back later in the week.</p>}
+          {notOutNote && <p class="sub">{PUBLISH_NOTE}</p>}
         </div>
       ) : (
         <>

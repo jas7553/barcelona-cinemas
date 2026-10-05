@@ -127,7 +127,7 @@ for (const [name, [size, url, interact, opts = {}]] of Object.entries(SHOTS)) {
   await page.clock.setFixedTime(NOW);
   await page.goto(BASE + url);
   await page.evaluate(() => document.fonts.ready);
-  // Prefs apply after hydration; let the rows settle before interacting.
+  // Let hydration settle before interacting.
   await page.waitForLoadState("networkidle");
   if (interact) await interact(page);
   await page.screenshot({ path: path.join(OUT, `${name}.png`), fullPage: !!opts.fullPage });

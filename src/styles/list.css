@@ -299,15 +299,6 @@
   opacity: 0.6;
 }
 
-.empty-t {
-  font-family: var(--display);
-  font-size: 22px;
-  font-weight: 700;
-  text-wrap: balance;
-}
-.empty .pill {
-  margin-top: 16px;
-}
 
 @media (min-width: 900px) {
   .tt {

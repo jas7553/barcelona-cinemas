@@ -12,8 +12,7 @@ import { pathToFileURL } from "node:url";
 import { renderAll } from "./render-core.mjs";
 import { assertSiteTimezone, prunePrefixesFs } from "./site-constants.mjs";
 
-// Fail the build rather than bake wrong dates. `npm run build` sets TZ for this
-// command; if that ever gets dropped, this is what catches it.
+// `npm run build` sets TZ; this catches it being dropped.
 assertSiteTimezone("scripts/render.mjs");
 
 const ROOT = process.cwd();
@@ -31,9 +30,6 @@ try {
   listings = { generated_at: new Date().toISOString(), stale: false, theaters: [], movies: [] };
 }
 
-// Per-film output dirs the prune sweeps, each paired with the only extension it
-// is allowed to delete there — derived from the shared constant, in this sink's
-// dialect (relative dirs for path.join). See scripts/site-constants.mjs.
 const PRUNE_PREFIXES = prunePrefixesFs();
 
 let prunedCount = 0;
@@ -49,10 +45,7 @@ const { filmCount } = await renderAll({
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, contents);
   },
-  // Delete film pages left over from a previous render whose movie has since
-  // dropped out of the listings, and day pages now in the past — mirrors the S3 prune in
-  // ssg-lambda/index.mjs. Each prefix only ever sweeps its own file type, so
-  // anything else living under these dirs is left alone.
+  // Mirrors the S3 prune in ssg-lambda/index.mjs.
   prune(keepRelPaths) {
     for (const [prefix, ext] of PRUNE_PREFIXES) {
       const dir = path.join(OUT, prefix);
@@ -74,4 +67,4 @@ const { filmCount } = await renderAll({
 });
 
 const pruned = prunedCount ? `, pruned ${prunedCount} stale page object(s)` : "";
-console.log(`[render] wrote index.html, day pages, privacy.html, 404.html + pages for ${filmCount} film(s) → static/${pruned}`);
+console.log(`[render] wrote the site for ${filmCount} film(s) → static/${pruned}`);

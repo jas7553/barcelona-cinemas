@@ -1,14 +1,7 @@
-// Shared HTML document template for the SSG renderer (scripts/render.mjs) and
-// the dev-server middleware (vite.config.ts). Keeping one source of truth means
-// the dev page and the built page have identical <head> wiring.
-//
-// This module is also the single owner of every inline <script> the site ships.
-// CSP `script-src` is 'self' plus a sha256 allowance per inline block, and those
-// hashes live in template.yaml — where nothing can compute them. So: the bodies
-// are declared here exactly once, cspScriptHashes() derives the hashes from
-// them, and scripts/template.test.mjs fails if template.yaml has stale ones.
-// A stale hash is a silent prod-only failure (dev serves no CSP at all): the
-// browser blocks the script and the page quietly loses what it did.
+// The HTML document (SSG and dev middleware) and every inline script the site
+// ships. CSP allows inline scripts only by hash: cspScriptHashes() derives them
+// and template.test.mjs fails if template.yaml's copies drift. A stale hash
+// fails silently in prod only, where the browser blocks the script.
 
 import { createHash } from "node:crypto";
 
@@ -17,25 +10,16 @@ import { createHash } from "node:crypto";
 // The key must match PREF_KEYS.home in src/domain/prefs.ts (template.test.mjs checks).
 export const PREFS_SCRIPT = `(function(){try{if(localStorage.getItem("btw-home"))document.documentElement.classList.add("has-home");}catch(e){}})();`;
 
-// Runs right after the server markup, before first paint, and applies the
-// stored seen films: a seen film's row is hidden where hydration will move it
-// into the Seen group, or marked to sort last (CSS) where it stays in the list
-// (a cinema's programme), and the film page's Seen toggle is pressed.
-// Without it the list jumps as rows move once the bundle runs (requirements
-// 11.2). Hydration leaves attributes it didn't render alone. The key must
-// match PREF_KEYS.seen in src/domain/prefs.ts (template.test.mjs checks).
-export const SEEN_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem("btw-seen")||"[]");if(!s.length)return;var l=document.querySelectorAll("[data-film]");for(var i=0;i<l.length;i++){var e=l[i];if(s.indexOf(e.getAttribute("data-film"))<0)continue;if(e.tagName!=="LI")e.setAttribute("aria-pressed","true");else if(e.parentNode.hasAttribute("data-seen-last"))e.setAttribute("data-seen","");else e.hidden=true;}}catch(e){}})();`;
+// Pre-paint: hides seen films' rows where hydration moves them to the Seen
+// group, marks them data-seen where they stay (data-seen-last lists, sorted last
+// by CSS), and presses the film page's Seen toggle. Key = PREF_KEYS.seen.
+export const SEEN_SCRIPT = `(function(){try{var s=JSON.parse(localStorage.getItem("btw-seen")||"[]");if(!s.length)return;function each(a,f){var l=document.querySelectorAll("["+a+"]");for(var i=0;i<l.length;i++)if(s.indexOf(l[i].getAttribute(a))>=0)f(l[i]);}each("data-seen-toggle",function(e){e.setAttribute("aria-pressed","true");});each("data-film",function(e){if(e.parentNode.hasAttribute("data-seen-last"))e.setAttribute("data-seen","");else e.hidden=true;});}catch(e){}})();`;
 
-// Runs after the server markup, before first paint, and applies the stored
-// Home and My cinemas: presses each favourite's toggle, and orders lists of
-// cinemas the way the page will — favourites first, then the nearest, then
-// data-t, then the id — by setting CSS `order` through data-o. A list's
-// data-head items lead their group (My cinemas, then the rest). The rows
-// themselves stay put so hydration matches the markup; the page drops data-o
-// once its own render has caught up (src/client/prefs.ts). Keys must match
-// PREF_KEYS, and the order must match byCinema (src/domain/film.ts) and
-// cinemaOrder (src/domain/cinema.ts).
-export const ORDER_SCRIPT = `(function(){try{var h=JSON.parse(localStorage.getItem("btw-home")||"null"),f=JSON.parse(localStorage.getItem("btw-fav")||"[]");if(!h||typeof h.lat!=="number"||typeof h.lng!=="number")h=null;if(!Array.isArray(f))f=[];if(!h&&!f.length)return;var P=document.querySelectorAll("[data-fav]");for(var i=0;i<P.length;i++)if(f.indexOf(P[i].getAttribute("data-fav"))>=0)P[i].setAttribute("aria-pressed","true");var r=Math.PI/180;function km(e){var a=parseFloat(e.getAttribute("data-lat")),b=parseFloat(e.getAttribute("data-lng"));if(!h||isNaN(a)||isNaN(b))return Infinity;var x=Math.sin((a-h.lat)*r/2),y=Math.sin((b-h.lng)*r/2);return 12742*Math.asin(Math.sqrt(x*x+Math.cos(h.lat*r)*Math.cos(a*r)*y*y));}function c(a,b){return a<b?-1:a>b?1:0;}var L=document.querySelectorAll("[data-sort]");for(i=0;i<L.length;i++){var k=[],m=null,n=0;for(var j=0;j<L[i].children.length;j++){var e=L[i].children[j],hd=e.getAttribute("data-head"),id=e.getAttribute("data-id")||"";if(hd){if(hd==="mine")m=e;k.push({e:e,f:hd==="mine"?0:1,d:-Infinity,t:"",id:""});continue;}var v=f.indexOf(id)<0?1:0;if(!v)n++;k.push({e:e,f:v,d:km(e),t:e.getAttribute("data-t")||"",id:id});}if(m&&n){m.hidden=false;L[i].setAttribute("data-has-fav","");}k.sort(function(a,b){return a.f-b.f||c(a.d,b.d)||c(a.t,b.t)||c(a.id,b.id);});for(j=0;j<k.length;j++)k[j].e.setAttribute("data-o",j+1);}}catch(e){}})();`;
+// Pre-paint: presses My cinemas toggles and orders each [data-sort] list by
+// CSS order: favourites, then the nearest, then server order (a stable sort,
+// so it must already be the client's tie-break). data-head items lead their
+// group. Must match byCinema and cinemaOrder; keys = PREF_KEYS.
+export const ORDER_SCRIPT = `(function(){try{var h=JSON.parse(localStorage.getItem("btw-home")||"null"),f=JSON.parse(localStorage.getItem("btw-fav")||"[]");if(!h||typeof h.lat!=="number"||typeof h.lng!=="number")h=null;if(!Array.isArray(f))f=[];if(!h&&!f.length)return;var P=document.querySelectorAll("[data-fav]");for(var i=0;i<P.length;i++)if(f.indexOf(P[i].getAttribute("data-fav"))>=0)P[i].setAttribute("aria-pressed","true");var r=Math.PI/180;function km(e){var a=parseFloat(e.getAttribute("data-lat")),b=parseFloat(e.getAttribute("data-lng"));if(!h||isNaN(a)||isNaN(b))return Infinity;var x=Math.sin((a-h.lat)*r/2),y=Math.sin((b-h.lng)*r/2);return 12742*Math.asin(Math.sqrt(x*x+Math.cos(h.lat*r)*Math.cos(a*r)*y*y));}var L=document.querySelectorAll("[data-sort]");for(i=0;i<L.length;i++){var k=[].map.call(L[i].children,function(e){var hd=e.getAttribute("data-head");return hd?{e:e,f:hd==="mine"?0:1,d:-Infinity}:{e:e,f:f.indexOf(e.getAttribute("data-id"))<0?1:0,d:km(e)};});k.sort(function(a,b){return a.f-b.f||(a.d<b.d?-1:a.d>b.d?1:0);});for(var j=0;j<k.length;j++)k[j].e.style.order=j;}}catch(e){}})();`;
 
 // 404 page only. Dated pages (/day/<date>/, /film/<id>/<date>/,
 // /cinema/<id>/<date>/) are dropped once their day passes, so a shared or
@@ -51,8 +35,7 @@ export const SPECULATION_RULES = JSON.stringify({
 // Skips the view transition on back/forward navigation, so bfcache restores
 // stay instant. Must be registered before `pagereveal` can fire, hence
 // inline in <head> rather than in the hydration entry. Both sides skip: the
-// outgoing page (`pageswap`) and the incoming one (`pagereveal`). Skipping
-// rejects each side's `ready` promise, so that's caught too.
+// outgoing page (`pageswap`) and the incoming one (`pagereveal`).
 export const VIEW_TRANSITION_SCRIPT = `(function(){function skip(e,a){try{var v=e.viewTransition;if(!v)return;v.ready.catch(function(){});if(a&&a.navigationType==="traverse")v.skipTransition();}catch(t){}}window.addEventListener("pageswap",function(e){skip(e,e.activation);});window.addEventListener("pagereveal",function(e){skip(e,navigation.activation);});})();`;
 
 /** Every inline script body the site serves, keyed by name for error messages. */

@@ -15,9 +15,7 @@ export function Header({ section, onHome, children }: Props) {
         <a class="brand" href="/">
           Barcelona This Week
         </a>
-        {/* Both labels are in the markup and CSS shows one, keyed off the
-            `has-home` class the pre-paint script sets, so the pill is right on
-            first paint without waiting for hydration. */}
+        {/* PREFS_SCRIPT sets has-home before paint; CSS picks the label. */}
         <button type="button" class="pill pill--home" aria-haspopup="dialog" onClick={onHome}>
           <IconHome />
           <span class="if-home">Home</span>

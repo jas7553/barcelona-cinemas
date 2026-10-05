@@ -4,14 +4,11 @@ import { DayRow } from "../components/FilmRow";
 import { Layout } from "../components/Layout";
 import { SeenGroup } from "../components/SeenGroup";
 import { TicketSheet } from "../components/TicketSheet";
-import { distanceKm } from "../domain/distance";
-import { formatDistance, plural } from "../domain/format";
+import { plural } from "../domain/format";
 import { daySections, dayStatus, dayTitle, filmRows, notOutFrom, type FilmRow } from "../domain/schedule";
 import { formatDayMonth } from "../domain/time";
 import type { DayPageData, ListFilm, Showing } from "../pageData";
-import { StaleNotice, useListView } from "./listView";
-
-const EAGER_ROWS = 4;
+import { EAGER_ROWS, NotOutYet, StaleNotice, useListView } from "./listView";
 
 export function DayPage({ data }: { data: DayPageData }) {
   const { now, clock, prefs, theaters, rank, days, where } = useListView(data);
@@ -55,12 +52,7 @@ export function DayPage({ data }: { data: DayPageData }) {
       </>
     );
   } else if (status === "not-out") {
-    body = (
-      <div class="empty">
-        <p class="empty-t">{title}'s listings aren't out yet</p>
-        <p class="sub">Cinemas usually publish a few days ahead. Check back later in the week.</p>
-      </div>
-    );
+    body = <NotOutYet title={title} />;
   } else {
     body = (
       <div class="empty">
@@ -75,7 +67,6 @@ export function DayPage({ data }: { data: DayPageData }) {
   }
 
   const theater = ticket && theaters.get(ticket.showing.theater_id);
-  const km = theater ? distanceKm(prefs.home, theater) : null;
   return (
     <Layout
       data={data}
@@ -96,8 +87,7 @@ export function DayPage({ data }: { data: DayPageData }) {
           showing={ticket.showing}
           theater={theater}
           today={clock.today}
-          favourite={prefs.favourites.has(theater.id)}
-          distance={km == null ? null : formatDistance(km)}
+          prefs={prefs}
           onClose={() => setTicket(null)}
         />
       )}

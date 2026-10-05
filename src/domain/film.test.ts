@@ -1,22 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Showing } from "../pageData";
-import { byCinema, firstDayLeft } from "./film";
+import { byCinema } from "./film";
 import type { Ranking } from "./schedule";
 
 const at = (theater_id: string, date: string, time: string): Showing => ({ theater_id, date, time });
 const rank = (favourites: string[], km: Record<string, number>): Ranking => ({
   favourite: (id) => favourites.includes(id),
   km: (id) => km[id] ?? null,
-});
-
-describe("firstDayLeft", () => {
-  it("skips days whose showings have all started", () => {
-    const shows = [at("a", "2026-10-04", "16:00"), at("a", "2026-10-06", "20:00")];
-    const days = ["2026-10-04", "2026-10-05", "2026-10-06"];
-    expect(firstDayLeft(shows, days, { today: "2026-10-04", time: "17:30" })).toBe("2026-10-06");
-    expect(firstDayLeft(shows, days, { today: "2026-10-04", time: "15:00" })).toBe("2026-10-04");
-    expect(firstDayLeft([], days, { today: "2026-10-04", time: "15:00" })).toBeNull();
-  });
 });
 
 describe("byCinema", () => {

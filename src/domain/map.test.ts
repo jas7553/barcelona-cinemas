@@ -28,9 +28,6 @@ const options = (o: Partial<MapOptions> = {}): MapOptions => ({
   minSpan: 2.5,
   home: HOME,
   favourites: new Set(),
-  name: (t) => t.name,
-  distance: () => "5.6 km",
-  km: () => null,
   ...o,
 });
 
@@ -74,7 +71,7 @@ describe("buildMap", () => {
     const m = buildMap(options({ edges: true }));
     const pin = m.dots.find((d) => d.id === "maquinista")!;
     expect(pin.edge).toBe(true);
-    expect(m.labels.some((l) => l.text === "maquinista 5.6 km →")).toBe(true);
+    expect(m.labels.some((l) => /^maquinista [\d.]+ km →$/.test(l.text))).toBe(true);
   });
 
   it("draws rings at 1, 2 and 3 km round Home unless asked not to", () => {

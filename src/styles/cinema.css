@@ -4,18 +4,6 @@
   margin-top: 6px;
 }
 
-/* "★ My cinema" / "☆ Add to my cinemas": aria-pressed picks the label, so the
-   pre-paint script can set it before the bundle runs. */
-.pill--fav[aria-pressed="true"] {
-  background: var(--wash);
-  border-color: transparent;
-  color: var(--ink);
-}
-.pill--fav[aria-pressed="true"] .if-not-fav,
-.pill--fav:not([aria-pressed="true"]) .if-fav {
-  display: none;
-}
-
 /* A cinema's programme keeps seen films in the list, last and faded. */
 [data-seen-last] {
   display: flex;
@@ -55,8 +43,10 @@
   font-size: 12px;
   margin-top: 2px;
 }
-.cinemas[data-has-fav] .if-no-fav,
-.cinemas:not([data-has-fav]) .if-has-fav {
+/* Headings follow the pressed stars, which ORDER_SCRIPT sets before paint. */
+.cinemas:not(:has(.star[aria-pressed="true"])) [data-head="mine"],
+.cinemas:has(.star[aria-pressed="true"]) .if-no-fav,
+.cinemas:not(:has(.star[aria-pressed="true"])) .if-has-fav {
   display: none;
 }
 

@@ -2,18 +2,7 @@
 // CSP. The data is the date-shifted fixture, so the first day is always today.
 
 import { expect, test, type Page } from "@playwright/test";
-
-const SEEN_KEY = "btw-seen";
-const HOME_KEY = "btw-home";
-
-function collectErrors(page: Page): string[] {
-  const errors: string[] = [];
-  page.on("console", (msg) => {
-    if (msg.type() === "error") errors.push(msg.text());
-  });
-  page.on("pageerror", (error) => errors.push(error.message));
-  return errors;
-}
+import { collectErrors, expectHit44, HOME, readCls, seedPrefs, slowBundle, watchCls } from "./helpers";
 
 const strip = (page: Page) => page.getByRole("navigation", { name: "Days" });
 const rows = (page: Page) => page.locator("li.film");
@@ -130,15 +119,7 @@ test.describe("ticket sheet", () => {
 
 test("timetable cells and showtime chips have 44px hit areas", async ({ page }) => {
   await page.goto("/");
-  for (const el of [page.locator("a.cell--on").first(), strip(page).getByRole("link").nth(1)]) {
-    const ok = await el.evaluate((node) => {
-      const r = node.getBoundingClientRect();
-      const x = r.left + r.width / 2;
-      const y = r.top + r.height / 2;
-      return [y - 21.5, y + 21.5].every((py) => node.contains(document.elementFromPoint(x, py)));
-    });
-    expect(ok, `${await el.getAttribute("class")} hit area is under 44px tall`).toBe(true);
-  }
+  for (const el of [page.locator("a.cell--on").first(), strip(page).getByRole("link").nth(1)]) await expectHit44(el);
   await gotoTomorrow(page);
   const box = await rows(page).first().locator("a.chip[aria-haspopup]").first().boundingBox();
   expect(box!.height).toBeGreaterThanOrEqual(44);
@@ -154,27 +135,12 @@ for (const path of ["/", "day"]) {
     const url = path === "/" ? "/" : (await strip(page).getByRole("link").nth(2).getAttribute("href"))!;
     if (url !== "/") await page.goto(url);
     const seen = await page.$$eval("li[data-film]", (l) => l.slice(0, 3).map((e) => (e as HTMLElement).dataset.film));
-    // Paint well before hydration, as a phone on 4G would.
-    await page.route(/\/assets\/.*\.js$/, async (route) => {
-      await new Promise((r) => setTimeout(r, 800));
-      await route.continue();
-    });
-    await page.addInitScript(
-      ({ homeKey, seenKey, seen }) => {
-        localStorage.setItem(homeKey, '{"lat":41.4021,"lng":2.1558}');
-        localStorage.setItem(seenKey, JSON.stringify(seen));
-        (window as unknown as { cls: number }).cls = 0;
-        new PerformanceObserver((list) => {
-          for (const entry of list.getEntries() as unknown as { value: number; hadRecentInput: boolean }[]) {
-            if (!entry.hadRecentInput) (window as unknown as { cls: number }).cls += entry.value;
-          }
-        }).observe({ type: "layout-shift", buffered: true });
-      },
-      { homeKey: HOME_KEY, seenKey: SEEN_KEY, seen },
-    );
+    await slowBundle(page);
+    await seedPrefs(page, { home: HOME, seen: seen as string[] });
+    await watchCls(page);
     await page.goto(url);
     await expect(page.locator("details.seen summary")).toHaveText(`Seen (${seen.length})`);
-    const cls = await page.evaluate(() => (window as unknown as { cls: number }).cls);
+    const cls = await readCls(page);
     console.log(`[cls] ${url} with Home + ${seen.length} seen: ${cls.toFixed(4)}`);
     expect(cls).toBeLessThan(0.02);
   });

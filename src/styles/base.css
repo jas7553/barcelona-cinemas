@@ -177,14 +177,17 @@ p {
   inset: -7px -2px;
 }
 .pill--on,
+.pill[aria-pressed="true"],
 .has-home .pill--home {
   background: var(--wash);
   border-color: transparent;
   color: var(--ink);
 }
-/* The pre-paint script in scripts/template.mjs sets .has-home before first paint. */
+/* Toggle labels: the pre-paint scripts set .has-home and aria-pressed. */
 html:not(.has-home) .if-home,
-.has-home .if-no-home {
+.has-home .if-no-home,
+[aria-pressed="true"] .if-off,
+[aria-pressed]:not([aria-pressed="true"]) .if-on {
   display: none;
 }
 
@@ -213,6 +216,15 @@ html:not(.has-home) .if-home,
   font-size: 14px;
   margin: 6px auto 16px;
   max-width: 34ch;
+}
+.empty-t {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  text-wrap: balance;
+}
+.empty .pill {
+  margin-top: 16px;
 }
 .empty-big {
   font-size: 56px;
@@ -282,97 +294,4 @@ html:not(.has-home) .if-home,
 [data-sort] {
   display: flex;
   flex-direction: column;
-}
-[data-o] {
-  order: 99;
-}
-[data-o="1"] {
-  order: 1;
-}
-[data-o="2"] {
-  order: 2;
-}
-[data-o="3"] {
-  order: 3;
-}
-[data-o="4"] {
-  order: 4;
-}
-[data-o="5"] {
-  order: 5;
-}
-[data-o="6"] {
-  order: 6;
-}
-[data-o="7"] {
-  order: 7;
-}
-[data-o="8"] {
-  order: 8;
-}
-[data-o="9"] {
-  order: 9;
-}
-[data-o="10"] {
-  order: 10;
-}
-[data-o="11"] {
-  order: 11;
-}
-[data-o="12"] {
-  order: 12;
-}
-[data-o="13"] {
-  order: 13;
-}
-[data-o="14"] {
-  order: 14;
-}
-[data-o="15"] {
-  order: 15;
-}
-[data-o="16"] {
-  order: 16;
-}
-[data-o="17"] {
-  order: 17;
-}
-[data-o="18"] {
-  order: 18;
-}
-[data-o="19"] {
-  order: 19;
-}
-[data-o="20"] {
-  order: 20;
-}
-[data-o="21"] {
-  order: 21;
-}
-[data-o="22"] {
-  order: 22;
-}
-[data-o="23"] {
-  order: 23;
-}
-[data-o="24"] {
-  order: 24;
-}
-[data-o="25"] {
-  order: 25;
-}
-[data-o="26"] {
-  order: 26;
-}
-[data-o="27"] {
-  order: 27;
-}
-[data-o="28"] {
-  order: 28;
-}
-[data-o="29"] {
-  order: 29;
-}
-[data-o="30"] {
-  order: 30;
 }

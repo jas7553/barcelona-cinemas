@@ -2,7 +2,11 @@
 // renderer (scripts/render.mjs → filesystem) and the production Node SSG Lambda
 // (ssg-lambda/index.mjs → S3) call renderAll() with their own `write` sink.
 
+import { PRUNE_PREFIXES } from "./site-constants.mjs";
 import { renderDocument } from "./template.mjs";
+
+// Writes are S3 PUTs in production: overlap a few rather than run ~400 in turn.
+const WRITE_CONCURRENCY = 16;
 
 /** Resolve a manifest entry's JS file, CSS hrefs, and module-preload chunks. */
 export function assets(manifest, entryKey) {
@@ -31,14 +35,8 @@ export function assets(manifest, entryKey) {
  * @param {string} [o.renderedAt]  ISO instant to render at (default: now). Pinned only for visual comparison.
  * @param {(relPath: string, contents: string, contentType: string) => (void|Promise<void>)} o.write
  * @param {(keepRelPaths: Set<string>) => (void|Promise<void>)} [o.prune]
- *   Optional sink for deleting stale output. Called exactly once, only after
- *   every write above has resolved, with the full set of film, day and cinema
- *   paths this render produced — `film/<id>.html`, `film/<id>/<date>.html`,
- *   `day/<date>.html`, `cinema/<id>.html` and `cinema/<id>/<date>.html`. Sinks sweep those prefixes and delete anything not in
- *   the set; `data/film/` is still swept, and nothing is kept there. A partial
- *   render must never delete anything, so a throwing write short-circuits
- *   before prune ever runs. Omit it and nothing is deleted (previous
- *   behaviour).
+ *   Called once after every write resolves, with the paths under PRUNE_PREFIXES
+ *   to keep; sinks delete anything else there. Never runs after a failed write.
  * @returns {Promise<{filmCount: number}>}
  */
 export async function renderAll({
@@ -58,10 +56,16 @@ export async function renderAll({
   // has to be rewritten with every render. Day, film and cinema pages come and
   // go with the listings, so they go through the prune.
   const prunable = new Set();
+  const pending = new Set();
+  const put = async (...args) => {
+    const p = Promise.resolve(write(...args)).finally(() => pending.delete(p));
+    pending.add(p);
+    if (pending.size >= WRITE_CONCURRENCY) await Promise.race(pending);
+  };
   for (const { path, data } of server.sitePages(listings, renderedAt)) {
-    if (/^(day|film|cinema)\//.test(path)) prunable.add(path);
+    if (PRUNE_PREFIXES.some(({ prefix, ext }) => path.startsWith(`${prefix}/`) && path.endsWith(ext))) prunable.add(path);
     const page = server.renderPage(data, siteUrl);
-    await write(
+    await put(
       path,
       renderDocument({
         title: page.title,
@@ -102,14 +106,11 @@ export async function renderAll({
     const xml =
       `<?xml version="1.0" encoding="UTF-8"?>\n` +
       `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
-    await write("sitemap.xml", xml, "application/xml");
+    await put("sitemap.xml", xml, "application/xml");
   }
+  await Promise.all(pending);
 
-  // Every write landed — now, and only now, it is safe to drop film pages
-  // that fell out of the listings and day pages now in the past. Left behind,
-  // a stale page 200s forever with a dead hashed /assets/* bundle (deleted by
-  // the next deploy), so it never hydrates and serves frozen showtimes still
-  // labelled "Today".
+  // Only after every write: a stale page would 200 forever with a dead hashed bundle.
   if (prune) await prune(prunable);
 
   return { filmCount: listings.movies.length + (listings.ended_movies?.length ?? 0) };

@@ -1,6 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
-import { usePrefs } from "../client/prefs";
+import { usePrefs, useSettledOrder } from "../client/prefs";
 import type { PageBase } from "../pageData";
 import type { Theater } from "../types";
 import { Footer } from "./Footer";
@@ -19,7 +19,8 @@ interface Props {
 }
 
 export function Layout({ data, now, section, heading, strip, children }: Props) {
-  const { home } = usePrefs();
+  const prefs = usePrefs();
+  useSettledOrder(prefs);
   const [homeOpen, setHomeOpen] = useState(false);
   return (
     <>
@@ -29,7 +30,7 @@ export function Layout({ data, now, section, heading, strip, children }: Props) 
       {strip}
       <main class="wrap">{children}</main>
       <Footer generatedAt={data.generatedAt} now={now} />
-      {homeOpen && <HomeSheet home={home} theaters={data.theaters} onClose={() => setHomeOpen(false)} />}
+      {homeOpen && <HomeSheet home={prefs.home} theaters={data.theaters} onClose={() => setHomeOpen(false)} />}
     </>
   );
 }

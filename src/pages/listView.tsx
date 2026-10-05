@@ -7,6 +7,9 @@ import { clockAt, dayShort, dayStatus, horizon, notOutFrom, ranking } from "../d
 import { formatDateLong, isStale, madridDateKey } from "../domain/time";
 import type { ListData, PageBase } from "../pageData";
 
+// Rows whose posters are likely above the fold on a phone.
+export const EAGER_ROWS = 4;
+
 /** Everything This week and Day derive from the clock, the prefs and the payload. */
 export function useListView(data: PageBase & ListData) {
   const now = useNow(data.renderedAt);
@@ -29,6 +32,17 @@ export function useListView(data: PageBase & ListData) {
   };
 
   return { now, clock, prefs, theaters, rank, days, notOutNote, where };
+}
+
+export const PUBLISH_NOTE = "Cinemas usually publish a few days ahead. Check back later in the week.";
+
+export function NotOutYet({ title }: { title: string }) {
+  return (
+    <div class="empty">
+      <p class="empty-t">{title}'s listings aren't out yet</p>
+      <p class="sub">{PUBLISH_NOTE}</p>
+    </div>
+  );
 }
 
 export function StaleNotice({ data, now }: { data: PageBase; now: Date }) {

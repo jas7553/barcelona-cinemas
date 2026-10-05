@@ -3,6 +3,8 @@
 // and greedily placed labels. Pure geometry: components/CityMap.tsx draws it.
 
 import type { Theater } from "../types";
+import { distanceKm, distanceLabel } from "./distance";
+import { shortName } from "./format";
 import type { LatLng } from "./prefs";
 
 type Point = [lat: number, lng: number];
@@ -55,14 +57,14 @@ function unproject([xr, yr]: [number, number]): LatLng {
   return { lat: y / (D2R * R_EARTH) + LAT0, lng: x / (Math.cos(LAT0 * D2R) * D2R * R_EARTH) + LNG0 };
 }
 
-export interface MapLabel {
+interface MapLabel {
   x: number;
   y: number;
   text: string;
   kind: "cinema" | "dim" | "home" | "ring" | "area";
 }
 
-export interface MapDot {
+interface MapDot {
   id: string;
   name: string;
   x: number;
@@ -109,12 +111,8 @@ export interface MapOptions {
   /** Pin cinemas outside the frame to its edge, with their distance. */
   edges?: boolean;
   favourites: ReadonlySet<string>;
-  /** Display name for a label. */
-  name: (t: Theater) => string;
-  /** "5.6 km", for an edge pin. */
-  distance: (t: Theater) => string | null;
-  /** Sort key for label priority: nearest first. */
-  km: (t: Theater) => number | null;
+  /** Label priority, nearest first; by default the distance from `home`. */
+  km?: (t: Theater) => number | null;
 }
 
 // Average advance of an 11px semibold DM Sans character; labels are placed on estimates.
@@ -190,7 +188,7 @@ export function buildMap(o: MapOptions): MapModel {
     }
   };
 
-  const km = (t: Theater) => o.km(t) ?? Infinity;
+  const km = (t: Theater) => (o.km ? o.km(t) : distanceKm(o.home, t)) ?? Infinity;
   const shown = located
     .filter((t) => focus.has(t.id) || o.others !== false)
     .map((t) => ({ t, raw: toXY([t.lat, t.lng]) }))
@@ -228,8 +226,8 @@ export function buildMap(o: MapOptions): MapModel {
   for (const d of dots) {
     const t = byId.get(d.id)!;
     const note = d.focus && o.notes?.[d.id] ? ` · ${o.notes[d.id]}` : "";
-    const edge = d.edge ? ` ${o.distance(t) ?? ""} →`.replace("  ", " ") : "";
-    place(d.x, d.y, `${o.name(t)}${note}${edge}`, d.focus ? "cinema" : "dim");
+    const edge = d.edge ? ` ${distanceLabel(o.home, t) ?? ""} →`.replace("  ", " ") : "";
+    place(d.x, d.y, `${shortName(t)}${note}${edge}`, d.focus ? "cinema" : "dim");
   }
   if (o.areas) {
     for (const [name, lat, lng] of GEO.areas) {

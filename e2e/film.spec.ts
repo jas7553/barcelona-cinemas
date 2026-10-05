@@ -3,15 +3,7 @@
 
 import { expect, test, type Page } from "@playwright/test";
 import { premiumShowing } from "./fixture";
-
-function collectErrors(page: Page): string[] {
-  const errors: string[] = [];
-  page.on("console", (msg) => {
-    if (msg.type() === "error") errors.push(msg.text());
-  });
-  page.on("pageerror", (error) => errors.push(error.message));
-  return errors;
-}
+import { collectErrors, expectHit44, seedPrefs } from "./helpers";
 
 const panel = (page: Page) => page.getByRole("region", { name: "Showtimes" });
 
@@ -96,10 +88,10 @@ test.describe("before the bundle runs", () => {
 
   test("a seen film's toggle is already pressed", async ({ page }) => {
     const { id, date } = premiumShowing();
-    await page.addInitScript((seen) => localStorage.setItem("btw-seen", JSON.stringify([seen])), id);
+    await seedPrefs(page, { seen: [id] });
     await page.goto(`/film/${id}/${date}/`);
     await expect(page.locator(".pill--seen")).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator(".pill--seen .if-unseen")).toBeHidden();
+    await expect(page.locator(".pill--seen .if-off")).toBeHidden();
   });
 
   test("My cinemas already come first among the film's cinemas", async ({ page }) => {
@@ -108,7 +100,7 @@ test.describe("before the bundle runs", () => {
     const ids = await page.locator(".crow").evaluateAll((els) => els.map((e) => e.getAttribute("data-id")!));
     test.skip(ids.length < 2, "the IMAX day has a single cinema");
     const last = ids[ids.length - 1];
-    await page.addInitScript((fav) => localStorage.setItem("btw-fav", JSON.stringify([fav])), last);
+    await seedPrefs(page, { fav: [last] });
     await page.goto(`/film/${id}/${date}/`);
     const top = await page.locator(".crow").evaluateAll((els) =>
       els.reduce((a, b) => (b.getBoundingClientRect().top < a.getBoundingClientRect().top ? b : a)).getAttribute("data-id"),
@@ -128,19 +120,7 @@ test("film page controls have 44px hit areas", async ({ page }) => {
   ];
   for (const el of targets) {
     await el.scrollIntoViewIfNeeded();
-    // The tappable span through the middle of the control; it needn't be centred on it.
-    const height = await el.evaluate((node) => {
-      const r = node.getBoundingClientRect();
-      const x = r.left + Math.min(r.width / 2, 20);
-      const hits = (y: number) => node.contains(document.elementFromPoint(x, y));
-      let top = r.top + r.height / 2;
-      let bottom = top;
-      while (hits(top - 1)) top--;
-      while (hits(bottom + 1)) bottom++;
-      return bottom - top + 1;
-    });
-    const ok = height >= 44;
-    expect(ok, `${await el.getAttribute("class")} hit area is under 44px tall`).toBe(true);
+    await expectHit44(el);
   }
 });
 

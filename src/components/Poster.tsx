@@ -3,7 +3,6 @@ import type { ListFilm } from "../pageData";
 
 interface Props {
   film: Pick<ListFilm, "title" | "poster_url">;
-  /** Posters below the fold load lazily. */
   eager?: boolean;
 }
 

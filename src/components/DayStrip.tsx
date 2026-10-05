@@ -22,33 +22,35 @@ export function DayStrip({ days, today, current, weekHref = "/", dayHref = (date
         <a class="sd sd--wk" href={weekHref} aria-current={current ? undefined : "page"}>
           Week
         </a>
-        {days.map(({ date, status }) => {
-          const label = (
-            <>
-              {dayShort(date, today)}
-              <b>{Number(date.slice(8))}</b>
-            </>
-          );
-          // A published day with nothing left isn't a destination.
-          if (status === "nothing-left" && date !== current) {
-            return (
-              <span key={date} class="sd sd--empty">
-                {label}
-              </span>
-            );
-          }
-          return (
-            <a
-              key={date}
-              class={status === "not-out" ? "sd sd--unpub" : "sd"}
-              href={dayHref(date)}
-              aria-current={date === current ? "date" : undefined}
-            >
-              {label}
-            </a>
-          );
-        })}
+        {days.map((d) => (
+          <DayLink key={d.date} {...d} today={today} current={current} href={dayHref(d.date)} />
+        ))}
       </div>
     </nav>
+  );
+}
+
+interface DayLinkProps {
+  date: DateKey;
+  status: DayStatus;
+  today: DateKey;
+  current?: DateKey;
+  href: string;
+}
+
+/** One day: "Tue 6". */
+export function DayLink({ date, status, today, current, href }: DayLinkProps) {
+  const label = (
+    <>
+      {dayShort(date, today)}
+      <b>{Number(date.slice(8))}</b>
+    </>
+  );
+  // A published day with nothing left isn't a destination.
+  if (status === "nothing-left" && date !== current) return <span class="sd sd--empty">{label}</span>;
+  return (
+    <a class={status === "not-out" ? "sd sd--unpub" : "sd"} href={href} aria-current={date === current ? "date" : undefined}>
+      {label}
+    </a>
   );
 }

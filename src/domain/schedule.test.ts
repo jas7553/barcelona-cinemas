@@ -8,6 +8,7 @@ import {
   filmRows,
   hasStarted,
   notOutFrom,
+  pageDays,
   ranking,
   rowSummary,
   weekSections,
@@ -96,6 +97,15 @@ describe("dayStatus", () => {
   it("is nothing-left for a published day with no showings, and for past days", () => {
     expect(dayStatus("2026-10-05", [day("2026-10-04", 3)], clock, null)).toBe("nothing-left");
     expect(dayStatus("2026-10-03", calendar, clock, null)).toBe("nothing-left");
+  });
+});
+
+describe("pageDays", () => {
+  it("is on while the page has a showing left, else the day's own status", () => {
+    const calendar = [day("2026-10-04", 10, "21:00"), day("2026-10-05", 10), day("2026-10-06", 2)];
+    const shows = [{ theater_id: "a", date: "2026-10-04", time: "16:00" }, { theater_id: "a", date: "2026-10-06", time: "20:00" }];
+    const status = pageDays(shows, calendar, clock).map((d) => d.status);
+    expect(status.slice(0, 4)).toEqual(["nothing-left", "nothing-left", "on", "not-out"]);
   });
 });
 

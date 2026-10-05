@@ -58,11 +58,7 @@ export function removeObsoleteKeys(): void {
   for (const key of OBSOLETE_KEYS) store(key, null);
 }
 
-/**
- * The device's saved preferences. The server can't know them, so the server
- * render and the first client render both see none (hydration parity), and the
- * real values arrive straight after mount.
- */
+/** None on the first render (hydration parity); the stored prefs after mount. */
 export function usePrefs(): Prefs {
   const [prefs, setPrefs] = useState(NO_PREFS);
   useEffect(() => {
@@ -89,16 +85,11 @@ export function usePrefs(): Prefs {
   return prefs;
 }
 
-/**
- * Before first paint, the scripts in scripts/template.mjs order lists by the
- * stored prefs through CSS (data-o, data-seen), leaving the markup as
- * rendered. Once the page has rendered with those prefs its DOM order agrees,
- * so the CSS order comes off before the browser paints again.
- */
+/** Removes the pre-paint CSS order (SEEN_SCRIPT, ORDER_SCRIPT) once this render reflects the prefs. */
 export function useSettledOrder(prefs: Prefs): void {
   useLayoutEffect(() => {
     if (prefs === NO_PREFS) return;
-    for (const el of document.querySelectorAll("[data-o]")) el.removeAttribute("data-o");
+    for (const el of document.querySelectorAll<HTMLElement>("[data-sort] > *")) el.style.removeProperty("order");
     for (const el of document.querySelectorAll("[data-seen]")) el.removeAttribute("data-seen");
   }, [prefs]);
 }

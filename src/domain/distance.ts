@@ -14,8 +14,13 @@ export function distanceKm(home: LatLng | null, theater: Pick<Theater, "lat" | "
   return EARTH_DIAMETER_KM * Math.asin(Math.sqrt(h));
 }
 
+/** "1.2 km" from Home, or null without one. */
+export function distanceLabel(home: LatLng | null, theater: Pick<Theater, "lat" | "lng">): string | null {
+  const km = distanceKm(home, theater);
+  return km == null ? null : formatDistance(km);
+}
+
 /** Distance from Home, or the neighbourhood when there's no Home or no coordinates. */
 export function whereLabel(home: LatLng | null, theater: Theater): string {
-  const km = distanceKm(home, theater);
-  return km == null ? theater.neighborhood : formatDistance(km);
+  return distanceLabel(home, theater) ?? theater.neighborhood;
 }

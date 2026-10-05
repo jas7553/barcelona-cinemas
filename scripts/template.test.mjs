@@ -1,13 +1,7 @@
 // Drift guard for FACT A: the CSP sha256 allowances.
 //
-// CloudFront's script-src carries one sha256 per inline <script> body. Nothing
-// in the build computes them, dev serves no CSP at all, and the e2e suite runs
-// against the Vite dev server — so a stale hash is invisible everywhere except
-// production, where the browser silently refuses to run the script and the page
-// just stops theming itself (or stops prerendering) with no error surfaced.
-//
-// scripts/template.mjs owns the script bodies. These tests derive the hashes
-// from those bodies and fail if template.yaml disagrees.
+// A stale hash fails silently in prod only: the browser blocks the script.
+// These derive the hashes from scripts/template.mjs and compare template.yaml's.
 
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";

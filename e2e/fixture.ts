@@ -1,14 +1,12 @@
-// Shared e2e fixture: a date-shifted copy of the local listings cache so that
-// showtimes always land on upcoming days regardless of when the suite runs.
-// Used by both playwright.config.ts (to point the Flask app at it) and the spec
-// (to assert on the injected tagline).
+// A date-shifted copy of the listings cache, so showtimes always land on upcoming days.
 
 import fs from "fs";
 import os from "os";
 import path from "path";
 import { fileURLToPath } from "url";
 
-export const FIXTURE_TAGLINE = "Believe the unbelievable.";
+// So every film page shows a tagline, as most real ones do.
+const FIXTURE_TAGLINE = "Believe the unbelievable.";
 
 type FixtureShowtime = { date: string; time: string; premium_format?: string };
 
@@ -16,7 +14,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url)) + "/..";
 
 /**
  * Build a temp CACHE_DIR holding a forward-shifted copy of cache/listings.json.
- * Returns the directory path. Throws if the source cache is missing.
+ * Throws if the source cache is missing.
  */
 export function buildFixtureCache(): string {
   // Prefer the live local cache (freshest); fall back to the committed snapshot
@@ -46,11 +44,8 @@ export function buildFixtureCache(): string {
     }
     m.tagline ??= FIXTURE_TAGLINE;
   }
-  // Real English-VO IMAX volume is event-driven (one film, one week), so the
-  // committed snapshot usually carries none — inject one so the chip's coverage
-  // is deterministic. Mark the last showtime of the first film: the date-shift
-  // lands the earliest showtimes on today, which the app filters out once their
-  // time has passed. `premiumShowing` finds it back for the spec.
+  // The snapshot rarely has IMAX; mark the first film's last showing (earlier
+  // ones may have started). premiumShowing() finds it.
   const showtimes: FixtureShowtime[] = data.movies[0].showtimes;
   const latest = showtimes.reduce((a, b) => (`${b.date}${b.time}` > `${a.date}${a.time}` ? b : a));
   latest.premium_format ??= "imax";

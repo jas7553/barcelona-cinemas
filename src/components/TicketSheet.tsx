@@ -1,4 +1,6 @@
 import { useState } from "preact/hooks";
+import { distanceLabel } from "../domain/distance";
+import type { Prefs } from "../domain/prefs";
 import { formatRuntime, shortName, subtitleLabel } from "../domain/format";
 import { dayShort } from "../domain/schedule";
 import { outTime, shareText } from "../domain/ticket";
@@ -14,14 +16,12 @@ interface Props {
   showing: Showing;
   theater: Theater;
   today: DateKey;
-  favourite: boolean;
-  /** Distance from Home, when there is one. */
-  distance: string | null;
+  prefs: Prefs;
   onClose: () => void;
 }
 
 /** One showing as a ticket stub, with Book as the primary action (requirements 5.6). */
-export function TicketSheet({ film, showing: s, theater, today, favourite, distance, onClose }: Props) {
+export function TicketSheet({ film, showing: s, theater, today, prefs, onClose }: Props) {
   const [copied, setCopied] = useState(false);
   const cinema = shortName(theater);
   const about = [
@@ -77,14 +77,14 @@ export function TicketSheet({ film, showing: s, theater, today, favourite, dista
         <div class="where">
           <a href={`/cinema/${theater.id}/${s.date}/`}>
             <b>{theater.name}</b>
-            {favourite && (
+            {prefs.favourites.has(theater.id) && (
               <span class="fav">
                 <IconStar />
                 <span class="vh">(my cinema)</span>
               </span>
             )}
           </a>
-          <p class="sub">{[theater.address, theater.neighborhood, distance].filter(Boolean).join(" · ")}</p>
+          <p class="sub">{[theater.address, theater.neighborhood, distanceLabel(prefs.home, theater)].filter(Boolean).join(" · ")}</p>
         </div>
       </div>
       {s.booking_url ? (

@@ -545,7 +545,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-v0gZHuEDjFPP8UO3jR+TNz5aTJNbBBZKHkpuy/Dl3dk=' 'sha256-ooBWtd5UoB+TnoSjynpAxpeta9GqwWMnVk9I4s5BGxM=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-D2wJX2Hfm7kD6Lt91Ykdhkw2v3Gl/UAG9kw+zYZ5lLA=' 'sha256-Fkh/vpVjCSQLeCETZQAtg4VVkQqJ29UHbbBCgLrEcMM=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true
@@ -586,7 +586,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-v0gZHuEDjFPP8UO3jR+TNz5aTJNbBBZKHkpuy/Dl3dk=' 'sha256-ooBWtd5UoB+TnoSjynpAxpeta9GqwWMnVk9I4s5BGxM=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-D2wJX2Hfm7kD6Lt91Ykdhkw2v3Gl/UAG9kw+zYZ5lLA=' 'sha256-Fkh/vpVjCSQLeCETZQAtg4VVkQqJ29UHbbBCgLrEcMM=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true

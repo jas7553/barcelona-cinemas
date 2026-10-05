@@ -1,11 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 
-/**
- * The "now" every time-relative label is computed from. The first render uses
- * the instant the page was rendered at, so hydration matches the baked HTML;
- * after mount it follows the live clock, including after a bfcache restore or a
- * tab coming back to the foreground hours later.
- */
+/** renderedAt for the first render (hydration parity), then the live clock, refreshed on bfcache restore and tab focus. */
 export function useNow(renderedAt: string): Date {
   const [now, setNow] = useState(() => new Date(renderedAt));
   useEffect(() => {

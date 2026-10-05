@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
 import { useNow } from "../client/clock";
-import { toggleSeen, usePrefs, useSettledOrder } from "../client/prefs";
+import { toggleSeen, usePrefs } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
 import { ShowingChip, Tags } from "../components/FilmRow";
 import { Footer } from "../components/Footer";
 import { IconExternal, IconStar } from "../components/Icons";
 import { TicketSheet } from "../components/TicketSheet";
-import { distanceKm, whereLabel } from "../domain/distance";
-import { byCinema, firstDayLeft } from "../domain/film";
-import { formatDistance, formatRuntime, largePoster, plural, shortName } from "../domain/format";
-import { clockAt, dayShort, dayStatus, dayTitle, hasStarted, horizon, notOutFrom, ranking } from "../domain/schedule";
+import { DayLink } from "../components/DayStrip";
+import { distanceLabel } from "../domain/distance";
+import { byCinema } from "../domain/film";
+import { formatRuntime, largePoster, plural, shortName } from "../domain/format";
+import type { LatLng } from "../domain/prefs";
+import { clockAt, dayTitle, hasStarted, pageDays, ranking } from "../domain/schedule";
 import type { DateKey } from "../domain/time";
 import type { FilmDetail, FilmPageData, Showing } from "../pageData";
 import type { Theater } from "../types";
-import { StaleNotice } from "./listView";
+import { NotOutYet, StaleNotice } from "./listView";
 
 // Past this many characters the synopsis is likely over its 3 clamped lines on
 // a phone, so it gets a "More" button. Decided on the server, so nothing moves
@@ -23,14 +25,12 @@ const CLAMP_CHARS = 140;
 export function FilmPage({ data }: { data: FilmPageData }) {
   const now = useNow(data.renderedAt);
   const prefs = usePrefs();
-  useSettledOrder(prefs);
   const clock = clockAt(now);
   const { film } = data;
   const theaters = useMemo(() => new Map(data.theaters.map((t) => [t.id, t])), [data.theaters]);
   const rank = ranking(data.theaters, prefs.home, prefs.favourites);
-  const days = horizon(clock.today);
-  const notOut = notOutFrom(data.calendar, clock.today);
-  const first = firstDayLeft(film.showtimes, days, clock);
+  const days = pageDays(film.showtimes, data.calendar, clock);
+  const first = days.find((d) => d.status === "on")?.date ?? null;
   const date = data.date && data.date >= clock.today ? data.date : first;
   const [ticket, setTicket] = useState<Showing | null>(null);
   const groups = date ? byCinema(film.showtimes, date, rank) : [];
@@ -42,7 +42,6 @@ export function FilmPage({ data }: { data: FilmPageData }) {
   }
 
   const ticketTheater = ticket && theaters.get(ticket.theater_id);
-  const ticketKm = ticketTheater ? distanceKm(prefs.home, ticketTheater) : null;
 
   return (
     <>
@@ -67,42 +66,18 @@ export function FilmPage({ data }: { data: FilmPageData }) {
           ) : (
             <>
               <nav class="days" aria-label="Days">
-                {days.map((d) => {
-                  const label = (
-                    <>
-                      {dayShort(d, clock.today)}
-                      <b>{Number(d.slice(8))}</b>
-                    </>
-                  );
-                  const unpub = dayStatus(d, data.calendar, clock, notOut) === "not-out";
-                  const left = film.showtimes.some((s) => s.date === d && !hasStarted(s, clock));
-                  if (!left && !unpub && d !== date) {
-                    return (
-                      <span key={d} class="sd sd--empty">
-                        {label}
-                      </span>
-                    );
-                  }
-                  return (
-                    <a
-                      key={d}
-                      class={unpub && !left ? "sd sd--unpub" : "sd"}
-                      href={`/film/${film.id}/${d}/`}
-                      aria-current={d === date ? "date" : undefined}
-                    >
-                      {label}
-                    </a>
-                  );
-                })}
+                {days.map((d) => (
+                  <DayLink key={d.date} {...d} today={clock.today} current={date} href={`/film/${film.id}/${d.date}/`} />
+                ))}
               </nav>
               <DayShowings
                 film={film}
                 date={date}
                 today={clock.today}
-                unpub={dayStatus(date, data.calendar, clock, notOut) === "not-out"}
+                unpub={days.find((d) => d.date === date)?.status === "not-out"}
                 groups={groups}
                 theaters={theaters}
-                where={(t) => whereLabel(prefs.home, t)}
+                home={prefs.home}
                 favourite={(id) => prefs.favourites.has(id)}
                 started={(s) => hasStarted(s, clock)}
                 onShowing={setTicket}
@@ -121,12 +96,6 @@ export function FilmPage({ data }: { data: FilmPageData }) {
                     others={false}
                     home={prefs.home}
                     favourites={prefs.favourites}
-                    name={shortName}
-                    distance={(t) => {
-                      const km = distanceKm(prefs.home, t);
-                      return km == null ? null : formatDistance(km);
-                    }}
-                    km={(t) => distanceKm(prefs.home, t)}
                     link
                   />
                 </div>
@@ -142,8 +111,7 @@ export function FilmPage({ data }: { data: FilmPageData }) {
           showing={ticket}
           theater={ticketTheater}
           today={clock.today}
-          favourite={prefs.favourites.has(ticketTheater.id)}
-          distance={ticketKm == null ? null : formatDistance(ticketKm)}
+          prefs={prefs}
           onClose={() => setTicket(null)}
         />
       )}
@@ -250,17 +218,16 @@ function About({ film, seen }: { film: FilmDetail; seen: boolean }) {
             ▶ Trailer
           </a>
         )}
-        {/* Both labels are in the markup and CSS shows the one for aria-pressed,
-            which the pre-paint script sets for a seen film. */}
+        {/* SEEN_SCRIPT presses this before paint; CSS picks the label. */}
         <button
           type="button"
           class="pill pill--seen"
-          data-film={film.id}
+          data-seen-toggle={film.id}
           aria-pressed={seen}
           onClick={() => toggleSeen(film.id)}
         >
-          ✓ <span class="if-seen">Seen</span>
-          <span class="if-unseen">Seen it?</span>
+          ✓ <span class="if-on">Seen</span>
+          <span class="if-off">Seen it?</span>
         </button>
         {film.imdb && (
           <a class="pill" href={film.imdb}>
@@ -282,21 +249,18 @@ interface DayShowingsProps {
   unpub: boolean;
   groups: ReturnType<typeof byCinema>;
   theaters: ReadonlyMap<string, Theater>;
-  where: (t: Theater) => string;
+  home: LatLng | null;
   favourite: (theaterId: string) => boolean;
   started: (s: Showing) => boolean;
   onShowing: (s: Showing) => void;
 }
 
 /** The day's showings, one row per cinema: day → cinema → showing. */
-function DayShowings({ film, date, today, unpub, groups, theaters, where, favourite, started, onShowing }: DayShowingsProps) {
+function DayShowings({ film, date, today, unpub, groups, theaters, home, favourite, started, onShowing }: DayShowingsProps) {
   if (groups.length === 0) {
     const title = dayTitle(date, today);
     return unpub ? (
-      <div class="empty">
-        <p class="empty-t">{title}'s listings aren't out yet</p>
-        <p class="sub">Cinemas usually publish a few days ahead. Check back later in the week.</p>
-      </div>
+      <NotOutYet title={title} />
     ) : (
       <div class="empty">
         <p class="empty-t">
@@ -317,7 +281,6 @@ function DayShowings({ film, date, today, unpub, groups, theaters, where, favour
             data-id={theaterId}
             data-lat={theater.lat ?? undefined}
             data-lng={theater.lng ?? undefined}
-            data-t={showings[0].time}
           >
             <a class="crow-h" href={`/cinema/${theaterId}/${date}/`}>
               <span class="cin">
@@ -330,7 +293,7 @@ function DayShowings({ film, date, today, unpub, groups, theaters, where, favour
                 )}
               </span>
               <span class="nb">
-                {[theater.neighborhood, where(theater) === theater.neighborhood ? null : where(theater)]
+                {[theater.neighborhood, distanceLabel(home, theater)]
                   .filter(Boolean)
                   .join(" · ")}
               </span>

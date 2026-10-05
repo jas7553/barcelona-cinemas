@@ -2,20 +2,11 @@
 // the 404, served with the production CSP (e2e/serve.mjs).
 
 import { expect, test, type Page } from "@playwright/test";
+import { PREF_KEYS } from "../src/domain/prefs";
+import { collectErrors, expectHit44, readCls, seedPrefs, watchCls } from "./helpers";
 
-const HOME_KEY = "btw-home";
+const HOME_KEY = PREF_KEYS.home;
 const GRACIA = { latitude: 41.4009, longitude: 2.1601 };
-
-/** Console errors and uncaught exceptions, including CSP violations. */
-function collectErrors(page: Page): string[] {
-  const errors: string[] = [];
-  page.on("console", (msg) => {
-    // The 404 document itself arrives with a 404 status, which Chromium logs.
-    if (msg.type() === "error" && !msg.text().includes("status of 404")) errors.push(msg.text());
-  });
-  page.on("pageerror", (error) => errors.push(error.message));
-  return errors;
-}
 
 const homePill = (page: Page) => page.getByRole("navigation", { name: "Site" }).getByRole("button");
 const homeSheet = (page: Page) => page.getByRole("dialog", { name: "Home" });
@@ -31,7 +22,7 @@ test("Privacy renders and hydrates under the production CSP without errors", asy
 });
 
 test("the Home pill shows a saved Home on first paint, before any JS bundle runs", async ({ page }) => {
-  await page.addInitScript((key) => localStorage.setItem(key, '{"lat":41.4,"lng":2.15}'), HOME_KEY);
+  await seedPrefs(page, { home: { lat: 41.4, lng: 2.15 } });
   // Block the bundle: only the inline pre-paint script can have set the pill.
   await page.route("**/assets/*.js", (route) => route.abort());
   await page.goto("/privacy/");
@@ -156,42 +147,24 @@ test("Back restores the page from bfcache with prefs changed elsewhere", async (
   expect(errors).toEqual([]);
 });
 
-/** Whether a tap 22px above and below the control's centre still lands on it. */
-async function hitAreaIs44Tall(page: Page, name: string, locator: ReturnType<Page["locator"]>) {
-  const ok = await locator.evaluate((el) => {
-    const r = el.getBoundingClientRect();
-    const x = r.left + r.width / 2;
-    const y = r.top + r.height / 2;
-    return [y - 21.5, y + 21.5].every((py) => el.contains(document.elementFromPoint(x, py)));
-  });
-  expect(ok, `${name} hit area is under 44px tall`).toBe(true);
-}
-
 test("header and Home sheet controls have 44px hit areas", async ({ page }) => {
   await page.goto("/privacy/");
   const nav = page.getByRole("navigation", { name: "Site" });
-  await hitAreaIs44Tall(page, "brand", nav.getByRole("link", { name: "Barcelona This Week" }));
-  await hitAreaIs44Tall(page, "Home pill", homePill(page));
-  await hitAreaIs44Tall(page, "Cinemas pill", nav.getByRole("link", { name: "Cinemas" }));
+  await expectHit44(nav.getByRole("link", { name: "Barcelona This Week" }), "brand");
+  await expectHit44(homePill(page), "Home pill");
+  await expectHit44(nav.getByRole("link", { name: "Cinemas" }), "Cinemas pill");
   await homePill(page).click();
   await page.waitForFunction(() => document.getAnimations().length === 0);
   for (const name of ["Use my current location", "Save home here", "Cancel"]) {
-    await hitAreaIs44Tall(page, name, homeSheet(page).getByRole("button", { name }));
+    await expectHit44(homeSheet(page).getByRole("button", { name }), name);
   }
 });
 
 test("a page with a saved Home doesn't shift as it hydrates", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "WebKit has no layout-shift entries");
-  await page.addInitScript((key) => {
-    localStorage.setItem(key, '{"lat":41.4,"lng":2.15}');
-    (window as unknown as { cls: number }).cls = 0;
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries() as unknown as { value: number; hadRecentInput: boolean }[]) {
-        if (!entry.hadRecentInput) (window as unknown as { cls: number }).cls += entry.value;
-      }
-    }).observe({ type: "layout-shift", buffered: true });
-  }, HOME_KEY);
+  await seedPrefs(page, { home: { lat: 41.4, lng: 2.15 } });
+  await watchCls(page);
   await page.goto("/privacy/");
   await page.waitForLoadState("networkidle");
-  expect(await page.evaluate(() => (window as unknown as { cls: number }).cls)).toBeLessThan(0.02);
+  expect(await readCls(page)).toBeLessThan(0.02);
 });

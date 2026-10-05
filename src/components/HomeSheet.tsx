@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { setHome } from "../client/prefs";
 import { distanceKm } from "../domain/distance";
-import { shortName } from "../domain/format";
 import type { LatLng } from "../domain/prefs";
 import type { Theater } from "../types";
 import { CityMap } from "./CityMap";
@@ -90,8 +89,6 @@ export function HomeSheet({ home, theaters, onClose }: Props) {
         fitHome={false}
         home={pending ?? home}
         favourites={new Set()}
-        name={shortName}
-        distance={() => null}
         km={(t) => distanceKm(CENTRE, t)}
         onPick={(place) => {
           setPending(place);

@@ -151,8 +151,8 @@ describe("Cinemas", () => {
 
   it("lists cinemas with films left, A–Z with no Home, and no My cinemas heading", () => {
     render(<CinemasPage data={data} />);
-    // Aribau's last showing has started. The My cinemas heading is hidden, so out of the tree.
-    expect(names()).toEqual(["OthersAll", "Cinemes Girona", "Cines Verdi"]);
+    // Aribau's last showing has started. CSS hides the empty My cinemas heading.
+    expect(names()).toEqual(["My cinemas", "OthersAll", "Cinemes Girona", "Cines Verdi"]);
     expect(screen.getByText("2 showing English-language films · A–Z")).toBeInTheDocument();
   });
 

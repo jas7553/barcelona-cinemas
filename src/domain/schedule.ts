@@ -71,6 +71,15 @@ export function notOutFrom(calendar: CalendarDay[], today: DateKey): DateKey | n
 
 export type DayStatus = "on" | "nothing-left" | "not-out";
 
+/** The strip for one film's or cinema's page: on while it has a showing left, else the day's own status. */
+export function pageDays(showings: Showing[], calendar: CalendarDay[], clock: Clock): { date: DateKey; status: DayStatus }[] {
+  const notOut = notOutFrom(calendar, clock.today);
+  return horizon(clock.today).map((date) => {
+    if (showings.some((s) => s.date === date && !hasStarted(s, clock))) return { date, status: "on" };
+    return { date, status: dayStatus(date, calendar, clock, notOut) === "not-out" ? "not-out" : "nothing-left" };
+  });
+}
+
 export function dayStatus(date: DateKey, calendar: CalendarDay[], clock: Clock, notOut: DateKey | null): DayStatus {
   if (notOut && date >= notOut) return "not-out";
   const day = calendar.find((d) => d.date === date);
@@ -89,12 +98,19 @@ export function ranking(theaters: Theater[], home: LatLng | null, favourites: Re
   return { favourite: (id) => favourites.has(id), km: (id) => kms.get(id) ?? null };
 }
 
+export const compare = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+/** Cinema ids, favourites first, then the nearest. */
+export function byPlace(rank: Ranking) {
+  return (a: string, b: string): number =>
+    Number(rank.favourite(b)) - Number(rank.favourite(a)) || (rank.km(a) ?? Infinity) - (rank.km(b) ?? Infinity);
+}
+
 /** Soonest first; at the same time, favourites then the nearest. */
 export function byStart(rank: Ranking) {
+  const place = byPlace(rank);
   return (a: Showing, b: Showing): number =>
-    (a.date + a.time).localeCompare(b.date + b.time) ||
-    Number(rank.favourite(b.theater_id)) - Number(rank.favourite(a.theater_id)) ||
-    (rank.km(a.theater_id) ?? Infinity) - (rank.km(b.theater_id) ?? Infinity);
+    (a.date + a.time).localeCompare(b.date + b.time) || place(a.theater_id, b.theater_id);
 }
 
 export interface FilmRow {
@@ -117,8 +133,7 @@ export function filmRows(films: ListFilm[], days: DateKey[], clock: Clock, rank:
 
 const bySize = (a: FilmRow, b: FilmRow) => b.showings.length - a.showings.length;
 
-// Films tie on title, not on the Home or favourites ranking: those load after
-// first paint, and rows that reorder then shift the page (requirements 11.8).
+// Ties on title, never prefs: those load after first paint (requirements 11.8).
 const bySoonest = (a: FilmRow, b: FilmRow) =>
   `${a.showings[0].date}${a.showings[0].time}`.localeCompare(`${b.showings[0].date}${b.showings[0].time}`) ||
   a.film.title.localeCompare(b.film.title);

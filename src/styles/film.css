@@ -109,15 +109,6 @@
   gap: 14px 8px;
   margin-top: 14px;
 }
-.pill--seen[aria-pressed="true"] {
-  background: var(--wash);
-  border-color: transparent;
-  color: var(--ink);
-}
-.pill--seen[aria-pressed="true"] .if-unseen,
-.pill--seen:not([aria-pressed="true"]) .if-seen {
-  display: none;
-}
 
 .panel-h {
   font-size: 22px;

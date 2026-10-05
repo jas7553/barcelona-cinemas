@@ -1,10 +1,5 @@
-// Single owner for the build-time facts that used to be hand-copied across four
-// dialects (package.json scripts, CloudFormation YAML, S3 key prefixes, POSIX
-// paths). Every one of them failed *silently* in production when it drifted, so
-// each fact is declared exactly once here and every sink derives its own form.
-//
-// This module is imported at runtime by both renderers, so it ships with the
-// SSG Lambda — see ssg-lambda/Makefile and the staging copies in deploy.sh.
+// Build-time facts with one owner; each sink derives its own form. Ships with
+// the SSG Lambda (ssg-lambda/Makefile).
 
 /**
  * The one timezone every render path must resolve to.
@@ -14,11 +9,8 @@
  * HTML then disagrees with the client's hydration render — an invisible failure
  * that only shows up as wrong dates on the live site.
  *
- * Sinks that can import this constant do (vite.config.ts, playwright.config.ts,
- * the two renderers via assertSiteTimezone). Sinks that cannot — package.json's
- * `build` script, template.yaml's SsgFunction env, entry-server.tsx's
- * madridOffset — are covered by scripts/site-constants.test.mjs, which fails if
- * their literal ever stops matching this value.
+ * Sinks that can't import it (package.json `build`, template.yaml SsgFunction,
+ * src/domain/time.ts) are checked by site-constants.test.mjs.
  */
 export const SITE_TIMEZONE = "Europe/Madrid";
 
@@ -58,6 +50,7 @@ export function assertSiteTimezone(context) {
  */
 export const PRUNE_PREFIXES = Object.freeze([
   Object.freeze({ prefix: "film", ext: ".html" }),
+  // Legacy: nothing writes here now; drop once a deploy has swept it.
   Object.freeze({ prefix: "data/film", ext: ".json" }),
   Object.freeze({ prefix: "day", ext: ".html" }),
   Object.freeze({ prefix: "cinema", ext: ".html" }),
@@ -80,7 +73,7 @@ export function prunePrefixesIamGlobs() {
 
 /**
  * The bucket key a request path is served from: the same mapping as the
- * CloudFront Function in template.yaml (CleanUrlFunction). The dev server and
+ * CloudFront Function in template.yaml (UrlRewriteFunction). The dev server and
  * the e2e static server resolve URLs through this, so they route like
  * production; site-constants.test.mjs runs the deployed function against it.
  *

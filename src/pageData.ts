@@ -35,7 +35,7 @@ export interface ListData {
   calendar: CalendarDay[];
 }
 
-/** Everything the film page shows. Cast is cut to the 4 it names. */
+/** Everything the film page shows. */
 export type FilmDetail = ListFilm &
   Pick<Movie, "year" | "backdrop_url" | "trailer_url" | "synopsis"> & {
     tagline: string | null;
