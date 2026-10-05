@@ -75,8 +75,9 @@
 .sd[aria-current] b {
   color: var(--bg);
 }
-.sd--empty {
-  opacity: 0.35;
+.sd--empty b {
+  font-weight: 400;
+  color: var(--sub);
 }
 .sd--unpub {
   outline: 1px dashed var(--border);

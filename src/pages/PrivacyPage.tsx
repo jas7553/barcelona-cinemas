@@ -32,6 +32,10 @@ export function PrivacyPage({ data }: { data: PageBase & { theaters: Theater[] }
             <b>My cinemas</b>: your starred cinemas.
           </li>
         </ul>
+        <p>
+          On iPhone, Safari clears it if you don't open the site for 7 days. Add the site to your Home Screen (Share,
+          then Add to Home Screen) and it stays.
+        </p>
         <p>None of it is sent anywhere. Clearing this site's data in your browser removes it, or:</p>
         <button
           type="button"

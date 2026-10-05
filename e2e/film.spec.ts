@@ -57,6 +57,44 @@ test("the undated page opens on the first day with showings left", async ({ page
   await expect(panel(page).locator("a.chip[aria-haspopup]").first()).toBeVisible();
 });
 
+test("day hops replace history and keep the way back to the cinema", async ({ page }) => {
+  const { id, date } = premiumShowing();
+  await page.goto(`/film/${id}/${date}/`);
+  const cinema = (await panel(page).locator(".crow-h").first().getAttribute("href"))!;
+  await page.goto(cinema);
+  await page.locator(`a[href^="/film/${id}/"]`).first().click();
+  const back = page.locator(".hero .back");
+  await expect(back).toHaveAttribute("href", new RegExp(`^${cinema.replace(/[^/]+\/$/, "")}`));
+  const label = (await back.textContent())!;
+
+  const other = panel(page).getByRole("navigation", { name: "Days" }).locator("a.sd:not([aria-current])").first();
+  test.skip((await other.count()) === 0, "the film shows on a single day");
+  const next = (await other.getAttribute("href"))!;
+  await other.click();
+  await expect(page).toHaveURL(next);
+  await expect(back).toHaveText(label);
+
+  // The cinema page may come back from bfcache, which fires no load event.
+  await page.goBack({ waitUntil: "commit" });
+  await expect(page).toHaveURL(new RegExp(`${cinema.replace(/[^/]+\/$/, "")}`));
+});
+
+test("the day strip stays in view while a day's cinemas scroll", async ({ page }) => {
+  const { id, date } = premiumShowing();
+  await page.goto(`/film/${id}/${date}/`);
+  const strip = panel(page).getByRole("navigation", { name: "Days" });
+  const start = (await strip.boundingBox())!.y;
+  await page.evaluate((y) => scrollBy(0, y), start + 200);
+  await expect.poll(async () => (await strip.boundingBox())!.y).toBeLessThan(1);
+  await expect.poll(async () => (await strip.boundingBox())!.y).toBeGreaterThan(-1);
+
+  // Scrolling to a cinema stops below the strip rather than under it.
+  const row = panel(page).locator(".crow-h").last();
+  await row.evaluate((node) => node.scrollIntoView());
+  const stripBottom = (await strip.boundingBox())!;
+  expect((await row.boundingBox())!.y).toBeGreaterThanOrEqual(stripBottom.y + stripBottom.height - 1);
+});
+
 test("Seen it? marks the film, and This week shows it in Seen after Back from bfcache", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "Playwright's WebKit never restores from bfcache");
   const errors = collectErrors(page);
@@ -119,7 +157,8 @@ test("film page controls have 44px hit areas", async ({ page }) => {
     panel(page).locator("a.chip[aria-haspopup]").first(),
   ];
   for (const el of targets) {
-    await el.scrollIntoViewIfNeeded();
+    // Centred, clear of the sticky strip (Playwright's WebKit scroll ignores scroll-margin).
+    await el.evaluate((node) => node.scrollIntoView({ block: "center" }));
     await expectHit44(el);
   }
 });

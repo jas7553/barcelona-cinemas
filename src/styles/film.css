@@ -118,12 +118,25 @@
   margin-bottom: 4px;
 }
 .days {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   display: flex;
   gap: 4px;
-  padding: 8px 0;
+  /* The bottom margin keeps the first row's upward hit area out from under the strip. */
+  margin: 0 calc(-1 * var(--pad)) 6px;
+  padding: 8px var(--pad);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
   overflow-x: auto;
   scrollbar-width: none;
+}
+/* Scrolling to a row (or focusing its links) stops below the sticky strip. */
+.crow,
+.crow a {
+  scroll-margin-top: 64px;
 }
 .days::-webkit-scrollbar {
   display: none;
@@ -224,6 +237,19 @@
   }
   .panel-h {
     padding-top: 18px;
+  }
+  /* The panel itself is sticky and scrolls internally. */
+  .crow,
+  .crow a {
+    scroll-margin-top: 0;
+  }
+  .days {
+    position: static;
+    margin: 0;
+    padding: 8px 0;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 

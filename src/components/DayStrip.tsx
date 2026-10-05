@@ -36,10 +36,12 @@ interface DayLinkProps {
   today: DateKey;
   current?: DateKey;
   href: string;
+  /** Swap the page in place, so hopping days doesn't stack up Back history. */
+  replace?: boolean;
 }
 
 /** One day: "Tue 6". */
-export function DayLink({ date, status, today, current, href }: DayLinkProps) {
+export function DayLink({ date, status, today, current, href, replace }: DayLinkProps) {
   const label = (
     <>
       {dayShort(date, today)}
@@ -49,8 +51,19 @@ export function DayLink({ date, status, today, current, href }: DayLinkProps) {
   // A published day with nothing left isn't a destination.
   if (status === "nothing-left" && date !== current) return <span class="sd sd--empty">{label}</span>;
   return (
-    <a class={status === "not-out" ? "sd sd--unpub" : "sd"} href={href} aria-current={date === current ? "date" : undefined}>
+    <a
+      class={status === "not-out" ? "sd sd--unpub" : "sd"}
+      href={href}
+      aria-current={date === current ? "date" : undefined}
+      onClick={replace ? replaceOnClick : undefined}
+    >
       {label}
     </a>
   );
+}
+
+function replaceOnClick(e: MouseEvent) {
+  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  e.preventDefault();
+  location.replace((e.currentTarget as HTMLAnchorElement).href);
 }

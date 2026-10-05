@@ -172,7 +172,7 @@ These are schematic, not cartographic. Their job is relative position and memory
 | Film page | That day's cinemas plus home, min span 2.5 km | 230 px / 398 × 240 |
 | Home sheet | Cinemas within 4.5 km of the centre, fixed while picking | Full width / 380 px |
 
-- **Interaction:** dots link to cinema pages, except on the Home sheet's map, where a tap drops the pin. No pan or zoom in v1 (see requirements Q5).
+- **Interaction:** dots link to cinema pages, except on the Home sheet's map, where a tap drops the pin. No pan or zoom in v1.
 - **Accessibility:** each map is `role="img"` with a summary label. The surrounding lists always carry the same information.
 - **Text size under scaling:** maps are rendered for a known width, so labels stay 11 px. The build has to pick the width in a way that's compatible with CSP and pre-rendering. A fixed set of widths per context, switched with CSS, is the likely answer.
 
@@ -181,7 +181,7 @@ These are schematic, not cartographic. Their job is relative position and memory
 - **Navigation between pages** is plain links, with cross-document view transitions (a short fade, plus the poster morphing from list to film where possible).
 - **Actions that don't navigate** — opening the ticket, toggling seen, toggling a favourite — happen in place with immediate visual feedback.
 - **The sheet** slides up over 220 ms on mobile and fades and scales from 98% on desktop. It closes on backdrop tap, Esc or swipe down, and Back closes it rather than leaving the page.
-- **Sticky elements:** the day strip on list pages, and the panel on desktop film pages. Nothing else.
+- **Sticky elements:** the day strip on list pages and on the film page (mobile), and the panel on desktop film pages. Nothing else.
 - **Horizontal scroll** is only for chip rows on mobile, with the right edge bleeding to the screen edge to show there's more.
 - **Reduced motion:** no transitions; the sheet appears instantly.
 

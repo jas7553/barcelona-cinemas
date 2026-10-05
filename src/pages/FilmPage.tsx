@@ -67,7 +67,7 @@ export function FilmPage({ data }: { data: FilmPageData }) {
             <>
               <nav class="days" aria-label="Days">
                 {days.map((d) => (
-                  <DayLink key={d.date} {...d} today={clock.today} current={date} href={`/film/${film.id}/${d.date}/`} />
+                  <DayLink key={d.date} {...d} today={clock.today} current={date} href={`/film/${film.id}/${d.date}/`} replace />
                 ))}
               </nav>
               <DayShowings
@@ -122,20 +122,30 @@ export function FilmPage({ data }: { data: FilmPageData }) {
 /**
  * The backdrop, with a way back: to This week, or to the cinema page the
  * visitor came from (requirements 5.3). The referrer is only known in the
- * browser, so the cinema label arrives after mount.
+ * browser, so the cinema label arrives after mount. Day hops make the film
+ * itself the referrer, so the way back is kept for the session.
  */
 function Hero({ film, theaters }: { film: FilmDetail; theaters: ReadonlyMap<string, Theater> }) {
   const [back, setBack] = useState({ href: "/", label: "This week" });
   useEffect(() => {
+    const key = `back:${film.id}`;
+    let path = "/";
     try {
       const ref = new URL(document.referrer);
-      const m = ref.origin === location.origin && ref.pathname.match(/^\/cinema\/([^/]+)\//);
-      const theater = m && theaters.get(decodeURIComponent(m[1]));
-      if (theater) setBack({ href: ref.pathname, label: shortName(theater) });
+      if (ref.origin === location.origin) path = ref.pathname;
     } catch {
       /* no referrer */
     }
-  }, [theaters]);
+    try {
+      if (path.startsWith(`/film/${film.id}/`)) path = sessionStorage.getItem(key) ?? "/";
+      else sessionStorage.setItem(key, path);
+    } catch {
+      /* storage blocked */
+    }
+    const m = path.match(/^\/cinema\/([^/]+)\//);
+    const theater = m && theaters.get(decodeURIComponent(m[1]));
+    if (theater) setBack({ href: path, label: shortName(theater) });
+  }, [film.id, theaters]);
 
   const src = film.backdrop_url;
   return (
