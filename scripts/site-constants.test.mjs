@@ -3,7 +3,7 @@
 // Both facts have one owner in scripts/site-constants.mjs, and every sink that
 // CAN import it does. These tests cover the sinks that CANNOT: package.json's
 // build script, template.yaml's SsgFunction env and IAM policy, and the
-// hardcoded Intl literal in entry-server.tsx. Each of those is a plain string
+// MADRID_TZ literal in src/domain/time.ts. Each of those is a plain string
 // in a file no bundler touches, so nothing but a test can notice when one of
 // them stops agreeing.
 //
@@ -21,6 +21,7 @@ import {
   PRUNE_PREFIXES,
   SITE_TIMEZONE,
   assertSiteTimezone,
+  objectKeyFor,
   prunePrefixesFs,
   prunePrefixesIamGlobs,
   prunePrefixesS3,
@@ -32,12 +33,10 @@ const read = (relPath) => readFileSync(resolve(process.cwd(), relPath), "utf8");
 
 const PACKAGE_JSON = read("package.json");
 const TEMPLATE_YAML = read("template.yaml");
-const ENTRY_SERVER = read("src/entry-server.tsx");
+const TIME_TS = read("src/domain/time.ts");
 
 describe("FACT B — the render timezone", () => {
   it("pins every command in the build script, not just the renderer", () => {
-    // Previously only `node scripts/render.mjs` carried the pin, so both vite
-    // builds ran in the ambient zone.
     const build = JSON.parse(PACKAGE_JSON).scripts.build;
     const commands = build.split("&&").map((c) => c.trim());
     const timed = commands.filter((c) => c.startsWith("vite ") || c.includes("scripts/render.mjs") || c.startsWith("TZ="));
@@ -54,12 +53,10 @@ describe("FACT B — the render timezone", () => {
     expect(match[1]).toBe(SITE_TIMEZONE);
   });
 
-  it("matches the hardcoded Intl literal in entry-server.tsx", () => {
-    // madridOffset() is deliberately independent of the process TZ — it is the
-    // correctness anchor for the ScreeningEvent JSON-LD startDate — so it holds
-    // its own literal and can only be checked, not derived.
-    const match = ENTRY_SERVER.match(/timeZone:\s*"([^"]+)"/);
-    expect(match, "no timeZone literal found in entry-server.tsx").not.toBeNull();
+  it("matches the client's MADRID_TZ literal in src/domain/time.ts", () => {
+    // The client bundle can't import a .mjs build module, so time.ts holds its own literal.
+    const match = TIME_TS.match(/MADRID_TZ = "([^"]+)"/);
+    expect(match, "no MADRID_TZ literal found in src/domain/time.ts").not.toBeNull();
     expect(match[1]).toBe(SITE_TIMEZONE);
   });
 
@@ -122,5 +119,32 @@ describe("FACT C — the prune prefixes", () => {
       expect(glob.endsWith("/*")).toBe(true);
       expect(glob).not.toBe("*");
     }
+  });
+});
+
+describe("FACT D — clean URLs", () => {
+  /** template.yaml's UrlRewriteFunction, run as CloudFront would run it. */
+  function deployedRewrite(uri) {
+    const block = TEMPLATE_YAML.match(/UrlRewriteFunction:[\s\S]*?FunctionCode: \|\n([\s\S]*?)\n\n/);
+    if (!block) throw new Error("no UrlRewriteFunction code found in template.yaml");
+    const handler = new Function(`${block[1]}; return handler;`)();
+    return handler({ request: { uri } }).uri;
+  }
+
+  it.each([
+    "/",
+    "/privacy",
+    "/privacy/",
+    "/film/1248832",
+    "/film/1248832/",
+    "/film/1248832/2026-10-05/",
+    "/day/2026-10-05/",
+    "/cinema/verdi-park/",
+    "/cinemas/",
+    "/assets/client-abc123.js",
+    "/data/listings.json",
+    "/404.html",
+  ])("objectKeyFor(%j) resolves like the deployed function", (uri) => {
+    expect(`/${objectKeyFor(uri)}`).toBe(deployedRewrite(uri));
   });
 });

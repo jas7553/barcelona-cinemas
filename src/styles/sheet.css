@@ -1,0 +1,218 @@
+/* Sheet: bottom sheet on phones, centred card from 900px (guidelines §4, §6) */
+dialog.sheet {
+  margin: auto auto 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100% - 24px);
+  border: 0;
+  border-radius: 20px 20px 0 0;
+  background: var(--bg);
+  color: var(--text);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: sheet-up 220ms ease-out;
+}
+dialog.sheet::backdrop {
+  background: rgba(20, 14, 6, 0.45);
+}
+/* A modal dialog doesn't stop the page behind it scrolling on iOS. */
+html:has(dialog.sheet[open]) {
+  overflow: hidden;
+}
+.sheet-body {
+  padding: 10px var(--pad) calc(24px + env(safe-area-inset-bottom));
+}
+.grab {
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border);
+  margin: 0 auto 14px;
+}
+.sheet-title {
+  font-size: 24px;
+}
+.sheet-intro {
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 4px 0 14px;
+}
+
+/* Ticket stub (guidelines §4) */
+.stub {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.stub:focus {
+  outline: none;
+}
+.stub-top {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+}
+.stub-title {
+  font-size: 20px;
+  line-height: 1.1;
+}
+.stub-top p {
+  font-size: 13px;
+  margin-top: 3px;
+}
+/* The perforation, with a half-circle notch cut into each edge. */
+.perf {
+  position: relative;
+  margin: 0 14px;
+  border-top: 2px dashed var(--border);
+}
+.perf::before,
+.perf::after {
+  content: "";
+  position: absolute;
+  top: -11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.perf::before {
+  left: -25px;
+  clip-path: inset(0 0 0 50%);
+}
+.perf::after {
+  right: -25px;
+  clip-path: inset(0 50% 0 0);
+}
+.facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 14px;
+}
+.facts dt {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sub);
+}
+.facts dd {
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.where {
+  padding: 0 14px 14px;
+}
+.where a {
+  position: relative;
+  font-size: 15px;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+}
+.where a::before {
+  content: "";
+  position: absolute;
+  inset: -12px -4px;
+}
+.where b {
+  font-weight: 600;
+}
+.where .fav {
+  color: var(--ink);
+  margin-left: 4px;
+}
+.where p {
+  font-size: 13px;
+  margin-top: 2px;
+}
+.stub + .cta {
+  margin-top: 14px;
+}
+
+/* Actions */
+.cta {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: var(--solid);
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 14px;
+  border-radius: 12px;
+}
+.cta--plain {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.cta .icon,
+.cta2 .icon {
+  display: inline-block;
+  vertical-align: -0.15em;
+}
+.note {
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+  margin-top: 8px;
+  min-height: 1.45em;
+}
+.cta2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+.cta2 a,
+.cta2 button {
+  text-align: center;
+  padding: 12px;
+  min-height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 500;
+}
+.cta2 button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+@media (min-width: 900px) {
+  dialog.sheet {
+    margin: auto;
+    max-width: 420px;
+    border-radius: 20px;
+    animation-name: sheet-in;
+  }
+  .sheet-body {
+    padding: 20px;
+  }
+  .grab {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.sheet {
+    animation: none;
+  }
+}

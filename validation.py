@@ -10,7 +10,7 @@ from contextlib import suppress
 from datetime import date, datetime
 from typing import Any
 
-from models import PREMIUM_FORMATS, Listings, Movie, Showtime
+from models import PREMIUM_FORMATS, EndedMovie, Listings, Movie, Showtime
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,29 @@ def normalize_listings(data: object, *, source: str) -> Listings | None:
         return None
 
     movies = normalize_movies(movies_raw, source=source)
-    return Listings(fetched_at=fetched_at, stale=stale, movies=movies)
+    listings = Listings(fetched_at=fetched_at, stale=stale, movies=movies)
+    ended_raw = data.get("ended")
+    if ended_raw is not None:
+        listings["ended"] = normalize_ended_movies(ended_raw, source=f"{source} ended")
+    return listings
+
+
+def normalize_ended_movies(data: object, *, source: str) -> list[EndedMovie]:
+    """Validate the ended-film list and drop invalid entries."""
+    if not isinstance(data, list):
+        logger.warning("Rejected %s: ended payload is not a list", source)
+        return []
+
+    ended: list[EndedMovie] = []
+    for index, raw in enumerate(data):
+        entry_source = f"{source}[{index}]"
+        movie = normalize_movie(raw, source=entry_source)
+        last_showing = _as_iso_date(raw.get("last_showing")) if isinstance(raw, Mapping) else None
+        if movie is None or last_showing is None:
+            logger.warning("Rejected %s: ended film is invalid or has no last_showing", entry_source)
+            continue
+        ended.append(EndedMovie(**movie, last_showing=last_showing))
+    return ended
 
 
 def normalize_movies(data: object, *, source: str) -> list[Movie]:

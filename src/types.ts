@@ -1,8 +1,10 @@
-// API response types
+// The public listings shape (transform.py). Optional fields are newer than some published data.
 
 export interface Theater {
   id: string;
   name: string;
+  /** "Verdi" for "Cines Verdi". */
+  short_name?: string;
   address: string;
   neighborhood: string;
   website_url: string;
@@ -21,14 +23,12 @@ export interface Showtime {
   date: string;       // YYYY-MM-DD
   time: string;       // HH:MM
   language: "vo" | "dub";
-  /** Original audio language: "en" | "other" | null (unknown). Optional: predates older caches. */
+  /** Original audio language; null when unknown. */
   audio_lang?: "en" | "other" | null;
-  /** Subtitle language: "en" | "es" | "ca" | null (unknown). Optional: predates older caches. */
+  /** Subtitle language; null when unknown. */
   subtitle_lang?: "en" | "es" | "ca" | null;
-  /** Direct ticket-purchase link for this exact screening, when the cinema exposes one.
-      Optional: older cached API responses predate this field. */
+  /** Direct ticket-purchase link for this exact screening, when the cinema exposes one. */
   booking_url?: string | null;
-  /** Premium large-format screening: "imax" | null. Optional: older cached responses predate it. */
   premium_format?: "imax" | null;
 }
 
@@ -42,19 +42,23 @@ export interface Movie {
   trailer_url: string | null;
   genres: string[];
   rating: number | null;
-  /** TMDb vote count for aggregateRating. Optional: older cached responses predate it. */
+  /** TMDb vote count. */
   vote_count?: number | null;
-  /** Original-language ISO 639-1 code (e.g. "fr"). Optional: older cached responses predate it. */
+  /** ISO 639-1, e.g. "fr". */
   original_lang?: string | null;
-  /** Director name(s), joined for multi-director films. Optional: older cached responses predate it. */
+  /** Joined for multi-director films. */
   director?: string | null;
-  /** Top-billed cast names. Optional: older cached responses predate it. */
+  /** Top-billed first. */
   cast?: string[];
-  /** Optional: older cached API responses predate this field */
   tagline?: string | null;
   synopsis: string;
   links: MovieLinks;
   showtimes: Showtime[];
+}
+
+/** A film no longer in the listings, kept for 30 days so its page outlives the run. */
+export interface EndedMovie extends Movie {
+  last_showing: string; // YYYY-MM-DD
 }
 
 export interface Listings {
@@ -62,42 +66,5 @@ export interface Listings {
   stale: boolean;
   theaters: Theater[];
   movies: Movie[];
-}
-
-// Client-side transformed types (post-transformResponse())
-
-export interface TransformedShowtime extends Showtime {
-  theater: Theater;
-  dayOffset: number;  // 0 = today, 1 = tomorrow, …, 6
-}
-
-export interface TransformedMovie extends Omit<Movie, "showtimes"> {
-  runtimeLabel: string;
-  showtimes: TransformedShowtime[];
-}
-
-export interface SheetVenueData {
-  name: string;
-  address?: string;
-  neighborhood?: string;
-  distLabel?: string;
-  mapsUrl?: string;
-  websiteUrl?: string;
-  lat?: number | null;
-  lng?: number | null;
-}
-
-export interface CinemaViewGroup {
-  theaterId: string;
-  theater: Theater;
-  films: Array<{
-    movie: TransformedMovie;
-    /**
-     * Times split per day, ascending. `offset` is the dayOffset, or -1 for the
-     * single group produced when a day filter is already applied (the view
-     * renders that one bare, since the chip above already names the day).
-     */
-    days: Array<{ offset: number; times: string[] }>;
-  }>;
-  distanceKm?: number;
+  ended_movies?: EndedMovie[];
 }

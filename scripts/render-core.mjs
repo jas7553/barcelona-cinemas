@@ -2,7 +2,11 @@
 // renderer (scripts/render.mjs → filesystem) and the production Node SSG Lambda
 // (ssg-lambda/index.mjs → S3) call renderAll() with their own `write` sink.
 
+import { PRUNE_PREFIXES } from "./site-constants.mjs";
 import { renderDocument } from "./template.mjs";
+
+// Writes are S3 PUTs in production: overlap a few rather than run ~400 in turn.
+const WRITE_CONCURRENCY = 16;
 
 /** Resolve a manifest entry's JS file, CSS hrefs, and module-preload chunks. */
 export function assets(manifest, entryKey) {
@@ -13,10 +17,8 @@ export function assets(manifest, entryKey) {
   for (const imp of entry.imports || []) {
     const chunk = manifest[imp];
     if (!chunk) continue;
-    // Always collect a chunk's CSS (Vite may hoist global style.css into a
-    // shared chunk), but skip preloading hydration-only hooks (useLocationPin).
+    // Vite can hoist CSS into a shared chunk; the page still needs it.
     for (const c of chunk.css || []) css.add("/" + c);
-    if (chunk.file.includes("useLocationPin")) continue;
     preload.add("/" + chunk.file);
   }
   return { js: "/" + entry.file, css: [...css], preload: [...preload] };
@@ -28,95 +30,71 @@ export function assets(manifest, entryKey) {
  * @param {object} o
  * @param {object} o.listings   Public listings payload ({generated_at, stale, theaters, movies}).
  * @param {object} o.manifest   Vite client build manifest.
- * @param {object} o.server     The entry-server module (renderList/renderFilm/renderPrivacy/filmListings).
+ * @param {object} o.server     The entry-server module (sitePages/renderPage).
  * @param {string} [o.siteUrl]  Absolute origin for OpenGraph og:url.
+ * @param {string} [o.renderedAt]  ISO instant to render at (default: now). Pinned only for visual comparison.
  * @param {(relPath: string, contents: string, contentType: string) => (void|Promise<void>)} o.write
  * @param {(keepRelPaths: Set<string>) => (void|Promise<void>)} [o.prune]
- *   Optional sink for deleting stale output. Called exactly once, only after
- *   every write above has resolved, with the full set of per-film paths this
- *   render produced — both `film/<id>.html` and `data/film/<id>.json`. Sinks
- *   sweep those two prefixes and delete anything not in the set. A partial
- *   render must never delete anything, so a throwing write short-circuits
- *   before prune ever runs. Omit it and nothing is deleted (previous
- *   behaviour).
+ *   Called once after every write resolves, with the paths under PRUNE_PREFIXES
+ *   to keep; sinks delete anything else there. Never runs after a failed write.
  * @returns {Promise<{filmCount: number}>}
  */
-export async function renderAll({ listings, manifest, server, siteUrl = "", write, prune }) {
-  const renderedAt = new Date().toISOString();
-  const listAssets = assets(manifest, "src/entry-list.tsx");
-  const filmAssets = assets(manifest, "src/entry-film.tsx");
-  const privacyAssets = assets(manifest, "src/entry-privacy.tsx");
+export async function renderAll({
+  listings,
+  manifest,
+  server,
+  siteUrl = "",
+  renderedAt = new Date().toISOString(),
+  write,
+  prune,
+}) {
+  const clientAssets = assets(manifest, "src/client.tsx");
 
-  // List page
-  const listData = { renderedAt, listings };
-  const listPage = server.renderList(listData, siteUrl);
-  await write(
-    "index.html",
-    renderDocument({
-      title: listPage.title,
-      headExtra: listPage.headExtra,
-      bodyHtml: listPage.html,
-      data: listData,
-      entrySrc: listAssets.js,
-      cssHrefs: listAssets.css,
-      preload: listAssets.preload,
-    }),
-    "text/html; charset=utf-8",
-  );
   await write("data/listings.json", JSON.stringify(listings), "application/json");
 
-  // Privacy page (static prose — no per-render data, always present)
-  const privacyPage = server.renderPrivacy(siteUrl);
-  await write(
-    "privacy.html",
-    renderDocument({
-      title: privacyPage.title,
-      headExtra: privacyPage.headExtra,
-      bodyHtml: privacyPage.html,
-      data: null,
-      entrySrc: privacyAssets.js,
-      cssHrefs: privacyAssets.css,
-      preload: privacyAssets.preload,
-    }),
-    "text/html; charset=utf-8",
-  );
-
-  // Film pages — render all synchronously then flush all writes in parallel.
-  const filmOutputs = new Set();
-  const filmJobs = listings.movies.map((movie) => {
-    filmOutputs.add(`film/${movie.id}.html`);
-    filmOutputs.add(`data/film/${movie.id}.json`);
-    const filmData = { renderedAt, listings: server.filmListings(listings, movie.id), filmId: movie.id };
-    const page = server.renderFilm(filmData, siteUrl);
-    return Promise.all([
-      write(
-        `film/${movie.id}.html`,
-        renderDocument({
-          title: page.title,
-          headExtra: page.headExtra,
-          bodyHtml: page.html,
-          data: filmData,
-          entrySrc: filmAssets.js,
-          cssHrefs: filmAssets.css,
-          preload: filmAssets.preload,
-        }),
-        "text/html; charset=utf-8",
-      ),
-      write(`data/film/${movie.id}.json`, JSON.stringify(filmData), "application/json"),
-    ]);
-  });
-  await Promise.all(filmJobs);
+  // Every page, 404.html included: it links the current hashed bundle, so it
+  // has to be rewritten with every render. Day, film and cinema pages come and
+  // go with the listings, so they go through the prune.
+  const prunable = new Set();
+  const pending = new Set();
+  const put = async (...args) => {
+    const p = Promise.resolve(write(...args)).finally(() => pending.delete(p));
+    pending.add(p);
+    if (pending.size >= WRITE_CONCURRENCY) await Promise.race(pending);
+  };
+  for (const { path, data } of server.sitePages(listings, renderedAt)) {
+    if (PRUNE_PREFIXES.some(({ prefix, ext }) => path.startsWith(`${prefix}/`) && path.endsWith(ext))) prunable.add(path);
+    const page = server.renderPage(data, siteUrl);
+    await put(
+      path,
+      renderDocument({
+        title: page.title,
+        headExtra: page.headExtra,
+        bodyHtml: page.html,
+        data,
+        entrySrc: clientAssets.js,
+        cssHrefs: clientAssets.css,
+        preload: clientAssets.preload,
+        notFound: data.page === "not-found",
+      }),
+      "text/html; charset=utf-8",
+    );
+  }
 
   // sitemap.xml — absolute URLs require a siteUrl, so skip it for local builds
   // that don't set SITE_URL. List only films actually screening: the rest render
-  // a noindex "not showing" page (see renderFilm) and don't belong in the index.
+  // a noindex "No more showings" page and don't belong in the index.
   if (siteUrl) {
     const showing = listings.movies.filter((m) => m.showtimes && m.showtimes.length > 0);
     const lastmod = (listings.generated_at || renderedAt).slice(0, 10);
     const entries = [
       { loc: `${siteUrl}/`, priority: "1.0", changefreq: "daily" },
-      ...showing.map((m) => ({ loc: `${siteUrl}/film/${m.id}`, priority: "0.7", changefreq: "daily" })),
-      { loc: `${siteUrl}/privacy`, priority: "0.3", changefreq: "yearly" },
+      ...showing.map((m) => ({ loc: `${siteUrl}/film/${m.id}/`, priority: "0.7", changefreq: "daily" })),
+      { loc: `${siteUrl}/cinemas/`, priority: "0.5", changefreq: "weekly" },
+      ...[...new Set(showing.flatMap((m) => m.showtimes.map((s) => s.theater_id)))]
+        .sort()
+        .map((id) => ({ loc: `${siteUrl}/cinema/${id}/`, priority: "0.5", changefreq: "daily" })),
+      { loc: `${siteUrl}/privacy/`, priority: "0.3", changefreq: "yearly" },
     ];
     const urls = entries
       .map(
@@ -128,15 +106,12 @@ export async function renderAll({ listings, manifest, server, siteUrl = "", writ
     const xml =
       `<?xml version="1.0" encoding="UTF-8"?>\n` +
       `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
-    await write("sitemap.xml", xml, "application/xml");
+    await put("sitemap.xml", xml, "application/xml");
   }
+  await Promise.all(pending);
 
-  // Every write landed — now, and only now, it is safe to drop per-film output
-  // for movies that fell out of the listings. Left behind, a stale page 200s
-  // forever with a dead hashed /assets/* bundle (deleted by the next deploy),
-  // so it never hydrates and serves frozen showtimes still labelled "Today";
-  // its sibling JSON just accumulates in the bucket.
-  if (prune) await prune(filmOutputs);
+  // Only after every write: a stale page would 200 forever with a dead hashed bundle.
+  if (prune) await prune(prunable);
 
-  return { filmCount: listings.movies.length };
+  return { filmCount: listings.movies.length + (listings.ended_movies?.length ?? 0) };
 }

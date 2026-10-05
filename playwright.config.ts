@@ -8,7 +8,7 @@ const WEB_PORT = 5180;
 const BASE = `http://localhost:${WEB_PORT}`;
 
 // Built at config load — a date-shifted internal cache. The webServer command
-// exports it to the public listings JSON the dev SSG server renders pages from.
+// exports it to the public listings JSON the static render reads.
 const cacheDir = buildFixtureCache();
 process.on("exit", () => fs.rmSync(cacheDir, { recursive: true, force: true }));
 
@@ -27,25 +27,41 @@ export default defineConfig({
     baseURL: BASE,
     trace: "on-first-retry",
     // Both halves of the render must agree on the zone: the browser context
-    // (client hydration) and the dev SSG server below (server render). Unpinned,
-    // these passed only because CI happens to be UTC.
+    // (client hydration) and the static render below. Unpinned, these passed
+    // only because CI happens to be UTC.
     timezoneId: SITE_TIMEZONE,
   },
 
-  // iPhone 13 geometry (390×844, mobile, touch) but on Chromium — matches the
-  // original smoke harness; the device preset's WebKit default is overridden.
   projects: [
-    { name: "mobile-chromium", use: { ...devices["iPhone 13"], browserName: "chromium" } },
+    {
+      // iPhone 13 geometry on full Chromium (not the headless shell, which never
+      // restores from bfcache) with Playwright's bfcache opt-out removed, so
+      // Back really does come out of the back/forward cache.
+      name: "mobile-chromium",
+      use: {
+        ...devices["iPhone 13"],
+        browserName: "chromium",
+        channel: "chromium",
+        launchOptions: { ignoreDefaultArgs: ["--disable-back-forward-cache"] },
+      },
+    },
+    // Safari's engine for layout and behaviour. Playwright's WebKit never
+    // restores from bfcache, so the bfcache specs skip themselves here.
+    {
+      name: "mobile-webkit",
+      use: { ...devices["iPhone 13"] },
+    },
   ],
 
-  // Export the date-shifted fixture to the public listings JSON, then serve the
-  // MPA via the dev SSG server (renders / and /film/<id> on the fly from it).
-  // No API server — the data is embedded in each static document.
+  // Build, export the date-shifted fixture, render it, and serve static/ the
+  // way CloudFront does (e2e/serve.mjs: clean URLs, 404 page, production CSP).
   webServer: {
-    command: `python3 scripts/export_listings.py && npx vite --port ${WEB_PORT} --strictPort`,
+    command:
+      "npm run build && python3 scripts/export_listings.py && node scripts/render.mjs && " +
+      `node e2e/serve.mjs ${WEB_PORT}`,
     url: BASE,
     env: { CACHE_DIR: cacheDir, TZ: SITE_TIMEZONE },
     reuseExistingServer: false,
-    timeout: 60_000,
+    timeout: 180_000,
   },
 });

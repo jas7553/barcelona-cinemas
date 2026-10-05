@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Barcelona This Week — prototype</title>
+<style>
+@font-face { font-family: "DM Sans"; font-weight: 400 600; src: url(fonts/dm-sans-latin.woff2) format("woff2"); }
+@font-face { font-family: "Playfair Display"; font-weight: 600 700; src: url(fonts/playfair-display-latin.woff2) format("woff2"); }
+:root {
+  --bg: #faf6ef; --surface: #fff; --surface2: #f0ece4; --line: #ede8e0; --border: #e0d8ce;
+  --text: #1a1a1a; --body: #4a443c; --sub: #786f61; --accent: #c17f3a; --solid: #a06626; --ink: #8f5620; --wash: #f5e8d4;
+  --display: "Playfair Display", Georgia, serif; --ui: "DM Sans", system-ui, sans-serif;
+  --pad: 16px; --max: 1120px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--ui); background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+img { display: block; }
+h1, h2, h3 { text-wrap: balance; }
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--pad); }
+.display { font-family: var(--display); font-weight: 700; letter-spacing: -0.01em; }
+.sub { color: var(--sub); }
+.star { color: var(--ink); font-weight: 600; }
+
+/* film page */
+.hero { position: relative; height: 200px; overflow: hidden; }
+.hero img { width: 100%; height: 100%; object-fit: cover; }
+.hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(250,246,239,0) 35%, var(--bg)); }
+.back { position: absolute; top: 14px; left: var(--pad); z-index: 2; }
+.back .pill { background: rgba(255,255,255,.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-color: transparent; }
+.head { display: grid; grid-template-columns: 96px 1fr; gap: 14px; margin-top: -72px; position: relative; z-index: 1; align-items: end; }
+.head .poster { box-shadow: 0 10px 24px -10px rgba(60,40,10,.55); }
+.head h1 { font-size: 30px; line-height: 1.05; }
+.head .meta { font-size: 13px; margin: 6px 0 0; }
+.tagline { font-family: var(--display); font-style: italic; color: var(--ink); font-size: 16px; margin-top: 16px; }
+.synopsis { font-size: 15px; line-height: 1.55; color: var(--body); margin-top: 4px; max-width: 60ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.synopsis--open { display: block; }
+.more { font-size: 13px; font-weight: 600; color: var(--ink); margin-top: 2px; }
+.credits { font-size: 13px; margin-top: 10px; line-height: 1.5; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.panel h2 { font-family: var(--display); font-size: 22px; padding-top: 24px; }
+.rows { list-style: none; }
+.row { display: grid; grid-template-columns: 58px 1fr auto; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); width: 100%; text-align: left; }
+.row .time { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.row .cin { font-size: 15px; font-weight: 500; }
+.row .nb { font-size: 12px; color: var(--sub); }
+.row .go { font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 99px; background: var(--solid); color: #fff; }
+.row .go--plain { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.row--past { opacity: .4; pointer-events: none; }
+.row--past .go { background: var(--surface2); color: var(--sub); }
+
+footer { padding: 32px 0 40px; font-size: 12px; text-align: center; }
+
+/* ticket sheet */
+dialog.ticket { margin: auto auto 0; width: 100%; max-width: 100%; border: 0; background: var(--bg); border-radius: 20px 20px 0 0; padding: 10px var(--pad) calc(24px + env(safe-area-inset-bottom)); }
+.scrim::after { content: ""; position: fixed; inset: 0; background: rgba(20,14,6,.45); z-index: 9; }
+dialog.ticket.ticket--static { position: fixed; bottom: 0; left: 0; right: 0; margin: 0; z-index: 10; }
+dialog.ticket::backdrop { background: rgba(20,14,6,.45); }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto 14px; }
+.stub:focus { outline: none; }
+.stub { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; }
+.stub-top { display: grid; grid-template-columns: 52px 1fr; gap: 12px; padding: 14px; align-items: center; }
+.stub-top h3 { font-family: var(--display); font-size: 20px; line-height: 1.1; }
+.stub-top p { font-size: 13px; margin-top: 3px; }
+.perf { border-top: 2px dashed var(--border); margin: 0 14px; position: relative; }
+.perf::before, .perf::after { content: ""; position: absolute; top: -11px; width: 20px; height: 20px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border); }
+.perf::before { left: -25px; clip-path: inset(0 0 0 50%); } .perf::after { right: -25px; clip-path: inset(0 50% 0 0); }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); padding: 14px; }
+.facts small { display: block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--sub); }
+.facts b { font-size: 17px; font-variant-numeric: tabular-nums; }
+.where { padding: 0 14px 14px; }
+.where b { font-size: 15px; }
+.where p { font-size: 13px; }
+.cta { display: block; text-align: center; background: var(--solid); color: #fff; font-weight: 600; font-size: 16px; padding: 14px; border-radius: 12px; margin-top: 14px; }
+.cta--plain { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.note { font-size: 12px; text-align: center; margin-top: 8px; }
+.cta2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.cta2 a, .cta2 button { text-align: center; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); font-size: 14px; font-weight: 500; }
+
+
+/* shared */
+.bar { display: flex; align-items: center; gap: 8px; padding-top: 14px; }
+.brand { font-family: var(--display); font-weight: 700; font-size: 15px; margin-right: auto; }
+.pill { display: inline-block; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); }
+.pill--on { background: var(--wash); border-color: transparent; color: var(--ink); }
+.title { padding: 20px 0 0; }
+.title h1 { font-size: 34px; line-height: 1; }
+.title p { font-size: 13px; margin-top: 6px; }
+.label { padding: 22px 0 2px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--sub); }
+.poster { width: 100%; aspect-ratio: 2/3; border-radius: 6px; object-fit: cover; background: var(--surface2); }
+.meta { font-size: 12px; margin-top: 2px; }
+footer { padding: 32px 0 40px; font-size: 12px; text-align: center; }
+.fav { color: var(--ink); }
+
+/* timetable grid: poster column + one column per day; header strip and rows share it */
+.tt { display: grid; grid-template-columns: 60px repeat(var(--n), minmax(0, 1fr)); column-gap: 4px; }
+.n6 { --n: 6; } .n7 { --n: 7; }
+.strip { position: sticky; top: 0; z-index: 5; margin-top: 16px; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.strip .tt { padding-top: 8px; padding-bottom: 8px; align-items: stretch; }
+.sd { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5px 0; border-radius: 10px; font-size: 11px; color: var(--sub); }
+.sd b { font-size: 16px; font-weight: 600; color: var(--text); }
+.sd--wk { align-items: flex-start; padding-left: 10px; font-size: 14px; font-weight: 600; color: var(--text); width: 56px; }
+.sd[aria-current] { background: var(--text); color: var(--bg); }
+.sd[aria-current] b { color: var(--bg); }
+.sd--empty { opacity: .35; pointer-events: none; }
+
+.films { list-style: none; }
+.film { padding: 14px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.film .p { grid-column: 1; grid-row: 1 / span 4; width: 52px; }
+.film .h { grid-column: 2 / -1; grid-row: 1; }
+.film h3 { font-family: var(--display); font-size: 18px; line-height: 1.15; }
+.film .meta { grid-column: 2 / -1; grid-row: 2; }
+.film .cell { grid-row: 3; margin-top: 8px; }
+.film .sum { grid-column: 2 / -1; grid-row: 4; font-size: 12px; margin-top: 6px; }
+.film .chips { grid-column: 2 / -1; grid-row: 3; margin-top: 8px; }
+.cell { height: 28px; border-radius: 7px; display: grid; place-items: center; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cell::after { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--border); }
+.cell--on { background: var(--wash); color: var(--ink); }
+.cell--on::after { display: none; }
+.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin-right: calc(-1 * var(--pad)); padding-right: var(--pad); }
+.chip { flex: none; display: flex; flex-direction: column; align-items: flex-start; padding: 6px 10px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); background: color-mix(in srgb, var(--accent) 10%, transparent); text-align: left; }
+.chip b { font-size: 15px; font-variant-numeric: tabular-nums; }
+.chip span { font-size: 11px; color: var(--sub); white-space: nowrap; }
+.chip--more { justify-content: center; border-style: dashed; background: none; color: var(--sub); font-size: 12px; font-weight: 600; }
+.chip--past { opacity: .4; pointer-events: none; }
+.seen { border-bottom: 1px solid var(--line); }
+.seen summary { list-style: none; cursor: pointer; padding: 22px 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--sub); }
+.seen summary::-webkit-details-marker { display: none; }
+.seen summary::after { content: " ▾"; } .seen[open] summary::after { content: " ▴"; }
+.seen .film { opacity: .6; }
+
+/* map */
+.map { display: block; width: 100%; height: auto; border-radius: 14px; background: #efe8dc; }
+.m-sea { fill: #dde5e2; } .m-park { fill: #e2e3cf; }
+.m-road { fill: none; stroke: #fbf8f2; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.m-ring { fill: none; stroke: var(--accent); stroke-opacity: .35; stroke-dasharray: 3 4; }
+.m-ringl { font: 600 9px var(--ui); fill: var(--accent); fill-opacity: .8; }
+.m-area { font: 600 8.5px var(--ui); letter-spacing: .12em; fill: #7f7464; text-transform: uppercase; }
+.m-dot { fill: #b5ab9b; }
+.m-dot--on { fill: var(--solid); stroke: #fff; stroke-width: 2; }
+.m-dot--fav { stroke: var(--ink); stroke-width: 2; fill: #fff; }
+.m-dot--edge { fill: #fff; stroke: #b5ab9b; stroke-width: 1.5; }
+.m-dot--on.m-dot--fav { fill: var(--solid); stroke: #fff; }
+.m-home { fill: var(--text); stroke: #fff; stroke-width: 2; }
+.m-label { font: 600 11px var(--ui); fill: var(--text); paint-order: stroke; stroke: #efe8dc; stroke-width: 3px; stroke-linejoin: round; }
+.m-label--dim { font-weight: 500; fill: var(--sub); }
+.m-label--home { font-weight: 700; }
+.map a:hover .m-label { fill: var(--ink); }
+.map-cap { font-size: 12px; margin-top: 6px; }
+
+/* film page extras */
+.panel .days { position: sticky; top: 0; z-index: 3; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+.days ol { list-style: none; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding: 8px 0; }
+.day { display: flex; flex-direction: column; align-items: center; min-width: 52px; padding: 5px 8px; border-radius: 10px; font-size: 11px; color: var(--sub); }
+.day b { font-size: 16px; font-weight: 600; color: var(--text); }
+.day[aria-current] { background: var(--text); color: var(--bg); } .day[aria-current] b { color: var(--bg); }
+.day--empty { opacity: .35; pointer-events: none; }
+.panel .map-wrap { padding: 16px 0 8px; }
+.panel h3 { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--sub); margin-bottom: 8px; }
+
+/* cinema pages */
+.cin-head h1 { font-size: 34px; line-height: 1.05; }
+.cin-head p { font-size: 13px; margin-top: 6px; }
+.cin-head .actions { margin-top: 12px; }
+.cin-head .map { margin-top: 16px; }
+.cinemas { list-style: none; }
+.cinema { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.cinema b { font-size: 16px; font-weight: 600; display: block; }
+.cinema span { font-size: 12px; }
+.star-btn { width: 38px; height: 38px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); font-size: 17px; color: var(--sub); }
+.star-btn[aria-pressed="true"] { background: var(--wash); border-color: transparent; color: var(--ink); }
+.idx .map { margin-top: 16px; }
+.where a { text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; }
+.ticket .map { margin-top: 10px; }
+
+@media (min-width: 900px) {
+  :root { --pad: 32px; }
+  .title h1, .cin-head h1 { font-size: 44px; }
+  .tt { grid-template-columns: 72px minmax(0, 1fr) repeat(var(--n), 64px); column-gap: 6px; }
+  .sd--wk { grid-column: 1 / 3; }
+  .film { padding: 12px 0; }
+  .film .p { grid-row: 1 / span 3; width: 56px; }
+  .film .h, .film .meta, .film .sum { grid-column: 2; }
+  .film h3 { font-size: 20px; }
+  .film .sum { grid-row: 3; }
+  .film .cell { grid-row: 1 / span 3; margin: 0; height: 40px; align-self: center; font-size: 13px; }
+  .film .chips { grid-column: 2 / -1; flex-wrap: wrap; overflow: visible; margin-right: 0; padding-right: 0; }
+  .hero { height: 380px; }
+  .film-layout { display: grid; grid-template-columns: 1fr 440px; gap: 56px; align-items: start; }
+  .head { grid-template-columns: 180px 1fr; gap: 24px; margin-top: -140px; }
+  .head h1 { font-size: 44px; }
+  .panel { position: sticky; top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 0 20px 12px; margin-top: -140px; z-index: 2; box-shadow: 0 20px 40px -24px rgba(60,40,10,.35); max-height: calc(100vh - 32px); overflow-y: auto; }
+  .panel h2 { padding-top: 18px; }
+  .panel .days { position: static; background: none; backdrop-filter: none; }
+  .panel .days .wrap { padding: 0; }
+  .synopsis { display: block; } .more { display: none; }
+  .cin-top { display: grid; grid-template-columns: 1fr 480px; gap: 40px; align-items: end; padding-top: 20px; }
+  .cin-top .map { margin-top: 0; }
+  .idx { display: grid; grid-template-columns: 560px 1fr; gap: 40px; align-items: start; }
+  .idx .map { position: sticky; top: 16px; }
+  dialog.ticket { margin: auto; max-width: 420px; border-radius: 20px; padding: 20px; }
+  .grab { display: none; }
+}
+
+/* round 5 */
+.sd--empty[aria-current] { opacity: 1; }
+.poster--none { display: flex; align-items: flex-end; padding: 8px; background: linear-gradient(160deg, var(--surface2), var(--wash)); border: 1px solid var(--line); }
+.poster--none span { font-family: var(--display); font-weight: 700; font-size: 15px; line-height: 1.1; color: var(--ink); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+.poster--sm { padding: 4px; } .poster--sm span { font-size: 8px; -webkit-line-clamp: 5; }
+.hero--none { height: 120px; background: linear-gradient(180deg, var(--wash), var(--bg)); }
+.hero--none + .film-layout .head { margin-top: -40px; }
+@media (min-width: 900px) { .hero--none { height: 200px; } .hero--none + .film-layout .head, .hero--none + .film-layout .panel { margin-top: -60px; } }
+.notice { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--wash); color: var(--ink); font-size: 13px; line-height: 1.4; }
+.crows { list-style: none; }
+.crow { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.crow-h { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 8px; }
+.crow-h .cin { font-size: 15px; font-weight: 600; }
+.crow-h .nb { font-size: 12px; color: var(--sub); }
+.tchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chip--t { min-height: 44px; justify-content: center; padding: 6px 12px; }
+
+.cell { position: relative; }
+.cell--on::before { content: ""; position: absolute; inset: -8px -2px; }
+.cell--unpub { background: repeating-linear-gradient(135deg, transparent 0 4px, var(--line) 4px 5px); }
+.cell--unpub::after { display: none; }
+.sd--unpub, .day--unpub { outline: 1px dashed var(--border); outline-offset: -3px; }
+.sd--unpub b, .day--unpub b { color: var(--sub); }
+.tag { font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: .04em; line-height: 1.4; padding: 0 5px; border-radius: 4px; border: 1px solid var(--border); color: var(--body); margin-left: 6px; white-space: nowrap; }
+.tag--imax { border-color: var(--text); color: var(--text); }
+.c1 { display: flex; align-items: center; }
+.chip .c1 { color: var(--text); }
+.empty { padding: 48px 0 32px; text-align: center; }
+.empty-t { font-family: var(--display); font-size: 22px; font-weight: 700; text-wrap: balance; }
+.empty .sub { font-size: 14px; margin: 6px auto 16px; max-width: 34ch; }
+.empty-big { font-size: 56px; line-height: 1; }
+.film--seen { opacity: .55; }
+.sheet-h { font-size: 24px; }
+.sheet-p { font-size: 14px; margin: 4px 0 14px; }
+dialog .label { padding-top: 16px; }
+.map[data-pick] { cursor: crosshair; margin-top: 6px; }
+button.cta { width: 100%; border: 0; }
+.cta2 button:disabled { opacity: .45; }
+.prose { max-width: 60ch; padding-top: 8px; }
+.prose h2 { font-family: var(--display); font-size: 20px; margin: 26px 0 4px; }
+.prose p, .prose li { font-size: 15px; line-height: 1.55; color: var(--body); margin-top: 8px; }
+.prose ul { padding-left: 18px; }
+.prose .pill { margin-top: 12px; }
+footer a { text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 3px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<dialog class="ticket" id="ticket" closedby="any"></dialog>
+<script type="module">
+const NOW = { date: "2026-10-04", time: "17:30" };
+const q = new URLSearchParams(location.search);
+const PAGE = q.get("page") || "list";
+const OVER = q.has("over");
+const DESK = innerWidth >= 900;
+const FULL = Math.min(innerWidth, 1120) - (DESK ? 64 : 32);
+const d = await (await fetch("listings.json")).json();
+
+// Prototype-only fixture patches: the fixture has no booking links, no subtitle data and one IMAX showing.
+const BOOKABLE = new Set(["verdi", "verdi-park", "arenas", "aribau", "balmes", "glories"]);
+const SUBS = { "554749": ["other", "en"], "438358": ["other", "es"] };
+const IMAX_FILMS = new Set(["1275779", "687163", "1228710"]), IMAX_AT = new Set(["diagonal-mar", "maquinista", "filmax-granvia"]);
+d.movies.forEach(m => m.showtimes.forEach(s => {
+  if (BOOKABLE.has(s.theater_id)) s.booking_url = "#book";
+  [s.audio_lang, s.subtitle_lang] = SUBS[m.id] ?? ["en", null];
+   if (IMAX_FILMS.has(m.id) && IMAX_AT.has(s.theater_id) && s.time >= "19:00") s.premium_format = "imax";
+}));
+
+if (q.has("missing")) Object.assign(d.movies.find(m => m.id === "454639"), { poster_url: null, runtime_minutes: null, backdrop_url: null });
+if (q.has("reset")) ["bmd.seen", "bmd.fav", "bmd.home"].forEach(k => localStorage.removeItem(k));
+const load = (k, seed) => JSON.parse(localStorage.getItem(k) ?? JSON.stringify(seed));
+const HOME = q.get("loc") === "off" ? null : load("bmd.home", [41.4021, 2.1558]);
+const store = (key, seed) => { const s = new Set(load(key, seed));
+  return { has: x => s.has(x), get size() { return s.size; }, all: () => [...s],
+    toggle(x) { s.has(x) ? s.delete(x) : s.add(x); localStorage.setItem(key, JSON.stringify([...s])); } }; };
+const seen = store("bmd.seen", ["1275779"]);
+const favs = store("bmd.fav", ["verdi", "verdi-park", "girona"]);
+
+const T = Object.fromEntries(d.theaters.map(t => [t.id, t]));
+const hav = (a, b) => { const r = x => x * Math.PI / 180, h = Math.sin(r(b[0] - a[0]) / 2) ** 2 + Math.cos(r(a[0])) * Math.cos(r(b[0])) * Math.sin(r(b[1] - a[1]) / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
+const km = id => HOME ? hav(HOME, [T[id].lat, T[id].lng]) : 0;
+const where = id => HOME ? (km(id) < 1 ? `${Math.round(km(id) * 20) * 50} m` : `${km(id).toFixed(1)} km`) : T[id].neighborhood;
+const short = n => n.replace(/^(Cines?|Cinema|Cinemes|Cinesa|Mooby|Yelmo) /, "");
+const past = s => s.date < NOW.date || (s.date === NOW.date && s.time < NOW.time);
+const chrono = (a, b) => (a.date + a.time).localeCompare(b.date + b.time) || favs.has(b.theater_id) - favs.has(a.theater_id) || km(a.theater_id) - km(b.theater_id);
+const iso = (x, n) => { const t = new Date(x + "T12:00"); t.setDate(t.getDate() + n); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; };
+const lastPub = d.movies.flatMap(m => m.showtimes.map(s => s.date)).sort().at(-1);
+const dates = Array.from({ length: 7 }, (_, i) => iso(NOW.date, i));
+const unpub = x => x > lastPub;
+const fmt = (x, o) => new Date(x + "T12:00").toLocaleDateString("en-GB", o);
+const day = x => { const today = x === NOW.date;
+  return { wd: today ? "Today" : fmt(x, { weekday: "short" }), n: +x.slice(8), title: today ? "Today" : fmt(x, { weekday: "long" }),
+    long: today ? "Today" : fmt(x, { weekday: "short", day: "numeric" }), on: today ? "today" : `on ${fmt(x, { weekday: "long" })}` }; };
+const runtime = m => m.runtime_minutes ? `${Math.floor(m.runtime_minutes / 60)}h ${String(m.runtime_minutes % 60).padStart(2, "0")}m` : "";
+const out = (s, m) => { const [h, mi] = s.time.split(":").map(Number), t = h * 60 + mi + (m.runtime_minutes || 110) + 15; return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+const poster = (m, w) => m.poster_url ? `<img class="poster" src="${m.poster_url}" alt="" width="${w}" loading="lazy">` : `<div class="poster poster--none${w < 60 ? " poster--sm" : ""}" aria-hidden="true"><span>${m.title}</span></div>`;
+const meta = m => [m.rating && `<span class="star">★ ${m.rating.toFixed(1)}</span>`, ...m.genres.slice(0, 2), m.runtime_minutes && runtime(m)].filter(Boolean).join(" · ");
+const href = (p = {}) => { const u = new URLSearchParams(); if (q.get("loc") === "off") u.set("loc", "off"); if (q.has("stale")) u.set("stale", "");
+  Object.entries(p).forEach(([k, v]) => v != null && u.set(k, v)); return "?" + u.toString().replace(/=(&|$)/g, "$1"); };
+const keep = (p = {}) => { const u = new URLSearchParams(q); u.delete("reset"); Object.entries(p).forEach(([k, v]) => v == null ? u.delete(k) : u.set(k, v)); return "?" + u.toString().replace(/=(&|$)/g, "$1"); };
+const upcoming = m => m.showtimes.filter(s => !past(s)).sort(chrono);
+// "English" is the norm for this site, so only non-English audio gets a subtitle badge.
+const subs = s => s.audio_lang === "en" ? "" : ({ en: "English subs", es: "Spanish subs", ca: "Catalan subs" })[s.subtitle_lang] ?? "";
+const tags = s => (s.premium_format === "imax" ? `<em class="tag tag--imax">IMAX</em>` : "") + (subs(s) ? `<em class="tag">${subs(s)}</em>` : "");
+const STALE = q.has("stale");
+const staleNote = STALE ? `<p class="notice" role="status">Listings last updated Thu 2 Oct. Times may have changed, so check with the cinema before you go.</p>` : "";
+const foot = `<footer class="sub">${STALE ? "Updated 2 days ago" : "Updated 2 h ago"} · VO screenings only · Data from TMDb · <a href="${href({ page: "privacy" })}">Privacy</a></footer>`;
+const empty = (title, text = "", action = "") => `<div class="empty"><p class="empty-t">${title}</p>${text ? `<p class="sub">${text}</p>` : ""}${action}</div>`;
+const notOut = x => empty(`${day(x).title}'s listings aren't out yet`, "Cinemas usually publish a few days ahead. Check back later in the week.");
+
+// ───────── map: schematic, rotated so the sea is at the bottom (how Barcelona is usually pictured) ─────────
+const GEO = {
+  coast: [[41.27, 2.05], [41.30, 2.10], [41.335, 2.150], [41.350, 2.165], [41.362, 2.178], [41.372, 2.183], [41.376, 2.189], [41.380, 2.192], [41.384, 2.196], [41.388, 2.202], [41.393, 2.207], [41.398, 2.212], [41.404, 2.219], [41.410, 2.226], [41.413, 2.232], [41.420, 2.238], [41.428, 2.245], [41.45, 2.27], [41.50, 2.33]],
+  seaFar: [[41.60, 2.50], [41.10, 2.50], [41.10, 1.95]],
+  montjuic: [[41.372, 2.150], [41.374, 2.162], [41.370, 2.172], [41.362, 2.172], [41.357, 2.163], [41.360, 2.150], [41.366, 2.146]],
+  collserola: [[41.395, 2.085], [41.410, 2.105], [41.418, 2.122], [41.428, 2.140], [41.438, 2.158], [41.448, 2.172], [41.460, 2.185], [41.50, 2.15], [41.45, 2.05], [41.38, 2.05]],
+  ciutadella: [[41.391, 2.184], [41.389, 2.191], [41.386, 2.188], [41.388, 2.181]],
+  roads: [
+    [[41.383, 2.110], [41.388, 2.125], [41.392, 2.138], [41.394, 2.146], [41.397, 2.157], [41.399, 2.166], [41.403, 2.187], [41.407, 2.203], [41.411, 2.218]],
+    [[41.356, 2.125], [41.368, 2.140], [41.375, 2.149], [41.385, 2.164], [41.394, 2.175], [41.403, 2.187], [41.412, 2.199], [41.421, 2.210]],
+    [[41.387, 2.170], [41.392, 2.165], [41.397, 2.159], [41.403, 2.153], [41.408, 2.150]],
+    [[41.387, 2.170], [41.376, 2.177]],
+    [[41.403, 2.187], [41.415, 2.184], [41.428, 2.184], [41.442, 2.190]],
+  ],
+  areas: [["Gràcia", 41.410, 2.158], ["Eixample", 41.391, 2.157], ["Ciutat Vella", 41.381, 2.181], ["Sants", 41.373, 2.136], ["Les Corts", 41.384, 2.124], ["Sarrià", 41.401, 2.121], ["Poblenou", 41.401, 2.203], ["Sant Andreu", 41.433, 2.190], ["Montjuïc", 41.366, 2.160], ["Horta", 41.428, 2.158], ["Sant Martí", 41.417, 2.198]],
+};
+const D2R = Math.PI / 180, TH = 42 * D2R, LAT0 = 41.395, LNG0 = 2.165;
+const proj = ([lat, lng]) => { const x = (lng - LNG0) * Math.cos(LAT0 * D2R) * D2R * 6371, y = (lat - LAT0) * D2R * 6371;
+  return [x * Math.cos(TH) + y * Math.sin(TH), -x * Math.sin(TH) + y * Math.cos(TH)]; };
+
+function mapSVG({ frame, focus = new Set(frame), labels = {}, W, H, minSpan = 2, areas = false, others = true, link = true, edges = false, home = HOME, fitHome = true, rings = true, pick = false }) {
+  const auto = !H; H ??= W;
+  const pts = frame.map(id => proj([T[id].lat, T[id].lng])); if (home && fitHome) pts.push(proj(home));
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), PAD = 34;
+  const cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+  const sc = Math.min((W - 2 * PAD) / Math.max(Math.max(...xs) - Math.min(...xs), minSpan), (H - 2 * PAD) / Math.max(Math.max(...ys) - Math.min(...ys), minSpan * (H / W)));
+  if (auto) H = Math.round(Math.min(W * 1.15, Math.max(W * 0.6, Math.max(Math.max(...ys) - Math.min(...ys), minSpan * 0.6) * sc + 2 * PAD)));
+  const P = ll => { const [x, y] = proj(ll); return [W / 2 + (x - cx) * sc, H / 2 - (y - cy) * sc]; };
+  const inside = ([x, y]) => x > 8 && y > 8 && x < W - 8 && y < H - 8, clamp = ([x, y]) => [Math.min(W - 10, Math.max(10, x)), Math.min(H - 10, Math.max(10, y))];
+  const path = (lls, close) => "M" + lls.map(ll => P(ll).map(v => v.toFixed(1)).join(" ")).join("L") + (close ? "Z" : "");
+  const boxes = [], hit = b => b.x < 2 || b.y < 2 || b.x + b.w > W - 2 || b.y + b.h > H - 2 || boxes.some(o => b.x < o.x + o.w && o.x < b.x + b.w && b.y < o.y + o.h && o.y < b.y + b.h);
+  const place = (x, y, text, cls, cands = ["r", "l", "t", "b", "tr", "br", "tl", "bl"], cw = 6.1) => { const w = text.length * cw + 4, h = 13;
+    const at = { r: [x + 7, y - 7], l: [x - 7 - w, y - 7], t: [x - w / 2, y - 21], b: [x - w / 2, y + 7], c: [x - w / 2, y - 6], tr: [x + 4, y - 18], br: [x + 4, y + 4], tl: [x - 4 - w, y - 18], bl: [x - 4 - w, y + 4] };
+    for (const c of cands) { const b = { x: at[c][0], y: at[c][1], w, h };
+      if (!hit(b)) { boxes.push(b); return `<text class="${cls}" x="${(b.x + 2).toFixed(1)}" y="${(b.y + 10).toFixed(1)}">${text}</text>`; } } return ""; };
+  let svg = `<path class="m-park" d="${path(GEO.collserola, 1)}"/><path class="m-park" d="${path(GEO.montjuic, 1)}"/><path class="m-park" d="${path(GEO.ciutadella, 1)}"/>`
+    + GEO.roads.map(r => `<path class="m-road" d="${path(r)}"/>`).join("")
+    + `<path class="m-sea" d="${path([...GEO.coast, ...GEO.seaFar], 1)}"/>`;
+  let marks = "", text = "";
+  const ids = Object.keys(T).filter(id => (focus.has(id) || others) && (edges || focus.has(id) || inside(P([T[id].lat, T[id].lng])))).sort((a, b) => focus.has(b) - focus.has(a) || favs.has(b) - favs.has(a) || km(a) - km(b));
+  const raw = Object.fromEntries(ids.map(id => [id, P([T[id].lat, T[id].lng])])), xy = Object.fromEntries(ids.map(id => [id, clamp(raw[id])]));
+  // reserve dot boxes first so labels never cover a cinema
+  ids.forEach(id => { const [x, y] = xy[id]; boxes.push({ x: x - 5, y: y - 5, w: 10, h: 10 }); });
+  if (home) { const [x, y] = P(home); boxes.push({ x: x - 6, y: y - 6, w: 12, h: 12 }); const homeLabel = place(x, y, "Home", "m-label m-label--home");
+    if (rings) [1, 2, 3].forEach(k => { const r = k * sc; if (r < Math.max(W, H)) { marks += `<circle class="m-ring" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}"/>`; text += place(x + r * 0.7071, y - r * 0.7071, `${k} km`, "m-ringl", ["c"], 5); } });
+    marks += `<circle class="m-home" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5.5"/>`; text = homeLabel + text; }
+  ids.forEach(id => { const [x, y] = xy[id], on = focus.has(id), f = favs.has(id);
+    const edge = !inside(raw[id]);
+    const lbl = (on ? short(T[id].name) + (labels[id] ? ` · ${labels[id]}` : "") : short(T[id].name)) + (edge ? ` ${where(id)} →` : "");
+    const t = place(x, y, lbl, `m-label${on ? "" : " m-label--dim"}`);
+    const dot = `<circle class="m-dot${on ? " m-dot--on" : ""}${f ? " m-dot--fav" : ""}${edge ? " m-dot--edge" : ""}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${on ? 5 : 3.5}"/>`;
+    const g = dot + t; marks += link ? `<a href="${href({ page: "cinema", cinema: id })}" aria-label="${T[id].name}">${g}</a>` : g; });
+  if (areas) GEO.areas.forEach(([n, lat, lng]) => { const [x, y] = P([lat, lng]); svg += place(x, y, n.toUpperCase(), "m-area", ["c"], 6.8); });
+  return `<svg class="map" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Map"${pick ? ` data-pick="${cx},${cy},${sc}"` : ""}>${svg}${marks}${text}</svg>`;
+}
+
+
+let shows;
+const showBtn = (s, m, cls, inner) => { shows.push([s, m]); return `<button class="${cls}" data-show="${shows.length - 1}">${inner}</button>`; };
+const bar = () => `<div class="bar"><a class="brand" href="${href()}">Barcelona This Week</a><button class="pill${HOME ? " pill--on" : ""}" data-home>⌂ ${HOME ? "Home" : "Set home"}</button><a class="pill${PAGE.startsWith("cinema") ? " pill--on" : ""}" href="${href({ page: "cinemas" })}">Cinemas</a></div>`;
+const strip = (cur, has) => `<nav class="strip" aria-label="Day"><div class="wrap tt n7"><a class="sd sd--wk" href="${keep({ day: null })}"${cur ? "" : ' aria-current="page"'}>Week</a>${dates.map(x => { const l = day(x);
+  return `<a class="sd${unpub(x) ? " sd--unpub" : has(x) ? "" : " sd--empty"}" href="${keep({ day: x })}"${x === cur ? ' aria-current="date"' : ""}>${l.wd}<b>${l.n}</b></a>`; }).join("")}</div></nav>`;
+const cells = (s, link) => dates.map(x => { if (unpub(x)) return `<span class="cell cell--unpub" aria-hidden="true"></span>`;
+  const n = s.filter(y => y.date === x).length;
+  return n ? `<a class="cell cell--on" href="${link(x)}" aria-label="${day(x).title}: ${n} showing${n > 1 ? "s" : ""}">${n}</a>` : `<span class="cell" aria-hidden="true"></span>`; }).join("");
+const filmHead = (m, f, extra = "") => `<a class="p" href="${f}">${poster(m, 56)}</a><a href="${f}" class="h"><h3>${m.title}</h3></a><p class="meta sub">${meta(m)}${extra}</p>`;
+const summary = s => { const c = [...new Set(s.map(x => x.theater_id))].sort((a, b) => km(a) - km(b));
+  const imax = s.some(x => x.premium_format) ? " · IMAX" : "";
+  if (s.length === 1) return `${day(s[0].date).long}, ${s[0].time} · ${short(T[c[0]].name)}${HOME ? ` · ${where(c[0])}` : ""}${imax}`;
+  const named = c.length <= 2;
+  return `${s.length} showings · ${named ? c.map(id => short(T[id].name)).join(", ") : `${c.length} cinemas`}${HOME ? ` · nearest ${named && c.length === 1 ? "" : `${short(T[c[0]].name)} `}${where(c[0])}` : ""}${imax}`; };
+const chip = (x, m) => showBtn(x, m, "chip", `<span class="c1"><b>${x.time}</b>${tags(x)}</span><span>${short(T[x.theater_id].name)} · ${where(x.theater_id)}</span>`);
+
+function list() {
+  const DAY = q.get("day");
+  const rows = d.movies.map(m => ({ m, s: upcoming(m).filter(s => !DAY || s.date === DAY) })).filter(r => r.s.length);
+  const unseen = rows.filter(r => !seen.has(r.m.id)), seenRows = rows.filter(r => seen.has(r.m.id));
+  const weekRow = ({ m, s }) => `<li class="film tt n7">${filmHead(m, href({ page: "film", film: m.id }))}${cells(s, x => href({ page: "film", film: m.id, day: x }))}<p class="sum sub">${summary(s)}</p></li>`;
+  const MAX = DESK ? 7 : 4;
+  const dayRow = ({ m, s }) => `<li class="film tt n7">${filmHead(m, href({ page: "film", film: m.id, day: DAY }))}<div class="chips">${s.slice(0, MAX).map(x => chip(x, m)).join("")}${s.length > MAX ? `<a class="chip chip--more" href="${href({ page: "film", film: m.id, day: DAY })}">+${s.length - MAX} more</a>` : ""}</div></li>`;
+  const seenBlock = row => seenRows.length ? `<details class="seen"><summary>Seen (${seenRows.length})</summary><ul class="films">${seenRows.map(row).join("")}</ul></details>` : "";
+  let body;
+  if (DAY && unpub(DAY)) body = notOut(DAY);
+  else if (!rows.length) body = empty(`Nothing left ${DAY ? day(DAY).on : "this week"}`, "", `<a class="pill" href="${keep({ day: null })}">See the whole week</a>`);
+  else if (!DAY) {
+    const rare = unseen.filter(r => r.s.length <= 3).sort((a, b) => chrono(a.s[0], b.s[0]));
+    const main = unseen.filter(r => r.s.length > 3).sort((a, b) => b.s.length - a.s.length);
+    body = `${rare.length ? `<p class="label">Only a few showings</p><ul class="films">${rare.map(weekRow).join("")}</ul>` : ""}
+      ${main.length ? `<p class="label">Playing all week</p><ul class="films">${main.map(weekRow).join("")}</ul>` : ""}${seenBlock(weekRow)}`;
+  } else {
+    const byStart = (a, b) => chrono(a.s[0], b.s[0]);
+    body = `<p class="label">By start time</p><ul class="films">${unseen.sort(byStart).map(dayRow).join("")}</ul>${seenBlock(dayRow)}`;
+  }
+  const firstUnpub = dates.find(unpub);
+  const sub = DAY ? `${DAY === NOW.date ? `From ${NOW.time}` : fmt(DAY, { day: "numeric", month: "long" })}${unpub(DAY) || !rows.length ? "" : ` · ${rows.length} films`}`
+    : `${fmt(dates[0], { weekday: "short", day: "numeric" })} – ${fmt(dates.at(-1), { weekday: "short", day: "numeric", month: "short" })} · ${rows.length} films${firstUnpub ? ` · ${day(firstUnpub).wd} listings not out yet` : ""}`;
+  return `<header class="wrap">${bar()}
+    <div class="title"><h1 class="display">${DAY ? day(DAY).title : "This week"}</h1><p class="sub">${sub}</p></div>
+    ${staleNote}</header>
+  ${strip(DAY, x => d.movies.some(m => upcoming(m).some(s => s.date === x)))}<main class="wrap">${body}</main>${foot}`;
+}
+
+const dayStrip = (cur, has) => `<nav class="days" aria-label="Day"><div class="wrap"><ol>${dates.map(x => { const l = day(x);
+  return `<li><a class="day${unpub(x) ? " day--unpub" : has(x) ? "" : " day--empty"}" href="${keep({ day: x })}"${x === cur ? ' aria-current="date"' : ""}>${l.wd}<b>${l.n}</b></a></li>`; }).join("")}</ol></div></nav>`;
+
+function film() {
+  const m = d.movies.find(x => x.id === q.get("film")) || d.movies.find(x => x.title === "Project Hail Mary");
+  const all = OVER ? [] : upcoming(m);
+  const DAY = q.get("day") || all[0]?.date || NOW.date;
+  const s = m.showtimes.filter(x => x.date === DAY).sort(chrono);
+  const at = {}; s.filter(x => !past(x)).forEach(x => { at[x.theater_id] ??= []; at[x.theater_id].push(x.time); });
+  const labels = Object.fromEntries(Object.entries(at).map(([id, t]) => [id, t[0] + (t.length > 1 ? ` +${t.length - 1}` : "")]));
+  const ids = Object.keys(at);
+  const groups = {}; s.forEach(x => (groups[x.theater_id] ??= []).push(x));
+  const byCinema = Object.entries(groups).sort(([a], [b]) => favs.has(b) - favs.has(a) || km(a) - km(b));
+  return `<div class="hero${m.backdrop_url ? "" : " hero--none"}">${m.backdrop_url ? `<img src="${m.backdrop_url}" alt="">` : ""}<a class="back" href="${href()}"><span class="pill">‹ This week</span></a></div>
+  <main class="wrap film-layout">
+    <section>
+      <div class="head">${poster(m, 180)}<div><h1 class="display">${m.title}</h1><p class="meta sub">${m.rating ? `<span class="star">★ ${m.rating.toFixed(1)}</span> · ` : ""}${m.year} · ${runtime(m)}<br>${m.genres.join(", ")}</p></div></div>
+      ${m.tagline ? `<p class="tagline">${m.tagline}</p>` : ""}
+      <p class="synopsis" id="syn">${m.synopsis}</p><button class="more" aria-controls="syn" aria-expanded="false">More</button>
+      ${m.director || m.cast?.length ? `<p class="credits sub">${m.director ? `Dir. ${m.director}` : ""}${m.cast?.length ? `<br>With ${m.cast.slice(0, 4).join(", ")}` : ""}</p>` : ""}
+      <div class="actions"><a class="pill" href="#">▶ Trailer</a><button class="pill${seen.has(m.id) ? " pill--on" : ""}" data-seen="${m.id}" aria-pressed="${seen.has(m.id)}">✓ ${seen.has(m.id) ? "Seen" : "Seen it?"}</button><a class="pill" href="#">IMDb ↗</a><a class="pill" href="#">Letterboxd ↗</a></div>
+    </section>
+    <section class="panel" aria-labelledby="st">
+      <h2 id="st">Showtimes</h2>
+      ${!all.length ? empty("No more showings", `${m.title} has no showings left in the listings. Its run may be over, or new dates may not be out yet.`, `<a class="pill" href="${href()}">See what's on this week</a>`) : `${dayStrip(DAY, x => all.some(y => y.date === x))}
+      ${unpub(DAY) ? notOut(DAY) : `<ul class="crows">${byCinema.map(([id, xs]) => `<li class="crow"><a class="crow-h" href="${href({ page: "cinema", cinema: id, day: DAY })}"><span class="cin">${T[id].name}${favs.has(id) ? ' <span class="fav">★</span>' : ""}</span><span class="nb">${T[id].neighborhood}${HOME ? ` · ${where(id)}` : ""}</span></a>
+        <div class="tchips">${xs.map(x => showBtn(x, m, `chip chip--t${past(x) ? " chip--past" : ""}`, `<span class="c1"><b>${x.time}</b>${tags(x)}</span>`)).join("")}</div></li>`).join("")}</ul>`}`}
+      ${all.length && ids.length ? `<div class="map-wrap"><h3>Where, ${day(DAY).title === "Today" ? "today" : day(DAY).title}</h3>${mapSVG({ frame: ids, labels, W: DESK ? 398 : FULL, H: DESK ? 240 : 230, others: false, minSpan: 2.5 })}</div>` : ""}
+    </section>
+  </main>${foot}`;
+}
+
+function cinema() {
+  const t = T[q.get("cinema")] || T.verdi, DAY = q.get("day");
+  const here = d.movies.map(m => ({ m, s: m.showtimes.filter(s => s.theater_id === t.id && !past(s)).sort(chrono) })).filter(r => r.s.length);
+  const has = x => here.some(r => r.s.some(s => s.date === x));
+  const seenLast = (a, b) => seen.has(a.m.id) - seen.has(b.m.id);
+  let body;
+  if (!DAY) body = `<p class="label">${here.length} films this week</p><ul class="films">${here.sort((a, b) => seenLast(a, b) || b.s.length - a.s.length).map(({ m, s }) =>
+    `<li class="film tt n7${seen.has(m.id) ? " film--seen" : ""}">${filmHead(m, href({ page: "film", film: m.id }), seen.has(m.id) ? " · Seen" : "")}${cells(s, x => keep({ day: x }) + "#f" + m.id)}<p class="sum sub">Next: ${day(s[0].date).long} ${s[0].time}${tags(s[0])}</p></li>`).join("")}</ul>`;
+  else if (unpub(DAY)) body = notOut(DAY);
+  else { const rows = here.map(r => ({ ...r, s: r.s.filter(s => s.date === DAY) })).filter(r => r.s.length).sort((a, b) => seenLast(a, b) || a.s[0].time.localeCompare(b.s[0].time));
+    body = rows.length ? `<p class="label">${rows.length} film${rows.length > 1 ? "s" : ""} ${day(DAY).on}</p><ul class="films">${rows.map(({ m, s }) => `<li class="film tt n7${seen.has(m.id) ? " film--seen" : ""}" id="f${m.id}">${filmHead(m, href({ page: "film", film: m.id, day: DAY }), seen.has(m.id) ? " · Seen" : "")}
+      <div class="chips">${s.map(x => showBtn(x, m, "chip", `<span class="c1"><b>${x.time}</b>${tags(x)}</span><span>${x.booking_url ? "Book" : "Details"}</span>`)).join("")}</div></li>`).join("")}</ul>`
+      : empty(`Nothing on at ${short(t.name)} ${day(DAY).on}`); }
+  return `<header class="wrap">${bar()}<div class="cin-top"><div class="cin-head title"><h1 class="display">${t.name}</h1>
+    <p class="sub">${t.address} · ${t.neighborhood}${HOME ? ` · ${where(t.id)} from home` : ""}</p>
+    <div class="actions"><button class="pill${favs.has(t.id) ? " pill--on" : ""}" data-fav="${t.id}" aria-pressed="${favs.has(t.id)}">${favs.has(t.id) ? "★ My cinema" : "☆ Add to my cinemas"}</button><a class="pill" href="${t.website_url}">Website ↗</a><a class="pill" href="${t.maps_url}">Directions ↗</a></div></div>
+    <div class="cin-head">${mapSVG({ frame: [t.id], focus: new Set([t.id]), W: DESK ? 480 : FULL, H: DESK ? 240 : 180, minSpan: 3.2 })}</div></div></header>
+  ${strip(DAY, has)}<main class="wrap">${body}</main>${foot}`;
+}
+
+function cinemas() {
+  const count = id => d.movies.filter(m => m.showtimes.some(s => s.theater_id === id && !past(s))).length;
+  const all = d.theaters.filter(t => count(t.id)).sort((a, b) => HOME ? km(a.id) - km(b.id) : a.name.localeCompare(b.name));
+  const row = t => `<li class="cinema"><a href="${href({ page: "cinema", cinema: t.id })}"><b>${t.name}</b><span class="sub">${t.neighborhood}${HOME ? ` · ${where(t.id)}` : ""} · ${count(t.id)} film${count(t.id) > 1 ? "s" : ""} this week</span></a>
+    <button class="star-btn" data-fav="${t.id}" aria-pressed="${favs.has(t.id)}" aria-label="My cinema">${favs.has(t.id) ? "★" : "☆"}</button></li>`;
+  const mine = all.filter(t => favs.has(t.id)), rest = all.filter(t => !favs.has(t.id));
+  return `<header class="wrap">${bar()}<div class="title"><h1 class="display">Cinemas</h1><p class="sub">${all.length} showing English-language films · ${HOME ? "nearest first" : "A–Z"}</p></div></header>
+  <main class="wrap idx">${mapSVG({ frame: all.filter(t => !HOME || km(t.id) < 4).map(t => t.id), W: DESK ? 560 : FULL, areas: true, minSpan: 3, edges: true })}
+    <div>${mine.length ? `<p class="label">My cinemas</p><ul class="cinemas">${mine.map(row).join("")}</ul>` : ""}
+    <p class="label">${mine.length ? "Others" : "All"}</p><ul class="cinemas">${rest.map(row).join("")}</ul></div></main>${foot}`;
+}
+
+const privacy = () => `<header class="wrap">${bar()}<div class="title"><h1 class="display">Privacy</h1></div></header>
+  <main class="wrap prose">
+    <p>No accounts, no cookies, no analytics, no tracking.</p>
+    <h2>Kept on this device only</h2>
+    <ul><li><b>Home</b>: the point distances are measured from.</li><li><b>Seen films</b>: so they move out of the way.</li><li><b>My cinemas</b>: your starred cinemas.</li></ul>
+    <p>None of it is sent anywhere. Clearing this site's data in your browser removes it, or:</p>
+    <button class="pill" data-forget>Forget all of it</button>
+    <h2>Your location</h2>
+    <p>Only used when you tap “Use my current location”, to set Home. Your browser asks first, and the position stays on this device.</p>
+    <h2>Other services</h2>
+    <p>Posters and backdrops load from TMDb, which sees your IP address as any website would. Booking, website and directions links take you to the cinema's site or your maps app.</p>
+  </main>${foot}`;
+
+const notFound = () => `<header class="wrap">${bar()}</header><main class="wrap">
+  <div class="empty"><p class="display empty-big">Not showing.</p><p class="sub">That page doesn't exist, or the film has finished its run.</p><a class="pill pill--on" href="${href()}">See what's on this week</a></div></main>${foot}`;
+
+const app = document.getElementById("app");
+const render = () => { shows = []; app.innerHTML = ({ list, film, cinema, cinemas, privacy, 404: notFound }[PAGE] || notFound)(); };
+render();
+
+const dlg = document.getElementById("ticket");
+let current = null, pending = null;
+const openTicket = ([s, m]) => { const t = T[s.theater_id]; current = [s, m];
+  dlg.innerHTML = `<div class="grab"></div><div class="stub" tabindex="-1" autofocus>
+    <div class="stub-top">${poster(m, 52)}<div><h3>${m.title}</h3><p class="sub">${[runtime(m), s.premium_format && "IMAX", subs(s)].filter(Boolean).join(" · ")}</p></div></div>
+    <div class="perf"></div>
+    <div class="facts"><div><small>Date</small><b>${day(s.date).wd} ${day(s.date).n}</b></div><div><small>Starts</small><b>${s.time}</b></div><div><small>Out ~</small><b>${out(s, m)}</b></div></div>
+    <div class="where"><a href="${href({ page: "cinema", cinema: t.id, day: s.date })}"><b>${t.name}${favs.has(t.id) ? ' <span class="fav">★</span>' : ""}</b></a><p class="sub">${t.address} · ${t.neighborhood}${HOME ? ` · ${where(s.theater_id)}` : ""}</p>
+</div></div>
+  ${s.booking_url ? `<a class="cta" href="${s.booking_url}">Book at ${short(t.name)} ↗</a>` : `<a class="cta cta--plain" href="${t.website_url}">${short(t.name)} website ↗</a><p class="note sub">No direct booking link for this showing</p>`}
+  <div class="cta2"><button data-share>Share</button><a href="${t.maps_url}">Directions ↗</a></div>`;
+  if (!dlg.open) dlg.showModal(); };
+
+const homeSheet = (msg = "") => {
+  const ids = d.theaters.filter(t => hav([41.395, 2.165], [t.lat, t.lng]) < 4.5).map(t => t.id);
+  dlg.innerHTML = `<div class="grab"></div><h2 class="sheet-h display">Home</h2>
+    <p class="sub sheet-p">Distances and map rings are measured from here. Saved on this device only.</p>
+    <button class="cta" data-geo>◎ Use my current location</button><p class="note sub" role="status">${msg}</p>
+    <p class="label">Or tap the map</p>
+    ${mapSVG({ frame: ids, W: DESK ? 380 : FULL, home: pending ?? HOME, fitHome: false, rings: false, link: false, areas: true, minSpan: 3, pick: true })}
+    <div class="cta2"><button data-home-save${pending ? "" : " disabled"}>Save home here</button>${HOME ? "<button data-home-clear>Clear home</button>" : "<button data-close>Cancel</button>"}</div>`;
+  if (!dlg.open) dlg.showModal(); };
+
+const pickLatLng = (svg, e) => { const [cx, cy, sc] = svg.dataset.pick.split(",").map(Number), r = svg.getBoundingClientRect(), vb = svg.viewBox.baseVal;
+  const X = (e.clientX - r.left) * vb.width / r.width, Y = (e.clientY - r.top) * vb.height / r.height;
+  const xr = (X - vb.width / 2) / sc + cx, yr = -(Y - vb.height / 2) / sc + cy;
+  const x = xr * Math.cos(TH) - yr * Math.sin(TH), y = xr * Math.sin(TH) + yr * Math.cos(TH);
+  return [y / (D2R * 6371) + LAT0, x / (Math.cos(LAT0 * D2R) * D2R * 6371) + LNG0]; };
+
+const saveHome = v => { localStorage.setItem("bmd.home", JSON.stringify(v)); location.search = keep({ loc: null, sheet: null }); };
+dlg.addEventListener("click", e => {
+  const svg = e.target.closest("svg[data-pick]"); if (svg) { pending = pickLatLng(svg, e); return homeSheet("Pin dropped. Save to use it as Home."); }
+  // Prototype: ?geo=denied simulates a refused permission; otherwise a fixed position stands in for the real Geolocation API.
+  if (e.target.closest("[data-geo]")) { if (q.get("geo") === "denied") return homeSheet("Location access is off for this site. Tap the map instead, or allow it in Settings › Apps › Safari › Location.");
+    pending = [41.4009, 2.1601]; return homeSheet("Found you. Save to use this as Home."); }
+  if (e.target.closest("[data-home-save]")) return saveHome(pending);
+  if (e.target.closest("[data-home-clear]")) return saveHome(null);
+  if (e.target.closest("[data-close]")) return dlg.close();
+  const sh = e.target.closest("[data-share]"); if (sh) { const [s, m] = current, text = `${m.title} · ${short(T[s.theater_id].name)} · ${day(s.date).wd} ${day(s.date).n}, ${s.time}`;
+    if (navigator.share) navigator.share({ title: m.title, text, url: location.origin + location.pathname + href({ page: "film", film: m.id, day: s.date }) }).catch(() => {});
+    else navigator.clipboard?.writeText(text).then(() => { sh.textContent = "Copied"; }); }
+});
+app.addEventListener("click", e => {
+  const b = e.target.closest("[data-show]"); if (b) return openTicket(shows[+b.dataset.show]);
+  if (e.target.closest("[data-home]")) { pending = null; return homeSheet(); }
+  if (e.target.closest("[data-forget]")) { ["bmd.seen", "bmd.fav"].forEach(k => localStorage.setItem(k, "[]")); return saveHome(null); }
+  const sn = e.target.closest("[data-seen]"); if (sn) { seen.toggle(sn.dataset.seen); return render(); }
+  const f = e.target.closest("[data-fav]"); if (f) { favs.toggle(f.dataset.fav); return render(); }
+  const more = e.target.closest(".more"); if (more) { document.getElementById("syn").classList.add("synopsis--open"); more.remove(); } });
+if (q.get("sheet") === "home") homeSheet(q.get("geo") === "denied" ? "Location access is off for this site. Tap the map instead, or allow it in Settings › Apps › Safari › Location." : "");
+else if (q.has("sheet")) { const want = s => !past(s) && (q.get("sheet") === "nobook" ? !s.booking_url : q.get("sheet") === "imax" ? s.premium_format : s.booking_url);
+  openTicket(shows.find(([s]) => want(s)) ?? d.movies.flatMap(m => upcoming(m).map(s => [s, m])).find(([s]) => want(s))); }
+</script>
+</body>
+</html>

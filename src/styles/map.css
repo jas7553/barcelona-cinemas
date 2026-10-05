@@ -1,0 +1,125 @@
+/* Schematic maps (guidelines §5). */
+.map {
+  width: 100%;
+  height: auto;
+  border-radius: 14px;
+  background: #efe8dc;
+}
+.map--d {
+  display: none;
+}
+.m-sea {
+  fill: #dde5e2;
+}
+.m-park {
+  fill: #e2e3cf;
+}
+.m-road {
+  fill: none;
+  stroke: #fbf8f2;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.m-ring {
+  fill: none;
+  stroke: var(--accent);
+  stroke-opacity: 0.35;
+  stroke-dasharray: 3 4;
+}
+.m-ringl {
+  font: 600 9px var(--ui);
+  fill: var(--ink);
+  fill-opacity: 0.8;
+}
+.m-area {
+  font: 600 8.5px var(--ui);
+  letter-spacing: 0.12em;
+  fill: #7f7464;
+}
+.m-dot {
+  fill: #b5ab9b;
+}
+.m-dot--on {
+  fill: var(--solid);
+  stroke: #fff;
+  stroke-width: 2;
+}
+.m-dot--fav {
+  fill: #fff;
+  stroke: var(--ink);
+  stroke-width: 2;
+}
+.m-dot--on.m-dot--fav {
+  fill: var(--solid);
+  stroke: #fff;
+}
+.m-dot--edge {
+  fill: #fff;
+  stroke: #b5ab9b;
+  stroke-width: 1.5;
+}
+.m-hit {
+  fill: transparent;
+}
+.m-home {
+  fill: var(--text);
+  stroke: #fff;
+  stroke-width: 2;
+}
+.m-label {
+  font: 600 11px var(--ui);
+  fill: var(--text);
+  paint-order: stroke;
+  stroke: #efe8dc;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.m-label--dim {
+  font-weight: 500;
+  fill: var(--sub);
+}
+.m-label--home {
+  font-weight: 700;
+}
+.map--pick {
+  cursor: crosshair;
+}
+
+.map-wrap {
+  padding: 16px 0 8px;
+}
+.map-wrap h3 {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sub);
+  margin-bottom: 8px;
+}
+.cin-map,
+.idx-map {
+  margin-top: 16px;
+}
+
+@media (min-width: 900px) {
+  .map--m {
+    display: none;
+  }
+  .map--d {
+    display: block;
+  }
+  .cin-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 480px;
+    gap: 40px;
+    align-items: end;
+  }
+  .cin-map {
+    margin-top: 20px;
+  }
+  .idx-map {
+    position: sticky;
+    top: 16px;
+  }
+}

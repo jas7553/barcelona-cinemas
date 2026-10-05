@@ -254,12 +254,12 @@ Resources:
                 - s3:GetObject
                 - s3:PutObject
               Resource: !Sub "${FrontendBucket.Arn}/*"
-            # Prune stale per-film output: list film/ and data/film/ to find
-            # objects whose movie left the listings, then delete them. Delete is
-            # scoped to those two prefixes only — the renderer must stay unable
-            # to remove data/listings.json, the hashed assets, or the root
-            # documents, so do not widen this to the whole bucket.
-            # The two globs below must match PRUNE_PREFIXES in
+            # Prune stale output: list film/, data/film/, day/ and cinema/ to
+            # find pages whose movie left the listings or whose day has passed,
+            # then delete them. Delete is scoped to those prefixes only — the renderer must
+            # stay unable to remove data/listings.json, the hashed assets, or
+            # the root documents, so do not widen this to the whole bucket.
+            # The globs below must match PRUNE_PREFIXES in
             # scripts/site-constants.mjs; site-constants.test.mjs asserts it.
             - Sid: ListFrontendBucket
               Effect: Allow
@@ -273,6 +273,8 @@ Resources:
               Resource:
                 - !Sub "${FrontendBucket.Arn}/film/*"
                 - !Sub "${FrontendBucket.Arn}/data/film/*"
+                - !Sub "${FrontendBucket.Arn}/day/*"
+                - !Sub "${FrontendBucket.Arn}/cinema/*"
             - Sid: CloudFrontInvalidate
               Effect: Allow
               Action:
@@ -522,16 +524,16 @@ Resources:
         Comment: "Security headers for the static MPA (CSP: same-origin only)."
         SecurityHeadersConfig:
           ContentSecurityPolicy:
-            # script-src allows: bundled JS ('self'); the inline pre-paint theme
-            # script; and the inline speculation rules. The hydration payload
-            # and any ld+json are inert data blocks, so they need no allowance.
+            # script-src allows: bundled JS ('self'); the inline pre-paint prefs
+            # script; the 404 page's expired-page redirect; the speculation
+            # rules; and the view-transition script. The hydration payload and
+            # any ld+json are inert data blocks, so they need no allowance.
             #
-            # Both sha256 values below are DERIVED from the script bodies in
-            # scripts/template.mjs (THEME_SCRIPT, SPECULATION_RULES) — that
-            # module is the single owner, and the generated 404 page reuses the
-            # same THEME_SCRIPT string rather than a copy. Change a body and
-            # scripts/template.test.mjs fails with the replacement hashes to
-            # paste here. Do not hand-edit these without running that test:
+            # Every sha256 value below is DERIVED from the script bodies in
+            # scripts/template.mjs (INLINE_SCRIPTS) — that module is the single
+            # owner. Change a body and scripts/template.test.mjs fails with the
+            # replacement hashes to paste here. Do not hand-edit these without
+            # running that test:
             # a stale hash is invisible in dev (no CSP) and only breaks in prod.
             ContentSecurityPolicy: >-
               default-src 'self';
@@ -543,7 +545,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-UJ7YuwH97313GFUbDC38zVD8DwXulidM0MT7PafMtC0=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-jBj6N49FwSBjGqkTPm6zy8BEq7bHJqVhesj5vDOswvo=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-D2wJX2Hfm7kD6Lt91Ykdhkw2v3Gl/UAG9kw+zYZ5lLA=' 'sha256-Fkh/vpVjCSQLeCETZQAtg4VVkQqJ29UHbbBCgLrEcMM=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true
@@ -584,7 +586,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-UJ7YuwH97313GFUbDC38zVD8DwXulidM0MT7PafMtC0=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-jBj6N49FwSBjGqkTPm6zy8BEq7bHJqVhesj5vDOswvo=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-D2wJX2Hfm7kD6Lt91Ykdhkw2v3Gl/UAG9kw+zYZ5lLA=' 'sha256-Fkh/vpVjCSQLeCETZQAtg4VVkQqJ29UHbbBCgLrEcMM=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true

@@ -1,0 +1,90 @@
+/* Cinema pages and the Cinemas index (guidelines §3). */
+.cin-head .sub {
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+/* A cinema's programme keeps seen films in the list, last and faded. */
+[data-seen-last] {
+  display: flex;
+  flex-direction: column;
+}
+[data-seen] {
+  order: 100;
+}
+.film--seen,
+[data-seen] {
+  opacity: 0.55;
+}
+
+/* Cinemas index */
+.cinemas {
+  list-style: none;
+}
+.cinema {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.cinema a {
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cinema b {
+  font-size: 16px;
+  font-weight: 600;
+}
+.cinema .sub {
+  font-size: 12px;
+  margin-top: 2px;
+}
+/* Headings follow the pressed stars, which ORDER_SCRIPT sets before paint. */
+.cinemas:not(:has(.star[aria-pressed="true"])) [data-head="mine"],
+.cinemas:has(.star[aria-pressed="true"]) .if-no-fav,
+.cinemas:not(:has(.star[aria-pressed="true"])) .if-has-fav {
+  display: none;
+}
+
+/* Star toggle: a 38px circle with a 44px hit area */
+.star {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--sub);
+}
+/* 36px inside the border, so 4px out each way reaches 44px. */
+.star::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+}
+.star .icon path {
+  fill: none;
+}
+.star[aria-pressed="true"] {
+  background: var(--wash);
+  border-color: transparent;
+  color: var(--ink);
+}
+.star[aria-pressed="true"] .icon path {
+  fill: currentColor;
+}
+
+@media (min-width: 900px) {
+  .idx {
+    display: grid;
+    grid-template-columns: 560px 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+}

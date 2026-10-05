@@ -1,8 +1,6 @@
 import "@testing-library/jest-dom";
 
-// jsdom doesn't implement the <dialog> modal methods. Components (CinemaSheet,
-// SeenResetDialog) call showModal()/close() in an effect keyed off an `open`-
-// like prop; stub them so those effects don't throw in tests that trigger them.
+// jsdom lacks the <dialog> modal methods (Sheet).
 if (typeof HTMLDialogElement !== "undefined") {
   HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
     this.open = true;
@@ -13,8 +11,7 @@ if (typeof HTMLDialogElement !== "undefined") {
   };
 }
 
-// jsdom doesn't implement scrollIntoView (DayPicker uses it to bring the
-// active day chip into view); stub it so effects that call it don't throw.
+// jsdom lacks scrollIntoView.
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }

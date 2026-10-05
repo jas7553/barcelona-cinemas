@@ -115,9 +115,6 @@ aws s3 sync static/ "s3://$BUCKET" \
   --exclude "*.html" --exclude "data/*" \
   --cache-control "no-cache"
 
-# 404 page: public/ static HTML, not owned by the SSG Lambda render path
-aws s3 cp static/404.html "s3://$BUCKET/404.html" --cache-control "no-cache"
-
 echo "==> 5/6 Invalidate CloudFront cache"
 DIST=$(aws cloudformation describe-stacks --stack-name "$STACK" \
   --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
@@ -131,30 +128,38 @@ FUNC=$(aws cloudformation describe-stack-resource --stack-name "$STACK" \
   --query "StackResourceDetail.PhysicalResourceId" \
   --output text 2>/dev/null || true)
 if [ -n "$FUNC" ] && [ "$FUNC" != "None" ]; then
+  SINCE=$(( $(date +%s) * 1000 ))
   aws lambda invoke \
     --function-name "$FUNC" \
     --payload '{"source":"aws.events"}' \
     --cli-binary-format raw-in-base64-out \
     /tmp/barcelona-refresh-response.json > /dev/null
-  # On first deploy S3 is empty; poll until SSG renderer writes index.html (up to 60s).
-  echo "    waiting for SSG render to write index.html..."
-  found=false
-  for i in $(seq 1 30); do
-    if aws s3 ls "s3://$BUCKET/index.html" > /dev/null 2>&1; then
-      found=true; break
-    fi
-    [ "$i" -lt 30 ] && sleep 2
+  # The refresh invokes the renderer async, and on a redeploy index.html already
+  # exists, so wait for the render's own summary log line: until then the old
+  # pages still reference the old bundles. Up to its 120s timeout plus slack.
+  echo "    waiting for the SSG render to finish..."
+  RESULT=""
+  for i in $(seq 1 50); do
+    RESULT=$(aws logs filter-log-events --log-group-name "/aws/lambda/$STACK-ssg" \
+      --start-time "$SINCE" --filter-pattern '?ssg_render_summary ?ssg_render_failure' \
+      --query 'events[-1].message' --output text 2>/dev/null | grep -o '{.*}' || true)
+    [ -n "$RESULT" ] && break
+    [ "$i" -lt 50 ] && sleep 3
   done
-  if $found; then
-    echo "    SSG render complete."
-    # Safe to delete stale hashed bundles now: SSG has re-rendered all HTML with
-    # the new asset references, and CF cache is already invalidated.
-    echo "    cleaning up stale assets..."
-    aws s3 sync static/assets/ "s3://$BUCKET/assets/" --delete --size-only
-    aws s3 sync static/fonts/  "s3://$BUCKET/fonts/"  --delete --size-only
-  else
-    echo "ERROR: index.html not found after 60s — SSG render did not complete"; exit 1
+  case "$RESULT" in
+    *'"ssg_render_summary"'*) ;;
+    "") echo "ERROR: no SSG render summary after 150s — old assets left in place"; exit 1 ;;
+    *) echo "ERROR: SSG render failed — old assets left in place: $RESULT"; exit 1 ;;
+  esac
+  INVALIDATION=$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('invalidation_id') or '')" "$RESULT")
+  if [ -n "$INVALIDATION" ]; then
+    echo "    waiting for CloudFront invalidation $INVALIDATION..."
+    aws cloudfront wait invalidation-completed --distribution-id "$DIST" --id "$INVALIDATION"
   fi
+  echo "    SSG render complete."
+  echo "    cleaning up stale assets..."
+  aws s3 sync static/assets/ "s3://$BUCKET/assets/" --delete --size-only
+  aws s3 sync static/fonts/  "s3://$BUCKET/fonts/"  --delete --size-only
 else
   echo "Could not resolve function name — skipping refresh."
 fi

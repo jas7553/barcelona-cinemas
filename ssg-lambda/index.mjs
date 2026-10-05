@@ -5,7 +5,7 @@
 // invalidates CloudFront. No public HTTP surface.
 //
 // Packaged files (copied in by deploy.sh after `npm run build`):
-//   entry-server.js     self-contained React SSR bundle (dist-ssr/)
+//   entry-server.js     self-contained Preact SSR bundle (dist-ssr/)
 //   render-core.mjs     shared render loop (scripts/)
 //   template.mjs        HTML document template (scripts/)
 //   site-constants.mjs  timezone + prune prefixes (scripts/)
@@ -76,16 +76,17 @@ const DELETE_BATCH = 1000;
 const PRUNE_PREFIXES = prunePrefixesS3();
 
 /**
- * Delete per-film objects for movies no longer in the listings.
+ * Delete per-film objects for movies no longer in the listings, and day pages
+ * now in the past.
  *
  * Only ever touches keys under the PRUNE_PREFIXES above, and only those with
  * that prefix's expected extension — the hashed /assets/* bundles,
  * data/listings.json, and the root documents are all off limits (and the IAM
- * policy scopes DeleteObject to these two prefixes besides). Called by
+ * policy scopes DeleteObject to these prefixes besides). Called by
  * renderAll only after every page write succeeded, so an empty keep set can
  * only mean the listings really are empty.
  *
- * @param {Set<string>} keepRelPaths  Per-film keys this render just wrote.
+ * @param {Set<string>} keepRelPaths  Per-film and per-day keys this render just wrote.
  * @returns {Promise<number>} objects deleted
  */
 async function pruneStaleFilmPages(keepRelPaths) {
@@ -196,7 +197,9 @@ async function render(refreshId, startedMs) {
         DistributionId: DIST,
         InvalidationBatch: {
           CallerReference: String(Date.now()),
-          Paths: { Quantity: 3, Items: ["/", "/index.html", "/film/*"] },
+          // Every page is rewritten on each render, and the dated ones live
+          // at many paths; a wildcard counts as a single invalidation path.
+          Paths: { Quantity: 1, Items: ["/*"] },
         },
       }),
     );
