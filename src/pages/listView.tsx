@@ -46,7 +46,7 @@ export function NotOutYet({ title }: { title: string }) {
 }
 
 export function StaleNotice({ data, now }: { data: PageBase; now: Date }) {
-  if (!isStale({ generated_at: data.generatedAt, stale: data.stale }, now)) return null;
+  if (!isStale(data.generatedAt, now)) return null;
   return (
     <p class="notice">
       Listings last updated {formatDateLong(madridDateKey(new Date(data.generatedAt)))}. Times may have changed, so check

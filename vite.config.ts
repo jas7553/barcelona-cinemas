@@ -12,7 +12,6 @@ const DATA_FILE = path.resolve(__dirname, "static/data/listings.json");
 
 function readListings(): {
   generated_at: string;
-  stale: boolean;
   theaters: unknown[];
   movies: { id: string }[];
 } {
@@ -20,7 +19,7 @@ function readListings(): {
     return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
   } catch {
     // Run `npm run export-data` to render real listings in dev.
-    return { generated_at: new Date().toISOString(), stale: false, theaters: [], movies: [] };
+    return { generated_at: new Date().toISOString(), theaters: [], movies: [] };
   }
 }
 

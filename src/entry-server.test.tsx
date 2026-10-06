@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { listData, renderPage, sitePages } from "./entry-server";
 import type { Listings } from "./types";
 
-const listings: Listings = { generated_at: "2026-10-04T08:19:00Z", stale: false, theaters: [], movies: [] };
+const listings: Listings = { generated_at: "2026-10-04T08:19:00Z", theaters: [], movies: [] };
 const renderedAt = "2026-10-04T10:19:00Z";
 
 function page(name: string) {
@@ -14,7 +14,8 @@ function page(name: string) {
 describe("sitePages", () => {
   it("carries the listings' age into every payload", () => {
     for (const { data } of sitePages(listings, renderedAt)) {
-      expect(data).toMatchObject({ renderedAt, generatedAt: listings.generated_at, stale: false });
+      expect(data).toMatchObject({ renderedAt, generatedAt: listings.generated_at });
+      expect(data).not.toHaveProperty("stale");
     }
   });
 

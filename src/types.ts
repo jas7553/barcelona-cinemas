@@ -63,7 +63,6 @@ export interface EndedMovie extends Movie {
 
 export interface Listings {
   generated_at: string;   // ISO 8601
-  stale: boolean;
   theaters: Theater[];
   movies: Movie[];
   ended_movies?: EndedMovie[];

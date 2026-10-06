@@ -139,7 +139,6 @@ def build_listings(
 
     listings: Listings = {
         "fetched_at": now.isoformat(),
-        "stale": False,
         "movies": published,
         "ended": ended,
     }

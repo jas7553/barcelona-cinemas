@@ -33,10 +33,9 @@ def _today_iso() -> str:
     return datetime.now(UTC).date().isoformat()
 
 
-def _listings(movies: list[Movie] | None = None, stale: bool = False) -> Listings:
+def _listings(movies: list[Movie] | None = None) -> Listings:
     return Listings(
         fetched_at=datetime.now(UTC).isoformat(),
-        stale=stale,
         movies=movies or [],
     )
 
@@ -230,9 +229,9 @@ def test_renames_fetched_at_to_generated_at():
     assert "fetched_at" not in result
 
 
-def test_preserves_stale_flag():
-    result = to_api_response(_listings(stale=True), CINEMAS)
-    assert result["stale"] is True
+def test_publishes_no_stale_flag():
+    legacy = {**_listings(), "stale": True}
+    assert "stale" not in to_api_response(legacy, CINEMAS)
 
 
 def test_returns_theaters_and_movies_keys():
@@ -447,7 +446,7 @@ def test_horizon_last_madrid_day_kept_regardless_of_fetch_time_of_day():
     last_day = "2026-07-21"  # Madrid today (07-15) + 6 days
     movie = _movie(title="On The Edge", showtimes=[_showtime(date=last_day)])
 
-    result = to_api_response(Listings(fetched_at=fetched_at, stale=False, movies=[movie]), CINEMAS)
+    result = to_api_response(Listings(fetched_at=fetched_at, movies=[movie]), CINEMAS)
 
     assert [m["title"] for m in result["movies"]] == ["On The Edge"]
 
@@ -457,7 +456,7 @@ def test_horizon_day_beyond_last_madrid_day_dropped(find_event):
     beyond = "2026-07-22"  # one day past the Madrid horizon
     movie = _movie(title="Too Late", showtimes=[_showtime(date=beyond)])
 
-    result = to_api_response(Listings(fetched_at=fetched_at, stale=False, movies=[movie]), CINEMAS)
+    result = to_api_response(Listings(fetched_at=fetched_at, movies=[movie]), CINEMAS)
 
     assert result["movies"] == []
     summary = find_event("transform_summary")

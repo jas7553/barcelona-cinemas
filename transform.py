@@ -1,8 +1,8 @@
 """
-Transform internal Listings data to the public API shape defined in HANDOFF.md §3.
+Transform internal Listings data to the public listings shape (src/types.ts).
 
-Called at the HTTP boundary (app.py) so internal models stay decoupled from the
-API contract.  Also handles the stale-cache fallback path.
+Called when the refresh publishes data/listings.json, so internal models stay
+decoupled from what the static-site renderer reads.
 """
 
 from __future__ import annotations
@@ -81,13 +81,12 @@ class _TransformStats:
 def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegistry) -> dict[str, Any]:
     """
     Convert an internal Listings dict to the spec-compliant API shape:
-      { generated_at, stale, theaters[], movies[], ended_movies[] }
+      { generated_at, theaters[], movies[], ended_movies[] }
 
     Safe to call with old cached data that predates the year/imdb_id fields —
     missing values are treated as None.
     """
     generated_at: str = listings.get("fetched_at", "")
-    stale: bool = bool(listings.get("stale", False))
     raw_movies = listings.get("movies", [])
 
     cutoff = _parse_cutoff(generated_at)
@@ -118,7 +117,6 @@ def to_api_response(listings: Listings | Mapping[str, Any], cinemas: CinemaRegis
 
     return {
         "generated_at": generated_at,
-        "stale": stale,
         "theaters": theaters_out,
         "movies": movies_out,
         "ended_movies": ended_out,

@@ -7,8 +7,6 @@ export interface PageBase {
   renderedAt: string;
   /** When the listings were fetched (public `generated_at`). */
   generatedAt: string;
-  /** The refresh fell back to cached listings. */
-  stale: boolean;
 }
 
 /** A showtime as list pages carry it; the week timetable drops what only the ticket needs. */

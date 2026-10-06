@@ -48,7 +48,6 @@ const data: FilmPageData = {
   page: "film",
   renderedAt: RENDERED_AT,
   generatedAt: "2026-10-04T13:30:00Z",
-  stale: false,
   film: FILM,
   theaters: THEATERS,
   calendar: [

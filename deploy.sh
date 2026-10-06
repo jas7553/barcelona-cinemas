@@ -68,8 +68,6 @@ while IFS= read -r -d '' token; do
   OVERRIDES+=("$token")
 done < <(python3 -c "
 import shlex, sys, tomllib
-# ApiOriginVerifyToken went with the public API; CacheTtlHours with the stale
-# flag's read path; ScheduleExpression when the schedule moved to Madrid time.
 RETIRED_PARAMETERS = {'ApiOriginVerifyToken', 'CacheTtlHours', 'ScheduleExpression'}
 s = tomllib.load(open('samconfig.toml','rb'))['default']['deploy']['parameters'].get('parameter_overrides','')
 # sam joins the argv tokens and re-splits on whitespace, so values containing

@@ -304,7 +304,6 @@ def test_fetch_deduplicates_same_time_slot_sala_lookup() -> None:
 def _listings_with(showtimes: list[dict[str, object]]) -> Listings:
     return {
         "fetched_at": "2026-07-28T20:00:00+00:00",
-        "stale": False,
         "movies": [{"title": "Obsession", "showtimes": showtimes}],  # type: ignore[typeddict-item]
     }
 

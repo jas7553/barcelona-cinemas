@@ -34,7 +34,6 @@ describe("renderAll() sitemap", () => {
   function listings() {
     return {
       generated_at: "2026-06-27T20:39:37+00:00",
-      stale: false,
       theaters: [],
       movies: [
         { id: "1", title: "Showing", showtimes: [{ theater_id: "x", date: "2026-06-28", time: "20:00", language: "vo" }] },
@@ -109,7 +108,6 @@ describe("renderAll() prune", () => {
   function listings() {
     return {
       generated_at: "2026-06-27T20:39:37+00:00",
-      stale: false,
       theaters: [],
       movies: [
         { id: "1", title: "Showing", showtimes: [{ theater_id: "x", date: "2026-06-28", time: "20:00", language: "vo" }] },

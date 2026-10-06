@@ -28,7 +28,7 @@ export function assets(manifest, entryKey) {
  * Render the whole site from public listings.
  *
  * @param {object} o
- * @param {object} o.listings   Public listings payload ({generated_at, stale, theaters, movies}).
+ * @param {object} o.listings   Public listings payload ({generated_at, theaters, movies}).
  * @param {object} o.manifest   Vite client build manifest.
  * @param {object} o.server     The entry-server module (sitePages/renderPage).
  * @param {string} [o.siteUrl]  Absolute origin for OpenGraph og:url.

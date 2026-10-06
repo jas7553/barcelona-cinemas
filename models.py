@@ -50,7 +50,6 @@ class EndedMovie(Movie):
 
 class Listings(TypedDict):
     fetched_at: str  # ISO 8601 datetime
-    stale: bool
     movies: list[Movie]
     ended: NotRequired[list[EndedMovie]]  # absent in caches predating film retention
 
