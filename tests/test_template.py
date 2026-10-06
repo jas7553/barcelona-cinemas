@@ -139,8 +139,6 @@ def test_template_includes_listings_feed_runtime_configuration() -> None:
 
 def _refresh_schedule(template: dict[str, Any]) -> dict[str, Any]:
     events = template["Resources"]["ApiFunction"]["Properties"]["Events"]
-    # The refresh is the only thing that should invoke the function on a timer:
-    # with no HTTP surface there is nothing for a warmup ping to keep warm.
     assert list(events) == ["ScheduledRefresh"]
     return events["ScheduledRefresh"]  # type: ignore[no-any-return]
 
@@ -159,18 +157,13 @@ def test_refresh_schedule_fits_the_horizon_and_heartbeat(template: dict[str, Any
     assert match, f"expected a daily cron at fixed Madrid hours, got {expression!r}"
     hours = [int(h) for h in match.group(1).split(",")]
 
-    # Early enough that the day rolling into the 7-day horizon at midnight is
-    # scraped and rendered before anyone plans the morning.
     assert min(hours) <= 7
-    # More than one run a day, so a single failed run doesn't trip the 24h
-    # RefreshHeartbeatAlarm.
+    # One failed run mustn't trip the 24h heartbeat.
     assert len(hours) >= 2
     assert template["Resources"]["RefreshHeartbeatAlarm"]["Properties"]["Period"] == 86400
 
 
 def test_refresh_schedule_input_routes_to_a_refresh(template: dict[str, Any], monkeypatch: pytest.MonkeyPatch) -> None:
-    # EventBridge Scheduler delivers only Input (no `source` of its own), so the
-    # payload must be exactly what app.handler routes to force_refresh.
     called: list[str] = []
     monkeypatch.setattr(pipeline, "force_refresh", lambda: called.append("refresh"))
 
@@ -189,8 +182,6 @@ def _deploy_override_parser() -> str:
 
 
 def test_deploy_drops_retired_parameters_and_keeps_live_ones(template: dict[str, Any], tmp_path: Path) -> None:
-    # A samconfig.toml override for a parameter the template no longer declares
-    # fails the whole deploy, so deploy.sh must drop those and pass the rest.
     (tmp_path / "samconfig.toml").write_text(
         "[default.deploy.parameters]\n"
         'parameter_overrides = "CacheTtlHours=\\"12\\" ScheduleExpression=\\"rate(12 hours)\\" '

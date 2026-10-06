@@ -34,7 +34,6 @@ def test_scheduled_refresh_failure_returns_200_without_error_details(
     assert '"event": "refresh_started"' in caplog.text
 
 
-# "warmup" was a 5-minute keep-warm ping; a stray one must not start a refresh.
 @pytest.mark.parametrize("source", ["something-else", "warmup", None])
 def test_unrecognized_event_source_returns_200_without_refresh(
     monkeypatch: pytest.MonkeyPatch, source: str | None

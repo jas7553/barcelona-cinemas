@@ -175,11 +175,9 @@ Resources:
                 - kms:Decrypt
               Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm"
       Events:
-        # On Madrid's clock (EventBridge Scheduler, so DST is handled): early
-        # morning picks up the day that just rolled into the 7-day horizon, the
-        # evening run any same-day changes. Two runs a day keep one failure
-        # inside RefreshHeartbeatAlarm's 24h window. Scheduler sends only
-        # Input, so it must carry the source app.handler routes on.
+        # Madrid time, so the early run picks up the day that just rolled into
+        # the 7-day horizon. Scheduler sends only Input, so it carries the
+        # source app.handler routes on.
         ScheduledRefresh:
           Type: ScheduleV2
           Properties:

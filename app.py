@@ -3,9 +3,9 @@ Lambda entry point — headless scheduled generator. No public HTTP surface.
 
 The frontend is a static SSG site served by CloudFront from S3; there is no
 runtime read API. This Lambda only runs the scheduled refresh
-({"source": "aws.events"}, twice a day on Madrid's clock, and once from
-deploy.sh), which scrapes + enriches, writes the cache, publishes the public
-listings JSON, and triggers the Node SSG renderer to regenerate the static pages.
+({"source": "aws.events"}), which scrapes + enriches, writes the cache, publishes
+the public listings JSON, and triggers the Node SSG renderer to regenerate the
+static pages.
 
 All orchestration is delegated to pipeline.py.
 """

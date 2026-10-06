@@ -23,7 +23,7 @@ Scheduler (2×/day) -> ApiFunction (app.py) -> pipeline.py -> cache + data/listi
 
 Refresh flow (no runtime read API — pages are pre-rendered):
 
-- An EventBridge Scheduler schedule (05:00 and 17:00 Europe/Madrid) invokes the headless `ApiFunction`, which runs `pipeline.force_refresh()`.
+- An EventBridge Scheduler schedule (twice a day, Madrid time) invokes the headless `ApiFunction`, which runs `pipeline.force_refresh()`.
 - The refresh writes the cache, publishes the public `data/listings.json` to the frontend bucket, and invokes `SsgFunction` to re-render every page and invalidate CloudFront.
 - Each page embeds its own data as inert JSON, so normal page loads never fetch — first paint shows real content.
 - A failed refresh leaves the previously rendered pages serving (stale-while-revalidate); pages more than a day old show an age banner, computed client-side from `generated_at`.
