@@ -9,9 +9,7 @@ No other files need to change when switching backends.
 """
 
 import json
-import math
 import os
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -119,25 +117,3 @@ def read() -> Listings | None:
 def write(listings: Listings) -> None:
     """Write listings to the cache."""
     _backend.write(listings)
-
-
-def age_hours(cached: Listings | None = None) -> float:
-    """
-    Return the age of the cache in hours.
-    Returns math.inf if the cache does not exist or has no fetched_at field.
-    """
-    if cached is None:
-        cached = read()
-    if cached is None:
-        return math.inf
-    fetched_at_str = cached.get("fetched_at")
-    if not fetched_at_str:
-        return math.inf
-    try:
-        fetched_at = datetime.fromisoformat(fetched_at_str)
-        now = datetime.now(UTC)
-        if fetched_at.tzinfo is None:
-            fetched_at = fetched_at.replace(tzinfo=UTC)
-        return (now - fetched_at).total_seconds() / 3600
-    except ValueError:
-        return math.inf

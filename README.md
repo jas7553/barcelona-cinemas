@@ -9,12 +9,12 @@ It aggregates local showtimes from tracked listings providers, enriches them wit
 - Aggregates showtimes for tracked cinemas.
 - Enriches movies with TMDb metadata such as runtime, genres, rating, and synopsis.
 - Serves cached data so normal page loads do not trigger live data fetching.
-- Marks cached data as stale instead of refreshing in-band on user requests.
+- Shows an age banner when the pages are more than a day old, instead of refreshing in-band.
 
 ## Architecture
 
 ```text
-EventBridge (12h) -> ApiFunction (app.py) -> pipeline.py -> cache + data/listings.json (S3)
+Scheduler (2×/day) -> ApiFunction (app.py) -> pipeline.py -> cache + data/listings.json (S3)
                                              |- providers/listings_provider.py    |
                                              |- enricher.py                       v
                                              |- validation.py            SsgFunction (Node) re-renders
@@ -23,10 +23,10 @@ EventBridge (12h) -> ApiFunction (app.py) -> pipeline.py -> cache + data/listing
 
 Refresh flow (no runtime read API — pages are pre-rendered):
 
-- A scheduled EventBridge rule (every 12h) invokes the headless `ApiFunction`, which runs `pipeline.force_refresh()`.
+- An EventBridge Scheduler schedule (05:00 and 17:00 Europe/Madrid) invokes the headless `ApiFunction`, which runs `pipeline.force_refresh()`.
 - The refresh writes the cache, publishes the public `data/listings.json` to the frontend bucket, and invokes `SsgFunction` to re-render every page and invalidate CloudFront.
 - Each page embeds its own data as inert JSON, so normal page loads never fetch — first paint shows real content.
-- A failed refresh leaves the previously rendered pages serving (stale-while-revalidate); listings carry `"stale": true` past the TTL, surfaced as an age banner.
+- A failed refresh leaves the previously rendered pages serving (stale-while-revalidate); pages more than a day old show an age banner, computed client-side from `generated_at`.
 
 Production hardening:
 
@@ -83,7 +83,6 @@ Local development works without TMDb credentials, but enrichment is skipped and 
 | --- | --- | --- |
 | `TMDB_API_KEY` | none | Optional locally; enables TMDb enrichment in development. |
 | `CACHE_BACKEND` | `file` | Use `file` locally and `s3` in AWS. |
-| `CACHE_TTL_HOURS` | `12` | Age after which cached data is marked stale. |
 | `CACHE_DIR` | `./cache` | File cache directory for local use. |
 | `PORT` | `5000` | Flask development port. |
 | `S3_BUCKET` | none | Required only when `CACHE_BACKEND=s3`. |
@@ -100,7 +99,6 @@ Example local `.env`:
 
 ```bash
 CACHE_DIR=./cache
-CACHE_TTL_HOURS=12
 PORT=5000
 LISTINGS_FEED_URL=https://example.com/listings-feed
 TMDB_API_KEY=your_tmdb_key

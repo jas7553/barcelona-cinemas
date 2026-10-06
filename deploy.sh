@@ -68,6 +68,9 @@ while IFS= read -r -d '' token; do
   OVERRIDES+=("$token")
 done < <(python3 -c "
 import shlex, sys, tomllib
+# ApiOriginVerifyToken went with the public API; CacheTtlHours with the stale
+# flag's read path; ScheduleExpression when the schedule moved to Madrid time.
+RETIRED_PARAMETERS = {'ApiOriginVerifyToken', 'CacheTtlHours', 'ScheduleExpression'}
 s = tomllib.load(open('samconfig.toml','rb'))['default']['deploy']['parameters'].get('parameter_overrides','')
 # sam joins the argv tokens and re-splits on whitespace, so values containing
 # spaces (e.g. 'rate(12 hours)') must carry their own quotes.
@@ -75,9 +78,9 @@ s = tomllib.load(open('samconfig.toml','rb'))['default']['deploy']['parameters']
 # nonzero at EOF, so a final token without a trailing NUL would be dropped.
 for tok in shlex.split(s):
     key, _, value = tok.partition('=')
-    # ApiOriginVerifyToken was retired with the public API — skip it so a stale
+    # Parameters the template no longer declares: skip them so a stale
     # samconfig.toml entry doesn't fail the deploy with an unknown parameter.
-    if key == 'ApiOriginVerifyToken':
+    if key in RETIRED_PARAMETERS:
         continue
     sys.stdout.write(f'{key}=\"{value}\"\0')
 ")

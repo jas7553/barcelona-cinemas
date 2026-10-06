@@ -8,16 +8,6 @@ import app
 import pipeline
 
 
-def test_warmup_ping_returns_200_without_calling_pipeline(monkeypatch: pytest.MonkeyPatch) -> None:
-    called: list[str] = []
-    monkeypatch.setattr(pipeline, "force_refresh", lambda: called.append("refresh"))
-
-    response = app.handler({"source": "warmup"}, context=None)
-
-    assert response == {"statusCode": 200}
-    assert called == []
-
-
 def test_scheduled_event_triggers_force_refresh(monkeypatch: pytest.MonkeyPatch) -> None:
     called: list[str] = []
     monkeypatch.setattr(pipeline, "force_refresh", lambda: called.append("refresh"))
@@ -44,11 +34,15 @@ def test_scheduled_refresh_failure_returns_200_without_error_details(
     assert '"event": "refresh_started"' in caplog.text
 
 
-def test_unrecognized_event_source_returns_200_without_refresh(monkeypatch: pytest.MonkeyPatch) -> None:
+# "warmup" was a 5-minute keep-warm ping; a stray one must not start a refresh.
+@pytest.mark.parametrize("source", ["something-else", "warmup", None])
+def test_unrecognized_event_source_returns_200_without_refresh(
+    monkeypatch: pytest.MonkeyPatch, source: str | None
+) -> None:
     called: list[str] = []
     monkeypatch.setattr(pipeline, "force_refresh", lambda: called.append("refresh"))
 
-    response = app.handler({"source": "something-else"}, context=None)
+    response = app.handler({"source": source}, context=None)
 
     assert response == {"statusCode": 200}
     assert called == []
