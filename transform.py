@@ -7,7 +7,6 @@ decoupled from what the static-site renderer reads.
 
 from __future__ import annotations
 
-import logging
 import re
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
@@ -18,8 +17,6 @@ from models import PREMIUM_FORMATS, CinemaInfo, CinemaRegistry, Listings, Movie,
 from observability import log_event
 from providers.common import madrid_today
 from reconcile import dedup_showtimes
-
-logger = logging.getLogger(__name__)
 
 # Cap the excluded-title list so one bad refresh cannot balloon a log line.
 _MAX_LOGGED_TITLES = 25
@@ -192,37 +189,31 @@ def _movie_fields(movie: Movie | Mapping[str, Any], title: str) -> dict[str, Any
         "trailer_url": movie.get("trailer_url"),
         "genres": movie.get("genres") or [],
         "rating": rating,
-        "vote_count": vote_count,
-        "original_lang": movie.get("original_lang"),
         "director": movie.get("director"),
         "cast": movie.get("cast") or [],
         "synopsis": movie.get("synopsis") or "",
         "tagline": movie.get("tagline"),
-        "links": {
-            "imdb": f"https://www.imdb.com/title/{imdb_id}" if imdb_id else None,
-            "imdb_id": imdb_id,
-        },
+        "imdb_id": imdb_id,
     }
 
 
 def _transform_ended(ended: list[Any], listed_ids: set[str]) -> list[dict[str, Any]]:
     """
-    Public shape for ended films: a Movie with no showtimes plus `last_showing`.
-    An id that is listed again wins over its ended copy.
+    Public shape for ended films: a Movie with no showtimes. An id that is
+    listed again wins over its ended copy.
     """
     out: list[dict[str, Any]] = []
     for movie in ended:
         if not isinstance(movie, Mapping):
             continue
         title: str = movie.get("english_title") or movie.get("title", "")
-        last_showing = movie.get("last_showing")
-        if not title or not isinstance(last_showing, str):
+        if not title:
             continue
         fields = _movie_fields(movie, title)
         if fields["id"] in listed_ids:
             continue
         listed_ids.add(fields["id"])
-        out.append({**fields, "showtimes": [], "last_showing": last_showing})
+        out.append({**fields, "showtimes": []})
     return out
 
 
@@ -259,12 +250,6 @@ def _transform_showtimes(
             except ValueError:
                 pass
 
-        lang_raw = st.get("language", "vo")
-        language = lang_raw if isinstance(lang_raw, str) else "vo"
-
-        if language not in ("vo", "dub"):
-            logger.warning("Unknown language value %r for showtime at %s %s", language, cinema_name, show_date)
-
         booking_url = v if isinstance(v := st.get("booking_url"), str) else None
         audio_lang = v if (v := st.get("audio_lang")) in ("en", "other") else None
         subtitle_lang = v if (v := st.get("subtitle_lang")) in ("en", "es", "ca") else None
@@ -275,7 +260,6 @@ def _transform_showtimes(
                 "theater_id": info["id"],
                 "date": show_date,
                 "time": show_time,
-                "language": language,
                 "audio_lang": audio_lang,
                 "subtitle_lang": subtitle_lang,
                 "booking_url": booking_url,
@@ -285,7 +269,7 @@ def _transform_showtimes(
 
     out = dedup_showtimes(
         candidates,
-        key=lambda s: (s["theater_id"], s["date"], s["time"], s["language"]),
+        key=lambda s: (s["theater_id"], s["date"], s["time"]),
     )
     stats.showtimes_deduped += len(candidates) - len(out)
     stats.showtimes_out += len(out)

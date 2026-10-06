@@ -137,18 +137,6 @@ def test_premium_format_survives_dedup_against_a_richer_duplicate():
         assert out["subtitle_lang"] == "es"
 
 
-def test_passes_through_original_lang():
-    movie = _movie(showtimes=[_showtime()])
-    movie["original_lang"] = "fr"
-    result = to_api_response(_listings(movies=[movie]), CINEMAS)
-    assert result["movies"][0]["original_lang"] == "fr"
-
-
-def test_original_lang_defaults_to_none_when_absent():
-    result = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
-    assert result["movies"][0]["original_lang"] is None
-
-
 def test_passes_through_director_and_cast():
     movie = _movie(showtimes=[_showtime()])
     movie["director"] = "Denis Villeneuve"
@@ -166,18 +154,6 @@ def test_director_and_cast_default_when_absent():
     assert out["cast"] == []
 
 
-def test_passes_through_vote_count():
-    movie = _movie(showtimes=[_showtime()])
-    movie["vote_count"] = 12345
-    result = to_api_response(_listings(movies=[movie]), CINEMAS)
-    assert result["movies"][0]["vote_count"] == 12345
-
-
-def test_vote_count_defaults_to_none_when_absent():
-    result = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
-    assert result["movies"][0]["vote_count"] is None
-
-
 def test_suppresses_rating_when_vote_count_is_zero():
     """TMDb's 0.0/0 for unreleased films means "no votes yet", not "rated zero" —
     don't let the frontend render a misleading 0.0 badge."""
@@ -186,7 +162,6 @@ def test_suppresses_rating_when_vote_count_is_zero():
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     out = result["movies"][0]
     assert out["rating"] is None
-    assert out["vote_count"] == 0
 
 
 def test_keeps_rating_when_vote_count_is_positive():
@@ -195,7 +170,6 @@ def test_keeps_rating_when_vote_count_is_positive():
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     out = result["movies"][0]
     assert out["rating"] == 8.1
-    assert out["vote_count"] == 42
 
 
 def test_suppresses_rating_when_vote_count_below_threshold():
@@ -206,7 +180,6 @@ def test_suppresses_rating_when_vote_count_below_threshold():
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     out = result["movies"][0]
     assert out["rating"] is None
-    assert out["vote_count"] == 4
 
 
 def test_keeps_rating_when_vote_count_meets_threshold():
@@ -215,7 +188,6 @@ def test_keeps_rating_when_vote_count_meets_threshold():
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     out = result["movies"][0]
     assert out["rating"] == 7.5
-    assert out["vote_count"] == 5
 
 
 # ── Top-level shape ───────────────────────────────────────────────────────────
@@ -276,20 +248,6 @@ def test_showtime_uses_theater_id_slug():
     st = result["movies"][0]["showtimes"][0]
     assert st["theater_id"] == "verdi"
     assert "cinema" not in st
-
-
-def test_showtime_injects_language_vo():
-    movie = _movie(showtimes=[_showtime(cinema="Verdi")])
-    result = to_api_response(_listings(movies=[movie]), CINEMAS)
-    st = result["movies"][0]["showtimes"][0]
-    assert st["language"] == "vo"
-
-
-def test_showtime_preserves_explicit_language():
-    st_data: Showtime = {**_showtime(cinema="Verdi"), "language": "dub"}
-    movie = _movie(showtimes=[st_data])
-    result = to_api_response(_listings(movies=[movie]), CINEMAS)
-    assert result["movies"][0]["showtimes"][0]["language"] == "dub"
 
 
 def test_deduplicates_showtimes():
@@ -371,28 +329,59 @@ def test_movie_fields_mapped_correctly():
     assert m["synopsis"] == "Paul Atreides unites..."
 
 
-def test_imdb_link_constructed_from_imdb_id():
+def test_publishes_imdb_id():
     movie = _movie(imdb_id="tt15239678", showtimes=[_showtime()])
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
-    assert result["movies"][0]["links"]["imdb"] == "https://www.imdb.com/title/tt15239678"
+    assert result["movies"][0]["imdb_id"] == "tt15239678"
 
 
-def test_no_imdb_link_when_imdb_id_missing():
-    movie = _movie(imdb_id=None, showtimes=[_showtime()])
-    result = to_api_response(_listings(movies=[movie]), CINEMAS)
-    assert result["movies"][0]["links"]["imdb"] is None
+def test_imdb_id_is_none_when_missing():
+    result = to_api_response(_listings(movies=[_movie(imdb_id=None, showtimes=[_showtime()])]), CINEMAS)
+    assert result["movies"][0]["imdb_id"] is None
 
 
-def test_no_imdb_link_when_imdb_id_is_absent():
-    movie = _movie(imdb_id=None, showtimes=[_showtime()])
-    result = to_api_response(_listings(movies=[movie]), CINEMAS)
-    assert result["movies"][0]["links"]["imdb"] is None
+def test_publishes_exactly_the_fields_the_front_end_reads():
+    # Mirrors src/types.ts; a field added here without a reader is dead weight.
+    movie: Movie = {
+        **_movie(showtimes=[_showtime()]),
+        "vote_count": 100,
+        "original_lang": "fr",
+        "director": "X",
+        "cast": ["Y"],
+        "tagline": "Z",
+    }
+    listings = _with_ended([movie], [_ended("Aftersun", tmdb_id=965150)])
+    result = to_api_response(listings, CINEMAS)
+    film_fields = {
+        "id",
+        "title",
+        "year",
+        "runtime_minutes",
+        "poster_url",
+        "backdrop_url",
+        "trailer_url",
+        "genres",
+        "rating",
+        "director",
+        "cast",
+        "synopsis",
+        "tagline",
+        "imdb_id",
+        "showtimes",
+    }
 
-
-def test_links_contains_only_imdb():
-    result = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
-    links = result["movies"][0]["links"]
-    assert set(links.keys()) == {"imdb", "imdb_id"}
+    assert set(result) == {"generated_at", "theaters", "movies", "ended_movies"}
+    assert set(result["movies"][0]) == film_fields
+    assert set(result["ended_movies"][0]) == film_fields
+    assert set(result["movies"][0]["showtimes"][0]) == {
+        "theater_id",
+        "date",
+        "time",
+        "audio_lang",
+        "subtitle_lang",
+        "booking_url",
+        "premium_format",
+    }
 
 
 def test_empty_movies_returned_when_no_movies():
@@ -567,7 +556,6 @@ def test_ended_films_are_published_without_showtimes() -> None:
     assert result["movies"] == []
     [ended] = result["ended_movies"]
     assert ended["id"] == "965150"
-    assert ended["last_showing"] == "2026-03-20"
     assert ended["showtimes"] == []
     assert ended["synopsis"] == "Calum and Sophie."
 

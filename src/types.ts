@@ -13,16 +13,10 @@ export interface Theater {
   lng: number | null;
 }
 
-export interface MovieLinks {
-  imdb: string | null;
-  imdb_id: string | null;
-}
-
 export interface Showtime {
   theater_id: string;
   date: string;       // YYYY-MM-DD
   time: string;       // HH:MM
-  language: "vo" | "dub";
   /** Original audio language; null when unknown. */
   audio_lang?: "en" | "other" | null;
   /** Subtitle language; null when unknown. */
@@ -42,28 +36,20 @@ export interface Movie {
   trailer_url: string | null;
   genres: string[];
   rating: number | null;
-  /** TMDb vote count. */
-  vote_count?: number | null;
-  /** ISO 639-1, e.g. "fr". */
-  original_lang?: string | null;
   /** Joined for multi-director films. */
   director?: string | null;
   /** Top-billed first. */
   cast?: string[];
   tagline?: string | null;
   synopsis: string;
-  links: MovieLinks;
+  imdb_id: string | null;
   showtimes: Showtime[];
-}
-
-/** A film no longer in the listings, kept for 30 days so its page outlives the run. */
-export interface EndedMovie extends Movie {
-  last_showing: string; // YYYY-MM-DD
 }
 
 export interface Listings {
   generated_at: string;   // ISO 8601
   theaters: Theater[];
   movies: Movie[];
-  ended_movies?: EndedMovie[];
+  /** Films no longer in the listings, kept for 30 days so their pages outlive the run. No showtimes. */
+  ended_movies?: Movie[];
 }

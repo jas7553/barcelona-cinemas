@@ -38,7 +38,7 @@ if (process.argv[2] === "--data") {
   }
   // 13: a film whose run is over, kept as an ended film. 16: the same film with no art.
   const masters = data.movies.find((m) => m.id === "454639");
-  data.ended_movies = [{ ...masters, id: "454639-over", showtimes: [], last_showing: "2026-10-03" }];
+  data.ended_movies = [{ ...masters, id: "454639-over", showtimes: [] }];
   Object.assign(masters, { poster_url: null, backdrop_url: null, runtime_minutes: null });
   fs.writeFileSync(DATA_OUT, JSON.stringify(data));
   console.log(`[shots] wrote ${DATA_OUT}`);
