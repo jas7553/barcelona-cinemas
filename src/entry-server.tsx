@@ -198,9 +198,9 @@ function filmDetail(m: Movie, days: DateKey[]): FilmDetail {
     synopsis: m.synopsis,
     director: m.director ?? null,
     cast: (m.cast ?? []).slice(0, CAST_SHOWN),
-    imdb: m.links.imdb,
-    letterboxd: m.links.imdb_id
-      ? `https://letterboxd.com/imdb/${m.links.imdb_id}/`
+    imdb: m.imdb_id ? `https://www.imdb.com/title/${m.imdb_id}` : null,
+    letterboxd: m.imdb_id
+      ? `https://letterboxd.com/imdb/${m.imdb_id}/`
       : `https://letterboxd.com/search/${encodeURIComponent(title)}/`,
     showtimes: m.showtimes.filter((s) => inRange.has(s.date)).map((s) => showing(s, true)),
   };

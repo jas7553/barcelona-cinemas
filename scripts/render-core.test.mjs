@@ -36,7 +36,7 @@ describe("renderAll() sitemap", () => {
       generated_at: "2026-06-27T20:39:37+00:00",
       theaters: [],
       movies: [
-        { id: "1", title: "Showing", showtimes: [{ theater_id: "x", date: "2026-06-28", time: "20:00", language: "vo" }] },
+        { id: "1", title: "Showing", showtimes: [{ theater_id: "x", date: "2026-06-28", time: "20:00" }] },
         { id: "2", title: "Ended run", showtimes: [] },
       ],
     };
@@ -77,7 +77,7 @@ describe("renderAll() sitemap", () => {
 
   it("republishes the listings whole, ended films included", async () => {
     const writes = new Map();
-    const withEnded = { ...listings(), ended_movies: [{ id: "9", title: "Over", showtimes: [], last_showing: "2026-06-01" }] };
+    const withEnded = { ...listings(), ended_movies: [{ id: "9", title: "Over", showtimes: [] }] };
     await renderAll({ listings: withEnded, manifest, server, siteUrl: "", write: (p, c) => writes.set(p, c) });
     expect(JSON.parse(writes.get("data/listings.json")).ended_movies).toHaveLength(1);
   });
@@ -110,7 +110,7 @@ describe("renderAll() prune", () => {
       generated_at: "2026-06-27T20:39:37+00:00",
       theaters: [],
       movies: [
-        { id: "1", title: "Showing", showtimes: [{ theater_id: "x", date: "2026-06-28", time: "20:00", language: "vo" }] },
+        { id: "1", title: "Showing", showtimes: [{ theater_id: "x", date: "2026-06-28", time: "20:00" }] },
         { id: "2", title: "Ended run", showtimes: [] },
       ],
     };

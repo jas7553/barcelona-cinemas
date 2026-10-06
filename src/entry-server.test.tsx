@@ -75,10 +75,10 @@ const full: Listings = {
         genres: ["Drama"],
         rating: 7.7,
         synopsis: "Not in any list payload.",
-        links: { imdb: null, imdb_id: null },
+        imdb_id: null,
         showtimes: [
-          { theater_id: "verdi", date: "2026-10-04", time: "21:30", language: "vo", booking_url: "https://b/1", audio_lang: "en", subtitle_lang: null, premium_format: null },
-          { theater_id: "verdi", date: "2026-10-20", time: "21:30", language: "vo" },
+          { theater_id: "verdi", date: "2026-10-04", time: "21:30", booking_url: "https://b/1", audio_lang: "en", subtitle_lang: null, premium_format: null },
+          { theater_id: "verdi", date: "2026-10-20", time: "21:30" },
         ],
       },
     ],
@@ -147,9 +147,9 @@ describe("film pages", () => {
       ...m,
       synopsis: "A spoiler-laden synopsis.",
       cast: ["A", "B", "C", "D", "E"],
-      links: { imdb: "https://imdb/x", imdb_id: "tt1" },
+      imdb_id: "tt1",
     })),
-    ended_movies: [{ ...full.movies[0], id: "9", title: "Over", showtimes: [], last_showing: "2026-10-01" }],
+    ended_movies: [{ ...full.movies[0], id: "9", title: "Over", showtimes: [] }],
   };
   const pages = sitePages(withEnded, renderedAt);
 
@@ -168,8 +168,16 @@ describe("film pages", () => {
       { theater_id: "verdi", date: "2026-10-04", time: "21:30", booking_url: "https://b/1", audio_lang: "en" },
     ]);
     expect(data.film.cast).toEqual(["A", "B", "C", "D"]);
+    expect(data.film.imdb).toBe("https://www.imdb.com/title/tt1");
     expect(data.film.letterboxd).toBe("https://letterboxd.com/imdb/tt1/");
     expect(data.theaters.map((t) => t.id)).toEqual(["verdi"]);
+  });
+
+  it("falls back to a Letterboxd search and no IMDb link without an IMDb id", () => {
+    const data = pages.find((p) => p.path === "film/9.html")!.data;
+    if (data.page !== "film") throw new Error("not a film page");
+    expect(data.film.imdb).toBeNull();
+    expect(data.film.letterboxd).toBe("https://letterboxd.com/search/Over%202022/");
   });
 
   it("keeps the synopsis out of share previews and points dated pages at the undated one", () => {
