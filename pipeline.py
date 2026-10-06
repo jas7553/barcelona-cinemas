@@ -20,7 +20,6 @@ from refresh import build_listings
 logger = logging.getLogger(__name__)
 
 _CINEMAS_FILE = "cinemas.json"
-_CACHE_TTL_HOURS = int(os.environ.get("CACHE_TTL_HOURS", 12))
 
 
 def _s3() -> Any:
@@ -48,25 +47,8 @@ def load_cinemas() -> CinemaRegistry:
     return _cinemas_cache
 
 
-def get_listings() -> Listings:
-    """
-    Return cached listings for public requests.
-
-    User-facing requests never trigger a refresh. If the cache is older than the
-    configured TTL, the payload is marked stale so the frontend can surface that
-    state while the scheduled refresh path repopulates the cache.
-    """
-    cached = cache.read()
-    if cached is None:
-        raise RuntimeError("Listings cache unavailable")
-
-    if cache.age_hours(cached) >= _CACHE_TTL_HOURS:
-        return {**cached, "stale": True}
-    return cached
-
-
 def force_refresh() -> Listings:
-    """Ignore TTL and always fetch fresh listings."""
+    """Fetch fresh listings, write the cache, and republish the site."""
     started_ms = now_ms()
     try:
         result = _refresh()

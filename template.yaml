@@ -4,24 +4,6 @@ Description: Barcelona Movie Database — headless refresh Lambda + Node SSG ren
 
 Parameters:
 
-  CacheTtlHours:
-    Type: Number
-    Default: 12
-    MinValue: 1
-    MaxValue: 168
-    Description: >
-      Hours before cached listings are marked stale for user-facing requests.
-      Must be kept in sync with ScheduleExpression so scheduled refreshes happen
-      before public data stays stale for too long.
-
-  ScheduleExpression:
-    Type: String
-    Default: "rate(12 hours)"
-    Description: >
-      EventBridge schedule for proactive cache warming. Must be kept in sync
-      with CacheTtlHours. Examples: "rate(6 hours)", "cron(0 6 * * ? *)".
-      If you change CacheTtlHours, change this too.
-
   CloudFrontDistributionId:
     Type: String
     Default: ""
@@ -149,8 +131,6 @@ Resources:
           CACHE_BACKEND: s3
           S3_BUCKET: !Ref CacheBucket
           S3_KEY: listings.json    # Explicit: must match the /listings.json key in IAM policy
-          # Lambda env vars are strings, so stringify the numeric parameter explicitly.
-          CACHE_TTL_HOURS: !Sub "${CacheTtlHours}"
           # After a refresh, publish the public listings JSON here and invoke the
           # Node SSG renderer to regenerate the static site.
           FRONTEND_BUCKET: !Ref FrontendBucket
@@ -195,19 +175,19 @@ Resources:
                 - kms:Decrypt
               Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:alias/aws/ssm"
       Events:
+        # On Madrid's clock (EventBridge Scheduler, so DST is handled): early
+        # morning picks up the day that just rolled into the 7-day horizon, the
+        # evening run any same-day changes. Two runs a day keep one failure
+        # inside RefreshHeartbeatAlarm's 24h window. Scheduler sends only
+        # Input, so it must carry the source app.handler routes on.
         ScheduledRefresh:
-          Type: Schedule
+          Type: ScheduleV2
           Properties:
-            Schedule: !Ref ScheduleExpression
-            Description: "Proactive cache warming — keep in sync with CacheTtlHours"
-            Enabled: true
-        WarmupPing:
-          Type: Schedule
-          Properties:
-            Schedule: "rate(5 minutes)"
-            Description: "Keep Lambda container warm between scheduled refreshes"
-            Input: '{"source": "warmup"}'
-            Enabled: true
+            ScheduleExpression: "cron(0 5,17 * * ? *)"
+            ScheduleExpressionTimezone: Europe/Madrid
+            Description: "Refresh listings and regenerate the static site"
+            Input: '{"source": "aws.events"}'
+            State: ENABLED
 
   # ── Node SSG renderer Lambda ──────────────────────────────────────────────
 

@@ -2,11 +2,10 @@
 Lambda entry point — headless scheduled generator. No public HTTP surface.
 
 The frontend is a static SSG site served by CloudFront from S3; there is no
-runtime read API. This Lambda only:
-  * answers warmup pings ({"source": "warmup"}) to stay warm, and
-  * runs the 12h EventBridge refresh ({"source": "aws.events"}), which scrapes +
-    enriches, writes the cache, publishes the public listings JSON, and triggers
-    the Node SSG renderer to regenerate the static pages.
+runtime read API. This Lambda only runs the scheduled refresh
+({"source": "aws.events"}, twice a day on Madrid's clock, and once from
+deploy.sh), which scrapes + enriches, writes the cache, publishes the public
+listings JSON, and triggers the Node SSG renderer to regenerate the static pages.
 
 All orchestration is delegated to pipeline.py.
 """
@@ -33,18 +32,13 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, int]:
     """
     Lambda entry point.
 
-    Warmup ping events have {"source": "warmup"} and are returned immediately to
-    keep the container alive without triggering any business logic.
-
-    EventBridge scheduled events have {"source": "aws.events"} and are routed to
+    Scheduled events have {"source": "aws.events"} and are routed to
     pipeline.force_refresh(), which refreshes the cache and regenerates the site.
+    Anything else is logged and ignored.
     """
     source = event.get("source")
-    if source == "warmup":
-        logging.info("Warmup ping received")
-        return {"statusCode": 200}
     if source == "aws.events":
-        logging.info("EventBridge scheduled refresh triggered")
+        logging.info("Scheduled refresh triggered")
         refresh_id = observability.new_id("refresh")
         observability.set_context(refresh_id=refresh_id, trigger="schedule")
         observability.log_event("refresh_started")

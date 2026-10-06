@@ -3,7 +3,7 @@ Tests for pipeline.py — the refresh's I/O half.
 
 The ritual itself (collection, Reconciliation, Enrichment, the English filter)
 lives in refresh.py and is tested in tests/test_refresh.py. What is left here is
-cache TTL logic, the cache read/build/write ordering, and publication of the
+the cache read/build/write ordering, and publication of the
 static site.
 """
 
@@ -35,37 +35,9 @@ def tmp_cache(tmp_path, monkeypatch):
     monkeypatch.setattr(cache, "_backend", cache._FileBackend(tmp_path, tmp_path / "listings.json"))
 
 
-def test_get_listings_returns_cache_when_fresh(tmp_cache, monkeypatch):
-    """A fresh cache is served straight back."""
-    cached = _listings()
-    cache.write(cached)
-
-    monkeypatch.setattr(pipeline, "_CACHE_TTL_HOURS", 12)
-
-    assert pipeline.get_listings()["fetched_at"] == cached["fetched_at"]
-
-
-def test_get_listings_marks_cache_stale_when_ttl_is_exceeded(tmp_cache, monkeypatch):
-    """An expired cache is served back as stale; the read path never refreshes."""
+def test_force_refresh_refreshes_over_a_fresh_cache(tmp_cache):
+    """force_refresh always calls _refresh, however recent the cache is."""
     cache.write(_listings())
-    monkeypatch.setattr(pipeline, "_CACHE_TTL_HOURS", 0)  # always stale
-
-    assert pipeline.get_listings()["stale"] is True
-
-
-def test_get_listings_raises_when_no_cache(tmp_cache, monkeypatch):
-    """No cache file now returns an error to the request path."""
-    monkeypatch.setattr(pipeline, "_CACHE_TTL_HOURS", 12)
-
-    with pytest.raises(RuntimeError, match="Listings cache unavailable"):
-        pipeline.get_listings()
-
-
-def test_force_refresh_bypasses_ttl(tmp_cache, monkeypatch):
-    """force_refresh always calls _refresh regardless of cache state."""
-    cached = _listings()
-    cache.write(cached)
-    monkeypatch.setattr(pipeline, "_CACHE_TTL_HOURS", 999)
 
     fresh = _listings()
     with patch.object(pipeline, "_refresh", return_value=fresh) as mock_refresh:

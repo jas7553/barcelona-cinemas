@@ -1,9 +1,8 @@
-"""Tests for cache.py — read/write round-trip and age_hours()."""
+"""Tests for cache.py — read/write round-trip."""
 
 import json
 import logging
-import math
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -20,10 +19,9 @@ def tmp_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return cache_file
 
 
-def _make_listings(hours_ago: float = 0) -> Listings:
-    fetched_at = datetime.now(UTC) - timedelta(hours=hours_ago)
+def _make_listings() -> Listings:
     return Listings(
-        fetched_at=fetched_at.isoformat(),
+        fetched_at=datetime.now(UTC).isoformat(),
         stale=False,
         movies=[],
     )
@@ -55,21 +53,6 @@ def test_write_creates_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr(cache, "_backend", cache._FileBackend(nested, nested / "listings.json"))
     cache.write(_make_listings())
     assert (nested / "listings.json").exists()
-
-
-def test_age_hours_returns_inf_when_no_file(tmp_cache: Path) -> None:
-    assert cache.age_hours() == math.inf
-
-
-def test_age_hours_returns_correct_value(tmp_cache: Path) -> None:
-    cache.write(_make_listings(hours_ago=3))
-    age = cache.age_hours()
-    assert 2.9 < age < 3.1
-
-
-def test_age_hours_returns_inf_for_missing_fetched_at(tmp_cache: Path) -> None:
-    tmp_cache.write_text(json.dumps({"stale": False, "movies": []}))
-    assert cache.age_hours() == math.inf
 
 
 def test_read_returns_none_for_invalid_cache_payload(tmp_cache: Path) -> None:
