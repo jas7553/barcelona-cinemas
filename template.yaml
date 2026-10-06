@@ -178,7 +178,7 @@ Resources:
         # Madrid time, so the early run picks up the day that just rolled into
         # the 7-day horizon. Scheduler sends only Input, so it carries the
         # source app.handler routes on.
-        ScheduledRefresh:
+        RefreshSchedule:
           Type: ScheduleV2
           Properties:
             ScheduleExpression: "cron(0 5,17 * * ? *)"

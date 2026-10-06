@@ -139,8 +139,8 @@ def test_template_includes_listings_feed_runtime_configuration() -> None:
 
 def _refresh_schedule(template: dict[str, Any]) -> dict[str, Any]:
     events = template["Resources"]["ApiFunction"]["Properties"]["Events"]
-    assert list(events) == ["ScheduledRefresh"]
-    return events["ScheduledRefresh"]  # type: ignore[no-any-return]
+    assert list(events) == ["RefreshSchedule"]
+    return events["RefreshSchedule"]  # type: ignore[no-any-return]
 
 
 def test_refresh_runs_on_madrid_clock(template: dict[str, Any]) -> None:
