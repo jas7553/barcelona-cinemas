@@ -53,12 +53,9 @@ describe("formatDataAge", () => {
 describe("isStale", () => {
   const generated_at = "2026-10-04T08:00:00Z";
 
-  it("trusts the refresh's own stale flag", () => {
-    expect(isStale({ generated_at, stale: true }, new Date(generated_at))).toBe(true);
-  });
-
-  it("goes stale once a refresh has been missed", () => {
-    expect(isStale({ generated_at, stale: false }, new Date("2026-10-05T07:59:00Z"))).toBe(false);
-    expect(isStale({ generated_at, stale: false }, new Date("2026-10-05T08:01:00Z"))).toBe(true);
+  it("goes stale once the listings are more than a day old", () => {
+    expect(isStale(generated_at, new Date(generated_at))).toBe(false);
+    expect(isStale(generated_at, new Date("2026-10-05T07:59:00Z"))).toBe(false);
+    expect(isStale(generated_at, new Date("2026-10-05T08:01:00Z"))).toBe(true);
   });
 });

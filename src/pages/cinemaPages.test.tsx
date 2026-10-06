@@ -44,7 +44,7 @@ const FILMS = [
   ]),
 ];
 
-const base = { renderedAt: RENDERED_AT, generatedAt: "2026-10-04T13:30:00Z", stale: false };
+const base = { renderedAt: RENDERED_AT, generatedAt: "2026-10-04T13:30:00Z" };
 const calendar = [
   { date: "2026-10-04", cinemas: 3, last: "22:00" },
   { date: "2026-10-05", cinemas: 3, last: "22:00" },

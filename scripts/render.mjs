@@ -27,7 +27,7 @@ try {
   listings = JSON.parse(fs.readFileSync(dataPath, "utf8"));
 } catch {
   console.warn(`[render] no data at ${dataPath} — emitting an empty list page only`);
-  listings = { generated_at: new Date().toISOString(), stale: false, theaters: [], movies: [] };
+  listings = { generated_at: new Date().toISOString(), theaters: [], movies: [] };
 }
 
 const PRUNE_PREFIXES = prunePrefixesFs();

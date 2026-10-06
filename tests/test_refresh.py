@@ -105,7 +105,7 @@ def test_build_listings_stamps_fetched_at_from_the_injected_clock():
     listings, _ = _build([_provider("one", [_raw_movie("Dune: Part Two")])])
 
     assert listings["fetched_at"] == NOW.isoformat()
-    assert listings["stale"] is False
+    assert "stale" not in listings
 
 
 def test_build_listings_does_no_cache_io():
@@ -128,7 +128,6 @@ def test_build_listings_seeds_enrichment_with_the_cached_movies() -> None:
 
     cached: Listings = {
         "fetched_at": "2026-03-26T09:00:00+00:00",
-        "stale": False,
         "movies": [cast(Movie, cached_movie)],
     }
     _build([_provider("one", [_raw_movie("Dune: Part Two")])], cached=cached, enrich=_spy)
@@ -514,7 +513,7 @@ def _ended(title: str, last_showing: str, **overrides: Any) -> EndedMovie:
 
 
 def _cached(movies: list[Movie], ended: list[EndedMovie] | None = None) -> Listings:
-    listings: Listings = {"fetched_at": NOW.isoformat(), "stale": False, "movies": movies}
+    listings: Listings = {"fetched_at": NOW.isoformat(), "movies": movies}
     if ended is not None:
         listings["ended"] = ended
     return listings

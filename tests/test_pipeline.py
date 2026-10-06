@@ -25,7 +25,6 @@ from models import Listings
 def _listings() -> Listings:
     return Listings(
         fetched_at=datetime.now(UTC).isoformat(),
-        stale=False,
         movies=[],
     )
 
@@ -65,7 +64,7 @@ def test_publish_static_site_uploads_public_json_and_invokes_renderer(monkeypatc
     monkeypatch.setattr(
         transform,
         "to_api_response",
-        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+        lambda listings, cinemas: {"generated_at": "x", "theaters": [], "movies": []},
     )
     mock_s3, mock_lambda = MagicMock(), MagicMock()
     with (
@@ -91,7 +90,7 @@ def test_publish_static_site_skips_invoke_when_function_unset(monkeypatch):
     monkeypatch.setattr(
         transform,
         "to_api_response",
-        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+        lambda listings, cinemas: {"generated_at": "x", "theaters": [], "movies": []},
     )
     mock_s3, mock_lambda = MagicMock(), MagicMock()
     with (
@@ -109,7 +108,7 @@ def test_publish_static_site_swallows_exceptions(monkeypatch):
     monkeypatch.setattr(
         transform,
         "to_api_response",
-        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+        lambda listings, cinemas: {"generated_at": "x", "theaters": [], "movies": []},
     )
     mock_s3 = MagicMock()
     mock_s3.put_object.side_effect = RuntimeError("S3 down")
@@ -150,7 +149,7 @@ def test_publish_static_site_forwards_the_refresh_id_to_the_renderer(monkeypatch
     monkeypatch.setattr(
         transform,
         "to_api_response",
-        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+        lambda listings, cinemas: {"generated_at": "x", "theaters": [], "movies": []},
     )
     mock_s3, mock_lambda = MagicMock(), MagicMock()
     observability.set_context(refresh_id="refresh-abc123")
@@ -177,7 +176,7 @@ def test_publish_static_site_emits_a_metric_when_the_upload_fails(
     monkeypatch.setattr(
         transform,
         "to_api_response",
-        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+        lambda listings, cinemas: {"generated_at": "x", "theaters": [], "movies": []},
     )
     mock_s3 = MagicMock()
     mock_s3.put_object.side_effect = RuntimeError("S3 down")
@@ -198,7 +197,7 @@ def test_publish_static_site_emits_a_metric_when_the_renderer_invoke_fails(
     monkeypatch.setattr(
         transform,
         "to_api_response",
-        lambda listings, cinemas: {"generated_at": "x", "stale": False, "theaters": [], "movies": []},
+        lambda listings, cinemas: {"generated_at": "x", "theaters": [], "movies": []},
     )
     mock_lambda = MagicMock()
     mock_lambda.invoke.side_effect = RuntimeError("Lambda down")

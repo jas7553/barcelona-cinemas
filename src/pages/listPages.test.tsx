@@ -46,7 +46,7 @@ const FILMS: ListFilm[] = [
   },
 ];
 
-const base = { renderedAt: RENDERED_AT, generatedAt: "2026-10-04T13:30:00Z", stale: false, theaters: THEATERS };
+const base = { renderedAt: RENDERED_AT, generatedAt: "2026-10-04T13:30:00Z", theaters: THEATERS };
 const calendar = [
   { date: "2026-10-04", cinemas: 2, last: "22:00" },
   { date: "2026-10-05", cinemas: 2, last: "22:00" },
@@ -130,8 +130,13 @@ describe("This week", () => {
     expect(screen.getByText("2 showings · Verdi, Girona")).toBeInTheDocument();
   });
 
-  it("warns when the listings are stale", () => {
-    render(<WeekPage data={{ ...weekData, stale: true }} />);
-    expect(screen.getByText(/Listings last updated Sun 4 Oct\. Times may have changed/)).toBeInTheDocument();
+  it("warns when the listings are more than a day old", () => {
+    render(<WeekPage data={{ ...weekData, generatedAt: "2026-10-03T13:00:00Z" }} />);
+    expect(screen.getByText(/Listings last updated Sat 3 Oct\. Times may have changed/)).toBeInTheDocument();
+  });
+
+  it("shows no warning for listings fetched today", () => {
+    render(<WeekPage data={weekData} />);
+    expect(screen.queryByText(/Listings last updated/)).not.toBeInTheDocument();
   });
 });

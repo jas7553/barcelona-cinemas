@@ -22,7 +22,6 @@ def tmp_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _make_listings() -> Listings:
     return Listings(
         fetched_at=datetime.now(UTC).isoformat(),
-        stale=False,
         movies=[],
     )
 
@@ -33,7 +32,7 @@ def test_read_returns_none_when_no_file(tmp_cache: Path) -> None:
 
 def test_read_logs_invalid_cache_payload(tmp_cache: Path, caplog: pytest.LogCaptureFixture) -> None:
     caplog.set_level(logging.INFO, logger="observability")
-    tmp_cache.write_text(json.dumps({"fetched_at": "not-a-date", "stale": False, "movies": "bad-shape"}))
+    tmp_cache.write_text(json.dumps({"fetched_at": "not-a-date", "movies": "bad-shape"}))
 
     assert cache.read() is None
     assert '"event": "cache_invalid"' in caplog.text
@@ -48,6 +47,17 @@ def test_write_then_read_round_trips(tmp_cache: Path) -> None:
     assert result["movies"] == []
 
 
+def test_read_accepts_a_cache_written_with_the_stale_flag(tmp_cache: Path) -> None:
+    # Rejecting the deployed cache would cost the next refresh its TMDb reuse.
+    fetched_at = datetime.now(UTC).isoformat()
+    tmp_cache.write_text(json.dumps({"fetched_at": fetched_at, "stale": False, "movies": []}))
+
+    result = cache.read()
+    assert result is not None
+    assert result["fetched_at"] == fetched_at
+    assert "stale" not in result
+
+
 def test_write_creates_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     nested = tmp_path / "a" / "b"
     monkeypatch.setattr(cache, "_backend", cache._FileBackend(nested, nested / "listings.json"))
@@ -56,7 +66,7 @@ def test_write_creates_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 
 
 def test_read_returns_none_for_invalid_cache_payload(tmp_cache: Path) -> None:
-    tmp_cache.write_text(json.dumps({"fetched_at": "not-a-date", "stale": False, "movies": "bad-shape"}))
+    tmp_cache.write_text(json.dumps({"fetched_at": "not-a-date", "movies": "bad-shape"}))
 
     assert cache.read() is None
 
@@ -66,7 +76,6 @@ def test_read_normalizes_cache_by_dropping_invalid_movies_and_showtimes(tmp_cach
         json.dumps(
             {
                 "fetched_at": "2026-03-28T12:00:00+00:00",
-                "stale": False,
                 "movies": [
                     {
                         "title": "Valid Film",
@@ -134,7 +143,6 @@ def test_read_keeps_older_showtimes_without_language_field(tmp_cache: Path) -> N
         json.dumps(
             {
                 "fetched_at": "2026-03-28T12:00:00+00:00",
-                "stale": False,
                 "movies": [
                     {
                         "title": "Valid Film",

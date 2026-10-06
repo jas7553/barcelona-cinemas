@@ -91,12 +91,11 @@ export function formatDataAge(generatedAt: string, now: Date): string {
   return `Updated ${days} ${days === 1 ? "day" : "days"} ago`;
 }
 
-// The refresh runs every 12 h (template.yaml ScheduleExpression), so data older
-// than two windows means at least one refresh has failed.
+// The refresh runs more than once a day, so older data means it has been failing.
 const STALE_AFTER_MS = 24 * HOUR_MS;
 
-export function isStale(listings: { generated_at: string; stale: boolean }, now: Date): boolean {
-  return listings.stale || now.getTime() - Date.parse(listings.generated_at) > STALE_AFTER_MS;
+export function isStale(generatedAt: string, now: Date): boolean {
+  return now.getTime() - Date.parse(generatedAt) > STALE_AFTER_MS;
 }
 
 const monthLong = new Intl.DateTimeFormat("en-GB", { month: "long", timeZone: "UTC" });

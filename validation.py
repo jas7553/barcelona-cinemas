@@ -27,14 +27,13 @@ def normalize_listings(data: object, *, source: str) -> Listings | None:
         return None
 
     fetched_at = _as_iso_datetime(data.get("fetched_at"))
-    stale = data.get("stale")
     movies_raw = data.get("movies")
-    if fetched_at is None or not isinstance(stale, bool) or not isinstance(movies_raw, list):
+    if fetched_at is None or not isinstance(movies_raw, list):
         logger.warning("Rejected %s: listings payload has invalid top-level fields", source)
         return None
 
     movies = normalize_movies(movies_raw, source=source)
-    listings = Listings(fetched_at=fetched_at, stale=stale, movies=movies)
+    listings = Listings(fetched_at=fetched_at, movies=movies)
     ended_raw = data.get("ended")
     if ended_raw is not None:
         listings["ended"] = normalize_ended_movies(ended_raw, source=f"{source} ended")

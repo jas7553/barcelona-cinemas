@@ -268,7 +268,7 @@ function lastShowings(listings: Listings, days: DateKey[]): Record<string, strin
 
 /** Every page, keyed by output path. */
 export function sitePages(listings: Listings, renderedAt: string): { path: string; data: PageData }[] {
-  const base = { renderedAt, generatedAt: listings.generated_at, stale: listings.stale };
+  const base = { renderedAt, generatedAt: listings.generated_at };
   const today = madridDateKey(new Date(renderedAt));
   const days = Array.from({ length: RENDERED_DAYS }, (_, i) => addDays(today, i));
   const cal = calendar(listings.movies);
