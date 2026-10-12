@@ -47,20 +47,20 @@ export function WeekPage({ data }: { data: WeekPageData }) {
         </div>
       ) : (
         <>
-          {few.length > 0 && (
-            <section aria-labelledby="few">
-              <h2 id="few" class="label">
-                Only a few showings
-              </h2>
-              <ul class="films">{few.map(row)}</ul>
-            </section>
-          )}
           {all.length > 0 && (
             <section aria-labelledby="all">
               <h2 id="all" class="label">
                 Playing all week
               </h2>
               <ul class="films">{all.map(row)}</ul>
+            </section>
+          )}
+          {few.length > 0 && (
+            <section aria-labelledby="few">
+              <h2 id="few" class="label">
+                Only a few showings
+              </h2>
+              <ul class="films">{few.map(row)}</ul>
             </section>
           )}
           <SeenGroup count={seen.length}>{seen.map(row)}</SeenGroup>
