@@ -90,7 +90,8 @@ def _publish_static_site(listings: Listings) -> None:
             Key="data/listings.json",
             Body=json.dumps(public).encode("utf-8"),
             ContentType="application/json",
-            CacheControl="no-cache",
+            # Edge-cached until the SSG render invalidates `/*`.
+            CacheControl="max-age=0, s-maxage=31536000",
         )
         log_event("ssg_data_published", bucket=bucket, movies=len(public["movies"]))
     except Exception as exc:

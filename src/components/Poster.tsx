@@ -1,4 +1,4 @@
-import { smallPoster } from "../domain/format";
+import { smallPoster, smallPosterSrcset } from "../domain/format";
 import type { ListFilm } from "../pageData";
 
 interface Props {
@@ -19,6 +19,8 @@ export function Poster({ film, eager }: Props) {
     <img
       class="poster"
       src={smallPoster(film.poster_url)}
+      srcset={smallPosterSrcset(film.poster_url)}
+      sizes="56px"
       alt=""
       width={56}
       height={84}

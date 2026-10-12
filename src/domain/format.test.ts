@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { distanceKm, whereLabel } from "./distance";
-import { formatDistance, formatRuntime, joinAnd, plural, shortName, smallPoster, subtitleLabel } from "./format";
+import { formatDistance, formatRuntime, joinAnd, plural, shortName, smallPoster, smallPosterSrcset, subtitleLabel } from "./format";
 import { outTime, shareText } from "./ticket";
 
 describe("format", () => {
@@ -37,6 +37,9 @@ describe("format", () => {
 
   it("asks TMDb for a small poster", () => {
     expect(smallPoster("https://image.tmdb.org/t/p/w342/abc.jpg")).toBe("https://image.tmdb.org/t/p/w154/abc.jpg");
+    expect(smallPosterSrcset("https://image.tmdb.org/t/p/w342/abc.jpg")).toBe(
+      "https://image.tmdb.org/t/p/w92/abc.jpg 92w, https://image.tmdb.org/t/p/w154/abc.jpg 154w",
+    );
   });
 });
 

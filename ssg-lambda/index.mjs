@@ -167,10 +167,11 @@ async function render(refreshId, startedMs) {
           Key: relPath,
           Body: contents,
           ContentType: contentType,
-          // HTML + data are revalidated each load so a refresh shows immediately;
-          // the hashed /assets/* bundles keep their immutable Cache-Control
+          // Browsers revalidate each load; CloudFront keeps the page until the
+          // `/*` invalidation below, so it isn't refetched from S3 per request.
+          // The hashed /assets/* bundles keep their immutable Cache-Control
           // (set by deploy.sh on the one-time sync, untouched here).
-          CacheControl: "no-cache",
+          CacheControl: "max-age=0, s-maxage=31536000",
         }),
       );
     },
