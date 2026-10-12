@@ -99,12 +99,7 @@ function filmJsonLd(movie: FilmDetail, theaters: Theater[], url: string | undefi
       workPresented: movieId ? { "@id": movieId } : { "@type": "Movie", name: movie.title },
     };
     if (theater) {
-      node.location = {
-        "@type": "MovieTheater",
-        name: theater.name,
-        ...(theater.address ? { address: theater.address } : {}),
-        ...(theater.website_url ? { url: theater.website_url } : {}),
-      };
+      node.location = { ...theaterNode(theater), ...(theater.website_url ? { url: theater.website_url } : {}) };
     }
     if (s.booking_url) {
       node.offers = { "@type": "Offer", url: s.booking_url, availability: "https://schema.org/InStock" };
@@ -116,6 +111,38 @@ function filmJsonLd(movie: FilmDetail, theaters: Theater[], url: string | undefi
   });
 
   return jsonLdScript({ "@context": "https://schema.org", "@graph": [movieNode, ...events] });
+}
+
+/** schema.org MovieTheater: what a cinema is and where, for its page and each screening's location. */
+function theaterNode(theater: Theater): Record<string, unknown> {
+  return {
+    "@type": "MovieTheater",
+    name: theater.name,
+    ...(theater.address
+      ? {
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: theater.address,
+            addressLocality: "Barcelona",
+            addressCountry: "ES",
+          },
+        }
+      : {}),
+    ...(theater.lat != null && theater.lng != null
+      ? { geo: { "@type": "GeoCoordinates", latitude: theater.lat, longitude: theater.lng } }
+      : {}),
+  };
+}
+
+/** A cinema page's own MovieTheater node, linked to the cinema's site. */
+function cinemaJsonLd(theater: Theater, url: string): string {
+  return jsonLdScript({
+    "@context": "https://schema.org",
+    ...theaterNode(theater),
+    url,
+    ...(theater.website_url ? { sameAs: theater.website_url } : {}),
+    ...(theater.maps_url ? { hasMap: theater.maps_url } : {}),
+  });
 }
 
 /** schema.org WebSite — what Google reads for the site name in results. */
@@ -376,7 +403,7 @@ export function renderPage(data: PageData, siteUrl?: string): RenderedPage {
             .join(" "),
           url: data.date && siteUrl ? `${siteUrl}/cinema/${theater.id}/${data.date}/` : url,
           canonical: url,
-        }),
+        }) + (url && !data.date ? cinemaJsonLd(theater, url) : ""),
       };
     }
     case "cinemas": {

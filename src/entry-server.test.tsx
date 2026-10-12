@@ -236,6 +236,19 @@ describe("cinema pages", () => {
     expect(out.headExtra).toContain('rel="canonical" href="https://x.test/cinema/verdi/"');
   });
 
+  it("describes the cinema as a MovieTheater on its week view only", () => {
+    const week = renderPage(pages.find((p) => p.path === "cinema/verdi.html")!.data, "https://x.test");
+    const ld: unknown = JSON.parse(week.headExtra.match(/<script type="application\/ld\+json">(.*)<\/script>/)![1]);
+    expect(ld).toMatchObject({
+      "@type": "MovieTheater",
+      name: "Cines Verdi",
+      url: "https://x.test/cinema/verdi/",
+      geo: { "@type": "GeoCoordinates", latitude: 41.4, longitude: 2.15 },
+    });
+    const day = renderPage(pages.find((p) => p.path === "cinema/verdi/2026-10-05.html")!.data, "https://x.test");
+    expect(day.headExtra).not.toContain("ld+json");
+  });
+
   it("names what a cinema is showing in its description", () => {
     const out = renderPage(pages.find((p) => p.path === "cinema/verdi.html")!.data);
     expect(out.headExtra).toContain(

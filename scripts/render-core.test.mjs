@@ -55,11 +55,11 @@ describe("renderAll() sitemap", () => {
     expect(sm).toContain("<lastmod>2026-06-27</lastmod>");
   });
 
-  it("includes /privacy/ in the sitemap with low priority and yearly changefreq", async () => {
+  it("lists /privacy/ and carries only loc and lastmod", async () => {
     const sm = (await run("https://x.test")).get("sitemap.xml");
     expect(sm).toContain("<loc>https://x.test/privacy/</loc>");
-    expect(sm).toContain("<priority>0.3</priority>");
-    expect(sm).toContain("<changefreq>yearly</changefreq>");
+    expect(sm).not.toContain("<priority>");
+    expect(sm).not.toContain("<changefreq>");
   });
 
   it("renders every page sitePages lists on the shared client entry", async () => {

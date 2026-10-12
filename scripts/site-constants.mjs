@@ -72,6 +72,23 @@ export function prunePrefixesIamGlobs() {
 }
 
 /**
+ * Where a request path 301s to, or null to serve it: the same rule as
+ * redirectFor in template.yaml's UrlRewriteFunction.
+ *
+ * @param {string} uri  Request path, e.g. "/film/1248832/2026-09-01/".
+ * @param {number} now  Epoch milliseconds.
+ * @returns {string | null}
+ */
+export function redirectFor(uri, now) {
+  const dated = uri.match(/^\/(day|film\/[^/]+|cinema\/[^/]+)\/(\d{4}-\d{2}-\d{2})\/?$/);
+  if (dated && dated[2] < new Date(now - 86400000).toISOString().slice(0, 10)) {
+    return dated[1] === "day" ? "/" : `/${dated[1]}/`;
+  }
+  if (uri === "/" || uri === "" || uri.endsWith("/")) return null;
+  return uri.slice(uri.lastIndexOf("/") + 1).includes(".") ? null : `${uri}/`;
+}
+
+/**
  * The bucket key a request path is served from: the same mapping as the
  * CloudFront Function in template.yaml (UrlRewriteFunction). The dev server and
  * the e2e static server resolve URLs through this, so they route like
