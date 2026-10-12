@@ -51,6 +51,11 @@ export function smallPoster(url: string): string {
   return url.replace(POSTER_SIZE, "/t/p/w154/");
 }
 
+/** A `srcset` for the small slot, so a 1x screen takes w92 rather than w154. */
+export function smallPosterSrcset(url: string): string {
+  return `${url.replace(POSTER_SIZE, "/t/p/w92/")} 92w, ${smallPoster(url)} 154w`;
+}
+
 /** A TMDb poster URL resized for the film page. */
 export function largePoster(url: string): string {
   return url.replace(POSTER_SIZE, "/t/p/w342/");
