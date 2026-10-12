@@ -123,9 +123,18 @@ describe("This week", () => {
     expect(screen.getByText(/Sun 4 – Sat 10 Oct · 2 films · Tue, Wed, Thu, Fri and Sat listings not out yet/)).toBeInTheDocument();
   });
 
-  it("puts films with few showings first, with a where-line", () => {
-    render(<WeekPage data={weekData} />);
-    expect(screen.getByRole("heading", { name: "Only a few showings" })).toBeInTheDocument();
+  it("lists films with few showings after those playing all week, with a where-line", () => {
+    const often: ListFilm = {
+      ...FILMS[1],
+      id: "heat",
+      title: "Heat",
+      showtimes: ["18:00", "19:30", "20:00", "21:00"].map((time) => ({ theater_id: "verdi", date: "2026-10-05", time })),
+    };
+    render(<WeekPage data={{ ...weekData, films: [...FILMS, often] }} />);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+      "Playing all week",
+      "Only a few showings",
+    ]);
     expect(screen.getByText("Today, 19:00 · Girona")).toBeInTheDocument();
     expect(screen.getByText("2 showings · Verdi, Girona")).toBeInTheDocument();
   });
