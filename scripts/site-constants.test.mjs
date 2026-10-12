@@ -25,6 +25,7 @@ import {
   prunePrefixesFs,
   prunePrefixesIamGlobs,
   prunePrefixesS3,
+  redirectFor,
 } from "./site-constants.mjs";
 
 // Resolved from the vitest root, not import.meta.url: vitest transforms these
@@ -123,28 +124,53 @@ describe("FACT C — the prune prefixes", () => {
 });
 
 describe("FACT D — clean URLs", () => {
-  /** template.yaml's UrlRewriteFunction, run as CloudFront would run it. */
-  function deployedRewrite(uri) {
+  const NOW = Date.parse("2026-10-12T22:30:00Z");
+
+  /** template.yaml's UrlRewriteFunction, run as CloudFront would run it at `now`. */
+  function deployed(uri, now = NOW) {
     const block = TEMPLATE_YAML.match(/UrlRewriteFunction:[\s\S]*?FunctionCode: \|\n([\s\S]*?)\n\n/);
     if (!block) throw new Error("no UrlRewriteFunction code found in template.yaml");
-    const handler = new Function(`${block[1]}; return handler;`)();
-    return handler({ request: { uri } }).uri;
+    const FixedDate = class extends Date {
+      static now() {
+        return now;
+      }
+    };
+    const handler = new Function("Date", `${block[1]}; return handler;`)(FixedDate);
+    return handler({ request: { uri } });
   }
 
   it.each([
     "/",
-    "/privacy",
     "/privacy/",
-    "/film/1248832",
     "/film/1248832/",
-    "/film/1248832/2026-10-05/",
-    "/day/2026-10-05/",
+    "/film/1248832/2026-10-13/",
+    "/day/2026-10-13/",
     "/cinema/verdi-park/",
     "/cinemas/",
     "/assets/client-abc123.js",
     "/data/listings.json",
     "/404.html",
   ])("objectKeyFor(%j) resolves like the deployed function", (uri) => {
-    expect(`/${objectKeyFor(uri)}`).toBe(deployedRewrite(uri));
+    expect(`/${objectKeyFor(uri)}`).toBe(deployed(uri).uri);
+  });
+
+  it.each([
+    ["/cinemas", "/cinemas/"],
+    ["/film/1248832", "/film/1248832/"],
+    ["/film/1248832/2026-09-01/", "/film/1248832/"],
+    ["/film/1248832/2026-09-01", "/film/1248832/"],
+    ["/cinema/verdi-park/2026-10-10/", "/cinema/verdi-park/"],
+    ["/day/2026-10-10/", "/"],
+    ["/film/1248832/2026-10-11", "/film/1248832/2026-10-11/"],
+    ["/film/1248832/2026-10-11/", null],
+    ["/day/2026-10-13/", null],
+    ["/cinemas/", null],
+    ["/", null],
+    ["/sitemap.xml", null],
+    ["/assets/client-abc123.js", null],
+  ])("redirectFor(%j) is %j, like the deployed function", (uri, location) => {
+    expect(redirectFor(uri, NOW)).toBe(location);
+    const res = deployed(uri);
+    expect(res.statusCode === 301 ? res.headers.location.value : null).toBe(location);
   });
 });

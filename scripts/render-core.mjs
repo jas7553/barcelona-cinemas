@@ -83,26 +83,21 @@ export async function renderAll({
 
   // sitemap.xml — absolute URLs require a siteUrl, so skip it for local builds
   // that don't set SITE_URL. List only films actually screening: the rest render
-  // a noindex "No more showings" page and don't belong in the index.
+  // a noindex "No more showings" page and don't belong in the index. No
+  // changefreq or priority: Google ignores both.
   if (siteUrl) {
     const showing = listings.movies.filter((m) => m.showtimes && m.showtimes.length > 0);
     const lastmod = (listings.generated_at || renderedAt).slice(0, 10);
-    const entries = [
-      { loc: `${siteUrl}/`, priority: "1.0", changefreq: "daily" },
-      ...showing.map((m) => ({ loc: `${siteUrl}/film/${m.id}/`, priority: "0.7", changefreq: "daily" })),
-      { loc: `${siteUrl}/cinemas/`, priority: "0.5", changefreq: "weekly" },
+    const locs = [
+      `${siteUrl}/`,
+      ...showing.map((m) => `${siteUrl}/film/${m.id}/`),
+      `${siteUrl}/cinemas/`,
       ...[...new Set(showing.flatMap((m) => m.showtimes.map((s) => s.theater_id)))]
         .sort()
-        .map((id) => ({ loc: `${siteUrl}/cinema/${id}/`, priority: "0.5", changefreq: "daily" })),
-      { loc: `${siteUrl}/privacy/`, priority: "0.3", changefreq: "yearly" },
+        .map((id) => `${siteUrl}/cinema/${id}/`),
+      `${siteUrl}/privacy/`,
     ];
-    const urls = entries
-      .map(
-        (e) =>
-          `  <url>\n    <loc>${e.loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n` +
-          `    <changefreq>${e.changefreq}</changefreq>\n    <priority>${e.priority}</priority>\n  </url>`,
-      )
-      .join("\n");
+    const urls = locs.map((loc) => `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n  </url>`).join("\n");
     const xml =
       `<?xml version="1.0" encoding="UTF-8"?>\n` +
       `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;

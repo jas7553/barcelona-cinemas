@@ -1,6 +1,6 @@
 // Serves the built static/ directory the way production does, for e2e:
 // - request paths resolve to bucket keys through the CloudFront Function's
-//   mapping (objectKeyFor), and a missing key gets 404.html with a 404;
+//   mapping (redirectFor, objectKeyFor), and a missing key gets 404.html with a 404;
 // - every response carries the production CSP from template.yaml, so a
 //   blocked inline script or style attribute fails here, not first in prod;
 // - nothing is no-store, so pages stay bfcache-eligible.
@@ -10,7 +10,7 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import { objectKeyFor } from "../scripts/site-constants.mjs";
+import { objectKeyFor, redirectFor } from "../scripts/site-constants.mjs";
 
 const ROOT = path.resolve("static");
 const PORT = Number(process.argv[2] ?? 5180);
@@ -46,7 +46,13 @@ const CSP = productionCsp();
 
 http
   .createServer((req, res) => {
-    const key = objectKeyFor(decodeURIComponent((req.url ?? "/").split("?")[0]));
+    const uri = decodeURIComponent((req.url ?? "/").split("?")[0]);
+    const location = redirectFor(uri, Date.now());
+    if (location) {
+      res.writeHead(301, { Location: location }).end();
+      return;
+    }
+    const key = objectKeyFor(uri);
     let file = path.join(ROOT, key);
     let status = 200;
     if (!file.startsWith(ROOT + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
