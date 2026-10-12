@@ -173,9 +173,24 @@ function listFilm(m: Movie, keep: (s: Showtime) => boolean, forTicket: boolean):
   return { id, title, poster_url, rating, genres, runtime_minutes, showtimes };
 }
 
-/** "Aftersun · 2022 · Drama". No synopsis: share previews stay spoiler-free (requirements 7.5). */
-function filmDescription(film: FilmDetail): string {
-  return [film.title, film.year, film.genres.slice(0, 3).join(", ")].filter(Boolean).join(" · ");
+/** "A", "A and B", "A, B and C", "A, B, C and 2 more". */
+function nameList(names: string[], max = 3): string {
+  if (names.length <= max) return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names.at(-1)}` : (names[0] ?? "");
+  return `${names.slice(0, max).join(", ")} and ${names.length - max} more`;
+}
+
+/**
+ * "Aftersun (2022) in English at Cines Verdi this week. Drama." Names the
+ * cinemas so the snippet answers the search; no synopsis, so share previews
+ * stay spoiler-free (requirements 7.5).
+ */
+function filmDescription(film: FilmDetail, theaters: Theater[]): string {
+  const name = film.year != null ? `${film.title} (${film.year})` : film.title;
+  const genres = film.genres.slice(0, 3).join(", ");
+  const ids = new Set(film.showtimes.map((s) => s.theater_id));
+  const at = theaters.filter((t) => ids.has(t.id)).map((t) => t.name);
+  const lead = at.length > 0 ? `${name} in English at ${nameList(at)} this week.` : `${name}.`;
+  return genres ? `${lead} ${genres}.` : lead;
 }
 
 // The film page names the director and this many of the cast (requirements 5.3).
@@ -324,7 +339,7 @@ export function renderPage(data: PageData, siteUrl?: string): RenderedPage {
     }
     case "film": {
       const { film, date } = data;
-      const title = `${film.title} · ${SITE_NAME}`;
+      const title = `${film.title} · In English (VO) at Barcelona cinemas`;
       const undated = siteUrl ? `${siteUrl}/film/${film.id}/` : undefined;
       // Dated pages point search engines at the undated one; a film whose run
       // is over stays reachable for links but out of the index.
@@ -335,7 +350,7 @@ export function renderPage(data: PageData, siteUrl?: string): RenderedPage {
         headExtra:
           metaTags({
             title,
-            description: filmDescription(film),
+            description: filmDescription(film, data.theaters),
             image: film.poster_url,
             largeImage: true,
             url: date && siteUrl ? `${siteUrl}/film/${film.id}/${date}/` : undated,
@@ -346,14 +361,19 @@ export function renderPage(data: PageData, siteUrl?: string): RenderedPage {
     }
     case "cinema": {
       const theater = data.theaters.find((t) => t.id === data.theaterId)!;
-      const title = `${theater.name} · ${SITE_NAME}`;
+      const title = `${theater.name} · English-language (VO) films in Barcelona`;
       const url = siteUrl ? `${siteUrl}/cinema/${theater.id}/` : undefined;
       return {
         html,
         title,
         headExtra: metaTags({
           title,
-          description: `English-language showtimes at ${theater.name}, ${theater.neighborhood}, this week.`,
+          description: [
+            `English-language showtimes at ${theater.name}, ${theater.neighborhood}, this week.`,
+            data.films.length > 0 ? `Now showing: ${nameList(data.films.map((f) => f.title))}.` : "",
+          ]
+            .filter(Boolean)
+            .join(" "),
           url: data.date && siteUrl ? `${siteUrl}/cinema/${theater.id}/${data.date}/` : url,
           canonical: url,
         }),
