@@ -282,9 +282,10 @@ _RETRY_DELAY_S = 30.0
 # A retry may only start this long after the Provider's first attempt began.
 # Providers run in parallel, so every worker's clock starts with collection.
 # Worst case: retry starts at 55 s, Verdi's slowest observed success is ~45 s,
-# collection ends at ~100 s, leaving ~20 s of the ApiFunction's 120 s for
-# Enrichment, the cache write and the (async) SSG invoke. The incident failures
-# (connect timeouts at 15 s and 20 s, fast 403s) all fail early enough.
+# collection ends at ~100 s, leaving ~80 s of the ApiFunction's 180 s for a
+# slow retry, Enrichment, the cache write and the (async) SSG invoke. The
+# incident failures (connect timeouts at 15 s and 20 s, fast 403s) all fail
+# early enough.
 _RETRY_START_DEADLINE_S = 55.0
 
 _sleep = time.sleep
@@ -341,7 +342,8 @@ def _fetch_with_retry(provider: ListingsSource, cinemas: CinemaRegistry) -> list
                 outcome = "retry_failed"
             elif not is_retryable(exc):
                 outcome = "not_retryable"
-            elif now - first_started + _RETRY_DELAY_S > _RETRY_START_DEADLINE_S:
+            # Re-read: the diagnostics' DNS and egress lookups take seconds.
+            elif _monotonic() - first_started + _RETRY_DELAY_S > _RETRY_START_DEADLINE_S:
                 outcome = "over_budget"
             else:
                 emit_metric("ProviderRetry", 1)

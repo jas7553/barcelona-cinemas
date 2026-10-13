@@ -150,6 +150,22 @@ def test_a_failure_just_inside_the_budget_is_retried(clock: _Clock) -> None:
     assert [m["title"] for m in listings["movies"]] == ["Valid Film"]
 
 
+def test_time_spent_gathering_diagnostics_counts_against_the_budget(clock: _Clock, find_event: FindEvent) -> None:
+    def slow_egress_ip() -> str:
+        clock.now += 3
+        return "3.250.1.2"
+
+    on_time = refresh._RETRY_START_DEADLINE_S - refresh._RETRY_DELAY_S - 1
+    fetch = _failing_after(clock, on_time, _connect_timeout(), [_raw_movie("Never Fetched")])
+    providers = [_provider("verdi", fetch=fetch), _provider("two", [_raw_movie("Valid Film")])]
+
+    with patch.object(diagnostics, "egress_ip", slow_egress_ip):
+        _build(providers)
+
+    assert clock.sleeps == []
+    assert find_event("collection_failure")["outcome"] == "over_budget"
+
+
 @pytest.mark.parametrize(
     ("exc", "retryable"),
     [
