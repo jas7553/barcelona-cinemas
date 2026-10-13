@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from models import PREMIUM_FORMATS, CinemaInfo, CinemaRegistry, Listings, Movie, Showtime
@@ -133,10 +133,7 @@ def _parse_cutoff(generated_at: str) -> date | None:
     if not generated_at:
         return None
     try:
-        dt = datetime.fromisoformat(generated_at)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=UTC)
-        return madrid_today(dt) + timedelta(days=7)
+        return madrid_today(datetime.fromisoformat(generated_at)) + timedelta(days=7)
     except ValueError:
         return None
 

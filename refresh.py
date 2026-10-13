@@ -49,13 +49,13 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from itertools import chain
 from typing import TYPE_CHECKING, Any, NamedTuple, Protocol, TypedDict
 
 from models import CinemaRegistry, EndedMovie, Listings, Movie, ProviderSnapshot
 from observability import emit_metric, log_event, now_ms
-from providers.common import MADRID_TZ, madrid_today
+from providers.common import assume_utc, madrid_now, madrid_today
 from providers.diagnostics import failure_diagnostics, is_retryable
 from reconcile import reconcile, same_movie
 from validation import normalize_movies
@@ -336,7 +336,7 @@ def _fallback_movies(
             reason="no_snapshot",
         )
         return None
-    age = _as_aware(now) - _as_aware(datetime.fromisoformat(snapshot["fetched_at"]))
+    age = assume_utc(now) - assume_utc(datetime.fromisoformat(snapshot["fetched_at"]))
     age_hours = round(age / timedelta(hours=1), 1)
     if age > FALLBACK_MAX_AGE:
         log_event(
@@ -349,8 +349,8 @@ def _fallback_movies(
         )
         return None
 
-    madrid_now = _as_aware(now).astimezone(MADRID_TZ)
-    cutoff = (madrid_now.date().isoformat(), madrid_now.strftime("%H:%M"))
+    local = madrid_now(now)
+    cutoff = (local.date().isoformat(), local.strftime("%H:%M"))
     movies: list[Movie] = []
     dropped = 0
     for movie in snapshot["movies"]:
@@ -372,11 +372,6 @@ def _fallback_movies(
         past_showtime_dropped_count=dropped,
     )
     return movies
-
-
-def _as_aware(instant: datetime) -> datetime:
-    """Naive datetimes are UTC, matching `madrid_today`."""
-    return instant if instant.tzinfo is not None else instant.replace(tzinfo=UTC)
 
 
 # Long enough for a dropped connection or a rate-limit window on the upstream

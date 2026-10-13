@@ -23,6 +23,7 @@ from http_errors import http_status
 from listings_config import resolve_env_or_ssm
 from models import Movie
 from observability import emit_metric, log_event
+from providers.common import assume_utc
 from validation import normalize_tmdb_payload
 
 logger = logging.getLogger(__name__)
@@ -118,9 +119,7 @@ def _needs_reenrichment(cached: Movie) -> bool:
     if not enriched_at_str:
         return True
     try:
-        enriched_at = datetime.fromisoformat(enriched_at_str)
-        if enriched_at.tzinfo is None:
-            enriched_at = enriched_at.replace(tzinfo=UTC)
+        enriched_at = assume_utc(datetime.fromisoformat(enriched_at_str))
         return datetime.now(UTC) - enriched_at > timedelta(days=_ENRICH_TTL_DAYS)
     except ValueError:
         return True
