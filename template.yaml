@@ -121,7 +121,7 @@ Resources:
         LogGroup: !Ref ApiFunctionLogGroup
       CodeUri: ./
       Description: Barcelona Movie Database — headless EventBridge refresh + SSG trigger
-      Timeout: 120    # Verdi scrape dominates; observed p100 ~90s with 3 providers
+      Timeout: 180    # Slowest provider plus one retry, then enrichment and publish
       ReservedConcurrentExecutions: 5    # Guards against runaway invocations / bill spikes
       Environment:
         Variables:
@@ -419,6 +419,9 @@ Resources:
   # with zero movies and never contributed to the old ProviderFailure-only
   # alarm at all.
   #
+  # ProviderFailure counts only providers still failing after their retry;
+  # ProviderRetry deliberately does not page.
+  #
   # Period=3600 (1h) comfortably bounds a single refresh's runtime (well under
   # a minute normally) without spanning into the next scheduled run 12h away,
   # so one bad run cannot get diluted by a neighboring good one the way a
@@ -430,10 +433,9 @@ Resources:
     Type: AWS::CloudWatch::Alarm
     Properties:
       AlarmDescription: >-
-        A listings provider failed or returned zero results in the most
-        recent scheduled refresh — coverage may be degraded. (Previously
-        required two consecutive full days of failures to fire; a single
-        provider going dark in one run now alerts immediately.)
+        A listings provider failed (after its one retry) or returned zero
+        results in the most recent scheduled refresh — coverage may be
+        degraded.
       Metrics:
         - Id: failures
           MetricStat:

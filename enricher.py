@@ -19,6 +19,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from http_errors import http_status
 from listings_config import resolve_env_or_ssm
 from models import Movie
 from observability import emit_metric, log_event
@@ -146,7 +147,7 @@ def _lookup_and_merge(
     try:
         raw_detail, raw_videos, raw_credits = _fetch_tmdb(query, session, api_key)
     except Exception as exc:
-        status = getattr(getattr(exc, "response", None), "status_code", None)
+        status = http_status(exc)
         detail = f"HTTP {status}" if status else type(exc).__name__
         logger.warning("TMDb lookup failed for %r: %s", movie["title"], detail)
         return _LookupResult(movie, enriched=False, failed=True)
@@ -194,7 +195,7 @@ def _optional_get(
         resp.raise_for_status()
         return cast(dict[str, Any], resp.json())
     except Exception as exc:
-        status = getattr(getattr(exc, "response", None), "status_code", None)
+        status = http_status(exc)
         detail = f"HTTP {status}" if status else type(exc).__name__
         logger.warning("TMDb %s fetch failed for %r: %s", label, title, detail)
         return None

@@ -46,7 +46,7 @@ _ADMIT_ONE_BASE = "https://verdibcn.admit-one.eu"
 
 # Seat pages answer in well under a second when healthy. The ceiling exists to
 # bound a hung host, not to wait out a slow one — every second here is spent
-# serially, once per unique time slot, inside a 120s Lambda.
+# serially, once per unique time slot, inside the refresh Lambda's timeout.
 _SALA_TIMEOUT = 3
 
 # Session id inside a stored booking_url, for rebuilding the sala map from cache.

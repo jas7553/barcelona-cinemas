@@ -19,7 +19,7 @@ show_missing = true
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["app.py", "pipeline.py", "refresh.py", "cache.py", "enricher.py", "observability.py", "models.py", "validation.py", "providers/", "listings_config.py", "tests/"]
+files = ["app.py", "pipeline.py", "refresh.py", "cache.py", "enricher.py", "observability.py", "models.py", "validation.py", "providers/", "listings_config.py", "http_errors.py", "tests/"]
 
 [[tool.mypy.overrides]]
 module = "flask"

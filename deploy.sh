@@ -130,7 +130,10 @@ FUNC=$(aws cloudformation describe-stack-resource --stack-name "$STACK" \
   --output text 2>/dev/null || true)
 if [ -n "$FUNC" ] && [ "$FUNC" != "None" ]; then
   SINCE=$(( $(date +%s) * 1000 ))
+  # Must exceed ApiFunction's Timeout: on a read timeout the CLI re-sends the
+  # invoke, starting a second refresh.
   aws lambda invoke \
+    --cli-read-timeout 200 \
     --function-name "$FUNC" \
     --payload '{"source":"aws.events"}' \
     --cli-binary-format raw-in-base64-out \
