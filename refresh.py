@@ -41,15 +41,17 @@ rendering ("No more showings") instead of hitting the 404.
 from __future__ import annotations
 
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
 from datetime import date, timedelta
 from itertools import chain
-from typing import TYPE_CHECKING, NamedTuple, Protocol, TypedDict
+from typing import TYPE_CHECKING, Any, NamedTuple, Protocol, TypedDict
 
 from models import CinemaRegistry, EndedMovie, Listings, Movie
 from observability import emit_metric, log_event, now_ms
 from providers.common import madrid_today
+from providers.diagnostics import failure_diagnostics, is_retryable
 from reconcile import reconcile, same_movie
 from validation import normalize_movies
 
@@ -273,14 +275,26 @@ def _collect_movies(providers: Sequence[ListingsSource], cinemas: CinemaRegistry
     )
 
 
+# Long enough for a dropped connection or a rate-limit window on the upstream
+# front end to clear, short enough that the retry still fits the budget below.
+_RETRY_DELAY_S = 30.0
+
+# A retry may only start this long after the Provider's first attempt began.
+# Providers run in parallel, so every worker's clock starts with collection.
+# Worst case: retry starts at 55 s, Verdi's slowest observed success is ~45 s,
+# collection ends at ~100 s, leaving ~20 s of the ApiFunction's 120 s for
+# Enrichment, the cache write and the (async) SSG invoke. The incident failures
+# (connect timeouts at 15 s and 20 s, fast 403s) all fail early enough.
+_RETRY_START_DEADLINE_S = 55.0
+
+_sleep = time.sleep
+_monotonic = time.monotonic
+
+
 def _fetch_provider_movies(provider: ListingsSource, cinemas: CinemaRegistry) -> list[Movie] | None:
     started_ms = now_ms()
-    try:
-        fetched = provider.fetch(cinemas)
-    except Exception as exc:
-        logger.warning("%s failed: %s", provider.name, exc)
-        emit_metric("ProviderFailure", 1)
-        log_event("collection_failure", provider=provider.name, exception_type=type(exc).__name__)
+    fetched = _fetch_with_retry(provider, cinemas)
+    if fetched is None:
         return None
 
     movies = normalize_movies(fetched, source=f"{provider.name} output")
@@ -296,3 +310,46 @@ def _fetch_provider_movies(provider: ListingsSource, cinemas: CinemaRegistry) ->
         showtime_count=sum(len(movie["showtimes"]) for movie in movies),
     )
     return movies
+
+
+def _fetch_with_retry(provider: ListingsSource, cinemas: CinemaRegistry) -> list[Movie] | None:
+    """
+    `provider.fetch`, retried once on a transient error if the budget allows.
+
+    `ProviderFailure` fires only once no further attempt will be made, so the
+    degradation alarm keeps meaning "this run lost the provider".
+    """
+    first_started = _monotonic()
+    attempt = 1
+    while True:
+        attempt_started = _monotonic()
+        try:
+            return provider.fetch(cinemas)
+        except Exception as exc:
+            now = _monotonic()
+            failure: dict[str, Any] = {
+                "provider": provider.name,
+                "attempt": attempt,
+                "exception_type": type(exc).__name__,
+                "elapsed_ms": round((now - attempt_started) * 1000),
+                "total_elapsed_ms": round((now - first_started) * 1000),
+                **failure_diagnostics(exc),
+            }
+            logger.warning("%s failed (attempt %d): %s", provider.name, attempt, exc)
+
+            if attempt > 1:
+                outcome = "retry_failed"
+            elif not is_retryable(exc):
+                outcome = "not_retryable"
+            elif now - first_started + _RETRY_DELAY_S > _RETRY_START_DEADLINE_S:
+                outcome = "over_budget"
+            else:
+                emit_metric("ProviderRetry", 1)
+                log_event("provider_retry", level=logging.WARNING, retry_delay_s=_RETRY_DELAY_S, **failure)
+                _sleep(_RETRY_DELAY_S)
+                attempt += 1
+                continue
+
+            emit_metric("ProviderFailure", 1)
+            log_event("collection_failure", level=logging.WARNING, outcome=outcome, **failure)
+            return None
