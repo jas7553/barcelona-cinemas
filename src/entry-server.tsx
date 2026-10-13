@@ -19,8 +19,8 @@ const SITE_NAME = "Barcelona This Week";
 const HOME_TITLE = `${SITE_NAME} · English-language movies at Barcelona cinemas`;
 const DEFAULT_DESC =
   "English-language (VO) cinema showtimes across Barcelona this week — what's on, where, and when.";
-// 256×256 app icon.
-const OG_IMAGE_PATH = "/apple-touch-icon.png";
+// 512×512 app icon (the home-screen art).
+const OG_IMAGE_PATH = "/icon-512.png";
 
 interface RenderedPage {
   html: string;

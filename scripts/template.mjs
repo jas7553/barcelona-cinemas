@@ -94,13 +94,13 @@ export function renderDocument(o) {
     <script>${VIEW_TRANSITION_SCRIPT}</script>
     <link rel="preload" href="/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/playfair-display-latin.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=4" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=4" />
-    <link rel="icon" type="image/png" sizes="256x256" href="/favicon.png?v=4" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
-    <link rel="shortcut icon" href="/favicon-32x32.png?v=4" />
-    <link rel="apple-touch-icon" sizes="256x256" href="/apple-touch-icon.png?v=4" />
-    <link rel="mask-icon" href="/safari-pinned-tab.svg?v=4" color="#c17f3a" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=5" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=5" />
+    <link rel="icon" type="image/png" sizes="256x256" href="/favicon.png?v=5" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=5" />
+    <link rel="shortcut icon" href="/favicon-32x32.png?v=5" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=5" />
+    <link rel="mask-icon" href="/safari-pinned-tab.svg?v=5" color="#c17f3a" />
     <meta name="theme-color" content="#faf6ef" />
     <link rel="manifest" href="/site.webmanifest" />
     ${o.headExtra}
