@@ -420,7 +420,7 @@ def test_build_listings_raises_when_every_provider_fails():
 
 
 def test_build_listings_raises_when_providers_answer_but_yield_no_movies():
-    with pytest.raises(RuntimeError, match="merge produced no movies"):
+    with pytest.raises(RuntimeError, match="none returned movies"):
         _build([_provider("one", [_raw_movie("", [])])])
 
 
@@ -596,7 +596,6 @@ def test_a_successful_provider_snapshots_its_output_at_now() -> None:
 def test_a_failed_provider_falls_back_to_its_last_good_snapshot(
     caplog: pytest.LogCaptureFixture, find_event: FindEvent
 ) -> None:
-    """The 2026-10-13 incident: Verdi timed out and its films vanished for 12 hours."""
     snapshot_movies = [_raw_movie("Aftersun")]
     cached = _snapshot_cache({"verdi": ("2026-03-26T21:00:00+00:00", snapshot_movies)})
 
@@ -704,6 +703,43 @@ def test_fallback_drops_showtimes_that_have_already_started(find_event: FindEven
         ("2026-03-28", "08:00"),
     ]
     assert find_event("provider_fallback")["past_showtime_dropped_count"] == 3
+
+
+def test_a_zero_result_provider_falls_back_and_keeps_its_snapshot(
+    caplog: pytest.LogCaptureFixture, find_event: FindEvent
+) -> None:
+    """A bot-challenge page parses to zero films; that must not wipe the last good output."""
+    snapshot_movies = [_raw_movie("Aftersun")]
+    cached = _snapshot_cache({"verdi": ("2026-03-26T21:00:00+00:00", snapshot_movies)})
+
+    listings, stats = _build(
+        [_provider("verdi", []), _provider("other", [_raw_movie("Dune: Part Two")])],
+        cached=cached,
+    )
+
+    assert sorted(m["title"] for m in listings["movies"]) == ["Aftersun", "Dune: Part Two"]
+    assert (stats["provider_success_count"], stats["provider_fallback_count"]) == (2, 1)
+    assert len(_find_metrics(caplog, "ProviderZeroResult")) == 1
+    assert find_event("provider_fallback")["trigger"] == "zero_result"
+    assert listings.get("provider_snapshots", {})["verdi"] == {
+        "fetched_at": "2026-03-26T21:00:00+00:00",
+        "movies": snapshot_movies,
+    }
+
+
+def test_a_zero_result_provider_never_writes_an_empty_snapshot(find_event: FindEvent) -> None:
+    listings, _ = _build([_provider("verdi", []), _provider("other", [_raw_movie("Dune: Part Two")])])
+
+    assert "verdi" not in listings.get("provider_snapshots", {})
+    event = find_event("provider_fallback_unavailable")
+    assert (event["provider"], event["trigger"], event["reason"]) == ("verdi", "zero_result", "no_snapshot")
+
+
+def test_fallbacks_alone_do_not_make_a_refresh_even_when_providers_answer() -> None:
+    cached = _snapshot_cache({"verdi": (NOW.isoformat(), [_raw_movie("Aftersun")])})
+
+    with pytest.raises(RuntimeError, match="none returned movies"):
+        _build([_provider("verdi", [])], cached=cached)
 
 
 def test_fallbacks_alone_do_not_make_a_refresh() -> None:

@@ -33,12 +33,10 @@ closes:
       - non_english_dropped_count
       == published_movie_count
 
-A Provider that fails falls back to its last good output, kept per Provider in
-`Listings.provider_snapshots`, if that output is at most `FALLBACK_MAX_AGE` old.
-Its already-started Showtimes are dropped and the rest joins the fresh output
-before collection's Reconciliation, so it takes exactly the same path. The
-snapshot keeps its original `fetched_at` through a fallback, so repeated
-failures age it out instead of resurrecting it forever.
+A Provider that fails or returns nothing contributes its last good output
+(`Listings.provider_snapshots`, via `_fallback_movies`) to the raw collection
+instead, so that output goes through exactly the same Reconciliation and
+Enrichment as fresh data.
 
 Movies that drop out are carried in `Listings.ended` for
 `ENDED_RETENTION_DAYS` after their last showing, so a shared film link keeps
@@ -72,10 +70,8 @@ logger = logging.getLogger(__name__)
 
 ENDED_RETENTION_DAYS = 30
 
-# Scheduled refreshes run 12 hours apart: a snapshot covers the next failed run
-# and a second consecutive one (age exactly 24h), not a third. Past a day the
-# upstream schedule has likely changed, and the ProviderFailure alarm has had
-# two runs to get a human involved.
+# Covers two consecutive missed refreshes; older, the upstream schedule has
+# likely moved on.
 FALLBACK_MAX_AGE = timedelta(hours=24)
 
 
@@ -142,8 +138,9 @@ def build_listings(
 
     `cached` is the previous refresh's Listings (None on a cold cache); it seeds
     Enrichment so unchanged Movies cost no TMDb request, and its
-    `provider_snapshots` stand in for a Provider that fails. Raises RuntimeError
-    if every Provider failed (fallbacks notwithstanding) or collection produced nothing — the caller must then
+    `provider_snapshots` stand in for a Provider that fails. Raises
+    RuntimeError if no Provider returned fresh Movies (fallbacks
+    notwithstanding) or collection produced nothing — the caller must then
     leave the existing cache in place.
     """
     cached_movies: list[Movie] = cached["movies"] if cached else []
@@ -273,22 +270,31 @@ def _collect_movies(
 
     for provider, future in zip(providers, futures, strict=True):
         movies = future.result()
-        if movies is not None:
+        if movies is None:
+            failed_provider_count += 1
+        else:
             success_count += 1
+        if movies:
             snapshots[provider.name] = {"fetched_at": now.isoformat(), "movies": movies}
             provider_results.append(movies)
             continue
-        failed_provider_count += 1
+        # Zero films is treated as a failure too: a bot-challenge page parses to nothing.
         previous = previous_snapshots.get(provider.name)
-        fallback = _fallback_movies(provider.name, previous, now)
+        fallback = _fallback_movies(
+            provider.name, previous, now, trigger="failure" if movies is None else "zero_result"
+        )
         if previous is not None and fallback is not None:
             fallback_count += 1
+            # Unchanged, original fetched_at included, so repeated failures age it out.
             snapshots[provider.name] = previous
             provider_results.append(fallback)
 
     if not success_count:
         emit_metric("CollectionFailure", 1)
         raise RuntimeError("All providers failed to return listings")
+    if len(provider_results) == fallback_count:
+        emit_metric("CollectionFailure", 1)
+        raise RuntimeError("Providers answered but none returned movies")
 
     raw = list(chain.from_iterable(provider_results))
     movies = reconcile(raw, stage="collection")
@@ -314,13 +320,21 @@ def _collect_movies(
     )
 
 
-def _fallback_movies(provider: str, snapshot: ProviderSnapshot | None, now: datetime) -> list[Movie] | None:
+def _fallback_movies(
+    provider: str, snapshot: ProviderSnapshot | None, now: datetime, *, trigger: str
+) -> list[Movie] | None:
     """
-    A failed Provider's last good Movies minus Showtimes that have already
-    started, or None if there is no snapshot or it is older than `FALLBACK_MAX_AGE`.
+    A Provider's last good Movies minus Showtimes that have already started, or
+    None if there is no snapshot or it is older than `FALLBACK_MAX_AGE`.
     """
     if snapshot is None:
-        log_event("provider_fallback_unavailable", level=logging.WARNING, provider=provider, reason="no_snapshot")
+        log_event(
+            "provider_fallback_unavailable",
+            level=logging.WARNING,
+            provider=provider,
+            trigger=trigger,
+            reason="no_snapshot",
+        )
         return None
     age = _as_aware(now) - _as_aware(datetime.fromisoformat(snapshot["fetched_at"]))
     age_hours = round(age / timedelta(hours=1), 1)
@@ -329,6 +343,7 @@ def _fallback_movies(provider: str, snapshot: ProviderSnapshot | None, now: date
             "provider_fallback_unavailable",
             level=logging.WARNING,
             provider=provider,
+            trigger=trigger,
             reason="stale",
             snapshot_age_hours=age_hours,
         )
@@ -349,6 +364,7 @@ def _fallback_movies(provider: str, snapshot: ProviderSnapshot | None, now: date
         "provider_fallback",
         level=logging.WARNING,
         provider=provider,
+        trigger=trigger,
         snapshot_fetched_at=snapshot["fetched_at"],
         snapshot_age_hours=age_hours,
         movie_count=len(movies),

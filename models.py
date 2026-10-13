@@ -49,7 +49,7 @@ class EndedMovie(Movie):
 
 
 class ProviderSnapshot(TypedDict):
-    """One Provider's last successful output, pre-Reconciliation and pre-Enrichment."""
+    """One Provider's last non-empty output, pre-Reconciliation and pre-Enrichment."""
 
     fetched_at: str  # ISO 8601; when this Provider last answered, not when the cache was written
     movies: list[Movie]
@@ -59,8 +59,7 @@ class Listings(TypedDict):
     fetched_at: str  # ISO 8601 datetime
     movies: list[Movie]
     ended: NotRequired[list[EndedMovie]]  # absent in caches predating film retention
-    # Keyed by Provider name; what a refresh falls back to when that Provider fails.
-    # Internal to the cache: transform.py never publishes it.
+    # Keyed by Provider name. Internal to the cache; never published.
     provider_snapshots: NotRequired[dict[str, ProviderSnapshot]]
 
 
