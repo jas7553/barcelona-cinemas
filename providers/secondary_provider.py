@@ -11,6 +11,7 @@ from listings_config import secondary_listings_url
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
 from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
 from providers.common import DEFAULT_HEADERS, base_movie, normalize_audio_lang, normalize_subtitle_lang
+from providers.diagnostics import record_entry_response
 from reconcile import reconcile
 
 logger = logging.getLogger(__name__)
@@ -107,6 +108,7 @@ class SecondaryProvider:
     def fetch(self, cinemas: CinemaRegistry) -> list[Movie]:
         response = requests.get(secondary_listings_url(), headers=DEFAULT_HEADERS, timeout=20)
         response.raise_for_status()
+        record_entry_response(response)
 
         shops_payload = _extract_shops_payload(response.text)
         alias_lookup = build_cinema_alias_lookup(cinemas, self.name)

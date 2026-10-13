@@ -9,6 +9,7 @@ from listings_config import listings_feed_url
 from models import CinemaRegistry, Movie, Showtime
 from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
 from providers.common import DEFAULT_HEADERS, base_movie, madrid_today, normalize_premium_format
+from providers.diagnostics import record_entry_response
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,7 @@ class ListingsProvider:
         """
         resp = requests.get(listings_feed_url(), headers=DEFAULT_HEADERS, timeout=15)
         resp.raise_for_status()
+        record_entry_response(resp)
 
         soup = BeautifulSoup(resp.text, "html.parser")
         film_cards = soup.find_all("a", class_="film-card")
