@@ -138,12 +138,16 @@ const bySoonest = (a: FilmRow, b: FilmRow) =>
   `${a.showings[0].date}${a.showings[0].time}`.localeCompare(`${b.showings[0].date}${b.showings[0].time}`) ||
   a.film.title.localeCompare(b.film.title);
 
-/** This week's sections (requirements 5.1). Seen films keep the size order. */
+/** Highest rated first, unrated last. */
+const byRating = (a: FilmRow, b: FilmRow) =>
+  (b.film.rating ?? -1) - (a.film.rating ?? -1) || a.film.title.localeCompare(b.film.title);
+
+/** This week's sections (requirements 5.1). Seen films are ordered by showing count. */
 export function weekSections(rows: FilmRow[], seen: ReadonlySet<string>) {
   const unseen = rows.filter((r) => !seen.has(r.film.id));
   return {
     few: unseen.filter((r) => r.showings.length <= FEW_SHOWINGS).sort(bySoonest),
-    all: unseen.filter((r) => r.showings.length > FEW_SHOWINGS).sort(bySize),
+    all: unseen.filter((r) => r.showings.length > FEW_SHOWINGS).sort(byRating),
     seen: rows.filter((r) => seen.has(r.film.id)).sort(bySize),
   };
 }

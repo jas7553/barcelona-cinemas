@@ -127,22 +127,34 @@ describe("ordering", () => {
     expect(rows.map((r) => [r.film.id, r.showings.length])).toEqual([["later", 1]]);
   });
 
-  it("splits This week into a few showings (soonest first), all week (biggest first) and seen", () => {
+  const many = (id: string, n: number, rating: number | null = null) => ({
+    ...film(id, Array.from({ length: n }, (_, i) => at("verdi", "2026-10-05", `1${i}:00`))),
+    rating,
+  });
+  const week = ["2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07"];
+
+  it("splits This week into a few showings (soonest first), all week (highest rated first) and seen", () => {
     const rank = ranking(THEATERS, null, new Set());
-    const many = (id: string, n: number) =>
-      film(id, Array.from({ length: n }, (_, i) => at("verdi", "2026-10-05", `1${i}:00`)));
     const films = [
       film("rare-late", [at("verdi", "2026-10-07", "20:00")]),
       film("rare-soon", [at("verdi", "2026-10-05", "20:00"), at("verdi", "2026-10-06", "20:00")]),
-      many("big", 6),
-      many("bigger", 9),
+      many("big", 6, 7.8),
+      many("bigger", 9, 6.5),
       many("seen", 5),
+      many("seen-bigger", 8),
     ];
-    const rows = filmRows(films, ["2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07"], clock, rank);
-    const sections = weekSections(rows, new Set(["seen"]));
+    const rows = filmRows(films, week, clock, rank);
+    const sections = weekSections(rows, new Set(["seen", "seen-bigger"]));
     expect(sections.few.map((r) => r.film.id)).toEqual(["rare-soon", "rare-late"]);
-    expect(sections.all.map((r) => r.film.id)).toEqual(["bigger", "big"]);
-    expect(sections.seen.map((r) => r.film.id)).toEqual(["seen"]);
+    expect(sections.all.map((r) => r.film.id)).toEqual(["big", "bigger"]);
+    expect(sections.seen.map((r) => r.film.id)).toEqual(["seen-bigger", "seen"]);
+  });
+
+  it("puts unrated films last in all week and breaks rating ties on title", () => {
+    const rank = ranking(THEATERS, null, new Set());
+    const films = [many("unrated", 9), many("b", 4, 7), many("a", 5, 7), many("low", 6, 0.5)];
+    const rows = filmRows(films, week, clock, rank);
+    expect(weekSections(rows, new Set()).all.map((r) => r.film.id)).toEqual(["a", "b", "low", "unrated"]);
   });
 });
 
