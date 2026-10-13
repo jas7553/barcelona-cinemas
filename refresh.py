@@ -33,10 +33,10 @@ closes:
       - non_english_dropped_count
       == published_movie_count
 
-A Provider that fails or returns nothing contributes its last good output
-(`Listings.provider_snapshots`, via `_fallback_movies`) to the raw collection
-instead, so that output goes through exactly the same Reconciliation and
-Enrichment as fresh data.
+A Provider that still fails after its retry, or returns nothing, contributes
+its last good output (`Listings.provider_snapshots`, via `_fallback_movies`) to
+the raw collection instead, so that output goes through exactly the same
+Reconciliation and Enrichment as fresh data.
 
 Movies that drop out are carried in `Listings.ended` for
 `ENDED_RETENTION_DAYS` after their last showing, so a shared film link keeps
