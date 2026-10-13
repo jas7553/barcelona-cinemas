@@ -33,6 +33,11 @@ closes:
       - non_english_dropped_count
       == published_movie_count
 
+A Provider that still fails after its retry, or returns nothing, contributes
+its last good output (`Listings.provider_snapshots`, via `_fallback_movies`) to
+the raw collection instead, so that output goes through exactly the same
+Reconciliation and Enrichment as fresh data.
+
 Movies that drop out are carried in `Listings.ended` for
 `ENDED_RETENTION_DAYS` after their last showing, so a shared film link keeps
 rendering ("No more showings") instead of hitting the 404.
@@ -44,20 +49,19 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from itertools import chain
 from typing import TYPE_CHECKING, Any, NamedTuple, Protocol, TypedDict
 
-from models import CinemaRegistry, EndedMovie, Listings, Movie
+from models import CinemaRegistry, EndedMovie, Listings, Movie, ProviderSnapshot
 from observability import emit_metric, log_event, now_ms
-from providers.common import madrid_today
+from providers.common import assume_utc, madrid_now, madrid_today
 from providers.diagnostics import failure_diagnostics, is_retryable
 from reconcile import reconcile, same_movie
 from validation import normalize_movies
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from datetime import datetime
+    from collections.abc import Mapping, Sequence
 
     from enricher import EnrichmentStats
     from providers import ListingsSource
@@ -65,6 +69,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 ENDED_RETENTION_DAYS = 30
+
+# Covers two consecutive missed refreshes; older, the upstream schedule has
+# likely moved on.
+FALLBACK_MAX_AGE = timedelta(hours=24)
 
 
 class RefreshStats(TypedDict):
@@ -79,6 +87,7 @@ class RefreshStats(TypedDict):
 
     provider_success_count: int
     provider_failure_count: int
+    provider_fallback_count: int
     raw_movie_count: int
     collection_merged_count: int
     collected_movie_count: int
@@ -112,6 +121,8 @@ class _Collection(NamedTuple):
     raw_movie_count: int
     success_count: int
     failure_count: int
+    fallback_count: int
+    snapshots: dict[str, ProviderSnapshot]
 
 
 def build_listings(
@@ -126,13 +137,16 @@ def build_listings(
     Run the refresh ritual and return the fresh Listings plus their stats.
 
     `cached` is the previous refresh's Listings (None on a cold cache); it seeds
-    Enrichment so unchanged Movies cost no TMDb request. Raises RuntimeError if
-    every Provider failed or collection produced nothing — the caller must then
+    Enrichment so unchanged Movies cost no TMDb request, and its
+    `provider_snapshots` stand in for a Provider that fails. Raises
+    RuntimeError if no Provider returned fresh Movies (fallbacks
+    notwithstanding) or collection produced nothing — the caller must then
     leave the existing cache in place.
     """
     cached_movies: list[Movie] = cached["movies"] if cached else []
 
-    collection = _collect_movies(providers, cinemas)
+    previous_snapshots = cached.get("provider_snapshots", {}) if cached else {}
+    collection = _collect_movies(providers, cinemas, previous_snapshots, now)
     enriched, enrichment_stats = enrich(collection.movies, cached_movies)
     reconciled = reconcile(enriched, stage="post_enrichment")
     published, non_english_dropped = _filter_english(reconciled)
@@ -143,10 +157,12 @@ def build_listings(
         "fetched_at": now.isoformat(),
         "movies": published,
         "ended": ended,
+        "provider_snapshots": collection.snapshots,
     }
     stats: RefreshStats = {
         "provider_success_count": collection.success_count,
         "provider_failure_count": collection.failure_count,
+        "provider_fallback_count": collection.fallback_count,
         "raw_movie_count": collection.raw_movie_count,
         "collection_merged_count": collection.raw_movie_count - len(collection.movies),
         "collected_movie_count": len(collection.movies),
@@ -226,16 +242,25 @@ def _filter_english(movies: list[Movie]) -> tuple[list[Movie], int]:
     return kept, len(dropped)
 
 
-def _collect_movies(providers: Sequence[ListingsSource], cinemas: CinemaRegistry) -> _Collection:
+def _collect_movies(
+    providers: Sequence[ListingsSource],
+    cinemas: CinemaRegistry,
+    previous_snapshots: Mapping[str, ProviderSnapshot],
+    now: datetime,
+) -> _Collection:
     """
     Fetch every Provider in parallel and reconcile their combined output.
 
     Results are gathered in Provider list order, not completion order, so the
     reconciled output is deterministic regardless of which feed answers first.
+    A failed Provider contributes its fallback (see `_fallback_movies`), if any.
     """
     started_ms = now_ms()
     provider_results: list[list[Movie]] = []
+    snapshots: dict[str, ProviderSnapshot] = {}
+    success_count = 0
     failed_provider_count = 0
+    fallback_count = 0
 
     # ContextVars do not propagate into worker threads by default.
     with ThreadPoolExecutor(max_workers=len(providers) or 1) as executor:
@@ -243,16 +268,33 @@ def _collect_movies(providers: Sequence[ListingsSource], cinemas: CinemaRegistry
             executor.submit(copy_context().run, _fetch_provider_movies, provider, cinemas) for provider in providers
         ]
 
-    for future in futures:
+    for provider, future in zip(providers, futures, strict=True):
         movies = future.result()
         if movies is None:
             failed_provider_count += 1
+        else:
+            success_count += 1
+        if movies:
+            snapshots[provider.name] = {"fetched_at": now.isoformat(), "movies": movies}
+            provider_results.append(movies)
             continue
-        provider_results.append(movies)
+        # Zero films is treated as a failure too: a bot-challenge page parses to nothing.
+        previous = previous_snapshots.get(provider.name)
+        fallback = _fallback_movies(
+            provider.name, previous, now, trigger="failure" if movies is None else "zero_result"
+        )
+        if previous is not None and fallback is not None:
+            fallback_count += 1
+            # Unchanged, original fetched_at included, so repeated failures age it out.
+            snapshots[provider.name] = previous
+            provider_results.append(fallback)
 
-    if not provider_results:
+    if not success_count:
         emit_metric("CollectionFailure", 1)
         raise RuntimeError("All providers failed to return listings")
+    if len(provider_results) == fallback_count:
+        emit_metric("CollectionFailure", 1)
+        raise RuntimeError("Providers answered but none returned movies")
 
     raw = list(chain.from_iterable(provider_results))
     movies = reconcile(raw, stage="collection")
@@ -261,8 +303,9 @@ def _collect_movies(providers: Sequence[ListingsSource], cinemas: CinemaRegistry
         raise RuntimeError("Providers returned data but merge produced no movies")
     log_event(
         "collection_summary",
-        provider_count=len(provider_results),
+        provider_count=success_count,
         failed_provider_count=failed_provider_count,
+        fallback_provider_count=fallback_count,
         duration_ms=round(now_ms() - started_ms, 2),
         movie_count=len(movies),
         showtime_count=sum(len(movie["showtimes"]) for movie in movies),
@@ -270,9 +313,65 @@ def _collect_movies(providers: Sequence[ListingsSource], cinemas: CinemaRegistry
     return _Collection(
         movies=movies,
         raw_movie_count=len(raw),
-        success_count=len(provider_results),
+        success_count=success_count,
         failure_count=failed_provider_count,
+        fallback_count=fallback_count,
+        snapshots=snapshots,
     )
+
+
+def _fallback_movies(
+    provider: str, snapshot: ProviderSnapshot | None, now: datetime, *, trigger: str
+) -> list[Movie] | None:
+    """
+    A Provider's last good Movies minus Showtimes that have already started, or
+    None if there is no snapshot or it is older than `FALLBACK_MAX_AGE`.
+    """
+    if snapshot is None:
+        log_event(
+            "provider_fallback_unavailable",
+            level=logging.WARNING,
+            provider=provider,
+            trigger=trigger,
+            reason="no_snapshot",
+        )
+        return None
+    age = assume_utc(now) - assume_utc(datetime.fromisoformat(snapshot["fetched_at"]))
+    age_hours = round(age / timedelta(hours=1), 1)
+    if age > FALLBACK_MAX_AGE:
+        log_event(
+            "provider_fallback_unavailable",
+            level=logging.WARNING,
+            provider=provider,
+            trigger=trigger,
+            reason="stale",
+            snapshot_age_hours=age_hours,
+        )
+        return None
+
+    local = madrid_now(now)
+    cutoff = (local.date().isoformat(), local.strftime("%H:%M"))
+    movies: list[Movie] = []
+    dropped = 0
+    for movie in snapshot["movies"]:
+        upcoming = [showtime for showtime in movie["showtimes"] if (showtime["date"], showtime["time"]) >= cutoff]
+        dropped += len(movie["showtimes"]) - len(upcoming)
+        if upcoming:
+            movies.append({**movie, "showtimes": upcoming})
+
+    emit_metric("ProviderFallback", 1)
+    log_event(
+        "provider_fallback",
+        level=logging.WARNING,
+        provider=provider,
+        trigger=trigger,
+        snapshot_fetched_at=snapshot["fetched_at"],
+        snapshot_age_hours=age_hours,
+        movie_count=len(movies),
+        showtime_count=sum(len(movie["showtimes"]) for movie in movies),
+        past_showtime_dropped_count=dropped,
+    )
+    return movies
 
 
 # Long enough for a dropped connection or a rate-limit window on the upstream

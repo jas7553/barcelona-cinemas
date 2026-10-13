@@ -4,7 +4,28 @@ import logging
 
 import pytest
 
-from validation import normalize_movie, normalize_tmdb_payload
+from validation import normalize_listings, normalize_movie, normalize_tmdb_payload
+
+
+def test_normalize_listings_round_trips_provider_snapshots_and_drops_invalid_ones() -> None:
+    """Without this the cache read would lose every snapshot, and with it the fallback."""
+    movie = {"title": "Aftersun", "showtimes": []}
+    listings = normalize_listings(
+        {
+            "fetched_at": "2026-03-27T09:00:00+00:00",
+            "movies": [],
+            "provider_snapshots": {
+                "verdi": {"fetched_at": "2026-03-27T09:00:00+00:00", "movies": [movie, {"title": ""}]},
+                "secondary": {"movies": [movie]},
+            },
+        },
+        source="test cache",
+    )
+
+    assert listings is not None
+    snapshots = listings.get("provider_snapshots", {})
+    assert list(snapshots) == ["verdi"]
+    assert [m["title"] for m in snapshots["verdi"]["movies"]] == ["Aftersun"]
 
 
 def test_normalize_movie_keeps_valid_imdb_id() -> None:

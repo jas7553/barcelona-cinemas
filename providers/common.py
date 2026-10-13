@@ -8,22 +8,27 @@ from models import PREMIUM_FORMATS, Movie, Showtime
 MADRID_TZ = ZoneInfo("Europe/Madrid")
 
 
-def madrid_today(now: datetime | None = None) -> date:
-    """
-    Return "today" as a Madrid calendar date.
+def assume_utc(instant: datetime) -> datetime:
+    """`instant` made aware, reading a naive value as UTC (how `fetched_at` and `enriched_at` are written)."""
+    return instant if instant.tzinfo is not None else instant.replace(tzinfo=UTC)
 
-    Showtime `date` strings are Madrid-local calendar dates, but the Lambda
-    runs on UTC (see template.yaml). Using `date.today()` yields the UTC
-    calendar day, which is wrong for roughly the last hour(s) of the Madrid
-    day (Madrid is UTC+1/+2). `now` is injectable for tests; defaults to the
-    real current instant (any aware or naive datetime — naive is treated as
-    UTC, matching `datetime.now(UTC)` producers like `fetched_at`).
+
+def madrid_now(now: datetime | None = None) -> datetime:
+    """
+    `now` (default: the real current instant) as Madrid wall-clock time.
+
+    Showtime `date`/`time` strings are Madrid-local, but the Lambda runs on UTC
+    (see template.yaml), so the system clock's calendar day and hour are wrong
+    for comparing against them. Naive input is read as UTC (`assume_utc`).
     """
     if now is None:
-        now = datetime.now(MADRID_TZ)
-    elif now.tzinfo is None:
-        now = now.replace(tzinfo=UTC)
-    return now.astimezone(MADRID_TZ).date()
+        return datetime.now(MADRID_TZ)
+    return assume_utc(now).astimezone(MADRID_TZ)
+
+
+def madrid_today(now: datetime | None = None) -> date:
+    """Return "today" as a Madrid calendar date (see `madrid_now`)."""
+    return madrid_now(now).date()
 
 
 DEFAULT_HEADERS = {

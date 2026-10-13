@@ -48,10 +48,19 @@ class EndedMovie(Movie):
     last_showing: str  # YYYY-MM-DD, Madrid calendar date
 
 
+class ProviderSnapshot(TypedDict):
+    """One Provider's last non-empty output, pre-Reconciliation and pre-Enrichment."""
+
+    fetched_at: str  # ISO 8601; when this Provider last answered, not when the cache was written
+    movies: list[Movie]
+
+
 class Listings(TypedDict):
     fetched_at: str  # ISO 8601 datetime
     movies: list[Movie]
     ended: NotRequired[list[EndedMovie]]  # absent in caches predating film retention
+    # Keyed by Provider name. Internal to the cache; never published.
+    provider_snapshots: NotRequired[dict[str, ProviderSnapshot]]
 
 
 class CinemaInfo(TypedDict):

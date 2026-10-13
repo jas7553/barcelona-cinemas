@@ -16,7 +16,7 @@ import refresh
 from providers import diagnostics
 
 from .conftest import FindEvent
-from .test_refresh import _build, _find_metrics, _provider, _raw_movie
+from .test_refresh import NOW, _build, _find_metrics, _provider, _raw_movie, _snapshot_cache
 
 _VERDI_URL = "https://barcelona.cines-verdi.com/cartellera"
 
@@ -193,3 +193,27 @@ def test_diagnostics_skip_network_lookups_for_non_network_errors() -> None:
         assert diagnostics.failure_diagnostics(ValueError("bad markup")) == {"http_status": None}
     get.assert_not_called()
     resolve.assert_not_called()
+
+
+def test_a_successful_retry_needs_no_fallback(clock: _Clock, caplog: pytest.LogCaptureFixture) -> None:
+    fetch = _failing_after(clock, 1, _connect_timeout(), [_raw_movie("Fresh")])
+    cached = _snapshot_cache({"verdi": (NOW.isoformat(), [_raw_movie("Snapshot")])})
+
+    listings, stats = _build([_provider("verdi", fetch=fetch)], cached=cached)
+
+    assert [m["title"] for m in listings["movies"]] == ["Fresh"]
+    assert stats["provider_fallback_count"] == 0
+    assert _find_metrics(caplog, "ProviderFallback") == []
+
+
+def test_the_fallback_follows_an_exhausted_retry(clock: _Clock, find_event: FindEvent) -> None:
+    fetch = _failing_after(clock, 1, _connect_timeout(), _connect_timeout())
+    cached = _snapshot_cache({"verdi": (NOW.isoformat(), [_raw_movie("Snapshot")])})
+
+    listings, stats = _build([_provider("verdi", fetch=fetch), _provider("two", [_raw_movie("Fresh")])], cached=cached)
+
+    assert clock.sleeps == [refresh._RETRY_DELAY_S]
+    assert sorted(m["title"] for m in listings["movies"]) == ["Fresh", "Snapshot"]
+    assert stats["provider_fallback_count"] == 1
+    assert find_event("collection_failure")["outcome"] == "retry_failed"
+    assert find_event("provider_fallback")["trigger"] == "failure"

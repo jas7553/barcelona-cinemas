@@ -10,7 +10,7 @@ from contextlib import suppress
 from datetime import date, datetime
 from typing import Any
 
-from models import PREMIUM_FORMATS, EndedMovie, Listings, Movie, Showtime
+from models import PREMIUM_FORMATS, EndedMovie, Listings, Movie, ProviderSnapshot, Showtime
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,30 @@ def normalize_listings(data: object, *, source: str) -> Listings | None:
     ended_raw = data.get("ended")
     if ended_raw is not None:
         listings["ended"] = normalize_ended_movies(ended_raw, source=f"{source} ended")
+    snapshots_raw = data.get("provider_snapshots")
+    if snapshots_raw is not None:
+        listings["provider_snapshots"] = normalize_provider_snapshots(snapshots_raw, source=f"{source} snapshots")
     return listings
+
+
+def normalize_provider_snapshots(data: object, *, source: str) -> dict[str, ProviderSnapshot]:
+    """Validate the per-Provider snapshots and drop invalid entries."""
+    if not isinstance(data, Mapping):
+        logger.warning("Rejected %s: provider snapshots payload is not an object", source)
+        return {}
+
+    snapshots: dict[str, ProviderSnapshot] = {}
+    for name, raw in data.items():
+        entry_source = f"{source}[{name}]"
+        fetched_at = _as_iso_datetime(raw.get("fetched_at")) if isinstance(raw, Mapping) else None
+        if not isinstance(name, str) or not isinstance(raw, Mapping) or fetched_at is None:
+            logger.warning("Rejected %s: snapshot has no valid fetched_at", entry_source)
+            continue
+        snapshots[name] = ProviderSnapshot(
+            fetched_at=fetched_at,
+            movies=normalize_movies(raw.get("movies"), source=entry_source),
+        )
+    return snapshots
 
 
 def normalize_ended_movies(data: object, *, source: str) -> list[EndedMovie]:
