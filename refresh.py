@@ -56,7 +56,12 @@ from typing import TYPE_CHECKING, Any, NamedTuple, Protocol, TypedDict
 from models import CinemaRegistry, EndedMovie, Listings, Movie, ProviderSnapshot
 from observability import emit_metric, log_event, now_ms
 from providers.common import assume_utc, madrid_now, madrid_today
-from providers.diagnostics import failure_diagnostics, is_retryable
+from providers.diagnostics import (
+    clear_entry_response,
+    failure_diagnostics,
+    is_retryable,
+    zero_result_diagnostics,
+)
 from reconcile import reconcile, same_movie
 from validation import normalize_movies
 
@@ -398,7 +403,8 @@ def _fetch_provider_movies(provider: ListingsSource, cinemas: CinemaRegistry) ->
     emit_metric("ProviderSuccess", 1)
     if not movies:
         emit_metric("ProviderZeroResult", 1)
-        log_event("provider_zero_result", provider=provider.name)
+        zero: dict[str, Any] = zero_result_diagnostics()
+        log_event("provider_zero_result", provider=provider.name, **zero)
     log_event(
         "provider_collection_summary",
         provider=provider.name,
@@ -411,7 +417,8 @@ def _fetch_provider_movies(provider: ListingsSource, cinemas: CinemaRegistry) ->
 
 def _fetch_with_retry(provider: ListingsSource, cinemas: CinemaRegistry) -> list[Movie] | None:
     """
-    `provider.fetch`, retried once on a transient error if the budget allows.
+    `provider.fetch`, retried once on a transient error or zero films if the
+    budget allows.
 
     `ProviderFailure` fires only once no further attempt will be made.
     """
@@ -419,16 +426,13 @@ def _fetch_with_retry(provider: ListingsSource, cinemas: CinemaRegistry) -> list
     attempt = 1
     while True:
         attempt_started = _monotonic()
+        clear_entry_response()
         try:
-            return provider.fetch(cinemas)
+            fetched = provider.fetch(cinemas)
         except Exception as exc:
-            now = _monotonic()
             failure: dict[str, Any] = {
-                "provider": provider.name,
-                "attempt": attempt,
+                **_attempt_fields(provider, attempt, attempt_started, first_started),
                 "exception_type": type(exc).__name__,
-                "elapsed_ms": round((now - attempt_started) * 1000),
-                "total_elapsed_ms": round((now - first_started) * 1000),
                 **failure_diagnostics(exc),
             }
             logger.warning("%s failed (attempt %d): %s", provider.name, attempt, exc)
@@ -438,7 +442,7 @@ def _fetch_with_retry(provider: ListingsSource, cinemas: CinemaRegistry) -> list
             elif not is_retryable(exc):
                 outcome = "not_retryable"
             # Re-read: the diagnostics' DNS and egress lookups take seconds.
-            elif _monotonic() - first_started + _RETRY_DELAY_S > _RETRY_START_DEADLINE_S:
+            elif not _retry_fits(first_started):
                 outcome = "over_budget"
             else:
                 emit_metric("ProviderRetry", 1)
@@ -450,3 +454,37 @@ def _fetch_with_retry(provider: ListingsSource, cinemas: CinemaRegistry) -> list
             emit_metric("ProviderFailure", 1)
             log_event("collection_failure", level=logging.WARNING, outcome=outcome, **failure)
             return None
+
+        if fetched or attempt > 1 or not _retry_fits(first_started):
+            return fetched
+        zero: dict[str, Any] = zero_result_diagnostics()
+        # Re-read, as above; if the lookups spent the budget, `provider_zero_result` logs them instead.
+        if not _retry_fits(first_started):
+            return fetched
+        emit_metric("ProviderRetry", 1)
+        log_event(
+            "provider_retry",
+            level=logging.WARNING,
+            reason="zero_result",
+            retry_delay_s=_RETRY_DELAY_S,
+            **_attempt_fields(provider, attempt, attempt_started, first_started),
+            **zero,
+        )
+        _sleep(_RETRY_DELAY_S)
+        attempt += 1
+
+
+def _attempt_fields(
+    provider: ListingsSource, attempt: int, attempt_started: float, first_started: float
+) -> dict[str, Any]:
+    now = _monotonic()
+    return {
+        "provider": provider.name,
+        "attempt": attempt,
+        "elapsed_ms": round((now - attempt_started) * 1000),
+        "total_elapsed_ms": round((now - first_started) * 1000),
+    }
+
+
+def _retry_fits(first_started: float) -> bool:
+    return _monotonic() - first_started + _RETRY_DELAY_S <= _RETRY_START_DEADLINE_S

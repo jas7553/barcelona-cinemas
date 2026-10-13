@@ -34,6 +34,7 @@ import requests
 
 from models import CinemaRegistry, Listings, Movie, Showtime
 from providers.common import DEFAULT_HEADERS, base_movie, normalize_subtitle_lang
+from providers.diagnostics import record_entry_response
 from reconcile import reconcile
 
 if TYPE_CHECKING:
@@ -214,6 +215,7 @@ class VerdiProvider:
     def _fetch_slugs(self) -> list[str]:
         resp = requests.get(f"{_VERDI_BASE}/cartellera", headers=DEFAULT_HEADERS, timeout=15)
         resp.raise_for_status()
+        record_entry_response(resp)
         return list(dict.fromkeys(_FILM_LINK_RE.findall(resp.text)))
 
     def _process_film(

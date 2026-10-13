@@ -1,12 +1,13 @@
 """
-Classify a Provider fetch failure and gather what tells "host down" apart from
-"host blocking our egress IP". Never raises.
+Classify a Provider fetch failure, and gather what tells "host down" or "host
+blocking our egress IP" apart from an honest empty result. Never raises.
 """
 
 from __future__ import annotations
 
 import logging
 import socket
+from contextvars import ContextVar
 from urllib.parse import urlsplit
 
 import requests
@@ -19,6 +20,12 @@ _EGRESS_IP_URL = "https://checkip.amazonaws.com"
 _EGRESS_IP_TIMEOUT = 3
 
 _RETRYABLE_STATUSES = frozenset({403, 429})
+
+_BODY_HEAD_CHARS = 300
+
+# The page a Provider's listings hang off. A ContextVar so Providers fetching
+# in parallel, each in its own context, don't see each other's.
+_entry_response: ContextVar[requests.Response | None] = ContextVar("entry_response", default=None)
 
 
 def is_retryable(exc: BaseException) -> bool:
@@ -66,8 +73,33 @@ def failure_diagnostics(exc: BaseException) -> dict[str, object]:
     fields: dict[str, object] = {"http_status": http_status(exc)}
     if not isinstance(exc, requests.RequestException):
         return fields
-    host = _target_host(exc)
-    fields["host"] = host
-    fields["host_ips"] = _resolve(host) if host else []
+    fields.update(_host_fields(_target_host(exc)))
     fields["egress_ip"] = egress_ip()
+    return fields
+
+
+def _host_fields(host: str | None) -> dict[str, object]:
+    return {"host": host, "host_ips": _resolve(host) if host else []}
+
+
+def record_entry_response(response: requests.Response) -> None:
+    """Note the Provider's entry page (feed or index) for `zero_result_diagnostics`."""
+    _entry_response.set(response)
+
+
+def clear_entry_response() -> None:
+    _entry_response.set(None)
+
+
+def zero_result_diagnostics() -> dict[str, object]:
+    """Fields for a zero-result log event: the entry page's status, host and opening text, plus the egress IP."""
+    fields: dict[str, object] = {"egress_ip": egress_ip()}
+    response = _entry_response.get()
+    if response is None:
+        return fields
+    fields["http_status"] = response.status_code
+    fields.update(_host_fields(urlsplit(response.url).hostname))
+    fields["content_type"] = response.headers.get("Content-Type")
+    fields["body_bytes"] = len(response.content)
+    fields["body_head"] = " ".join(response.text[: _BODY_HEAD_CHARS * 2].split())[:_BODY_HEAD_CHARS]
     return fields

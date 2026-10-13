@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+from collections.abc import Iterator
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, cast
 from unittest.mock import MagicMock, patch
@@ -27,8 +28,21 @@ import observability
 import refresh
 from enricher import EnrichmentStats
 from models import EndedMovie, Listings, Movie
+from providers import diagnostics
 
 from .conftest import FindEvent
+
+
+@pytest.fixture(autouse=True)
+def _no_retry_waits_or_lookups() -> Iterator[None]:
+    """Zero-result Providers are retried; don't really sleep or look up hosts for them."""
+    with (
+        patch.object(refresh, "_sleep", lambda _seconds: None),
+        patch.object(diagnostics, "egress_ip", return_value=None),
+        patch.object(diagnostics, "_resolve", return_value=[]),
+    ):
+        yield
+
 
 NOW = datetime(2026, 3, 27, 9, 0, tzinfo=UTC)
 

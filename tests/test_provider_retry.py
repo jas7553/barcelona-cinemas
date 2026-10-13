@@ -1,6 +1,6 @@
 """
-One retry per Provider on a transient error, and the diagnostics logged when a
-fetch fails. The clock and sleep are faked: nothing here waits.
+One retry per Provider on a transient error or zero films, and the diagnostics
+logged when a fetch fails or comes back empty. The clock and sleep are faked: nothing here waits.
 """
 
 from __future__ import annotations
@@ -217,3 +217,58 @@ def test_the_fallback_follows_an_exhausted_retry(clock: _Clock, find_event: Find
     assert stats["provider_fallback_count"] == 1
     assert find_event("collection_failure")["outcome"] == "retry_failed"
     assert find_event("provider_fallback")["trigger"] == "failure"
+
+
+def _challenge_page() -> requests.Response:
+    response = requests.Response()
+    response.status_code = 200
+    response.url = "https://www.moobycinemas.com/cartelera"
+    response.headers["Content-Type"] = "text/html"
+    response._content = b"<html>\n  <title>Just a moment...</title>\n" + b"x" * 1000
+    return response
+
+
+def _empty_page_then(clock: _Clock, *outcomes: list[dict[str, Any]]) -> Callable[[Any], Any]:
+    """A fetch that lands on a challenge page each call and plays `outcomes` in order."""
+    remaining = list(outcomes)
+
+    def fetch(_cinemas: Any) -> Any:
+        clock.now += 1
+        diagnostics.record_entry_response(_challenge_page())
+        return remaining.pop(0)
+
+    return fetch
+
+
+def test_zero_films_are_retried_and_the_entry_page_logged(
+    clock: _Clock, caplog: pytest.LogCaptureFixture, find_event: FindEvent
+) -> None:
+    fetch = _empty_page_then(clock, [], [_raw_movie("Valid Film")])
+
+    listings, _ = _build([_provider("secondary", fetch=fetch)])
+
+    assert [m["title"] for m in listings["movies"]] == ["Valid Film"]
+    assert clock.sleeps == [refresh._RETRY_DELAY_S]
+    assert _find_metrics(caplog, "ProviderZeroResult") == []
+    retry = find_event("provider_retry")
+    assert (retry["reason"], retry["http_status"], retry["host"]) == ("zero_result", 200, "www.moobycinemas.com")
+    assert retry["body_head"].startswith("<html> <title>Just a moment...</title> xxx")
+    assert len(retry["body_head"]) == 300
+
+
+def test_zero_films_after_the_retry_log_the_entry_page(clock: _Clock, find_event: FindEvent) -> None:
+    fetch = _empty_page_then(clock, [], [])
+
+    _build([_provider("secondary", fetch=fetch), _provider("two", [_raw_movie("Fresh")])])
+
+    assert find_event("provider_zero_result")["http_status"] == 200
+
+
+def test_zero_films_past_the_budget_are_not_retried(clock: _Clock, caplog: pytest.LogCaptureFixture) -> None:
+    late = refresh._RETRY_START_DEADLINE_S - refresh._RETRY_DELAY_S + 1
+    fetch = _failing_after(clock, late, [], [_raw_movie("Never Fetched")])
+
+    _build([_provider("secondary", fetch=fetch), _provider("two", [_raw_movie("Valid Film")])])
+
+    assert clock.sleeps == []
+    assert len(_find_metrics(caplog, "ProviderZeroResult")) == 1
