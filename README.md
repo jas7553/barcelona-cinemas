@@ -128,28 +128,15 @@ npm run build
 
 ## Favicons
 
-The favicon source of truth is [`public/favicon.svg`](public/favicon.svg).
+The favicon sources are [`public/favicon.svg`](public/favicon.svg) (tabs, bookmarks) and [`scripts/apple-touch-icon.svg`](scripts/apple-touch-icon.svg) (home screens, share previews).
 
-When the favicon artwork changes, regenerate the PNG variants with:
+When the artwork changes, regenerate the PNG variants with:
 
 ```bash
 npm run favicons
 ```
 
-This script updates:
-
-- `public/favicon.png`
-- `public/favicon-32x32.png`
-- `public/favicon-16x16.png`
-- `public/apple-touch-icon.png`
-
-After regenerating them:
-
-- Update [`public/safari-pinned-tab.svg`](public/safari-pinned-tab.svg) if the silhouette changed.
-- Bump the favicon cache-busting query params in [`index.html`](index.html).
-- Run `npm run build` to verify the app still emits the favicon assets correctly.
-
-The generator uses macOS built-ins (`qlmanage` and `sips`). The more detailed workflow is documented in [`scripts/README-favicons.md`](scripts/README-favicons.md).
+Then update [`public/safari-pinned-tab.svg`](public/safari-pinned-tab.svg) if the silhouette changed and bump the `?v=` params in `scripts/template.mjs` and `public/site.webmanifest`. Details are in [`scripts/README-favicons.md`](scripts/README-favicons.md).
 
 ## Deployment
 

@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc -b && TZ=Europe/Madrid vite build && TZ=Europe/Madrid vite build --ssr src/entry-server.tsx --outDir dist-ssr --emptyOutDir && TZ=Europe/Madrid node scripts/render.mjs",
     "export-data": "python3 scripts/export_listings.py",
-    "favicons": "./scripts/generate-favicons.sh",
+    "favicons": "node scripts/generate-favicons.mjs",
     "refresh-cache": "python3 scripts/refresh_cache.py",
     "typecheck": "tsc -b",
     "lint": "eslint src",
