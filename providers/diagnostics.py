@@ -1,12 +1,6 @@
 """
-Classify a Provider fetch failure and describe it for the logs.
-
-Two upstream hosts behind one GCP front end have failed together (403 on
-2026-09-14, ReadTimeout on 2026-09-30, ConnectTimeout on 2026-10-13) while other
-Providers in the same run succeeded. Telling "host down" apart from "host is
-dropping our Lambda's AWS egress IP" needs the host's resolved IPs and our own
-public IP at the moment of failure, so `failure_diagnostics` gathers both. It
-only does network I/O for `requests` errors and never raises.
+Classify a Provider fetch failure and gather what tells "host down" apart from
+"host blocking our egress IP". Never raises.
 """
 
 from __future__ import annotations
@@ -17,26 +11,21 @@ from urllib.parse import urlsplit
 
 import requests
 
+from http_errors import http_status
+
 logger = logging.getLogger(__name__)
 
-# AWS-operated, returns the caller's public IP as plain text.
 _EGRESS_IP_URL = "https://checkip.amazonaws.com"
 _EGRESS_IP_TIMEOUT = 3
 
 _RETRYABLE_STATUSES = frozenset({403, 429})
 
 
-def http_status(exc: BaseException) -> int | None:
-    response = getattr(exc, "response", None)
-    status = getattr(response, "status_code", None)
-    return status if isinstance(status, int) else None
-
-
 def is_retryable(exc: BaseException) -> bool:
     """
-    Transient network failures and the HTTP statuses a blocking or overloaded
-    host answers with. 403 is included because that is how the 2026-09-14
-    block presented. Parse errors and other bugs fail the same way twice.
+    Transient network failures and the statuses an overloaded or blocking host
+    answers with (bot filters answer with 403). Parse errors fail the same way
+    twice.
     """
     if isinstance(exc, requests.ConnectionError | requests.Timeout):
         return True

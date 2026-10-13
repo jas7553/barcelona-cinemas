@@ -279,13 +279,10 @@ def _collect_movies(providers: Sequence[ListingsSource], cinemas: CinemaRegistry
 # front end to clear, short enough that the retry still fits the budget below.
 _RETRY_DELAY_S = 30.0
 
-# A retry may only start this long after the Provider's first attempt began.
-# Providers run in parallel, so every worker's clock starts with collection.
-# Worst case: retry starts at 55 s, Verdi's slowest observed success is ~45 s,
-# collection ends at ~100 s, leaving ~80 s of the ApiFunction's 180 s for a
-# slow retry, Enrichment, the cache write and the (async) SSG invoke. The
-# incident failures (connect timeouts at 15 s and 20 s, fast 403s) all fail
-# early enough.
+# Latest a retry may start, measured from the Provider's first attempt (which
+# is collection start: Providers run in parallel). A retry starting then plus
+# the slowest Provider's success must still leave Enrichment and publishing
+# room within the function timeout.
 _RETRY_START_DEADLINE_S = 55.0
 
 _sleep = time.sleep
@@ -317,8 +314,7 @@ def _fetch_with_retry(provider: ListingsSource, cinemas: CinemaRegistry) -> list
     """
     `provider.fetch`, retried once on a transient error if the budget allows.
 
-    `ProviderFailure` fires only once no further attempt will be made, so the
-    degradation alarm keeps meaning "this run lost the provider".
+    `ProviderFailure` fires only once no further attempt will be made.
     """
     first_started = _monotonic()
     attempt = 1

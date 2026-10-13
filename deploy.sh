@@ -130,8 +130,8 @@ FUNC=$(aws cloudformation describe-stack-resource --stack-name "$STACK" \
   --output text 2>/dev/null || true)
 if [ -n "$FUNC" ] && [ "$FUNC" != "None" ]; then
   SINCE=$(( $(date +%s) * 1000 ))
-  # The CLI's default 60s read timeout is shorter than a slow refresh (ApiFunction
-  # Timeout: 180), and on timeout it re-sends the invoke, starting a second refresh.
+  # Must exceed ApiFunction's Timeout: on a read timeout the CLI re-sends the
+  # invoke, starting a second refresh.
   aws lambda invoke \
     --cli-read-timeout 200 \
     --function-name "$FUNC" \
