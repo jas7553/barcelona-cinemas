@@ -15,10 +15,6 @@ export function formatDistance(km: number): string {
 }
 
 /** "2h 05m" */
-/** Genres join with this on every page; lists show only the first `LIST_GENRES`. */
-export const GENRE_SEPARATOR = " · ";
-export const LIST_GENRES = 2;
-
 export function formatRuntime(minutes: number): string {
   const h = Math.floor(minutes / 60);
   const m = String(minutes % 60).padStart(2, "0");

@@ -52,7 +52,7 @@ from contextvars import copy_context
 from datetime import date, datetime, timedelta
 from itertools import chain
 from typing import TYPE_CHECKING, Any, NamedTuple, Protocol, TypedDict, cast
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import urlsplit
 
 from models import CinemaInfo, CinemaRegistry, EndedMovie, Listings, Movie, ProviderSnapshot, Showtime
 from observability import emit_metric, log_event, now_ms
@@ -332,36 +332,27 @@ def _collect_movies(
 def _drop_homepage_links(movie: Movie, cinemas: CinemaRegistry) -> Movie:
     """
     `movie` without booking links that only point at the cinema's homepage.
-
-    A feed that cannot deep-link a screening falls back to the cinema's site.
-    That is no booking link: kept, it wins the showtime dedup over another
-    feed's seat-picker link for the same screening, and the site already
-    falls back to the homepage when a showtime has no link.
+    Kept, such a link would win the showtime dedup over another feed's
+    seat-picker link; the site already falls back to the homepage.
     """
     showtimes = [
-        _without_key(showtime, "booking_url")
-        if _is_homepage(showtime.get("booking_url"), cinemas.get(showtime["cinema"]))
-        else showtime
-        for showtime in movie["showtimes"]
+        cast("Showtime", {k: v for k, v in s.items() if k != "booking_url"})
+        if _is_homepage(s.get("booking_url"), cinemas.get(s["cinema"]))
+        else s
+        for s in movie["showtimes"]
     ]
-    return movie if showtimes == movie["showtimes"] else {**movie, "showtimes": showtimes}
-
-
-def _without_key(showtime: Showtime, key: str) -> Showtime:
-    return cast("Showtime", {field: value for field, value in showtime.items() if field != key})
+    return {**movie, "showtimes": showtimes}
 
 
 def _is_homepage(url: str | None, cinema: CinemaInfo | None) -> bool:
     if not url or cinema is None:
         return False
-    link = urlsplit(url)
-    home = urlsplit(cinema["website_url"])
-    same_host = link.netloc.casefold().removeprefix("www.") == home.netloc.casefold().removeprefix("www.")
-    same_page = link.path.strip("/") in {"", home.path.strip("/")}
-    # A query naming the screening ("?session=123") makes it a booking link;
-    # one the homepage itself carries ("?setLang=en") does not.
-    no_screening = set(parse_qs(link.query)) <= set(parse_qs(home.query))
-    return same_host and same_page and no_screening
+    link, home = urlsplit(url.casefold()), urlsplit(cinema["website_url"].casefold())
+    return (
+        link.netloc.removeprefix("www.") == home.netloc.removeprefix("www.")
+        and link.path.strip("/") in ("", home.path.strip("/"))
+        and link.query in ("", home.query)
+    )
 
 
 def _fallback_movies(

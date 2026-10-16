@@ -84,10 +84,6 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         enriched: list[Movie] = []
         for movie in movies:
             cached = _find_cached_movie(movie, cached_by_imdb, cached_by_title)
-            # A cached short or TV movie is a wrong match from before the
-            # matching rules: look it up again, and never fall back to it.
-            if cached is not None and cached.get("tmdb_id") is not None and _is_excluded_cached(cached):
-                cached = None
             if cached and cached.get("tmdb_id") is not None and not _needs_reenrichment(cached):
                 stats["tmdb_cache_hit_count"] += 1
                 enriched.append(_with_fresh_listing(cached, movie))
@@ -158,7 +154,7 @@ def _lookup_and_merge(
     """Look up a movie on TMDb and merge metadata into the Movie dict."""
     query = search_title or movie["title"]
     try:
-        raw_detail, raw_videos, raw_credits = _fetch_tmdb(query, session, api_key, year=movie.get("year"))
+        raw_detail, raw_videos, raw_credits = _fetch_tmdb(query, session, api_key)
     except Exception as exc:
         status = http_status(exc)
         detail = f"HTTP {status}" if status else type(exc).__name__
@@ -214,77 +210,29 @@ def _optional_get(
         return None
 
 
-# TMDb's "TV Movie" genre. A cinema never screens one, but TMDb lists TV
-# remakes under the same title (The Miracle Worker, 1962 vs. the 2000 TV movie).
+# A cinema listing is a feature. TMDb lists shorts and TV movies under the
+# same titles (Stranger Than Paradise's 1982 short, The Miracle Worker's 2000
+# TV remake), so neither is ever the match. A short is 40 minutes or less
+# (the Academy's line); unknown runtime (TMDb's 0) is not evidence of one.
 _TV_MOVIE_GENRE_ID = 10770
-_TV_MOVIE_GENRE = "TV Movie"
-
-# A short by the Academy's definition: 40 minutes or less. A cinema listing
-# is a feature, so a short sharing its title (Stranger Than Paradise's 1982
-# short) is never the film.
 _MAX_SHORT_RUNTIME_MINS = 40
 
-# Detail lookups spent finding a feature among same-title candidates before
-# giving up: each is one more TMDb request for this film.
+# Detail lookups spent on candidates before giving up on a title.
 _MAX_CANDIDATES = 3
 
 
-def _is_excluded(detail: dict[str, Any]) -> bool:
-    """A TMDb match no cinema listing can be: a short or a TV movie."""
-    runtime = detail.get("runtime")
-    # Unknown runtime (TMDb's 0 for a new release) is not evidence of a short.
-    if isinstance(runtime, int) and 0 < runtime <= _MAX_SHORT_RUNTIME_MINS:
-        return True
-    genres = detail.get("genres") or []
-    return any(
-        isinstance(g, dict) and (g.get("id") == _TV_MOVIE_GENRE_ID or g.get("name") == _TV_MOVIE_GENRE) for g in genres
-    )
-
-
-def _is_excluded_cached(movie: Movie) -> bool:
-    """`_is_excluded` for an already-enriched Movie: a wrong match to redo."""
-    runtime = movie.get("runtime_mins")
-    if runtime is not None and runtime <= _MAX_SHORT_RUNTIME_MINS:
-        return True
-    return _TV_MOVIE_GENRE in (movie.get("genres") or [])
-
-
-def _release_year(result: dict[str, Any]) -> int | None:
-    release_date = result.get("release_date")
-    if isinstance(release_date, str) and len(release_date) >= 4 and release_date[:4].isdigit():
-        return int(release_date[:4])
-    return None
-
-
-def _rank_candidates(results: list[dict[str, Any]], title: str, year: int | None) -> list[dict[str, Any]]:
-    """
-    Search results in the order to try them: TV movies out; then the
-    cinema's year (within a year either way: festival vs. release dates);
-    then an exact title; then TMDb's own relevance order.
-    """
-    wanted = title.casefold()
-
-    def key(indexed: tuple[int, dict[str, Any]]) -> tuple[bool, bool, int]:
-        index, result = indexed
-        titles = {str(result.get("title", "")).casefold(), str(result.get("original_title", "")).casefold()}
-        result_year = _release_year(result)
-        year_fits = year is None or (result_year is not None and abs(result_year - year) <= 1)
-        return (not year_fits, wanted not in titles, index)
-
-    features = [r for r in results if _TV_MOVIE_GENRE_ID not in (r.get("genre_ids") or [])]
-    return [result for _, result in sorted(enumerate(features), key=key)]
+def _is_feature(detail: dict[str, Any]) -> bool:
+    runtime = detail.get("runtime") or 0
+    genre_ids = {g.get("id") for g in detail.get("genres") or [] if isinstance(g, dict)}
+    return not (0 < runtime <= _MAX_SHORT_RUNTIME_MINS or _TV_MOVIE_GENRE_ID in genre_ids)
 
 
 def _fetch_tmdb(
-    title: str, session: requests.Session, api_key: str, *, year: int | None = None
+    title: str, session: requests.Session, api_key: str
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
     """
-    Search TMDb for a title; return (detail, videos, credits), or all None
-    when nothing matches.
-
-    Matching rules (no per-film overrides): never a short or a TV movie; the
-    cinema's year when it gives one; among films sharing the title, the first
-    whose runtime fits a feature.
+    Search TMDb for a title; return (detail, videos, credits) for the first
+    feature among the results, exact titles first, or all None.
     """
     common = {"language": "en-US", "api_key": api_key}
     search_resp = session.get(
@@ -294,28 +242,17 @@ def _fetch_tmdb(
     )
     search_resp.raise_for_status()
     results: list[dict[str, Any]] = search_resp.json().get("results", [])
+    candidates = sorted(results, key=lambda r: str(r.get("title", "")).casefold() != title.casefold())
 
-    if not results:
-        logger.debug("No TMDb results for %r", title)
-        return None, None, None
-
-    detail_data: dict[str, Any] | None = None
-    match_id: object = None
-    for candidate in _rank_candidates(results, title, year)[:_MAX_CANDIDATES]:
-        detail_resp = session.get(f"{_BASE_URL}/movie/{candidate['id']}", params=common, timeout=10)
+    for candidate in candidates[:_MAX_CANDIDATES]:
+        movie_url = f"{_BASE_URL}/movie/{candidate['id']}"
+        detail_resp = session.get(movie_url, params=common, timeout=10)
         detail_resp.raise_for_status()
-        detail = cast(dict[str, Any], detail_resp.json())
-        if not _is_excluded(detail):
-            detail_data, match_id = detail, candidate["id"]
-            break
-        logger.info("Skipped TMDb %s for %r: a short or TV movie", candidate.get("id"), title)
+        detail_data = cast(dict[str, Any], detail_resp.json())
+        if _is_feature(detail_data):
+            videos_data = _optional_get(session, f"{movie_url}/videos", common, title, "videos")
+            credits_data = _optional_get(session, f"{movie_url}/credits", common, title, "credits")
+            return detail_data, videos_data, credits_data
 
-    if detail_data is None:
-        logger.debug("No feature-length TMDb match for %r", title)
-        return None, None, None
-
-    movie_url = f"{_BASE_URL}/movie/{match_id}"
-    videos_data = _optional_get(session, f"{movie_url}/videos", common, title, "videos")
-    credits_data = _optional_get(session, f"{movie_url}/credits", common, title, "credits")
-
-    return detail_data, videos_data, credits_data
+    logger.debug("No feature-length TMDb match for %r", title)
+    return None, None, None

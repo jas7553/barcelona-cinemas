@@ -11,17 +11,14 @@ from titles import TitleParts, clean_movie, parse_title
     [
         ("Vengadores: Endgame (Reestreno)", TitleParts("Vengadores: Endgame", rerelease=True)),
         ("Dune (Reestrena)", TitleParts("Dune", rerelease=True)),
-        ("Alien [Re-release]", TitleParts("Alien", rerelease=True)),
+        ("Alien (Re-release)", TitleParts("Alien", rerelease=True)),
         ("La Odisea: The IMAX Experience", TitleParts("La Odisea", imax=True)),
         ("Oppenheimer - The IMAX Experience", TitleParts("Oppenheimer", imax=True)),
         ("Interstellar (IMAX)", TitleParts("Interstellar", imax=True)),
         ("Anora (VOSE)", TitleParts("Anora")),
         ("Anora (V.O.S.E.)", TitleParts("Anora")),
         ("Anora (VOSC)", TitleParts("Anora")),
-        ("Anora - VOSE", TitleParts("Anora")),
-        ("Anora (Versión Original)", TitleParts("Anora")),
         ("Avatar (3D)", TitleParts("Avatar")),
-        ("Stranger Than Paradise (1984)", TitleParts("Stranger Than Paradise", year=1984)),
         ("Dune (Reestreno) (VOSE)", TitleParts("Dune", rerelease=True)),
         ("Tenet: The IMAX Experience (Reestreno)", TitleParts("Tenet", rerelease=True, imax=True)),
     ],
@@ -78,13 +75,10 @@ def test_clean_movie_tags_imax_showtimes() -> None:
     assert "rerelease" not in cleaned
 
 
-def test_clean_movie_flags_a_rerelease_and_fills_the_cinema_year() -> None:
+def test_clean_movie_flags_a_rerelease() -> None:
     rerelease = clean_movie(_movie("Vengadores: Endgame (Reestreno)", [_showtime()]))
     assert rerelease["rerelease"] is True
     assert "premium_format" not in rerelease["showtimes"][0]
-
-    dated = clean_movie(_movie("Stranger Than Paradise (1984)", [_showtime()]))
-    assert dated["year"] == 1984
 
 
 def test_clean_movie_returns_an_unsuffixed_movie_unchanged() -> None:

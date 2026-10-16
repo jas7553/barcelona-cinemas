@@ -51,7 +51,7 @@ _Avoid_: scraper, source adapter (when you mean the concept, say Provider).
 **Enrichment**:
 Filling a **Movie**'s metadata (poster, year, rating, runtime, genres) from
 TMDb. Runs after **Reconciliation**. Never matches a short (40 minutes or
-less) or a TV movie; prefers the cinema's year, then an exact title. Ratings
+less) or a TV movie; prefers an exact title. Ratings
 with fewer than 50 votes are not published (`too_few_ratings`).
 
 **Reconciliation**:
@@ -64,11 +64,10 @@ the concept).
 
 **Title suffix**:
 Screening details a feed appends to a film's title — "(Reestreno)",
-": The IMAX Experience", "(VOSE)", a "(1984)" year. Stripped before
-**Reconciliation** (`titles.clean_movie`) so the film matches TMDb and its
-other copies; what the suffix says is kept: a re-release flag on the
-**Movie**, `premium_format` on its **Showtimes**, the year as the TMDb
-matching hint. Only known suffixes are stripped.
+": The IMAX Experience", "(VOSE)". Stripped before **Reconciliation**
+(`titles.clean_movie`) so the film matches TMDb and its other copies; what
+the suffix says is kept: a re-release flag on the **Movie**, `premium_format`
+on its **Showtimes**. Only known suffixes are stripped.
 
 **Same-movie**:
 The identity test for Reconciliation, a pairwise predicate: two **Movies** are

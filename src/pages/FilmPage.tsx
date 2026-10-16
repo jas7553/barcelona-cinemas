@@ -9,7 +9,7 @@ import { TicketSheet } from "../components/TicketSheet";
 import { DayLink } from "../components/DayStrip";
 import { distanceLabel } from "../domain/distance";
 import { byCinema } from "../domain/film";
-import { formatRuntime, GENRE_SEPARATOR, largePoster, plural, shortName } from "../domain/format";
+import { formatRuntime, largePoster, plural, shortName } from "../domain/format";
 import type { LatLng } from "../domain/prefs";
 import { clockAt, dayTitle, hasStarted, pageDays, ranking } from "../domain/schedule";
 import type { DateKey } from "../domain/time";
@@ -203,7 +203,7 @@ function About({ film, seen }: { film: FilmDetail; seen: boolean }) {
             {film.genres.length > 0 && (
               <>
                 <br />
-                {film.genres.join(GENRE_SEPARATOR)}
+                {film.genres.join(" · ")}
               </>
             )}
           </p>

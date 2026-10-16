@@ -449,7 +449,7 @@ def test_original_lang_absent_yields_none(mock_env):
     assert result[0]["original_lang"] is None
 
 
-# ── Matching rules: never a short or a TV movie, the cinema's year, a feature's runtime ──
+# ── Matching rules: never a short or a TV movie, exact titles first ──
 
 
 def _ok(payload: Any) -> MagicMock:
@@ -484,10 +484,6 @@ def _detail(tmdb_id: int, year: int, runtime: int, *genres: str) -> dict[str, An
     }
 
 
-def _detail_urls(session: MagicMock) -> list[str]:
-    return [c.args[0] for c in session.get.call_args_list if "/movie/" in c.args[0] and "search" not in c.args[0]]
-
-
 def test_a_short_sharing_the_title_is_skipped_for_the_feature(mock_env):
     """Stranger Than Paradise: TMDb ranks the 1982 32-minute short first."""
     search = {
@@ -507,25 +503,7 @@ def test_a_short_sharing_the_title_is_skipped_for_the_feature(mock_env):
 
 
 def test_a_tv_movie_is_never_matched(mock_env):
-    """The Miracle Worker: the 2000 TV movie is dropped from the search results unfetched."""
-    search = {
-        "results": [
-            {"id": 1163, "title": "The Miracle Worker", "release_date": "2000-10-01", "genre_ids": [10770, 18]},
-            {"id": 1162, "title": "The Miracle Worker", "release_date": "1962-05-23", "genre_ids": [18]},
-        ]
-    }
-    session = _session_answering(search, {1162: _detail(1162, 1962, 106, "Drama")})
-
-    with patch("enricher.requests.Session", return_value=session):
-        result, _ = enricher.enrich([_movie("The Miracle Worker", [_showtime()])], [])
-
-    assert result[0]["tmdb_id"] == 1162
-    assert result[0]["year"] == 1962
-    assert not any(url.endswith("/1163") for url in _detail_urls(session))
-
-
-def test_a_tv_movie_genre_on_the_detail_is_rejected_too(mock_env):
-    """Search results do not always carry genre_ids; the detail's genres are the backstop."""
+    """The Miracle Worker: TMDb ranks the 2000 TV movie first."""
     search = {"results": [{"id": 1163, "title": "The Miracle Worker"}, {"id": 1162, "title": "The Miracle Worker"}]}
     details = {1163: _detail(1163, 2000, 90, "TV Movie"), 1162: _detail(1162, 1962, 106, "Drama")}
     session = _session_answering(search, details)
@@ -534,22 +512,7 @@ def test_a_tv_movie_genre_on_the_detail_is_rejected_too(mock_env):
         result, _ = enricher.enrich([_movie("The Miracle Worker", [_showtime()])], [])
 
     assert result[0]["tmdb_id"] == 1162
-
-
-def test_the_cinema_year_picks_between_features_sharing_a_title(mock_env):
-    search = {
-        "results": [
-            {"id": 2, "title": "Wuthering Heights", "release_date": "2026-02-13"},
-            {"id": 1, "title": "Wuthering Heights", "release_date": "1939-04-07"},
-        ]
-    }
-    session = _session_answering(search, {1: _detail(1, 1939, 104), 2: _detail(2, 2026, 136)})
-
-    with patch("enricher.requests.Session", return_value=session):
-        result, _ = enricher.enrich([_movie("Wuthering Heights", [_showtime()], year=1939)], [])
-
-    assert result[0]["tmdb_id"] == 1
-    assert _detail_urls(session)[0].endswith("/movie/1")
+    assert result[0]["year"] == 1962
 
 
 def test_an_exact_title_beats_an_earlier_partial_match(mock_env):
@@ -580,36 +543,6 @@ def test_only_shorts_means_no_match(mock_env):
 
     assert result[0]["tmdb_id"] is None
     assert stats["tmdb_failure_count"] == 0
-
-
-def test_a_cached_short_is_looked_up_again_and_never_kept(mock_env):
-    """A wrong match cached before the rules existed is redone at once, not after the TTL."""
-    cached = _movie(
-        "Stranger Than Paradise", tmdb_id=410051, runtime_mins=32, year=1982, enriched_at=_fresh_enriched_at()
-    )
-    search = {
-        "results": [
-            {"id": 410051, "title": "Stranger Than Paradise"},
-            {"id": 469, "title": "Stranger Than Paradise"},
-        ]
-    }
-    session = _session_answering(search, {410051: _detail(410051, 1982, 32), 469: _detail(469, 1984, 89)})
-
-    with patch("enricher.requests.Session", return_value=session):
-        result, stats = enricher.enrich([_movie("Stranger Than Paradise", [_showtime()])], [cached])
-
-    assert result[0]["tmdb_id"] == 469
-    assert stats["tmdb_cache_hit_count"] == 0
-
-
-def test_a_cached_tv_movie_is_dropped_even_when_the_lookup_finds_nothing(mock_env):
-    cached = _movie("The Miracle Worker", tmdb_id=1163, genres=["TV Movie", "Drama"], enriched_at=_fresh_enriched_at())
-    session = _session_answering({"results": []}, {})
-
-    with patch("enricher.requests.Session", return_value=session):
-        result, _ = enricher.enrich([_movie("The Miracle Worker", [_showtime()])], [cached])
-
-    assert result[0]["tmdb_id"] is None
 
 
 def test_a_cache_hit_takes_the_rerelease_flag_from_this_run(mock_env):
