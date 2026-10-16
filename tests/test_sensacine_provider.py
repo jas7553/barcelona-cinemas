@@ -29,7 +29,7 @@ CINEMAS: CinemaRegistry = {
         id="malda",
         name="Cinema Maldà",
         address="Carrer del Pi, 5",
-        neighborhood="Gothic Quarter",
+        neighborhood="Barri Gòtic",
         website_url="https://www.cinemamalda.com",
         maps_url="https://maps.google.com/?q=Cinema+Maldà",
     ),

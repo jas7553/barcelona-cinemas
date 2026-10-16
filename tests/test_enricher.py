@@ -447,3 +447,111 @@ def test_original_lang_absent_yields_none(mock_env):
         result, _ = enricher.enrich([movie], [])
 
     assert result[0]["original_lang"] is None
+
+
+# ── Matching rules: never a short or a TV movie, exact titles first ──
+
+
+def _ok(payload: Any) -> MagicMock:
+    return MagicMock(status_code=200, json=lambda: payload, raise_for_status=lambda: None)
+
+
+def _session_answering(search: dict[str, Any], details: dict[int, dict[str, Any]]) -> MagicMock:
+    """A TMDb session: the search answers `search`, /movie/{id} answers `details[id]`."""
+    session = MagicMock()
+    session.__enter__ = MagicMock(return_value=session)
+    session.__exit__ = MagicMock(return_value=False)
+
+    def _get(url: str, **_kwargs: Any) -> MagicMock:
+        if url.endswith("/search/movie"):
+            return _ok(search)
+        if url.endswith("/videos") or url.endswith("/credits"):
+            return _ok({})
+        return _ok(details[int(url.rsplit("/", 1)[1])])
+
+    session.get.side_effect = _get
+    return session
+
+
+def _detail(tmdb_id: int, year: int, runtime: int, *genres: str) -> dict[str, Any]:
+    return {
+        "id": tmdb_id,
+        "release_date": f"{year}-01-01",
+        "runtime": runtime,
+        "genres": [{"id": 10770 if g == "TV Movie" else 18, "name": g} for g in genres],
+        "vote_average": 7.5,
+        "vote_count": 900,
+    }
+
+
+def test_a_short_sharing_the_title_is_skipped_for_the_feature(mock_env):
+    """Stranger Than Paradise: TMDb ranks the 1982 32-minute short first."""
+    search = {
+        "results": [
+            {"id": 410051, "title": "Stranger Than Paradise", "release_date": "1982-01-01"},
+            {"id": 469, "title": "Stranger Than Paradise", "release_date": "1984-10-01"},
+        ]
+    }
+    session = _session_answering(search, {410051: _detail(410051, 1982, 32), 469: _detail(469, 1984, 89, "Comedy")})
+
+    with patch("enricher.requests.Session", return_value=session):
+        result, _ = enricher.enrich([_movie("Stranger Than Paradise", [_showtime()])], [])
+
+    assert result[0]["tmdb_id"] == 469
+    assert result[0]["year"] == 1984
+    assert result[0]["runtime_mins"] == 89
+
+
+def test_a_tv_movie_is_never_matched(mock_env):
+    """The Miracle Worker: TMDb ranks the 2000 TV movie first."""
+    search = {"results": [{"id": 1163, "title": "The Miracle Worker"}, {"id": 1162, "title": "The Miracle Worker"}]}
+    details = {1163: _detail(1163, 2000, 90, "TV Movie"), 1162: _detail(1162, 1962, 106, "Drama")}
+    session = _session_answering(search, details)
+
+    with patch("enricher.requests.Session", return_value=session):
+        result, _ = enricher.enrich([_movie("The Miracle Worker", [_showtime()])], [])
+
+    assert result[0]["tmdb_id"] == 1162
+    assert result[0]["year"] == 1962
+
+
+def test_an_exact_title_beats_an_earlier_partial_match(mock_env):
+    search = {"results": [{"id": 7, "title": "Paradise Road"}, {"id": 469, "title": "Stranger Than Paradise"}]}
+    session = _session_answering(search, {7: _detail(7, 1997, 122), 469: _detail(469, 1984, 89)})
+
+    with patch("enricher.requests.Session", return_value=session):
+        result, _ = enricher.enrich([_movie("Stranger Than Paradise", [_showtime()])], [])
+
+    assert result[0]["tmdb_id"] == 469
+
+
+def test_unknown_runtime_is_not_taken_for_a_short(mock_env):
+    """TMDb reports 0 minutes for a film whose runtime it does not know yet."""
+    session = _session_answering({"results": [{"id": 5, "title": "New Film"}]}, {5: _detail(5, 2026, 0)})
+
+    with patch("enricher.requests.Session", return_value=session):
+        result, _ = enricher.enrich([_movie("New Film", [_showtime()])], [])
+
+    assert result[0]["tmdb_id"] == 5
+
+
+def test_only_shorts_means_no_match(mock_env):
+    session = _session_answering({"results": [{"id": 9, "title": "Tiny"}]}, {9: _detail(9, 2020, 12)})
+
+    with patch("enricher.requests.Session", return_value=session):
+        result, stats = enricher.enrich([_movie("Tiny", [_showtime()])], [])
+
+    assert result[0]["tmdb_id"] is None
+    assert stats["tmdb_failure_count"] == 0
+
+
+def test_a_cache_hit_takes_the_rerelease_flag_from_this_run(mock_env):
+    cached = _movie("Avengers: Endgame", tmdb_id=299534, runtime_mins=181, enriched_at=_fresh_enriched_at())
+    fresh: Movie = {**_movie("Avengers: Endgame", [_showtime()]), "rerelease": True}
+
+    with patch("enricher.requests.Session"):
+        (flagged,), _ = enricher.enrich([fresh], [cached])
+        (plain,), _ = enricher.enrich([_movie("Avengers: Endgame", [_showtime()])], [flagged])
+
+    assert flagged["rerelease"] is True
+    assert "rerelease" not in plain

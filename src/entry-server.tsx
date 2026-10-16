@@ -197,7 +197,7 @@ function listFilm(m: Movie, keep: (s: Showtime) => boolean, forTicket: boolean):
   const showtimes = m.showtimes.filter(keep).map((s) => showing(s, forTicket));
   if (showtimes.length === 0) return null;
   const { id, title, poster_url, rating, genres, runtime_minutes } = m;
-  return { id, title, poster_url, rating, genres, runtime_minutes, showtimes };
+  return { id, title, poster_url, rating, genres, runtime_minutes, ...(m.rerelease ? { rerelease: true } : {}), showtimes };
 }
 
 /** "A", "A and B", "A, B and C", "A, B, C and 2 more". */
@@ -240,6 +240,8 @@ function filmDetail(m: Movie, days: DateKey[]): FilmDetail {
     synopsis: m.synopsis,
     director: m.director ?? null,
     cast: (m.cast ?? []).slice(0, CAST_SHOWN),
+    ...(m.rerelease ? { rerelease: true } : {}),
+    tooFewRatings: m.rating == null && m.too_few_ratings === true,
     imdb: m.imdb_id ? `https://www.imdb.com/title/${m.imdb_id}` : null,
     letterboxd: m.imdb_id
       ? `https://letterboxd.com/imdb/${m.imdb_id}/`

@@ -39,6 +39,7 @@ class Movie(TypedDict):
     director: NotRequired[str | None]
     cast: NotRequired[list[str] | None]
     enriched_at: NotRequired[str]  # ISO 8601; when TMDb metadata was last fetched
+    rerelease: NotRequired[bool]  # a feed listed it as a re-release ("(Reestreno)"); absent means no
     showtimes: list[Showtime]
 
 

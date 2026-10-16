@@ -431,3 +431,9 @@ def test_normalize_movie_keeps_zero_vote_count_without_warning(caplog: pytest.Lo
     assert movie is not None
     assert movie.get("vote_count") == 0
     assert caplog.text == ""
+
+
+def test_normalize_movie_keeps_the_rerelease_flag():
+    raw = {"title": "Dune", "showtimes": [], "rerelease": True}
+    assert normalize_movie(raw, source="test")["rerelease"] is True  # type: ignore[index]
+    assert "rerelease" not in normalize_movie({**raw, "rerelease": "yes"}, source="test")  # type: ignore[operator]

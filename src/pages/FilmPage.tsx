@@ -171,7 +171,11 @@ function Hero({ film, theaters }: { film: FilmDetail; theaters: ReadonlyMap<stri
 function About({ film, seen }: { film: FilmDetail; seen: boolean }) {
   const [open, setOpen] = useState(false);
   const clamp = film.synopsis.length > CLAMP_CHARS;
-  const facts = [film.year, film.runtime_minutes ? formatRuntime(film.runtime_minutes) : null].filter(Boolean);
+  const facts = [
+    film.year,
+    film.runtime_minutes ? formatRuntime(film.runtime_minutes) : null,
+    film.rerelease ? "Re-release" : null,
+  ].filter(Boolean);
   return (
     <section class="about" aria-labelledby="film-title">
       <div class="head">
@@ -193,12 +197,13 @@ function About({ film, seen }: { film: FilmDetail; seen: boolean }) {
                 {film.rating.toFixed(1)}
               </span>
             )}
-            {film.rating != null && facts.length > 0 && " · "}
+            {film.rating == null && film.tooFewRatings && <span>Too few ratings yet</span>}
+            {(film.rating != null || film.tooFewRatings) && facts.length > 0 && " · "}
             {facts.join(" · ")}
             {film.genres.length > 0 && (
               <>
                 <br />
-                {film.genres.join(", ")}
+                {film.genres.join(" · ")}
               </>
             )}
           </p>

@@ -21,9 +21,12 @@ from reconcile import dedup_showtimes
 # Cap the excluded-title list so one bad refresh cannot balloon a log line.
 _MAX_LOGGED_TITLES = 25
 
-# Ratings backed by too few TMDb votes are statistically meaningless (e.g. a
-# single 10/10 vote) — suppress them rather than publish a misleading badge.
-MIN_VOTE_COUNT = 5
+# Ratings backed by too few TMDb votes are statistically meaningless: a small
+# film's handful of early votes reads 8.1 and outranks the classics in a
+# rating-sorted list. Below this the site says "Too few ratings yet" instead.
+# Established releases have thousands of votes; new festival and indie titles
+# sit in the tens.
+MIN_VOTE_COUNT = 50
 
 _SLUG_STRIP_RE = re.compile(r"[^a-z0-9]+")
 
@@ -191,6 +194,9 @@ def _movie_fields(movie: Movie | Mapping[str, Any], title: str) -> dict[str, Any
         "synopsis": movie.get("synopsis") or "",
         "tagline": movie.get("tagline"),
         "imdb_id": imdb_id,
+        # On TMDb but under the vote threshold: say so rather than show nothing.
+        "too_few_ratings": tmdb_id is not None and rating is None,
+        "rerelease": movie.get("rerelease") is True,
     }
 
 

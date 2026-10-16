@@ -115,6 +115,13 @@ describe("Day", () => {
 });
 
 describe("This week", () => {
+  it("shows the first two genres and a re-release note in the meta line", () => {
+    const film: ListFilm = { ...FILMS[0], genres: ["Comedy", "Drama", "Romance"], rerelease: true };
+    render(<WeekPage data={{ ...weekData, films: [film] }} />);
+    expect(screen.getByText(/Comedy · Drama · 1h 42m · Re-release/)).toBeInTheDocument();
+    expect(screen.queryByText(/Romance/)).toBeNull();
+  });
+
   it("links each day with showings to the film on that day, and hatches days not out yet", () => {
     const { container } = render(<WeekPage data={weekData} />);
     expect(screen.getByRole("link", { name: "Today: 2 showings" })).toHaveAttribute("href", "/film/aftersun/2026-10-04/");

@@ -244,3 +244,22 @@ def test_reconcile_summary_ignores_same_title_merges_as_routine(find_event: Find
     summary = find_event("reconcile_summary")
     assert summary["movies_merged"] == 1
     assert summary["cross_title_merges"] == []
+
+
+def test_merge_keeps_the_rerelease_flag_from_either_copy():
+    plain = Movie(
+        title="Avengers: Endgame",
+        tmdb_id=None,
+        imdb_id="tt4154796",
+        year=None,
+        poster_url=None,
+        synopsis=None,
+        rating=None,
+        runtime_mins=None,
+        genres=None,
+        showtimes=[],
+    )
+    flagged: Movie = {**plain, "title": "Vengadores: Endgame", "rerelease": True}
+    assert reconcile([plain, flagged])[0]["rerelease"] is True
+    assert reconcile([flagged, plain])[0]["rerelease"] is True
+    assert "rerelease" not in reconcile([plain, plain])[0]

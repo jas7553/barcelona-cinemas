@@ -43,6 +43,10 @@ export interface Movie {
   tagline?: string | null;
   synopsis: string;
   imdb_id: string | null;
+  /** On TMDb, but with too few votes for `rating` to mean anything (it is null). */
+  too_few_ratings?: boolean;
+  /** A cinema lists it as a re-release. */
+  rerelease?: boolean;
   showtimes: Showtime[];
 }
 

@@ -2,8 +2,9 @@
 TMDb enrichment: adds synopsis, rating, runtime, and genres to collected movies.
 
 For each movie title not already in the cache, TMDb is queried:
-  1. /3/search/movie       — find best match and retrieve the TMDb ID
-  2. /3/movie/{id}         — retrieve runtime and named genres (search only returns IDs)
+  1. /3/search/movie       — rank the candidates (see `_fetch_tmdb` for the rules)
+  2. /3/movie/{id}         — retrieve runtime and named genres (search only returns IDs);
+                             a short or TV movie is skipped for the next candidate
   3. /3/movie/{id}/videos  — retrieve trailer URL (non-fatal on failure)
   4. /3/movie/{id}/credits — retrieve director + top cast (non-fatal on failure)
 
@@ -85,7 +86,7 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
             cached = _find_cached_movie(movie, cached_by_imdb, cached_by_title)
             if cached and cached.get("tmdb_id") is not None and not _needs_reenrichment(cached):
                 stats["tmdb_cache_hit_count"] += 1
-                enriched.append({**cached, "showtimes": movie["showtimes"]})
+                enriched.append(_with_fresh_listing(cached, movie))
             else:
                 if cached and cached.get("tmdb_id") is not None:
                     stats["tmdb_reenriched_count"] += 1
@@ -104,7 +105,7 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
                 # cached copy with fresh showtimes rather than reverting to the
                 # bare scraped listing. Uncached titles still fall through.
                 if not result.enriched and cached is not None and cached.get("tmdb_id") is not None:
-                    enriched.append({**cached, "showtimes": movie["showtimes"]})
+                    enriched.append(_with_fresh_listing(cached, movie))
                 else:
                     enriched.append(result.movie)
         if stats["tmdb_failure_count"]:
@@ -112,6 +113,15 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         emit_metric("MoviesEnriched", stats["tmdb_enriched_count"])
         log_event("tmdb_enrichment_summary", movie_count=len(movies), **stats)
         return enriched, stats
+
+
+def _with_fresh_listing(cached: Movie, movie: Movie) -> Movie:
+    """Cached TMDb metadata with this run's provider-known facts: Showtimes and the re-release flag."""
+    reused: Movie = {**cached, "showtimes": movie["showtimes"]}
+    reused.pop("rerelease", None)
+    if movie.get("rerelease"):
+        reused["rerelease"] = True
+    return reused
 
 
 def _needs_reenrichment(cached: Movie) -> bool:
@@ -200,10 +210,30 @@ def _optional_get(
         return None
 
 
+# A cinema listing is a feature. TMDb lists shorts and TV movies under the
+# same titles (Stranger Than Paradise's 1982 short, The Miracle Worker's 2000
+# TV remake), so neither is ever the match. A short is 40 minutes or less
+# (the Academy's line); unknown runtime (TMDb's 0) is not evidence of one.
+_TV_MOVIE_GENRE_ID = 10770
+_MAX_SHORT_RUNTIME_MINS = 40
+
+# Detail lookups spent on candidates before giving up on a title.
+_MAX_CANDIDATES = 3
+
+
+def _is_feature(detail: dict[str, Any]) -> bool:
+    runtime = detail.get("runtime") or 0
+    genre_ids = {g.get("id") for g in detail.get("genres") or [] if isinstance(g, dict)}
+    return not (0 < runtime <= _MAX_SHORT_RUNTIME_MINS or _TV_MOVIE_GENRE_ID in genre_ids)
+
+
 def _fetch_tmdb(
     title: str, session: requests.Session, api_key: str
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
-    """Search TMDb for a title; return (detail, videos, credits), or all None on no results."""
+    """
+    Search TMDb for a title; return (detail, videos, credits) for the first
+    feature among the results, exact titles first, or all None.
+    """
     common = {"language": "en-US", "api_key": api_key}
     search_resp = session.get(
         f"{_BASE_URL}/search/movie",
@@ -212,23 +242,17 @@ def _fetch_tmdb(
     )
     search_resp.raise_for_status()
     results: list[dict[str, Any]] = search_resp.json().get("results", [])
+    candidates = sorted(results, key=lambda r: str(r.get("title", "")).casefold() != title.casefold())
 
-    if not results:
-        logger.debug("No TMDb results for %r", title)
-        return None, None, None
+    for candidate in candidates[:_MAX_CANDIDATES]:
+        movie_url = f"{_BASE_URL}/movie/{candidate['id']}"
+        detail_resp = session.get(movie_url, params=common, timeout=10)
+        detail_resp.raise_for_status()
+        detail_data = cast(dict[str, Any], detail_resp.json())
+        if _is_feature(detail_data):
+            videos_data = _optional_get(session, f"{movie_url}/videos", common, title, "videos")
+            credits_data = _optional_get(session, f"{movie_url}/credits", common, title, "credits")
+            return detail_data, videos_data, credits_data
 
-    title_lower = title.lower()
-    match = next(
-        (r for r in results if r.get("title", "").lower() == title_lower),
-        results[0],
-    )
-
-    movie_url = f"{_BASE_URL}/movie/{match['id']}"
-    detail_resp = session.get(movie_url, params=common, timeout=10)
-    detail_resp.raise_for_status()
-    detail_data = cast(dict[str, Any], detail_resp.json())
-
-    videos_data = _optional_get(session, f"{movie_url}/videos", common, title, "videos")
-    credits_data = _optional_get(session, f"{movie_url}/credits", common, title, "credits")
-
-    return detail_data, videos_data, credits_data
+    logger.debug("No feature-length TMDb match for %r", title)
+    return None, None, None

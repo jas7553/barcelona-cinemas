@@ -29,6 +29,7 @@ import refresh
 from enricher import EnrichmentStats
 from models import EndedMovie, Listings, Movie
 from providers import diagnostics
+from refresh import Enrich
 
 from .conftest import FindEvent
 
@@ -245,6 +246,89 @@ def test_collection_dedups_showtimes_across_providers_and_keeps_the_booking_link
     assert len(showtimes) == 1
     assert showtimes[0]["booking_url"] == "https://tickets.example/seats/1"
     assert showtimes[0]["language"] == "vo"
+
+
+def _tmdb_by_title(titles: dict[str, str]) -> Enrich:
+    """Enrichment that resolves each stripped title to an imdb_id, as TMDb would."""
+
+    def _enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie], EnrichmentStats]:
+        enriched = [{**m, "imdb_id": titles[m["title"]], "original_lang": "en"} for m in movies]
+        return enriched, {**_NO_ENRICHMENT, "tmdb_enriched_count": len(movies)}  # type: ignore[return-value]
+
+    return _enrich
+
+
+def test_a_rerelease_listing_merges_into_the_film_and_is_flagged() -> None:
+    """Vengadores: Endgame (Reestreno) repeated Avengers: Endgame's showings as a second film."""
+    providers = [
+        _provider("one", [_raw_movie("Avengers: Endgame", [_showtime(cinema="Glòries", time="15:30")])]),
+        _provider("two", [_raw_movie("Vengadores: Endgame (Reestreno)", [_showtime(cinema="Glòries", time="15:30")])]),
+    ]
+    enrich = _tmdb_by_title({"Avengers: Endgame": "tt4154796", "Vengadores: Endgame": "tt4154796"})
+
+    listings, stats = _build(providers, enrich=enrich)
+
+    assert stats["published_movie_count"] == 1
+    (movie,) = listings["movies"]
+    assert movie["rerelease"] is True
+    assert len(movie["showtimes"]) == 1
+
+
+def test_an_imax_listing_merges_into_the_film_with_the_format_and_the_seat_picker_link() -> None:
+    """
+    La Odisea: The IMAX Experience repeated The Odyssey's IMAX showing. The
+    Odyssey's copy linked to the cinema homepage; the merged showing keeps the
+    seat-picker link and the IMAX tag.
+    """
+    cinemas = {"CinDigMar": {"website_url": "https://www.cinesa.es/cines/diagonal-mar/"}}
+    providers = [
+        _provider(
+            "one",
+            [
+                _raw_movie(
+                    "The Odyssey",
+                    [_showtime(cinema="CinDigMar", booking_url="https://www.cinesa.es/cines/diagonal-mar/")],
+                )
+            ],
+        ),
+        _provider(
+            "two",
+            [
+                _raw_movie(
+                    "La Odisea: The IMAX Experience",
+                    [_showtime(cinema="CinDigMar", booking_url="https://www.cinesa.es/compra/?session=981")],
+                )
+            ],
+        ),
+    ]
+    enrich = _tmdb_by_title({"The Odyssey": "tt33764258", "La Odisea": "tt33764258"})
+
+    listings, stats = _build(providers, cinemas=cinemas, enrich=enrich)
+
+    assert stats["published_movie_count"] == 1
+    (showtime,) = listings["movies"][0]["showtimes"]
+    assert showtime["premium_format"] == "imax"
+    assert showtime["booking_url"] == "https://www.cinesa.es/compra/?session=981"
+    assert "rerelease" not in listings["movies"][0]
+
+
+@pytest.mark.parametrize(
+    ("url", "kept"),
+    [
+        ("https://www.moobycinemas.com/glories?setLang=en", False),
+        ("https://moobycinemas.com/", False),
+        ("https://www.moobycinemas.com/glories?session=12", True),
+        ("https://www.moobycinemas.com/glories/buy/12", True),
+        ("https://tickets.example/glories", True),
+    ],
+)
+def test_only_a_link_to_the_cinema_homepage_is_dropped(url: str, kept: bool) -> None:
+    cinemas = {"Glòries": {"website_url": "https://www.moobycinemas.com/glories?setLang=en"}}
+    providers = [_provider("one", [_raw_movie("Weapons", [_showtime(cinema="Glòries", booking_url=url)])])]
+
+    listings, _ = _build(providers, cinemas=cinemas)
+
+    assert listings["movies"][0]["showtimes"][0].get("booking_url") == (url if kept else None)
 
 
 def test_collection_drops_invalid_movies_and_showtimes():
