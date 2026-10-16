@@ -96,7 +96,7 @@ CINEMAS: CinemaRegistry = {
         id="glories",
         name="Cinesa Diagonal Mar",
         address="Avinguda Diagonal, 208",
-        neighborhood="Poble-Nou",
+        neighborhood="Poblenou",
         website_url="https://www.cinesa.es/cines/diagonal-mar/",
         maps_url="https://maps.google.com/?q=Avinguda+Diagonal+208+Barcelona",
         aliases={"english_cinema_bcn": ["Glòries"]},

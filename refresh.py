@@ -51,9 +51,10 @@ from concurrent.futures import ThreadPoolExecutor
 from contextvars import copy_context
 from datetime import date, datetime, timedelta
 from itertools import chain
-from typing import TYPE_CHECKING, Any, NamedTuple, Protocol, TypedDict
+from typing import TYPE_CHECKING, Any, NamedTuple, Protocol, TypedDict, cast
+from urllib.parse import parse_qs, urlsplit
 
-from models import CinemaRegistry, EndedMovie, Listings, Movie, ProviderSnapshot
+from models import CinemaInfo, CinemaRegistry, EndedMovie, Listings, Movie, ProviderSnapshot, Showtime
 from observability import emit_metric, log_event, now_ms
 from providers.common import assume_utc, madrid_now, madrid_today
 from providers.diagnostics import (
@@ -63,6 +64,7 @@ from providers.diagnostics import (
     zero_result_diagnostics,
 )
 from reconcile import reconcile, same_movie
+from titles import clean_movie
 from validation import normalize_movies
 
 if TYPE_CHECKING:
@@ -301,7 +303,9 @@ def _collect_movies(
         emit_metric("CollectionFailure", 1)
         raise RuntimeError("Providers answered but none returned movies")
 
-    raw = list(chain.from_iterable(provider_results))
+    # Suffixes come off first: "Vengadores: Endgame (Reestreno)" must reach
+    # Reconciliation and TMDb as the film's title, or it is listed twice.
+    raw = [_drop_homepage_links(clean_movie(movie), cinemas) for movie in chain.from_iterable(provider_results)]
     movies = reconcile(raw, stage="collection")
     if not movies:
         emit_metric("CollectionFailure", 1)
@@ -323,6 +327,41 @@ def _collect_movies(
         fallback_count=fallback_count,
         snapshots=snapshots,
     )
+
+
+def _drop_homepage_links(movie: Movie, cinemas: CinemaRegistry) -> Movie:
+    """
+    `movie` without booking links that only point at the cinema's homepage.
+
+    A feed that cannot deep-link a screening falls back to the cinema's site.
+    That is no booking link: kept, it wins the showtime dedup over another
+    feed's seat-picker link for the same screening, and the site already
+    falls back to the homepage when a showtime has no link.
+    """
+    showtimes = [
+        _without_key(showtime, "booking_url")
+        if _is_homepage(showtime.get("booking_url"), cinemas.get(showtime["cinema"]))
+        else showtime
+        for showtime in movie["showtimes"]
+    ]
+    return movie if showtimes == movie["showtimes"] else {**movie, "showtimes": showtimes}
+
+
+def _without_key(showtime: Showtime, key: str) -> Showtime:
+    return cast("Showtime", {field: value for field, value in showtime.items() if field != key})
+
+
+def _is_homepage(url: str | None, cinema: CinemaInfo | None) -> bool:
+    if not url or cinema is None:
+        return False
+    link = urlsplit(url)
+    home = urlsplit(cinema["website_url"])
+    same_host = link.netloc.casefold().removeprefix("www.") == home.netloc.casefold().removeprefix("www.")
+    same_page = link.path.strip("/") in {"", home.path.strip("/")}
+    # A query naming the screening ("?session=123") makes it a booking link;
+    # one the homepage itself carries ("?setLang=en") does not.
+    no_screening = set(parse_qs(link.query)) <= set(parse_qs(home.query))
+    return same_host and same_page and no_screening
 
 
 def _fallback_movies(

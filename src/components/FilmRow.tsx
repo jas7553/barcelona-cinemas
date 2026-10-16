@@ -1,5 +1,5 @@
 import type { ComponentChildren } from "preact";
-import { formatRuntime, plural, shortName, subtitleLabel } from "../domain/format";
+import { formatRuntime, GENRE_SEPARATOR, LIST_GENRES, plural, shortName, subtitleLabel } from "../domain/format";
 import { dayTitle, type DayStatus, type FilmRow } from "../domain/schedule";
 import type { DateKey } from "../domain/time";
 import type { ListFilm, Showing } from "../pageData";
@@ -7,11 +7,13 @@ import type { Theater } from "../types";
 import { IconStar } from "./Icons";
 import { Poster } from "./Poster";
 
-/** Rating · up to 2 genres · runtime, and anything the caller adds */
+/** Rating · up to 2 genres · runtime · re-release, and anything the caller adds */
 function FilmMeta({ film, extra }: { film: ListFilm; extra?: string }) {
-  const rest = [...film.genres.slice(0, 2), film.runtime_minutes ? formatRuntime(film.runtime_minutes) : null].filter(
-    Boolean,
-  );
+  const rest = [
+    ...film.genres.slice(0, LIST_GENRES),
+    film.runtime_minutes ? formatRuntime(film.runtime_minutes) : null,
+    film.rerelease ? "Re-release" : null,
+  ].filter(Boolean);
   return (
     <p class="meta sub">
       {film.rating != null && (
@@ -20,8 +22,8 @@ function FilmMeta({ film, extra }: { film: ListFilm; extra?: string }) {
           {film.rating.toFixed(1)}
         </span>
       )}
-      {film.rating != null && rest.length > 0 && " · "}
-      {rest.join(" · ")}
+      {film.rating != null && rest.length > 0 && GENRE_SEPARATOR}
+      {rest.join(GENRE_SEPARATOR)}
       {extra}
     </p>
   );

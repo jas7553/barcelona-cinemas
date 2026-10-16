@@ -208,4 +208,8 @@ def _merge_pair(left: Movie, right: Movie) -> Movie:
     enriched_at = _coalesce(left.get("enriched_at"), right.get("enriched_at"))
     if enriched_at is not None:
         merged["enriched_at"] = enriched_at
+    # One feed listing the film as a re-release is enough: the other feeds
+    # simply leave the suffix off.
+    if left.get("rerelease") or right.get("rerelease"):
+        merged["rerelease"] = True
     return merged

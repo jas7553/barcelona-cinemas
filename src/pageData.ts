@@ -14,6 +14,8 @@ export type Showing = Pick<Showtime, "theater_id" | "date" | "time"> &
   Partial<Pick<Showtime, "booking_url" | "premium_format" | "audio_lang" | "subtitle_lang">>;
 
 export type ListFilm = Pick<Movie, "id" | "title" | "poster_url" | "rating" | "genres" | "runtime_minutes"> & {
+  /** Set only when true, so the embedded payloads stay small. */
+  rerelease?: true;
   showtimes: Showing[];
 };
 
@@ -39,6 +41,8 @@ export type FilmDetail = ListFilm &
     tagline: string | null;
     director: string | null;
     cast: string[];
+    /** "Too few ratings yet" stands in for the rating. */
+    tooFewRatings: boolean;
     imdb: string | null;
     letterboxd: string;
   };

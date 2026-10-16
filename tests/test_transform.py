@@ -5,7 +5,7 @@ from typing import Any
 
 from models import CinemaInfo, CinemaRegistry, EndedMovie, Listings, Movie, Showtime
 from pipeline import load_cinemas
-from transform import to_api_response
+from transform import MIN_VOTE_COUNT, to_api_response
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -164,30 +164,53 @@ def test_suppresses_rating_when_vote_count_is_zero():
     assert out["rating"] is None
 
 
-def test_keeps_rating_when_vote_count_is_positive():
+def test_keeps_rating_when_vote_count_is_well_above_threshold():
     movie = _movie(showtimes=[_showtime()], rating=8.1)
-    movie["vote_count"] = 42
+    movie["vote_count"] = 4200
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     out = result["movies"][0]
     assert out["rating"] == 8.1
+    assert out["too_few_ratings"] is False
 
 
 def test_suppresses_rating_when_vote_count_below_threshold():
-    """A handful of votes (e.g. 2) is statistically meaningless and can produce
-    a misleading extreme rating like 10.0 — suppress until MIN_VOTE_COUNT."""
-    movie = _movie(showtimes=[_showtime()], rating=10.0)
-    movie["vote_count"] = 4
+    """A few dozen early votes produce a misleading 8.1 that outranks the
+    classics — suppress until MIN_VOTE_COUNT, and say why."""
+    movie = _movie(showtimes=[_showtime()], rating=8.1, tmdb_id=1)
+    movie["vote_count"] = MIN_VOTE_COUNT - 1
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     out = result["movies"][0]
     assert out["rating"] is None
+    assert out["too_few_ratings"] is True
+
+
+def test_suppressed_rating_is_hidden_on_ended_films_too():
+    listings = _with_ended([], [{**_ended("Aftersun", tmdb_id=965150), "rating": 9.0, "vote_count": 3}])
+    out = to_api_response(listings, CINEMAS)["ended_movies"][0]
+    assert out["rating"] is None
+    assert out["too_few_ratings"] is True
+
+
+def test_unmatched_film_is_not_flagged_too_few_ratings():
+    """No TMDb match means no rating to speak of, not too few of them."""
+    out = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)["movies"][0]
+    assert out["rating"] is None
+    assert out["too_few_ratings"] is False
 
 
 def test_keeps_rating_when_vote_count_meets_threshold():
     movie = _movie(showtimes=[_showtime()], rating=7.5)
-    movie["vote_count"] = 5
+    movie["vote_count"] = MIN_VOTE_COUNT
     result = to_api_response(_listings(movies=[movie]), CINEMAS)
     out = result["movies"][0]
     assert out["rating"] == 7.5
+
+
+def test_publishes_rerelease():
+    movie: Movie = {**_movie(showtimes=[_showtime()]), "rerelease": True}
+    assert to_api_response(_listings(movies=[movie]), CINEMAS)["movies"][0]["rerelease"] is True
+    plain = to_api_response(_listings(movies=[_movie(showtimes=[_showtime()])]), CINEMAS)
+    assert plain["movies"][0]["rerelease"] is False
 
 
 # ── Top-level shape ───────────────────────────────────────────────────────────
@@ -367,6 +390,8 @@ def test_publishes_exactly_the_fields_the_front_end_reads():
         "synopsis",
         "tagline",
         "imdb_id",
+        "too_few_ratings",
+        "rerelease",
         "showtimes",
     }
 

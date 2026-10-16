@@ -35,6 +35,7 @@ const FILM: FilmDetail = {
   synopsis: "Sophie reflects on the shared joy and private melancholy of a holiday she took with her father twenty years earlier. Memories real and imagined fill the gaps.",
   director: "Charlotte Wells",
   cast: ["Paul Mescal", "Frankie Corio"],
+  tooFewRatings: false,
   imdb: "https://imdb.example/tt1",
   letterboxd: "https://letterboxd.com/imdb/tt1/",
   showtimes: [
@@ -70,6 +71,17 @@ afterEach(() => {
 });
 
 describe("Film page", () => {
+  it("joins every genre with the list pages' separator", () => {
+    render(<FilmPage data={{ ...data, film: { ...FILM, genres: ["Comedy", "Drama", "Romance"] } }} />);
+    expect(screen.getByText(/Comedy · Drama · Romance/)).toBeInTheDocument();
+  });
+
+  it("says a rating is missing for too few votes, and notes a re-release", () => {
+    render(<FilmPage data={{ ...data, film: { ...FILM, rating: null, tooFewRatings: true, rerelease: true } }} />);
+    expect(screen.getByText("Too few ratings yet")).toBeInTheDocument();
+    expect(screen.getByText(/Re-release/)).toBeInTheDocument();
+  });
+
   it("opens on today, one row per cinema, with started showings dimmed rather than removed", () => {
     render(<FilmPage data={data} />);
     expect(screen.getByRole("link", { current: "date" })).toHaveAttribute("href", "/film/aftersun/2026-10-04/");

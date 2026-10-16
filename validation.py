@@ -147,6 +147,8 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     vote_count = _as_optional_vote_count(data.get("vote_count"), source=f"{source} vote_count")
     if vote_count is not None:
         movie["vote_count"] = vote_count
+    if data.get("rerelease") is True:
+        movie["rerelease"] = True
     return movie
 
 
