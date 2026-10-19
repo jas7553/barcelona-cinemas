@@ -125,13 +125,15 @@ export function FilmPage({ data }: { data: FilmPageData }) {
  * The backdrop, with a way back: to This week, or to the cinema page the
  * visitor came from (requirements 5.3). The referrer is only known in the
  * browser, so the cinema label arrives after mount. Day hops make the film
- * itself the referrer, so the way back is kept for the session.
+ * itself the referrer, so the way back is kept for the session. When the way
+ * back is the page just left, the pill goes Back through history, so that page
+ * returns where it was scrolled to (from bfcache, if it's there).
  */
 function Hero({ film, theaters }: { film: FilmDetail; theaters: ReadonlyMap<string, Theater> }) {
-  const [back, setBack] = useState({ href: "/", label: "This week" });
+  const [back, setBack] = useState({ href: "/", label: "This week", inHistory: false });
   useEffect(() => {
     const key = `back:${film.id}`;
-    let path = "/";
+    let path: string | null = null;
     try {
       const ref = new URL(document.referrer);
       if (ref.origin === location.origin) path = ref.pathname;
@@ -139,15 +141,23 @@ function Hero({ film, theaters }: { film: FilmDetail; theaters: ReadonlyMap<stri
       /* no referrer */
     }
     try {
-      if (path.startsWith(`/film/${film.id}/`)) path = sessionStorage.getItem(key) ?? "/";
-      else sessionStorage.setItem(key, path);
+      if (path?.startsWith(`/film/${film.id}/`)) path = sessionStorage.getItem(key);
+      else if (path) sessionStorage.setItem(key, path);
+      else sessionStorage.removeItem(key);
     } catch {
       /* storage blocked */
     }
-    const m = path.match(/^\/cinema\/([^/]+)\//);
+    const m = path?.match(/^\/cinema\/([^/]+)\//);
     const theater = m && theaters.get(decodeURIComponent(m[1]));
-    if (theater) setBack({ href: path, label: shortName(theater) });
+    const href = theater ? path! : "/";
+    setBack({ href, label: theater ? shortName(theater) : "This week", inHistory: path === href && history.length > 1 });
   }, [film.id, theaters]);
+
+  const goBack = (e: MouseEvent) => {
+    if (!back.inHistory || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    history.back();
+  };
 
   const src = film.backdrop_url;
   return (
@@ -163,7 +173,7 @@ function Hero({ film, theaters }: { film: FilmDetail; theaters: ReadonlyMap<stri
           fetchpriority="high"
         />
       )}
-      <a class="pill back" href={back.href}>
+      <a class="pill back" href={back.href} onClick={goBack}>
         ‹ {back.label}
       </a>
     </div>

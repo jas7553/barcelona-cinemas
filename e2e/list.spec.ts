@@ -2,7 +2,7 @@
 // CSP. The data is the date-shifted fixture, so the first day is always today.
 
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors, expectHit44, HOME, readCls, seedPrefs, slowBundle, watchCls } from "./helpers";
+import { collectErrors, expectHit44, HOME, readCls, seedPrefs, slowBundle, trackViewTransitions, viewTransitionDone, watchCls } from "./helpers";
 
 const strip = (page: Page) => page.getByRole("navigation", { name: "Days" });
 const rows = (page: Page) => page.locator("li.film");
@@ -146,22 +146,35 @@ for (const path of ["/", "day"]) {
   });
 }
 
-test("Back returns to This week at the same scroll position", async ({ page }) => {
-  await page.goto("/");
-  await page.evaluate(() => window.scrollTo(0, 800));
-  const before = await page.evaluate(() => window.scrollY);
-  expect(before).toBeGreaterThan(0);
-  // A title already in view and clear of the sticky strip, so clicking doesn't scroll.
-  const index = await page.evaluate(() => {
-    const top = document.querySelector(".strip")!.getBoundingClientRect().bottom;
-    return [...document.querySelectorAll("li.film h3 a")].findIndex((a) => {
-      const r = a.getBoundingClientRect();
-      return r.top >= top && r.bottom <= window.innerHeight;
+// Leaving This week for a film and coming back must not lose the visitor's place,
+// whichever way back they take: the browser's Back or the film page's own pill.
+for (const way of ["Back", "the This week pill"] as const) {
+  test(`${way} returns to This week at the same scroll position`, async ({ page }) => {
+    await trackViewTransitions(page);
+    await page.goto("/");
+    await page.evaluate(() => window.scrollTo(0, 800));
+    const before = await page.evaluate(() => window.scrollY);
+    expect(before).toBeGreaterThan(0);
+    // A title already in view and clear of the sticky strip, so clicking doesn't scroll.
+    const index = await page.evaluate(() => {
+      const top = document.querySelector(".strip")!.getBoundingClientRect().bottom;
+      return [...document.querySelectorAll("li.film h3 a")].findIndex((a) => {
+        const r = a.getBoundingClientRect();
+        return r.top >= top && r.bottom <= window.innerHeight;
+      });
     });
+    await page.locator("li.film h3 a").nth(index).click();
+    await expect(page).toHaveURL(/\/film\//);
+    if (way === "Back") {
+      await page.goBack({ waitUntil: "commit" });
+    } else {
+      // Hydrated, so the pill's click handler is there to take it.
+      await page.waitForLoadState("networkidle");
+      await viewTransitionDone(page);
+      await page.locator(".hero .back").click();
+    }
+    await expect(page).toHaveURL("/");
+    await expect(page.getByRole("heading", { level: 1, name: "This week" })).toBeAttached();
+    await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 3000 }).toBeCloseTo(before, -2);
   });
-  await page.locator("li.film h3 a").nth(index).click();
-  await expect(page).toHaveURL(/\/film\//);
-  await page.goBack({ waitUntil: "commit" });
-  await expect(page.getByRole("heading", { level: 1, name: "This week" })).toBeAttached();
-  await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 3000 }).toBeCloseTo(before, -2);
-});
+}
