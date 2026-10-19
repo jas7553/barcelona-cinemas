@@ -81,14 +81,10 @@ export function formatDateLong(key: DateKey): string {
 
 const HOUR_MS = 3_600_000;
 
-/** "Updated 2 h ago" */
-export function formatDataAge(generatedAt: string, now: Date): string {
-  const ms = Math.max(0, now.getTime() - Date.parse(generatedAt));
-  if (ms < 60_000) return "Updated just now";
-  if (ms < HOUR_MS) return `Updated ${Math.floor(ms / 60_000)} min ago`;
-  if (ms < 24 * HOUR_MS) return `Updated ${Math.floor(ms / HOUR_MS)} h ago`;
-  const days = Math.floor(ms / (24 * HOUR_MS));
-  return `Updated ${days} ${days === 1 ? "day" : "days"} ago`;
+/** "Wed 14 Oct, 17:00" in Madrid: absolute, so it reads true without JS. */
+export function formatInstant(iso: string): string {
+  const instant = new Date(iso);
+  return `${formatDateLong(madridDateKey(instant))}, ${madridTime(instant)}`;
 }
 
 // The refresh runs more than once a day, so older data means it has been failing.

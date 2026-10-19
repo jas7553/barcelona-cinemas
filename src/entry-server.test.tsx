@@ -40,8 +40,10 @@ describe("renderPage", () => {
     expect(out.headExtra).not.toContain("canonical");
   });
 
-  it("states the data age against the render instant, so hydration matches", () => {
-    expect(renderPage(page("privacy").data).html).toContain("Updated 2 h ago");
+  it("states when the data was updated as an absolute Madrid time, so it holds without JS", () => {
+    expect(renderPage(page("privacy").data).html).toContain(
+      'Updated <time datetime="2026-10-04T08:19:00.000Z">Sun 4 Oct, 10:19</time>',
+    );
   });
 
   it("puts both Home pill labels in the markup for the pre-paint CSS to choose between", () => {

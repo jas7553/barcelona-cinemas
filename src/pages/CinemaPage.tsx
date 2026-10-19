@@ -108,7 +108,6 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
   return (
     <Layout
       data={data}
-      now={now}
       section="cinemas"
       heading={
         <div class="cin-top">

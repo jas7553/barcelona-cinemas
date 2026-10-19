@@ -9,7 +9,6 @@ import { HomeSheet } from "./HomeSheet";
 
 interface Props {
   data: PageBase & { theaters: Theater[] };
-  now: Date;
   section?: "cinemas";
   /** The page's title block, rendered inside the header under the bar. */
   heading?: ComponentChildren;
@@ -18,7 +17,7 @@ interface Props {
   children: ComponentChildren;
 }
 
-export function Layout({ data, now, section, heading, strip, children }: Props) {
+export function Layout({ data, section, heading, strip, children }: Props) {
   const prefs = usePrefs();
   useSettledOrder(prefs);
   const [homeOpen, setHomeOpen] = useState(false);
@@ -29,7 +28,7 @@ export function Layout({ data, now, section, heading, strip, children }: Props) 
       </Header>
       {strip}
       <main class="wrap">{children}</main>
-      <Footer generatedAt={data.generatedAt} now={now} />
+      <Footer generatedAt={data.generatedAt} />
       {homeOpen && <HomeSheet home={prefs.home} theaters={data.theaters} onClose={() => setHomeOpen(false)} />}
     </>
   );

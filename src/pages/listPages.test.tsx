@@ -158,6 +158,14 @@ describe("This week", () => {
     expect(screen.getByText(/Sun 4 – Sat 10 Oct · 2 films · Tue, Wed, Thu, Fri and Sat listings not out yet/)).toBeInTheDocument();
   });
 
+  it("rolls the week over to the viewer's day when opened after midnight, before the next build", () => {
+    vi.setSystemTime(new Date("2026-10-04T22:30:00Z")); // Mon 5 Oct, 00:30 in Madrid
+    render(<WeekPage data={weekData} />);
+    expect(screen.getByText(/^Mon 5 – Sun 11 Oct/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Today: 2 showings" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Sunday/ })).not.toBeInTheDocument();
+  });
+
   it("lists films with few showings after those playing all week, with a where-line", () => {
     const often: ListFilm = {
       ...FILMS[1],

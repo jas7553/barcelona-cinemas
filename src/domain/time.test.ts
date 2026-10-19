@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
-  formatDataAge,
   formatDateLong,
+  formatInstant,
   formatWeekday,
   formatWeekdayLong,
   isStale,
@@ -33,20 +33,13 @@ describe("date keys", () => {
   });
 });
 
-describe("formatDataAge", () => {
-  const at = (iso: string) => new Date(iso);
-  const generated = "2026-10-04T08:00:00Z";
-
-  it("rounds down to the largest whole unit", () => {
-    expect(formatDataAge(generated, at("2026-10-04T08:00:30Z"))).toBe("Updated just now");
-    expect(formatDataAge(generated, at("2026-10-04T08:59:00Z"))).toBe("Updated 59 min ago");
-    expect(formatDataAge(generated, at("2026-10-04T10:30:00Z"))).toBe("Updated 2 h ago");
-    expect(formatDataAge(generated, at("2026-10-05T09:00:00Z"))).toBe("Updated 1 day ago");
-    expect(formatDataAge(generated, at("2026-10-06T08:00:00Z"))).toBe("Updated 2 days ago");
+describe("formatInstant", () => {
+  it("formats an instant as Madrid date and 24-hour time", () => {
+    expect(formatInstant("2026-10-14T15:00:00Z")).toBe("Wed 14 Oct, 17:00");
   });
 
-  it("never reports a negative age when the clock is behind the data", () => {
-    expect(formatDataAge(generated, at("2026-10-04T07:00:00Z"))).toBe("Updated just now");
+  it("puts a late-UTC instant on the next Madrid day", () => {
+    expect(formatInstant("2026-01-14T23:30:00Z")).toBe("Thu 15 Jan, 00:30");
   });
 });
 
