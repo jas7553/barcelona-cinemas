@@ -1,6 +1,7 @@
 // Schematic maps (guidelines §5): an equirectangular projection rotated 42°
 // clockwise so the coast runs along the bottom, hand-simplified base layers,
-// and greedily placed labels. Pure geometry: components/CityMap.tsx draws it.
+// and greedily placed labels, led out on a line where a pin is crowded. Pure
+// geometry: components/CityMap.tsx draws it.
 
 import type { Theater } from "../types";
 import { distanceKm, distanceLabel } from "./distance";
@@ -58,10 +59,15 @@ function unproject([xr, yr]: [number, number]): LatLng {
 }
 
 interface MapLabel {
+  /** The text's baseline start. */
   x: number;
   y: number;
   text: string;
   kind: "cinema" | "dim" | "home" | "ring" | "area";
+  /** The room the label was given, clear of every other label and dot. */
+  box: Box;
+  /** From beside the dot to the label, when it had to move away. */
+  leader?: Segment;
 }
 
 interface MapDot {
@@ -115,12 +121,65 @@ export interface MapOptions {
   km?: (t: Theater) => number | null;
 }
 
-// Average advance of an 11px semibold DM Sans character; labels are placed on estimates.
-const CHAR_W = 6.1;
+// Advances of 11px semibold DM Sans, measured in the browser and grouped:
+// labels are placed on these estimates, so they err wide.
+const ADVANCE: [string, number][] = [
+  [" iIjlíìï·:.,'()", 2.9],
+  ["1frt", 4.4],
+  ["mwMW→", 10.2],
+];
+const CAPS_W = 7.6;
+const OTHER_W = 6.6;
+
+/** Estimated width of `text` at `px` (11px label type), with `tracking` px between letters. */
+function textWidth(text: string, px = 11, tracking = 0): number {
+  let w = 0;
+  for (const ch of text) {
+    const group = ADVANCE.find(([chars]) => chars.includes(ch));
+    w += (group ? group[1] : ch !== ch.toLowerCase() ? CAPS_W : OTHER_W) * (px / 11) + tracking;
+  }
+  return w;
+}
 const LABEL_H = 13;
 type Box = { x: number; y: number; w: number; h: number };
+type Segment = { x1: number; y1: number; x2: number; y2: number };
 type Spot = "r" | "l" | "t" | "b" | "tr" | "br" | "tl" | "bl" | "c";
 const SPOTS: Spot[] = ["r", "l", "t", "b", "tr", "br", "tl", "bl"];
+// Right, left, up, down, then the diagonals and between (y grows downwards).
+const LEAD_ANGLES = [0, 180, -90, 90, -45, 45, -135, 135, -22.5, 22.5, -157.5, 157.5, -67.5, 67.5, -112.5, 112.5].map(
+  (deg) => deg * D2R,
+);
+
+const overlap = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/** Whether the segment passes through the box (Liang-Barsky clipping). */
+function crossesBox(s: Segment, b: Box): boolean {
+  const dx = s.x2 - s.x1;
+  const dy = s.y2 - s.y1;
+  let t0 = 0;
+  let t1 = 1;
+  for (const [p, q] of [
+    [-dx, s.x1 - b.x],
+    [dx, b.x + b.w - s.x1],
+    [-dy, s.y1 - b.y],
+    [dy, b.y + b.h - s.y1],
+  ]) {
+    if (p === 0) {
+      if (q <= 0) return false;
+    } else {
+      const t = q / p;
+      if (p < 0) t0 = Math.max(t0, t);
+      else t1 = Math.min(t1, t);
+      if (t0 >= t1) return false;
+    }
+  }
+  return true;
+}
+
+function crossesSegment(a: Segment, b: Segment): boolean {
+  const side = (s: Segment, x: number, y: number) => Math.sign((s.x2 - s.x1) * (y - s.y1) - (s.y2 - s.y1) * (x - s.x1));
+  return side(a, b.x1, b.y1) * side(a, b.x2, b.y2) < 0 && side(b, a.x1, a.y1) * side(b, a.x2, a.y2) < 0;
+}
 
 export function buildMap(o: MapOptions): MapModel {
   const { width: W, height: H } = o;
@@ -156,17 +215,26 @@ export function buildMap(o: MapOptions): MapModel {
   ];
 
   // Greedy placement: a label goes in the first candidate spot that's on the
-  // map and clear of every box placed so far, dots included; otherwise it's dropped.
+  // map and clear of every box and leader placed so far, dots included. A
+  // label that may lead (a focus cinema, Home) then moves further out along a
+  // thin leader line; any other label that doesn't fit is dropped.
   const boxes: Box[] = [];
+  const leaders: Segment[] = [];
   const blocked = (b: Box) =>
     b.x < 2 ||
     b.y < 2 ||
     b.x + b.w > W - 2 ||
     b.y + b.h > H - 2 ||
-    boxes.some((o2) => b.x < o2.x + o2.w && o2.x < b.x + b.w && b.y < o2.y + o2.h && o2.y < b.y + b.h);
+    boxes.some((o2) => overlap(b, o2)) ||
+    leaders.some((s) => crossesBox(s, b));
   const labels: MapLabel[] = [];
-  const place = (x: number, y: number, text: string, kind: MapLabel["kind"], spots: Spot[] = SPOTS, cw = CHAR_W) => {
-    const w = text.length * cw + 4;
+  const keep = (b: Box, text: string, kind: MapLabel["kind"], leader?: Segment) => {
+    boxes.push(b);
+    if (leader) leaders.push(leader);
+    labels.push({ x: b.x + 2, y: b.y + 10, text, kind, box: b, ...(leader && { leader }) });
+  };
+  const place = (x: number, y: number, text: string, kind: MapLabel["kind"], spots: Spot[] = SPOTS, textW = textWidth(text)) => {
+    const w = textW + 4;
     const at: Record<Spot, [number, number]> = {
       r: [x + 7, y - 7],
       l: [x - 7 - w, y - 7],
@@ -180,10 +248,32 @@ export function buildMap(o: MapOptions): MapModel {
     };
     for (const spot of spots) {
       const b = { x: at[spot][0], y: at[spot][1], w, h: LABEL_H };
-      if (!blocked(b)) {
-        boxes.push(b);
-        labels.push({ x: b.x + 2, y: b.y + 10, text, kind });
-        return;
+      if (!blocked(b)) return keep(b, text, kind);
+    }
+    if (kind !== "cinema" && kind !== "home") return;
+    // Out along a ray from the dot, nearest first, until the label and its
+    // leader clear everything placed so far.
+    for (let r = 18; r <= Math.max(W, H); r += 6) {
+      for (const a of LEAD_ANGLES) {
+        const cos = Math.cos(a);
+        const sin = Math.sin(a);
+        const px = x + r * cos;
+        const py = y + r * sin;
+        const b = {
+          x: cos > 0.3 ? px : cos < -0.3 ? px - w : px - w / 2,
+          y: sin > 0.3 ? py : sin < -0.3 ? py - LABEL_H : py - LABEL_H / 2,
+          w,
+          h: LABEL_H,
+        };
+        if (blocked(b)) continue;
+        const ex = Math.min(b.x + b.w, Math.max(b.x, x));
+        const ey = Math.min(b.y + b.h, Math.max(b.y, y));
+        const len = Math.hypot(ex - x, ey - y);
+        // Starts clear of its own dot's box, so only other boxes can block it.
+        const start = 7.5 / len;
+        const leader = { x1: x + (ex - x) * start, y1: y + (ey - y) * start, x2: ex, y2: ey };
+        if (boxes.some((o2) => crossesBox(leader, o2)) || leaders.some((s) => crossesSegment(s, leader))) continue;
+        return keep(b, text, kind, leader);
       }
     }
   };
@@ -219,7 +309,6 @@ export function buildMap(o: MapOptions): MapModel {
         const r = k * scale;
         if (r >= Math.max(W, H)) continue;
         rings.push({ x, y, r });
-        place(x + r * Math.SQRT1_2, y - r * Math.SQRT1_2, `${k} km`, "ring", ["c"], 5);
       }
     }
   }
@@ -229,10 +318,13 @@ export function buildMap(o: MapOptions): MapModel {
     const edge = d.edge ? ` ${distanceLabel(o.home, t) ?? ""} →`.replace("  ", " ") : "";
     place(d.x, d.y, `${shortName(t)}${note}${edge}`, d.focus ? "cinema" : "dim");
   }
+  // After the cinemas, which may need the room more.
+  for (const [i, r] of rings.entries()) place(r.x + r.r * Math.SQRT1_2, r.y - r.r * Math.SQRT1_2, `${i + 1} km`, "ring", ["c"], textWidth(`${i + 1} km`, 9));
   if (o.areas) {
     for (const [name, lat, lng] of GEO.areas) {
       const [x, y] = toXY([lat, lng]);
-      place(x, y, name.toUpperCase(), "area", ["c"], 6.8);
+      const text = name.toUpperCase();
+      place(x, y, text, "area", ["c"], textWidth(text, 8.5, 1.02));
     }
   }
 

@@ -71,6 +71,10 @@ function Drawing({ model: m, label, link, onPick, cls }: DrawingProps) {
       {m.rings.map((r) => (
         <circle key={r.r} class="m-ring" cx={r.x.toFixed(1)} cy={r.y.toFixed(1)} r={r.r.toFixed(1)} />
       ))}
+      {m.labels.map(
+        ({ leader: s }, i) =>
+          s && <line key={`l${i}`} class="m-lead" x1={s.x1.toFixed(1)} y1={s.y1.toFixed(1)} x2={s.x2.toFixed(1)} y2={s.y2.toFixed(1)} />,
+      )}
       {m.dots.map((d) => {
         const dot = (
           <circle

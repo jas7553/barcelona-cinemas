@@ -67,6 +67,10 @@
   stroke: #fff;
   stroke-width: 2;
 }
+.m-lead {
+  stroke: var(--sub);
+  stroke-width: 1;
+}
 .m-label {
   font: 600 11px var(--ui);
   fill: var(--text);

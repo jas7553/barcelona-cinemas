@@ -198,11 +198,23 @@
   .hero--none {
     height: 200px;
   }
+  /* The map goes under the about column; the 1fr row takes whatever
+     height the panel needs beyond the about, so the map sits right under it. */
   .film-layout {
     display: grid;
-    grid-template-columns: 1fr 440px;
-    gap: 56px;
+    grid-template-columns: minmax(0, 1fr) 440px;
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "about panel" "map panel";
+    column-gap: 56px;
     align-items: start;
+  }
+  .about {
+    grid-area: about;
+  }
+  .film-map {
+    grid-area: map;
+    max-width: 440px;
+    padding-top: 24px;
   }
   .head {
     grid-template-columns: 180px minmax(0, 1fr);
@@ -222,14 +234,13 @@
   .more {
     display: none;
   }
+  /* Grows with the page: nothing on it scrolls by itself. */
   .panel {
-    position: sticky;
-    top: 16px;
+    grid-area: panel;
+    position: relative;
     z-index: 2;
     margin-top: -140px;
     padding: 0 20px 12px;
-    max-height: calc(100vh - 32px);
-    overflow-y: auto;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
@@ -238,7 +249,7 @@
   .panel-h {
     padding-top: 18px;
   }
-  /* The panel itself is sticky and scrolls internally. */
+  /* The day strip doesn't stick on desktop, so nothing covers a row. */
   .crow,
   .crow a {
     scroll-margin-top: 0;

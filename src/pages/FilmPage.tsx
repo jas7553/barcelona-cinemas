@@ -82,27 +82,28 @@ export function FilmPage({ data }: { data: FilmPageData }) {
                 started={(s) => hasStarted(s, clock)}
                 onShowing={setTicket}
               />
-              {Object.keys(notes).length > 0 && (
-                <div class="map-wrap">
-                  <h3>Where, {date === clock.today ? "today" : dayTitle(date, clock.today)}</h3>
-                  <CityMap
-                    label={`Map of the ${plural(Object.keys(notes).length, "cinema")} showing ${film.title} ${date === clock.today ? "today" : `on ${dayTitle(date, clock.today)}`}`}
-                    mobile={[358, 230]}
-                    desktop={[398, 240]}
-                    theaters={data.theaters}
-                    frame={Object.keys(notes)}
-                    notes={notes}
-                    minSpan={2.5}
-                    others={false}
-                    home={prefs.home}
-                    favourites={prefs.favourites}
-                    link
-                  />
-                </div>
-              )}
             </>
           )}
         </section>
+        {/* After the showtimes on a phone; under the synopsis on desktop (film.css). */}
+        {date && Object.keys(notes).length > 0 && (
+          <div class="map-wrap film-map">
+            <h3>Where, {date === clock.today ? "today" : dayTitle(date, clock.today)}</h3>
+            <CityMap
+              label={`Map of the ${plural(Object.keys(notes).length, "cinema")} showing ${film.title} ${date === clock.today ? "today" : `on ${dayTitle(date, clock.today)}`}`}
+              mobile={[358, 230]}
+              desktop={[440, 260]}
+              theaters={data.theaters}
+              frame={Object.keys(notes)}
+              notes={notes}
+              minSpan={2.5}
+              others={false}
+              home={prefs.home}
+              favourites={prefs.favourites}
+              link
+            />
+          </div>
+        )}
       </main>
       <Footer generatedAt={data.generatedAt} now={now} />
       {ticket && ticketTheater && (
@@ -224,8 +225,9 @@ function About({ film, seen }: { film: FilmDetail; seen: boolean }) {
       )}
       <div class="actions">
         {film.trailer_url && (
-          <a class="pill" href={film.trailer_url}>
-            ▶ Trailer
+          <a class="pill" href={film.trailer_url} target="_blank" rel="noopener">
+            ▶ Trailer <IconExternal />
+            <span class="vh">(opens in a new tab)</span>
           </a>
         )}
         {/* SEEN_SCRIPT presses this before paint; CSS picks the label. */}

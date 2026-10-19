@@ -144,8 +144,24 @@ describe("Film page", () => {
 
   it("links out to the trailer, IMDb and Letterboxd", () => {
     render(<FilmPage data={data} />);
-    expect(screen.getByRole("link", { name: /Trailer/ })).toHaveAttribute("href", "https://youtube.example/x");
+    const trailer = screen.getByRole("link", { name: /Trailer/ });
+    expect(trailer).toHaveAttribute("href", "https://youtube.example/x");
+    // In a new tab, so the trailer doesn't take the visitor off the site.
+    expect(trailer).toHaveAttribute("target", "_blank");
+    expect(trailer).toHaveAttribute("rel", "noopener");
+    expect(trailer).toHaveAccessibleName(/new tab/);
+    expect(trailer.querySelector("svg")).not.toBeNull();
     expect(screen.getByRole("link", { name: /IMDb/ })).toHaveAttribute("href", "https://imdb.example/tt1");
     expect(screen.getByRole("link", { name: /Letterboxd/ })).toHaveAttribute("href", "https://letterboxd.com/imdb/tt1/");
+  });
+
+  it("puts the day's map after the showtimes panel, not inside it, so the desktop grid can move it", () => {
+    render(<FilmPage data={data} />);
+    const panel = screen.getByRole("region", { name: "Showtimes" });
+    const map = screen.getAllByRole("img", { name: /^Map of the .* showing Aftersun today/ })[0];
+    const wrap = map.closest(".film-map")!;
+    expect(panel.contains(wrap)).toBe(false);
+    expect(wrap.parentElement).toBe(panel.parentElement);
+    expect(panel.compareDocumentPosition(wrap) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
