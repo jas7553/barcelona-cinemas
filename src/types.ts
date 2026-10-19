@@ -36,6 +36,10 @@ export interface Movie {
   trailer_url: string | null;
   genres: string[];
   rating: number | null;
+  /** Matched on TMDb, but its rating is withheld until enough people have voted. */
+  too_few_ratings?: boolean;
+  /** Back in cinemas after its first run. */
+  rerelease?: boolean;
   /** Joined for multi-director films. */
   director?: string | null;
   /** Top-billed first. */

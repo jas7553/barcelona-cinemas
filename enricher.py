@@ -2,8 +2,10 @@
 TMDb enrichment: adds synopsis, rating, runtime, and genres to collected movies.
 
 For each movie title not already in the cache, TMDb is queried:
-  1. /3/search/movie       — find best match and retrieve the TMDb ID
-  2. /3/movie/{id}         — retrieve runtime and named genres (search only returns IDs)
+  1. /3/find/{imdb_id}     — when a Provider gave an IMDb id: an exact match
+     /3/search/movie       — otherwise: candidates, filtered by the source's year
+  2. /3/movie/{id}         — runtime and named genres; rules out shorts and TV
+                             movies, and picks the candidate whose runtime fits
   3. /3/movie/{id}/videos  — retrieve trailer URL (non-fatal on failure)
   4. /3/movie/{id}/credits — retrieve director + top cast (non-fatal on failure)
 
@@ -12,6 +14,7 @@ Failures are logged and result in null metadata fields; this module never raises
 
 import logging
 import os
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Any, NamedTuple, TypedDict, cast
 
@@ -30,6 +33,9 @@ logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://api.themoviedb.org/3"
 _ENRICH_TTL_DAYS = int(os.environ.get("ENRICH_TTL_DAYS", "7"))
+# Stamped on every enrichment. Bump it when the matching rules change, so the
+# next refresh re-matches every cached film instead of waiting out the TTL.
+MATCH_VERSION = 2
 
 
 class EnrichmentStats(TypedDict):
@@ -85,15 +91,17 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
             cached = _find_cached_movie(movie, cached_by_imdb, cached_by_title)
             if cached and cached.get("tmdb_id") is not None and not _needs_reenrichment(cached):
                 stats["tmdb_cache_hit_count"] += 1
-                enriched.append({**cached, "showtimes": movie["showtimes"]})
+                enriched.append(_with_fresh_listing(cached, movie))
             else:
                 if cached and cached.get("tmdb_id") is not None:
                     stats["tmdb_reenriched_count"] += 1
+                # An older matcher's English title may name the wrong film.
+                trusted = cached is not None and _current_match(cached)
                 result = _lookup_and_merge(
                     movie,
                     session,
                     key,
-                    search_title=cached.get("english_title") if cached else None,
+                    search_title=cached.get("english_title") if cached and trusted else None,
                 )
                 if result.enriched:
                     stats["tmdb_enriched_count"] += 1
@@ -102,9 +110,16 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
                 # A re-enrichment that produced nothing (network failure or no
                 # TMDb match) must not discard good cached metadata — keep the
                 # cached copy with fresh showtimes rather than reverting to the
-                # bare scraped listing. Uncached titles still fall through.
-                if not result.enriched and cached is not None and cached.get("tmdb_id") is not None:
-                    enriched.append({**cached, "showtimes": movie["showtimes"]})
+                # bare scraped listing. Uncached titles still fall through. An
+                # older matcher's copy is only kept through a failure: if the
+                # current rules find no match, its match was not one either.
+                if (
+                    not result.enriched
+                    and cached is not None
+                    and cached.get("tmdb_id") is not None
+                    and (trusted or result.failed)
+                ):
+                    enriched.append(_with_fresh_listing(cached, movie))
                 else:
                     enriched.append(result.movie)
         if stats["tmdb_failure_count"]:
@@ -114,7 +129,24 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         return enriched, stats
 
 
+def _current_match(cached: Movie) -> bool:
+    return cached.get("match_version", 1) >= MATCH_VERSION
+
+
+_SOURCE_FIELDS = ("original_title", "source_year", "source_runtime_mins", "rerelease")
+
+
+def _with_fresh_listing(cached: Movie, movie: Movie) -> Movie:
+    """The cached TMDb metadata with this run's showtimes and source fields."""
+    reused = cast(Movie, {k: v for k, v in cached.items() if k not in _SOURCE_FIELDS})
+    reused.update({k: v for k, v in movie.items() if k in _SOURCE_FIELDS})  # type: ignore[typeddict-item]
+    reused["showtimes"] = movie["showtimes"]
+    return reused
+
+
 def _needs_reenrichment(cached: Movie) -> bool:
+    if not _current_match(cached):
+        return True
     enriched_at_str = cached.get("enriched_at")
     if not enriched_at_str:
         return True
@@ -135,7 +167,11 @@ def _find_cached_movie(
         cached = cached_by_imdb.get(imdb_id)
         if cached is not None:
             return cached
-    return cached_by_title.get(movie["title"].lower())
+    cached = cached_by_title.get(movie["title"].lower())
+    # Same title, different IMDb id: another film of that name, or a wrong match.
+    if cached is not None and imdb_id and cached.get("imdb_id") not in (None, imdb_id):
+        return None
+    return cached
 
 
 def _lookup_and_merge(
@@ -144,7 +180,7 @@ def _lookup_and_merge(
     """Look up a movie on TMDb and merge metadata into the Movie dict."""
     query = search_title or movie["title"]
     try:
-        raw_detail, raw_videos, raw_credits = _fetch_tmdb(query, session, api_key)
+        raw_detail, raw_videos, raw_credits = _fetch_tmdb(movie, query, session, api_key)
     except Exception as exc:
         status = http_status(exc)
         detail = f"HTTP {status}" if status else type(exc).__name__
@@ -164,8 +200,9 @@ def _lookup_and_merge(
     merged: Movie = {
         **movie,
         "enriched_at": datetime.now(UTC).isoformat(),
+        "match_version": MATCH_VERSION,
         "tmdb_id": tmdb_data.get("id"),
-        "imdb_id": tmdb_data.get("imdb_id"),
+        "imdb_id": tmdb_data.get("imdb_id") or movie.get("imdb_id"),
         "year": tmdb_data.get("year"),
         "poster_url": tmdb_data.get("poster_url"),
         "backdrop_url": tmdb_data.get("backdrop_url"),
@@ -183,7 +220,36 @@ def _lookup_and_merge(
     if english_title is not None:
         merged["english_title"] = english_title
     merged["original_lang"] = tmdb_data.get("original_lang")
+    _log_source_disagreement(merged)
     return _LookupResult(merged, enriched=True, failed=False)
+
+
+def _log_source_disagreement(movie: Movie) -> None:
+    """
+    Flag a match whose year or runtime is off the source's. An IMDb-id match
+    skips both filters, and a runtime that fits no candidate falls back to the
+    first, so this is the only trace of a match worth a second look.
+    """
+    source_year = movie.get("source_year")
+    source_runtime = movie.get("source_runtime_mins")
+    year, runtime = movie.get("year"), movie.get("runtime_mins")
+    year_off = source_year is not None and year is not None and not _within(year, source_year, _YEAR_TOLERANCE)
+    runtime_off = (
+        source_runtime is not None
+        and runtime is not None
+        and not _within(runtime, source_runtime, _RUNTIME_TOLERANCE_MINS)
+    )
+    if year_off or runtime_off:
+        log_event(
+            "tmdb_match_disagrees",
+            level=logging.WARNING,
+            title=movie["title"],
+            tmdb_id=movie.get("tmdb_id"),
+            year=year,
+            source_year=source_year,
+            runtime_mins=runtime,
+            source_runtime_mins=source_runtime,
+        )
 
 
 def _optional_get(
@@ -200,35 +266,109 @@ def _optional_get(
         return None
 
 
-def _fetch_tmdb(
-    title: str, session: requests.Session, api_key: str
-) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
-    """Search TMDb for a title; return (detail, videos, credits), or all None on no results."""
-    common = {"language": "en-US", "api_key": api_key}
-    search_resp = session.get(
-        f"{_BASE_URL}/search/movie",
-        params={"query": title, **common},
-        timeout=10,
-    )
-    search_resp.raise_for_status()
-    results: list[dict[str, Any]] = search_resp.json().get("results", [])
+def _get_json(session: requests.Session, url: str, params: dict[str, str]) -> dict[str, Any]:
+    resp = session.get(url, params=params, timeout=10)
+    resp.raise_for_status()
+    return cast(dict[str, Any], resp.json())
 
-    if not results:
-        logger.debug("No TMDb results for %r", title)
+
+def _fetch_tmdb(
+    movie: Movie, query: str, session: requests.Session, api_key: str
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
+    """
+    Find the movie on TMDb; return (detail, videos, credits), or all None when
+    nothing acceptable matches. A source IMDb id is exact, so it is looked up
+    directly; otherwise the original title, then `query`, are searched.
+    """
+    common = {"language": "en-US", "api_key": api_key}
+    detail: dict[str, Any] | None = None
+    if imdb_id := movie.get("imdb_id"):
+        found = _get_json(session, f"{_BASE_URL}/find/{imdb_id}", {"external_source": "imdb_id", **common})
+        if results := found.get("movie_results"):
+            detail = _get_json(session, f"{_BASE_URL}/movie/{results[0]['id']}", common)
+            if not _is_feature(detail):
+                detail = None
+    if detail is None:
+        for title in dict.fromkeys(t for t in (movie.get("original_title"), query) if t):
+            if (detail := _search_match(movie, title, session, common)) is not None:
+                break
+    if detail is None:
+        logger.debug("No acceptable TMDb match for %r", movie["title"])
         return None, None, None
 
-    title_lower = title.lower()
-    match = next(
-        (r for r in results if r.get("title", "").lower() == title_lower),
-        results[0],
+    movie_url = f"{_BASE_URL}/movie/{detail['id']}"
+    videos_data = _optional_get(session, f"{movie_url}/videos", common, query, "videos")
+    credits_data = _optional_get(session, f"{movie_url}/credits", common, query, "credits")
+    return detail, videos_data, credits_data
+
+
+_TV_MOVIE_GENRE_ID = 10770
+_TV_MOVIE_GENRE = "TV Movie"
+# The Academy's line between a short and a feature.
+_MIN_FEATURE_RUNTIME_MINS = 40
+_YEAR_TOLERANCE = 1
+_RUNTIME_TOLERANCE_MINS = 10
+_MAX_DETAIL_LOOKUPS = 3
+
+
+def _search_match(movie: Movie, title: str, session: requests.Session, common: dict[str, str]) -> dict[str, Any] | None:
+    """
+    The best search result for `title` that is a feature film, as its detail
+    payload. TV movies and films off the source's year are never candidates;
+    exact titles rank first, then films whose year is known (TMDb often has no
+    date yet for a new release), then TMDb's own order. Shorts only show in the
+    detail's runtime, so up to `_MAX_DETAIL_LOOKUPS` candidates are fetched,
+    stopping at the first whose runtime fits the source's.
+    """
+    results: list[dict[str, Any]] = _get_json(session, f"{_BASE_URL}/search/movie", {"query": title, **common}).get(
+        "results", []
+    )
+    source_year = movie.get("source_year")
+    names = {t.casefold() for t in (title, movie["title"], movie.get("original_title")) if t}
+    candidates = [
+        result
+        for result in results
+        if _TV_MOVIE_GENRE_ID not in (result.get("genre_ids") or [])
+        and (
+            source_year is None
+            or _release_year(result) is None
+            or _within(_release_year(result), source_year, _YEAR_TOLERANCE)
+        )
+    ]
+    candidates.sort(
+        key=lambda result: (
+            str(result.get("title", "")).casefold() not in names,
+            source_year is not None and _release_year(result) is None,
+        )
     )
 
-    movie_url = f"{_BASE_URL}/movie/{match['id']}"
-    detail_resp = session.get(movie_url, params=common, timeout=10)
-    detail_resp.raise_for_status()
-    detail_data = cast(dict[str, Any], detail_resp.json())
+    source_runtime = movie.get("source_runtime_mins")
+    fallback: dict[str, Any] | None = None
+    for candidate in candidates[:_MAX_DETAIL_LOOKUPS]:
+        detail = _get_json(session, f"{_BASE_URL}/movie/{candidate['id']}", common)
+        if not _is_feature(detail):
+            continue
+        if source_runtime is None or _within(detail.get("runtime"), source_runtime, _RUNTIME_TOLERANCE_MINS):
+            return detail
+        fallback = fallback or detail
+    return fallback
 
-    videos_data = _optional_get(session, f"{movie_url}/videos", common, title, "videos")
-    credits_data = _optional_get(session, f"{movie_url}/credits", common, title, "credits")
 
-    return detail_data, videos_data, credits_data
+def _release_year(result: Mapping[str, Any]) -> int | None:
+    release_date = result.get("release_date")
+    if isinstance(release_date, str) and release_date[:4].isdigit():
+        return int(release_date[:4])
+    return None
+
+
+def _within(value: object, target: int, tolerance: int) -> bool:
+    return isinstance(value, int) and abs(value - target) <= tolerance
+
+
+def _is_feature(detail: Mapping[str, Any]) -> bool:
+    """Not a TV movie, and not a short. An unknown (0 or absent) runtime passes."""
+    genres = detail.get("genres") or []
+    if any(isinstance(genre, Mapping) and genre.get("name") == _TV_MOVIE_GENRE for genre in genres):
+        return False
+    runtime = detail.get("runtime")
+    return not (isinstance(runtime, int) and 0 < runtime < _MIN_FEATURE_RUNTIME_MINS)

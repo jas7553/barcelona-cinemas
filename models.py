@@ -39,6 +39,13 @@ class Movie(TypedDict):
     director: NotRequired[str | None]
     cast: NotRequired[list[str] | None]
     enriched_at: NotRequired[str]  # ISO 8601; when TMDb metadata was last fetched
+    match_version: NotRequired[int]  # enricher.MATCH_VERSION that picked the TMDb match; absent means 1
+    # What the Providers say about the film, kept to pick the right TMDb match.
+    # Internal: never published.
+    original_title: NotRequired[str]  # original-language title, e.g. "The Odyssey" for "La Odisea"
+    source_year: NotRequired[int]  # first release year
+    source_runtime_mins: NotRequired[int]
+    rerelease: NotRequired[bool]  # a source title carried a re-release suffix, e.g. "(Reestreno)"
     showtimes: list[Showtime]
 
 

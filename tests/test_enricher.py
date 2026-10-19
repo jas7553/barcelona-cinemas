@@ -27,6 +27,7 @@ def _movie(title: str, showtimes: list[Showtime] | None = None, **kwargs: Any) -
     )
     if "enriched_at" in kwargs:
         m["enriched_at"] = kwargs["enriched_at"]
+        m["match_version"] = kwargs.get("match_version", enricher.MATCH_VERSION)
     return m
 
 
@@ -447,3 +448,344 @@ def test_original_lang_absent_yields_none(mock_env):
         result, _ = enricher.enrich([movie], [])
 
     assert result[0]["original_lang"] is None
+
+
+# ── Matching ─────────────────────────────────────────────────────────────────
+
+
+class FakeTmdb:
+    """A TMDb stand-in routed on URL path, recording every path requested."""
+
+    def __init__(
+        self,
+        *,
+        searches: dict[str, list[dict[str, Any]]] | None = None,
+        details: dict[int, dict[str, Any]] | None = None,
+        finds: dict[str, list[dict[str, Any]]] | None = None,
+    ) -> None:
+        self.searches = searches or {}
+        self.details = details or {}
+        self.finds = finds or {}
+        self.paths: list[str] = []
+
+    def get(self, url: str, params: dict[str, str], timeout: int) -> MagicMock:
+        path = url.removeprefix(enricher._BASE_URL)
+        self.paths.append(path if path != "/search/movie" else f"/search/movie?{params['query']}")
+        parts = path.strip("/").split("/")
+        if parts[0] == "search":
+            body: dict[str, Any] = {"results": self.searches.get(params["query"], [])}
+        elif parts[0] == "find":
+            body = {"movie_results": self.finds.get(parts[1], [])}
+        elif len(parts) == 2:
+            body = self.details[int(parts[1])]
+        else:
+            body = {}
+        return MagicMock(json=lambda: body, raise_for_status=lambda: None)
+
+    def __enter__(self) -> "FakeTmdb":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def mount(self, *args: object) -> None:
+        return None
+
+
+def _detail(tmdb_id: int, title: str, year: int, runtime: int, *genres: str) -> dict[str, Any]:
+    return {
+        "id": tmdb_id,
+        "title": title,
+        "imdb_id": f"tt{tmdb_id:07d}",
+        "release_date": f"{year}-01-01",
+        "runtime": runtime,
+        "genres": [{"id": i, "name": name} for i, name in enumerate(genres or ("Drama",))],
+        "vote_average": 7.0,
+        "vote_count": 500,
+        "original_language": "en",
+    }
+
+
+def _result(tmdb_id: int, title: str, year: int, *genre_ids: int) -> dict[str, Any]:
+    return {"id": tmdb_id, "title": title, "release_date": f"{year}-05-01", "genre_ids": list(genre_ids)}
+
+
+def _enrich_one(movie: Movie, tmdb: FakeTmdb) -> Movie:
+    with patch("enricher.requests.Session", return_value=tmdb):
+        [result], _ = enricher.enrich([movie], [])
+    return result
+
+
+def _hinted(title: str, **hints: Any) -> Movie:
+    movie = _movie(title, showtimes=[_showtime()], imdb_id=hints.pop("imdb_id", None))
+    movie.update(hints)  # type: ignore[typeddict-item]
+    return movie
+
+
+def test_imdb_id_from_the_source_is_looked_up_directly(mock_env):
+    # The Miracle Worker: title search found the 2000 TV movie; ECB gives tt0056241.
+    tmdb = FakeTmdb(
+        finds={"tt0056241": [{"id": 1162}]},
+        details={1162: {**_detail(1162, "The Miracle Worker", 1962, 106), "imdb_id": "tt0056241"}},
+    )
+    result = _enrich_one(_hinted("The Miracle Worker", imdb_id="tt0056241"), tmdb)
+
+    assert result["tmdb_id"] == 1162
+    assert result["year"] == 1962
+    assert not any(path.startswith("/search") for path in tmdb.paths)
+
+
+def test_imdb_id_unknown_to_tmdb_falls_back_to_search(mock_env):
+    tmdb = FakeTmdb(
+        searches={"Pressure": [_result(7, "Pressure", 2026)]},
+        details={7: _detail(7, "Pressure", 2026, 101)},
+    )
+    result = _enrich_one(_hinted("Pressure", imdb_id="tt9999999"), tmdb)
+
+    assert result["tmdb_id"] == 7
+    assert result["imdb_id"] == "tt0000007"
+
+
+def test_imdb_id_of_a_tv_movie_falls_back_to_search(mock_env):
+    tmdb = FakeTmdb(
+        finds={"tt0246786": [{"id": 1163}]},
+        searches={"The Miracle Worker": [_result(1162, "The Miracle Worker", 1962)]},
+        details={
+            1163: _detail(1163, "The Miracle Worker", 2000, 95, "Drama", "TV Movie"),
+            1162: _detail(1162, "The Miracle Worker", 1962, 106),
+        },
+    )
+    assert _enrich_one(_hinted("The Miracle Worker", imdb_id="tt0246786"), tmdb)["tmdb_id"] == 1162
+
+
+def test_tv_movies_are_never_matched(mock_env):
+    tmdb = FakeTmdb(
+        searches={
+            "The Miracle Worker": [
+                _result(1163, "The Miracle Worker", 2000, 18, 10770),
+                _result(1162, "The Miracle Worker", 1962, 18),
+            ]
+        },
+        details={1162: _detail(1162, "The Miracle Worker", 1962, 106)},
+    )
+    assert _enrich_one(_hinted("The Miracle Worker"), tmdb)["tmdb_id"] == 1162
+
+
+def test_tv_movie_genre_on_the_detail_is_rejected_too(mock_env):
+    tmdb = FakeTmdb(
+        searches={"Gala": [_result(1, "Gala", 2020)]},
+        details={1: _detail(1, "Gala", 2020, 90, "TV Movie")},
+    )
+    assert _enrich_one(_hinted("Gala"), tmdb)["tmdb_id"] is None
+
+
+def test_shorts_are_never_matched(mock_env):
+    # Stranger Than Paradise: the 32-minute short ranked above the 1984 feature.
+    tmdb = FakeTmdb(
+        searches={
+            "Stranger Than Paradise": [
+                _result(410051, "Stranger Than Paradise", 1983),
+                _result(469, "Stranger Than Paradise", 1984),
+            ]
+        },
+        details={
+            410051: _detail(410051, "Stranger Than Paradise", 1983, 32),
+            469: _detail(469, "Stranger Than Paradise", 1984, 89),
+        },
+    )
+    result = _enrich_one(_hinted("Stranger Than Paradise"), tmdb)
+
+    assert result["tmdb_id"] == 469
+    assert result["runtime_mins"] == 89
+
+
+def test_source_year_rules_out_other_films_of_the_same_title(mock_env):
+    # Sense and Sensibility: ECB lists the 2026 film; title search matched 1995.
+    tmdb = FakeTmdb(
+        searches={
+            "Sense and Sensibility": [
+                _result(4584, "Sense and Sensibility", 1995),
+                _result(1503762, "Sense and Sensibility", 2026),
+            ]
+        },
+        details={1503762: _detail(1503762, "Sense and Sensibility", 2026, 132)},
+    )
+    result = _enrich_one(_hinted("Sense and Sensibility", source_year=2026), tmdb)
+
+    assert result["tmdb_id"] == 1503762
+    assert "/movie/4584" not in tmdb.paths
+
+
+def test_no_candidate_in_the_source_year_leaves_the_film_unmatched(mock_env):
+    tmdb = FakeTmdb(
+        searches={"Rachel": [_result(5, "Rachel", 2009)]},
+        details={5: _detail(5, "Rachel", 2009, 100)},
+    )
+    assert _enrich_one(_hinted("Rachel", source_year=2026), tmdb)["tmdb_id"] is None
+
+
+def test_a_result_with_no_release_date_yet_stays_a_candidate(mock_env):
+    # TMDb often has no date for a new release; ECB gives one for every film.
+    tmdb = FakeTmdb(
+        searches={"Rachel": [{**_result(5, "Rachel", 2026), "release_date": ""}]},
+        details={5: {**_detail(5, "Rachel", 2026, 100), "release_date": ""}},
+    )
+    assert _enrich_one(_hinted("Rachel", source_year=2026), tmdb)["tmdb_id"] == 5
+
+
+def test_a_dated_result_ranks_above_an_undated_one(mock_env):
+    tmdb = FakeTmdb(
+        searches={"Rachel": [{**_result(1, "Rachel", 2026), "release_date": ""}, _result(2, "Rachel", 2026)]},
+        details={1: _detail(1, "Rachel", 2026, 100), 2: _detail(2, "Rachel", 2026, 100)},
+    )
+    assert _enrich_one(_hinted("Rachel", source_year=2026), tmdb)["tmdb_id"] == 2
+
+
+def test_runtime_picks_between_films_sharing_a_title(mock_env):
+    tmdb = FakeTmdb(
+        searches={"Pressure": [_result(1, "Pressure", 2026), _result(2, "Pressure", 2026)]},
+        details={1: _detail(1, "Pressure", 2026, 85), 2: _detail(2, "Pressure", 2026, 101)},
+    )
+    assert _enrich_one(_hinted("Pressure", source_runtime_mins=101), tmdb)["tmdb_id"] == 2
+
+
+def test_no_runtime_fit_falls_back_to_the_first_feature(mock_env):
+    tmdb = FakeTmdb(
+        searches={"Pressure": [_result(1, "Pressure", 2026), _result(2, "Pressure", 2026)]},
+        details={1: _detail(1, "Pressure", 2026, 85), 2: _detail(2, "Pressure", 2026, 140)},
+    )
+    assert _enrich_one(_hinted("Pressure", source_runtime_mins=101), tmdb)["tmdb_id"] == 1
+
+
+def test_detail_lookups_are_capped(mock_env):
+    tmdb = FakeTmdb(
+        searches={"Pressure": [_result(i, "Pressure", 2026) for i in range(1, 7)]},
+        details={i: _detail(i, "Pressure", 2026, 20) for i in range(1, 7)},
+    )
+    assert _enrich_one(_hinted("Pressure"), tmdb)["tmdb_id"] is None
+    assert sum(1 for path in tmdb.paths if path.startswith("/movie/")) == enricher._MAX_DETAIL_LOOKUPS
+
+
+def test_exact_title_outranks_tmdb_order(mock_env):
+    tmdb = FakeTmdb(
+        searches={"Digger": [_result(1, "The Digger", 2026), _result(2, "Digger", 2026)]},
+        details={1: _detail(1, "The Digger", 2026, 100), 2: _detail(2, "Digger", 2026, 129)},
+    )
+    assert _enrich_one(_hinted("Digger"), tmdb)["tmdb_id"] == 2
+
+
+def test_original_title_is_searched_before_the_local_title(mock_env):
+    # "El precio de la red" matched Ida Red (2021); SensaCine's original title is exact.
+    tmdb = FakeTmdb(
+        searches={
+            "The Social Reckoning": [_result(1281331, "The Social Reckoning", 2026)],
+            "El precio de la red": [_result(818192, "Ida Red", 2021)],
+        },
+        details={1281331: _detail(1281331, "The Social Reckoning", 2026, 112)},
+    )
+    result = _enrich_one(_hinted("El precio de la red", original_title="The Social Reckoning"), tmdb)
+
+    assert result["tmdb_id"] == 1281331
+    assert "/search/movie?El precio de la red" not in tmdb.paths
+
+
+def test_local_title_is_searched_when_the_original_title_finds_nothing(mock_env):
+    tmdb = FakeTmdb(
+        searches={"Vengadores: Endgame": [_result(299534, "Avengers: Endgame", 2019)]},
+        details={299534: _detail(299534, "Avengers: Endgame", 2019, 181)},
+    )
+    result = _enrich_one(_hinted("Vengadores: Endgame", original_title="Avengers Endgame"), tmdb)
+
+    assert result["tmdb_id"] == 299534
+
+
+# ── Re-matching cached films ─────────────────────────────────────────────────
+
+
+def _cached_match(title: str, tmdb_id: int, **fields: Any) -> Movie:
+    return _movie(title, tmdb_id=tmdb_id, enriched_at=_fresh_enriched_at(), **fields)
+
+
+def _enrich_with_cache(movie: Movie, cached: Movie, tmdb: FakeTmdb) -> Movie:
+    with patch("enricher.requests.Session", return_value=tmdb):
+        [result], _ = enricher.enrich([movie], [cached])
+    return result
+
+
+def test_new_enrichment_is_stamped_with_the_match_version(mock_env):
+    tmdb = FakeTmdb(
+        searches={"Pressure": [_result(7, "Pressure", 2026)]}, details={7: _detail(7, "Pressure", 2026, 101)}
+    )
+    assert _enrich_one(_hinted("Pressure"), tmdb).get("match_version") == enricher.MATCH_VERSION
+
+
+def test_older_match_version_is_rematched_inside_the_ttl(mock_env):
+    stale = _cached_match("Stranger Than Paradise", 410051, imdb_id="tt0209182", runtime_mins=32, match_version=1)
+    tmdb = FakeTmdb(
+        searches={"Stranger Than Paradise": [_result(469, "Stranger Than Paradise", 1984)]},
+        details={469: _detail(469, "Stranger Than Paradise", 1984, 89)},
+    )
+    result = _enrich_with_cache(_hinted("Stranger Than Paradise"), stale, tmdb)
+
+    assert result["tmdb_id"] == 469
+
+
+def test_older_match_english_title_is_not_searched(mock_env):
+    stale = _cached_match("El precio de la red", 818192, match_version=1)
+    stale["english_title"] = "Ida Red"
+    tmdb = FakeTmdb(searches={"Ida Red": [_result(818192, "Ida Red", 2021)]}, details={})
+    result = _enrich_with_cache(_hinted("El precio de la red"), stale, tmdb)
+
+    assert "/search/movie?Ida Red" not in tmdb.paths
+    # The current rules found nothing, so the old match is dropped rather than kept.
+    assert result["tmdb_id"] is None
+
+
+def test_older_match_is_kept_through_a_network_failure(mock_env):
+    stale = _cached_match("Pressure", 7, synopsis="Kept", match_version=1)
+    failing = MagicMock()
+    failing.__enter__ = MagicMock(return_value=failing)
+    failing.__exit__ = MagicMock(return_value=False)
+    failing.get.side_effect = ConnectionError("down")
+    with patch("enricher.requests.Session", return_value=failing):
+        [result], stats = enricher.enrich([_hinted("Pressure")], [stale])
+
+    assert result["synopsis"] == "Kept"
+    assert stats["tmdb_failure_count"] == 1
+
+
+def test_cached_title_match_with_another_imdb_id_is_not_reused(mock_env):
+    # The cache holds the 2000 TV movie; the source now names the 1962 film.
+    cached = _cached_match("The Miracle Worker", 1163, imdb_id="tt0246786")
+    tmdb = FakeTmdb(
+        finds={"tt0056241": [{"id": 1162}]},
+        details={1162: {**_detail(1162, "The Miracle Worker", 1962, 106), "imdb_id": "tt0056241"}},
+    )
+    result = _enrich_with_cache(_hinted("The Miracle Worker", imdb_id="tt0056241"), cached, tmdb)
+
+    assert result["tmdb_id"] == 1162
+
+
+def test_cache_hit_takes_this_runs_source_fields(mock_env):
+    cached = _cached_match("Avengers: Endgame", 299534, imdb_id="tt4154796")
+    cached["source_year"] = 2019
+    cached["rerelease"] = True
+    fresh = _hinted("Avengers: Endgame", imdb_id="tt4154796", source_runtime_mins=181)
+    result = _enrich_with_cache(fresh, cached, FakeTmdb())
+
+    assert result["tmdb_id"] == 299534
+    assert result.get("source_runtime_mins") == 181
+    assert "source_year" not in result
+    assert "rerelease" not in result
+
+
+def test_match_off_the_source_runtime_is_logged(mock_env, find_event):
+    tmdb = FakeTmdb(
+        finds={"tt1": [{"id": 1}]},
+        details={1: {**_detail(1, "Pressure", 2026, 140), "imdb_id": "tt1"}},
+    )
+    _enrich_one(_hinted("Pressure", imdb_id="tt1", source_runtime_mins=101), tmdb)
+
+    event = find_event("tmdb_match_disagrees")
+    assert event["runtime_mins"] == 140
+    assert event["source_runtime_mins"] == 101

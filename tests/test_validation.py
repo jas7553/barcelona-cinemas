@@ -63,6 +63,7 @@ def test_normalize_movie_keeps_enriched_at() -> None:
             "title": "Dune: Part Two",
             "tmdb_id": 693134,
             "enriched_at": "2026-09-13T23:51:53.103695+00:00",
+            "match_version": 2,
             "showtimes": [],
         },
         source="test movie",
@@ -70,6 +71,40 @@ def test_normalize_movie_keeps_enriched_at() -> None:
 
     assert movie is not None
     assert movie["enriched_at"] == "2026-09-13T23:51:53.103695+00:00"
+    assert movie.get("match_version") == 2
+
+
+def test_normalize_movie_keeps_match_hints() -> None:
+    """Provider output passes through here before Reconciliation; dropping the hints would blind the matcher."""
+    movie = normalize_movie(
+        {
+            "title": "Vengadores: Endgame",
+            "original_title": "Avengers: Endgame",
+            "source_year": 2019,
+            "source_runtime_mins": 181,
+            "rerelease": True,
+            "showtimes": [],
+        },
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert movie.get("original_title") == "Avengers: Endgame"
+    assert movie.get("source_year") == 2019
+    assert movie.get("source_runtime_mins") == 181
+    assert movie.get("rerelease") is True
+
+
+def test_normalize_movie_discards_invalid_match_hints() -> None:
+    movie = normalize_movie(
+        {"title": "Dune", "source_year": "soon", "source_runtime_mins": 0, "rerelease": "yes", "showtimes": []},
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert "source_year" not in movie
+    assert "source_runtime_mins" not in movie
+    assert "rerelease" not in movie
 
 
 def test_normalize_movie_discards_malformed_imdb_id() -> None:

@@ -35,7 +35,7 @@ export interface ListData {
 
 /** Everything the film page shows. */
 export type FilmDetail = ListFilm &
-  Pick<Movie, "year" | "backdrop_url" | "trailer_url" | "synopsis"> & {
+  Pick<Movie, "year" | "backdrop_url" | "trailer_url" | "synopsis" | "too_few_ratings" | "rerelease"> & {
     tagline: string | null;
     director: string | null;
     cast: string[];

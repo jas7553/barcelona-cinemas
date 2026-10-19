@@ -23,7 +23,7 @@ _MAX_LOGGED_TITLES = 25
 
 # Ratings backed by too few TMDb votes are statistically meaningless (e.g. a
 # single 10/10 vote) — suppress them rather than publish a misleading badge.
-MIN_VOTE_COUNT = 5
+MIN_VOTE_COUNT = 50
 
 _SLUG_STRIP_RE = re.compile(r"[^a-z0-9]+")
 
@@ -186,6 +186,9 @@ def _movie_fields(movie: Movie | Mapping[str, Any], title: str) -> dict[str, Any
         "trailer_url": movie.get("trailer_url"),
         "genres": movie.get("genres") or [],
         "rating": rating,
+        # Matched on TMDb but not yet rated enough, as opposed to never matched.
+        "too_few_ratings": tmdb_id is not None and rating is None,
+        "rerelease": movie.get("rerelease") is True,
         "director": movie.get("director"),
         "cast": movie.get("cast") or [],
         "synopsis": movie.get("synopsis") or "",

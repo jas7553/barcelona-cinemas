@@ -1,6 +1,8 @@
 """Helpers shared by listing providers."""
 
+import re
 from datetime import UTC, date, datetime
+from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
 from models import PREMIUM_FORMATS, Movie, Showtime
@@ -92,10 +94,71 @@ def normalize_premium_format(raw: str) -> str | None:
     return next((slug for slug in PREMIUM_FORMATS if slug in value), None)
 
 
-def base_movie(title: str, imdb_id: str | None, showtimes: list[Showtime]) -> Movie:
-    """Movie with only provider-known fields set; enrichment fills the rest."""
-    return Movie(
-        title=title,
+class CleanTitle(NamedTuple):
+    title: str
+    rerelease: bool
+    premium_format: str | None
+
+
+# Labels the cinemas append to a film's title. Left on, TMDb can't match the
+# title and the film is listed twice: once enriched, once bare.
+_RERELEASE_SUFFIX = re.compile(r"\s*[(\[]\s*(?:re-?estreno|re-?release|reposici[oó]n)\s*[)\]]\s*$", re.IGNORECASE)
+_IMAX_SUFFIX = re.compile(
+    r"\s*(?:[:\-–—]\s*the\s+imax\s+experience|[(\[]\s*imax(?:\s*3d)?\s*[)\]])\s*$",
+    re.IGNORECASE,
+)
+_VERSION_SUFFIX = re.compile(
+    r"\s*[(\[]\s*(?:v\.?\s*o\.?(?:\s*s\.?)?(?:\s*[ei]\.?)?|3d)\s*[)\]]\s*$",
+    re.IGNORECASE,
+)
+
+
+def clean_title(raw: str) -> CleanTitle:
+    """
+    Strip known suffixes from a source title, keeping what they said:
+    "(Reestreno)" marks a re-release, ": The IMAX Experience" an IMAX showing.
+    Suffixes may stack; a title that is nothing but a suffix is left alone.
+    """
+    title = raw.strip()
+    rerelease = False
+    premium_format: str | None = None
+    while True:
+        if match := _RERELEASE_SUFFIX.search(title):
+            if match.start() == 0:
+                break
+            rerelease = True
+        elif match := _IMAX_SUFFIX.search(title):
+            if match.start() == 0:
+                break
+            premium_format = "imax"
+        elif (match := _VERSION_SUFFIX.search(title)) is None or match.start() == 0:
+            break
+        title = title[: match.start()].rstrip()
+    return CleanTitle(title, rerelease, premium_format)
+
+
+def base_movie(
+    title: str,
+    imdb_id: str | None,
+    showtimes: list[Showtime],
+    *,
+    original_title: str | None = None,
+    source_year: int | None = None,
+    source_runtime_mins: int | None = None,
+) -> Movie:
+    """
+    Movie with only provider-known fields set; enrichment fills the rest.
+    The title is cleaned of source suffixes (`clean_title`), and an IMAX
+    suffix marks every showtime that doesn't carry a format of its own.
+    """
+    cleaned = clean_title(title)
+    if cleaned.premium_format is not None:
+        showtimes = [
+            showtime if showtime.get("premium_format") else {**showtime, "premium_format": cleaned.premium_format}
+            for showtime in showtimes
+        ]
+    movie = Movie(
+        title=cleaned.title,
         tmdb_id=None,
         imdb_id=imdb_id,
         year=None,
@@ -106,3 +169,12 @@ def base_movie(title: str, imdb_id: str | None, showtimes: list[Showtime]) -> Mo
         genres=None,
         showtimes=showtimes,
     )
+    if original_title and (original := clean_title(original_title).title).casefold() != cleaned.title.casefold():
+        movie["original_title"] = original
+    if source_year is not None:
+        movie["source_year"] = source_year
+    if source_runtime_mins is not None:
+        movie["source_runtime_mins"] = source_runtime_mins
+    if cleaned.rerelease:
+        movie["rerelease"] = True
+    return movie

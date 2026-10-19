@@ -11,7 +11,9 @@ no caller should be able to get it wrong:
   2. Enrichment fills TMDb metadata, which is where `imdb_id` and
      `original_lang` first appear.
   3. Reconciliation runs a second time so `same_movie`'s imdb_id branch can
-     collapse title-variant duplicates the title pass could not see.
+     collapse title-variant duplicates the title pass could not see. Then a
+     showing a translated copy repeats under another film is dropped from the
+     copy (`drop_translated_slot_duplicates`).
   4. The English filter runs last because `original_lang` only exists after
      Enrichment.
 
@@ -30,6 +32,7 @@ closes:
     raw_movie_count
       - collection_merged_count
       - post_enrichment_merged_count
+      - slot_duplicate_dropped_count
       - non_english_dropped_count
       == published_movie_count
 
@@ -62,7 +65,7 @@ from providers.diagnostics import (
     is_retryable,
     zero_result_diagnostics,
 )
-from reconcile import reconcile, same_movie
+from reconcile import drop_translated_slot_duplicates, reconcile, same_movie
 from validation import normalize_movies
 
 if TYPE_CHECKING:
@@ -97,6 +100,7 @@ class RefreshStats(TypedDict):
     collection_merged_count: int
     collected_movie_count: int
     post_enrichment_merged_count: int
+    slot_duplicate_dropped_count: int
     non_english_dropped_count: int
     published_movie_count: int
     published_showtime_count: int
@@ -154,7 +158,8 @@ def build_listings(
     collection = _collect_movies(providers, cinemas, previous_snapshots, now)
     enriched, enrichment_stats = enrich(collection.movies, cached_movies)
     reconciled = reconcile(enriched, stage="post_enrichment")
-    published, non_english_dropped = _filter_english(reconciled)
+    deduplicated, slot_duplicate_dropped = drop_translated_slot_duplicates(reconciled)
+    published, non_english_dropped = _filter_english(deduplicated)
 
     ended = carry_ended(published, cached, madrid_today(now))
 
@@ -172,6 +177,7 @@ def build_listings(
         "collection_merged_count": collection.raw_movie_count - len(collection.movies),
         "collected_movie_count": len(collection.movies),
         "post_enrichment_merged_count": len(enriched) - len(reconciled),
+        "slot_duplicate_dropped_count": slot_duplicate_dropped,
         "non_english_dropped_count": non_english_dropped,
         "published_movie_count": len(published),
         "published_showtime_count": sum(len(movie["showtimes"]) for movie in published),

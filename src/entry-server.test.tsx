@@ -175,6 +175,21 @@ describe("film pages", () => {
     expect(data.theaters.map((t) => t.id)).toEqual(["verdi"]);
   });
 
+  it("carries the too-few-ratings and re-release flags only when set", () => {
+    const flagged = sitePages(
+      { ...full, movies: full.movies.map((m) => ({ ...m, rating: null, too_few_ratings: true, rerelease: true })) },
+      renderedAt,
+    );
+    const film = (ps: typeof pages) => {
+      const data = ps.find((p) => p.path === "film/1.html")!.data;
+      if (data.page !== "film") throw new Error("not a film page");
+      return data.film;
+    };
+    expect(film(flagged)).toMatchObject({ too_few_ratings: true, rerelease: true });
+    expect(film(pages)).not.toHaveProperty("too_few_ratings");
+    expect(film(pages)).not.toHaveProperty("rerelease");
+  });
+
   it("falls back to a Letterboxd search and no IMDb link without an IMDb id", () => {
     const data = pages.find((p) => p.path === "film/9.html")!.data;
     if (data.page !== "film") throw new Error("not a film page");

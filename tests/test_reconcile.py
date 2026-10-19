@@ -7,7 +7,7 @@ import logging
 import pytest
 
 from models import Movie, Showtime
-from reconcile import dedup_showtimes, normalize_title, reconcile, same_movie
+from reconcile import dedup_showtimes, drop_translated_slot_duplicates, normalize_title, reconcile, same_movie
 from tests.conftest import FindEvent
 
 
@@ -114,6 +114,52 @@ def test_merge_pair_preserves_zero_vote_count():
     b = _movie("Dune", imdb_id="tt1", rating=0.0, vote_count=0)
     [merged] = reconcile([a, b])
     assert merged.get("vote_count") == 0
+
+
+def test_merge_pair_coalesces_match_hints_and_ors_rerelease():
+    a = _movie("Avengers: Endgame", imdb_id="tt4154796", source_year=2019, source_runtime_mins=181)
+    b = _movie("Vengadores: Endgame", imdb_id="tt4154796", original_title="Avengers: Endgame", rerelease=True)
+    [merged] = reconcile([a, b])
+    assert merged.get("source_year") == 2019
+    assert merged.get("source_runtime_mins") == 181
+    assert merged.get("original_title") == "Avengers: Endgame"
+    assert merged.get("rerelease") is True
+
+
+def test_merge_pair_keeps_the_match_version_of_the_match_it_keeps():
+    # An old-rules cached match (no version) must stay due for re-matching.
+    old = _movie("Dune", imdb_id="tt1", tmdb_id=1)
+    fresh = _movie("Dune", imdb_id="tt1", tmdb_id=2, match_version=2)
+    [merged] = reconcile([old, fresh])
+    assert merged.get("tmdb_id") == 1
+    assert "match_version" not in merged
+
+
+def test_films_sharing_a_slot_are_both_kept_without_a_title_link():
+    # A multiplex runs different films at the same time.
+    slot = _showtime("Arenas", "2026-10-22", "20:00")
+    a = _movie("Dune", imdb_id="tt1", showtimes=[slot])
+    b = _movie("La invitación", imdb_id="tt2", original_title="The Invite", showtimes=[slot])
+    assert drop_translated_slot_duplicates([a, b]) == ([a, b], 0)
+
+
+def test_a_translated_copy_matches_the_other_films_english_title():
+    slot = _showtime("Balmes", "2026-10-22", "20:00")
+    a = _movie("Sentit i sensibilitat", imdb_id="tt1", english_title="Sense and Sensibility", showtimes=[slot])
+    b = _movie("Sentido y sensibilidad", imdb_id="tt2", original_title="sense and sensibility", showtimes=[slot])
+    assert drop_translated_slot_duplicates([a, b]) == ([a], 1)
+
+
+def test_two_films_naming_each_other_both_keep_the_slot():
+    slot = _showtime("Balmes", "2026-10-22", "20:00")
+    a = _movie("Sense and Sensibility", imdb_id="tt1", original_title="Sentido y sensibilidad", showtimes=[slot])
+    b = _movie("Sentido y sensibilidad", imdb_id="tt2", original_title="Sense and Sensibility", showtimes=[slot])
+    assert drop_translated_slot_duplicates([a, b]) == ([a, b], 0)
+
+
+def test_merge_pair_omits_rerelease_when_neither_side_is_one():
+    [merged] = reconcile([_movie("Dune", imdb_id="tt1"), _movie("Dune", imdb_id="tt1")])
+    assert "rerelease" not in merged
 
 
 def test_reconcile_picks_longest_title():

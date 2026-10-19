@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from collections.abc import Mapping
 from datetime import date, timedelta
 
@@ -95,6 +96,16 @@ def _premium_format(tags: list[str]) -> str | None:
     return normalize_premium_format(raw) if raw is not None else None
 
 
+_RUNTIME_RE = re.compile(r"^\s*(?:(\d+)\s*h)?\s*(?:(\d+)\s*min)?\s*$")
+
+
+def _runtime_mins(raw: object) -> int | None:
+    """Minutes from a SensaCine runtime label such as "1h 47min"."""
+    match = _RUNTIME_RE.match(raw) if isinstance(raw, str) else None
+    minutes = int(match.group(1) or 0) * 60 + int(match.group(2) or 0) if match else 0
+    return minutes or None
+
+
 def _fetch_showtimes_for_cinema_date(
     sensacine_id: str,
     cinema_key: str,
@@ -172,7 +183,18 @@ def _fetch_showtimes_for_cinema_date(
         if not showtimes:
             continue
 
-        movies.append(base_movie(title, None, showtimes))
+        original_title = movie_info.get("originalTitle")
+        # No source_year: `releases` dates this run, which for a re-release is
+        # this year, not the film's.
+        movies.append(
+            base_movie(
+                title,
+                None,
+                showtimes,
+                original_title=original_title.strip() if isinstance(original_title, str) else None,
+                source_runtime_mins=_runtime_mins(movie_info.get("runtime")),
+            )
+        )
 
     return movies
 

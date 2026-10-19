@@ -2,7 +2,7 @@
 // date-shifted fixture.
 
 import { expect, test, type Page } from "@playwright/test";
-import { premiumShowing } from "./fixture";
+import { FIXTURE_BOOKING_URL, premiumShowing } from "./fixture";
 import { collectErrors, expectHit44, seedPrefs } from "./helpers";
 
 const panel = (page: Page) => page.getByRole("region", { name: "Showtimes" });
@@ -47,6 +47,27 @@ test("a showtime opens its ticket, with this showing's booking link or the cinem
   }
   await page.goBack();
   await expect(ticket).toBeHidden();
+});
+
+test("the IMAX showing stays tagged on its film and books straight into its seat picker", async ({ page }) => {
+  await gotoPremium(page);
+  const payload = await page.evaluate(() => JSON.parse(document.getElementById("__APP_DATA__")!.textContent!));
+  const { time } = payload.film.showtimes.find((s: { booking_url?: string }) => s.booking_url === FIXTURE_BOOKING_URL);
+  const chip = panel(page)
+    .locator("a.chip[aria-haspopup]", { has: page.locator(".tag--imax") })
+    .filter({ has: page.locator("b", { hasText: time }) });
+  await chip.click();
+  const primary = page.getByRole("dialog").locator(".cta");
+  await expect(primary).toHaveText(/^Book at/);
+  await expect(primary).toHaveAttribute("href", FIXTURE_BOOKING_URL);
+});
+
+test("each film is listed once on This week", async ({ page }) => {
+  await page.goto("/");
+  const payload = await page.evaluate(() => JSON.parse(document.getElementById("__APP_DATA__")!.textContent!));
+  const ids: string[] = payload.films.map((f: { id: string }) => f.id);
+  expect(ids.length).toBeGreaterThan(0);
+  expect(new Set(ids).size).toBe(ids.length);
 });
 
 test("the undated page opens on the first day with showings left", async ({ page }) => {

@@ -1,5 +1,8 @@
+import json
 import logging
+import re
 from datetime import date
+from typing import NamedTuple
 from urllib.parse import urljoin
 
 import requests
@@ -79,6 +82,44 @@ def _premium_format(chip: Tag) -> str | None:
     return None
 
 
+class _FilmMeta(NamedTuple):
+    imdb_id: str | None
+    year: int | None
+    runtime_mins: int | None
+
+
+_IMDB_RE = re.compile(r"imdb\.com/title/(tt\d+)")
+_DURATION_RE = re.compile(r"^PT(?:(\d+)H)?(?:(\d+)M)?$")
+
+
+def _film_meta(soup: BeautifulSoup) -> _FilmMeta:
+    """
+    IMDb id, release year and runtime from the film page's schema.org `Movie`,
+    e.g. `"sameAs": ["https://www.imdb.com/title/tt0056241/"]`,
+    `"datePublished": "1962-05-23"`, `"duration": "PT1H46M"`.
+    """
+    for script in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(script.get_text())
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict) or data.get("@type") != "Movie":
+            continue
+        same_as = data.get("sameAs")
+        urls = same_as if isinstance(same_as, list) else [same_as]
+        imdb_id = next(
+            (m.group(1) for url in urls if isinstance(url, str) and (m := _IMDB_RE.search(url))),
+            None,
+        )
+        published = data.get("datePublished")
+        year = int(published[:4]) if isinstance(published, str) and published[:4].isdigit() else None
+        duration = data.get("duration")
+        duration_m = _DURATION_RE.match(duration) if isinstance(duration, str) else None
+        runtime = int(duration_m.group(1) or 0) * 60 + int(duration_m.group(2) or 0) if duration_m else 0
+        return _FilmMeta(imdb_id, year, runtime or None)
+    return _FilmMeta(None, None, None)
+
+
 class ListingsProvider:
     name = "english_cinema_bcn"
 
@@ -149,7 +190,16 @@ class ListingsProvider:
             if not showtimes:
                 continue
 
-            movies.append(base_movie(title, None, showtimes))
+            meta = _film_meta(film_soup)
+            movies.append(
+                base_movie(
+                    title,
+                    meta.imdb_id,
+                    showtimes,
+                    source_year=meta.year,
+                    source_runtime_mins=meta.runtime_mins,
+                )
+            )
 
         # Log unrecognized cinema names to help tune cinemas.json.
         unrecognized = {

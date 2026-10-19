@@ -167,6 +167,26 @@ describe("Film page", () => {
     expect(JSON.parse(localStorage.getItem(PREF_KEYS.seen)!)).toEqual(["aftersun"]);
   });
 
+  it("says a matched film has too few ratings yet instead of showing one", () => {
+    render(<FilmPage data={{ ...data, film: { ...FILM, rating: null, too_few_ratings: true } }} />);
+    expect(screen.getByText(/Too few ratings yet · 2022 · 1h 42m/)).toBeInTheDocument();
+  });
+
+  it("shows no rating line for a film TMDb never matched", () => {
+    render(<FilmPage data={{ ...data, film: { ...FILM, rating: null } }} />);
+    expect(screen.queryByText(/Too few ratings yet/)).not.toBeInTheDocument();
+  });
+
+  it("lists every genre, separated as the lists separate their first two", () => {
+    render(<FilmPage data={{ ...data, film: { ...FILM, genres: ["Comedy", "Drama", "Romance"] } }} />);
+    expect(screen.getByText(/Comedy · Drama · Romance/)).toBeInTheDocument();
+  });
+
+  it("notes a re-release next to the year", () => {
+    render(<FilmPage data={{ ...data, film: { ...FILM, rerelease: true } }} />);
+    expect(screen.getByText(/2022 · Re-release · 1h 42m/)).toBeInTheDocument();
+  });
+
   it("clamps a long synopsis behind More", () => {
     render(<FilmPage data={data} />);
     const synopsis = screen.getByText(/Sophie reflects/);

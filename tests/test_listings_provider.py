@@ -290,3 +290,44 @@ class TestRedesignedSiteCinemaNames:
         alias_lookup = build_cinema_alias_lookup(registry, "english_cinema_bcn")
         for site_name, expected_key in self._NAMES_TO_KEYS.items():
             assert alias_lookup.get(normalize_alias(site_name)) == expected_key
+
+
+FILM_DETAIL_WITH_META_HTML = FILM_DETAIL_HTML.replace(
+    "<html><body>",
+    """<html><head><script type="application/ld+json">{"@context":"https://schema.org","@type":"Movie",
+    "name":"The Miracle Worker","sameAs":["https://www.imdb.com/title/tt0056241/","https://www.wikidata.org/wiki/Q287536"],
+    "datePublished":"1962-05-23","duration":"PT1H46M"}</script>
+    <script type="application/ld+json">{"@type":"BreadcrumbList"}</script></head><body>""",
+)
+
+
+def test_fetch_reads_imdb_year_and_runtime_from_film_page_json_ld():
+    with (
+        patch("providers.listings_provider.madrid_today", return_value=date(2026, 3, 28)),
+        patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/films"),
+        patch(
+            "providers.listings_provider.requests.get",
+            side_effect=_mock_get(CATALOG_HTML, FILM_DETAIL_WITH_META_HTML),
+        ),
+    ):
+        movie = ListingsProvider().fetch(CINEMAS)[0]
+
+    assert movie["imdb_id"] == "tt0056241"
+    assert movie["source_year"] == 1962
+    assert movie["source_runtime_mins"] == 106
+
+
+def test_fetch_without_json_ld_leaves_hints_unset():
+    with (
+        patch("providers.listings_provider.madrid_today", return_value=date(2026, 3, 28)),
+        patch("providers.listings_provider.listings_feed_url", return_value="https://example.com/films"),
+        patch(
+            "providers.listings_provider.requests.get",
+            side_effect=_mock_get(CATALOG_HTML, FILM_DETAIL_HTML),
+        ),
+    ):
+        movie = ListingsProvider().fetch(CINEMAS)[0]
+
+    assert movie["imdb_id"] is None
+    assert "source_year" not in movie
+    assert "source_runtime_mins" not in movie

@@ -70,6 +70,67 @@ def reconcile(movies: list[Movie], *, stage: str | None = None) -> list[Movie]:
     return merged
 
 
+def drop_translated_slot_duplicates(movies: list[Movie]) -> tuple[list[Movie], int]:
+    """
+    Drop a showing that a translated copy of another film repeats.
+
+    A source that names a film only by its translated title can match a
+    different TMDb film than the sources carrying the cinema's IMDb id: Balmes'
+    1995 Sense and Sensibility also came through SensaCine as "Sentido y
+    sensibilidad", original title "Sense and Sensibility", which TMDb took for
+    the 2026 film. Film B loses a slot when film A has the same cinema, date and
+    time and B's `original_title` is A's title or English title; A keeps it.
+    Sharing a slot alone proves nothing (multiplexes run films side by side),
+    and a pair that names each other is left alone. A film left with no
+    showtimes is dropped. Returns the films and how many were dropped.
+    """
+    by_slot: dict[tuple[str, str, str], list[int]] = {}
+    for index, movie in enumerate(movies):
+        for showtime in movie["showtimes"]:
+            by_slot.setdefault((showtime["cinema"], showtime["date"], showtime["time"]), []).append(index)
+
+    def names(movie: Movie) -> set[str]:
+        return {normalize_title(t) for t in (movie["title"], movie.get("english_title")) if t}
+
+    def repeats(copy: Movie, film: Movie) -> bool:
+        original = copy.get("original_title")
+        return original is not None and normalize_title(original) in names(film)
+
+    kept: list[Movie] = []
+    dropped_showings: list[str] = []
+    dropped_films = 0
+    for index, movie in enumerate(movies):
+        showtimes: list[Showtime] = []
+        for showtime in movie["showtimes"]:
+            slot = (showtime["cinema"], showtime["date"], showtime["time"])
+            owner = next(
+                (
+                    movies[other]
+                    for other in by_slot[slot]
+                    if other != index and repeats(movie, movies[other]) and not repeats(movies[other], movie)
+                ),
+                None,
+            )
+            if owner is None:
+                showtimes.append(showtime)
+            else:
+                dropped_showings.append(f"{movie['title']} → {owner['title']}: {' '.join(slot)}")
+        if not showtimes:
+            dropped_films += 1
+        elif len(showtimes) == len(movie["showtimes"]):
+            kept.append(movie)
+        else:
+            kept.append({**movie, "showtimes": showtimes})
+    if dropped_showings:
+        log_event(
+            "slot_duplicates_dropped",
+            showtime_count=len(dropped_showings),
+            movie_count=dropped_films,
+            showtimes=dropped_showings[:_MAX_LOGGED_MERGES],
+        )
+    return kept, dropped_films
+
+
 def _log_reconcile_summary(
     stage: str,
     before: list[Movie],
@@ -202,10 +263,28 @@ def _merge_pair(left: Movie, right: Movie) -> Movie:
     vote_count = _coalesce(left.get("vote_count"), right.get("vote_count"))
     if vote_count is not None:
         merged["vote_count"] = vote_count
+    original_title = _coalesce(left.get("original_title"), right.get("original_title"))
+    if original_title is not None:
+        merged["original_title"] = original_title
+    source_year = _coalesce(left.get("source_year"), right.get("source_year"))
+    if source_year is not None:
+        merged["source_year"] = source_year
+    source_runtime = _coalesce(left.get("source_runtime_mins"), right.get("source_runtime_mins"))
+    if source_runtime is not None:
+        merged["source_runtime_mins"] = source_runtime
+    # One source saying "(Reestreno)" is enough: the others just drop the suffix.
+    if left.get("rerelease") or right.get("rerelease"):
+        merged["rerelease"] = True
     # Preserve enriched_at: without it the merged movie reads as never-enriched,
     # so the next refresh re-enriches it every cycle (post-enrichment reconcile
     # runs after enrich(), so both copies carry it).
     enriched_at = _coalesce(left.get("enriched_at"), right.get("enriched_at"))
     if enriched_at is not None:
         merged["enriched_at"] = enriched_at
+    # The version belongs to the match: an old-rules match (no version) must
+    # not borrow a fresh copy's and escape re-matching.
+    matched = left if left.get("tmdb_id") is not None else right
+    match_version = matched.get("match_version")
+    if match_version is not None:
+        merged["match_version"] = match_version
     return merged

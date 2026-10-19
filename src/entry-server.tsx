@@ -234,6 +234,8 @@ function filmDetail(m: Movie, days: DateKey[]): FilmDetail {
     backdrop_url: m.backdrop_url,
     trailer_url: m.trailer_url,
     rating: m.rating,
+    ...(m.too_few_ratings && { too_few_ratings: true }),
+    ...(m.rerelease && { rerelease: true }),
     genres: m.genres,
     runtime_minutes: m.runtime_minutes,
     tagline: m.tagline ?? null,

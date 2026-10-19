@@ -53,7 +53,9 @@ export function buildFixtureCache(): string {
   // The first film's last showing (earlier ones may have started) becomes IMAX
   // unless it has another format, and gets FIXTURE_BOOKING_URL; premiumShowing()
   // and bookableShowing() find it. Another showing at that cinema that day loses
-  // its booking URL, so the day also has a site-only time.
+  // its booking URL, so the day also has a site-only time. The booking URL is
+  // what the refresh keeps when it merges a cinema's separately-titled IMAX
+  // listing ("La Odisea: The IMAX Experience") into the film.
   const showtimes: CacheShowtime[] = data.movies[0].showtimes;
   const latest = showtimes.reduce((a, b) => (`${b.date}${b.time}` > `${a.date}${a.time}` ? b : a));
   latest.premium_format ??= "imax";

@@ -138,6 +138,9 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     enriched_at = _as_optional_string(data.get("enriched_at"), source=f"{source} enriched_at")
     if enriched_at is not None:
         movie["enriched_at"] = enriched_at
+    match_version = _as_optional_positive_int(data.get("match_version"), source=f"{source} match_version")
+    if match_version is not None:
+        movie["match_version"] = match_version
     director = _as_optional_string(data.get("director"), source=f"{source} director")
     if director is not None:
         movie["director"] = director
@@ -147,6 +150,17 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     vote_count = _as_optional_vote_count(data.get("vote_count"), source=f"{source} vote_count")
     if vote_count is not None:
         movie["vote_count"] = vote_count
+    original_title = _as_optional_string(data.get("original_title"), source=f"{source} original_title")
+    if original_title is not None:
+        movie["original_title"] = original_title
+    source_year = _as_optional_positive_int(data.get("source_year"), source=f"{source} source_year")
+    if source_year is not None:
+        movie["source_year"] = source_year
+    source_runtime = _as_optional_positive_int(data.get("source_runtime_mins"), source=f"{source} source_runtime_mins")
+    if source_runtime is not None:
+        movie["source_runtime_mins"] = source_runtime
+    if data.get("rerelease") is True:
+        movie["rerelease"] = True
     return movie
 
 

@@ -4,13 +4,16 @@ from collections.abc import Mapping
 from datetime import date
 from unittest.mock import MagicMock, patch
 
-from models import CinemaInfo, CinemaRegistry
+import pytest
+
+from models import CinemaInfo, CinemaRegistry, Movie
 from providers.sensacine_provider import (
     _SENSACINE_IDS,
     SensacineProvider,
     _booking_url,
     _fetch_dates,
     _premium_format,
+    _runtime_mins,
     _subtitle_lang,
 )
 
@@ -351,3 +354,49 @@ class TestFetchDates:
         with patch("providers.sensacine_provider.madrid_today", return_value=date(2026, 7, 14)):
             dates = _fetch_dates()
         assert dates[0] == date(2026, 7, 14)
+
+
+def _hint_entry(title: str, **movie: object) -> dict[str, object]:
+    return {
+        "movie": {"title": title, "languages": ["ENGLISH"], **movie},
+        "showtimes": {
+            "original": [
+                {"startsAt": "2026-10-14T21:50:00", "tags": ["Format.Projection.Digital"], "data": {"ticketing": []}}
+            ]
+        },
+    }
+
+
+def _fetch_entries(*entries: dict[str, object]) -> list[Movie]:
+    response = {"error": False, "results": list(entries), "nextDate": None}
+    with patch("providers.sensacine_provider.requests.get", return_value=_mock_response(response)):
+        return SensacineProvider().fetch(CINEMAS)
+
+
+class TestMatchHints:
+    def test_records_original_title_and_runtime(self) -> None:
+        (movie,) = _fetch_entries(_hint_entry("La Odisea", originalTitle="The Odyssey", runtime="2h 53min"))
+        assert movie["original_title"] == "The Odyssey"
+        assert movie["source_runtime_mins"] == 173
+        # The release date is this run's, so it is never the film's year.
+        assert "source_year" not in movie
+
+    def test_imax_and_rerelease_variants_merge_into_one_film(self) -> None:
+        movies = _fetch_entries(
+            _hint_entry("La Odisea", originalTitle="The Odyssey"),
+            _hint_entry("La Odisea: The IMAX Experience", originalTitle="The Odyssey: The IMAX Experience"),
+            _hint_entry("Vengadores: Endgame (Reestreno)", originalTitle="Avengers: Endgame"),
+        )
+        by_title = {m["title"]: m for m in movies}
+        assert set(by_title) == {"La Odisea", "Vengadores: Endgame"}
+        assert by_title["La Odisea"]["original_title"] == "The Odyssey"
+        assert "imax" in {st.get("premium_format") for st in by_title["La Odisea"]["showtimes"]}
+        assert by_title["Vengadores: Endgame"]["rerelease"] is True
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [("1h 47min", 107), ("2h 00min", 120), ("95min", 95), ("2h", 120), ("", None), (None, None), ("soon", None)],
+)
+def test_runtime_mins(raw: object, expected: int | None) -> None:
+    assert _runtime_mins(raw) == expected

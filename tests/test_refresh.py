@@ -27,8 +27,9 @@ import cache
 import observability
 import refresh
 from enricher import EnrichmentStats
-from models import EndedMovie, Listings, Movie
+from models import EndedMovie, Listings, Movie, Showtime
 from providers import diagnostics
+from providers.common import base_movie
 
 from .conftest import FindEvent
 
@@ -247,6 +248,128 @@ def test_collection_dedups_showtimes_across_providers_and_keeps_the_booking_link
     assert showtimes[0]["language"] == "vo"
 
 
+def test_suffixed_imax_listing_merges_into_its_film_with_the_direct_booking_link():
+    """
+    #129: SensaCine's "La Odisea: The IMAX Experience" repeated The Odyssey's
+    Diagonal Mar IMAX showing as a bare film, and The Odyssey's own copy of it
+    (from a feed with no booking links) fell back to the cinema homepage.
+    """
+    imax = _showtime(cinema="CinDigMar", date="2026-03-28", time="21:50", premium_format="imax")
+    seat_picker = "https://www.cinesa.es/compra/butacas/?showtimeId=032-59536"
+    ecb = [base_movie("The Odyssey", "tt33764258", [cast(Showtime, imax)])]
+    sensacine = [
+        base_movie("La Odisea", None, [cast(Showtime, _showtime(time="22:05"))], original_title="The Odyssey"),
+        base_movie(
+            "La Odisea: The IMAX Experience",
+            None,
+            [cast(Showtime, {**imax, "premium_format": None, "booking_url": seat_picker})],
+            original_title="The Odyssey: The IMAX Experience",
+        ),
+    ]
+    providers = [
+        _provider("ecb", cast(list[dict[str, Any]], ecb)),
+        _provider("sensacine", cast(list[dict[str, Any]], sensacine)),
+    ]
+
+    def _match_the_odyssey(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie], EnrichmentStats]:
+        return [{**m, "imdb_id": "tt33764258", "original_lang": "en"} for m in movies], _NO_ENRICHMENT.copy()
+
+    listings, _ = _build(providers, enrich=_match_the_odyssey)
+
+    [film] = listings["movies"]
+    [imax_showing] = [s for s in film["showtimes"] if s["cinema"] == "CinDigMar"]
+    assert imax_showing.get("premium_format") == "imax"
+    assert imax_showing.get("booking_url") == seat_picker
+    assert len(film["showtimes"]) == 2
+
+
+def _sense_and_sensibility_providers(*, renfloridablanca: bool) -> list[MagicMock]:
+    """
+    The live case: ECB and the secondary feed list Balmes' 22 Oct 20:00 showing
+    as the 1995 film (tt0114388); SensaCine lists it as "Sentido y
+    sensibilidad", which its original title and 132 minutes send to the 2026
+    film, together with that film's Renoir Floridablanca run.
+    """
+    balmes = _showtime(cinema="Balmes", date="2026-10-22", time="20:00")
+    sensacine_showtimes = [balmes]
+    if renfloridablanca:
+        sensacine_showtimes += [
+            _showtime(cinema="RenFlo", date="2026-10-22", time="17:00"),
+            _showtime(cinema="RenFlo", date="2026-10-23", time="19:30"),
+        ]
+    sentido = base_movie(
+        "Sentido y sensibilidad",
+        None,
+        cast(list[Showtime], sensacine_showtimes),
+        original_title="Sense and Sensibility",
+        source_runtime_mins=132,
+    )
+    return [
+        _provider("ecb", [_raw_movie("Sense and Sensibility", [balmes], imdb_id="tt0114388")]),
+        _provider("secondary", [_raw_movie("Sense and Sensibility", [balmes], imdb_id="tt0114388")]),
+        _provider("sensacine", cast(list[dict[str, Any]], [sentido])),
+    ]
+
+
+def _match_sense_and_sensibility(
+    movies: list[Movie], cached_movies: list[Movie]
+) -> tuple[list[Movie], EnrichmentStats]:
+    matches = {
+        "Sense and Sensibility": {"tmdb_id": 4584, "imdb_id": "tt0114388", "year": 1995},
+        "Sentido y sensibilidad": {"tmdb_id": 1503762, "imdb_id": "tt31303730", "year": 2026},
+    }
+    enriched = [
+        cast(Movie, {**m, **matches[m["title"]], "english_title": "Sense and Sensibility", "original_lang": "en"})
+        for m in movies
+    ]
+    return enriched, _NO_ENRICHMENT.copy()
+
+
+def test_a_translated_copy_gives_up_a_slot_the_cinemas_own_imdb_id_claims(find_event: FindEvent) -> None:
+    listings, stats = _build(
+        _sense_and_sensibility_providers(renfloridablanca=True), enrich=_match_sense_and_sensibility
+    )
+
+    by_year = {m["year"]: m for m in listings["movies"]}
+    assert [(s["cinema"], s["time"]) for s in by_year[1995]["showtimes"]] == [("Balmes", "20:00")]
+    assert {s["cinema"] for s in by_year[2026]["showtimes"]} == {"RenFlo"}
+    assert stats["slot_duplicate_dropped_count"] == 0
+    event = find_event("slot_duplicates_dropped")
+    assert event["showtime_count"] == 1
+    assert event["showtimes"] == ["Sentido y sensibilidad → Sense and Sensibility: Balmes 2026-10-22 20:00"]
+
+
+def test_a_translated_copy_left_with_no_showtimes_is_dropped_and_counted():
+    listings, stats = _build(
+        _sense_and_sensibility_providers(renfloridablanca=False), enrich=_match_sense_and_sensibility
+    )
+
+    assert [m["year"] for m in listings["movies"]] == [1995]
+    assert stats["slot_duplicate_dropped_count"] == 1
+    assert (
+        stats["raw_movie_count"]
+        - stats["collection_merged_count"]
+        - stats["post_enrichment_merged_count"]
+        - stats["slot_duplicate_dropped_count"]
+        - stats["non_english_dropped_count"]
+        == stats["published_movie_count"]
+    )
+
+
+def test_a_translated_copy_gives_up_a_slot_even_to_a_film_the_english_filter_drops():
+    # The showing is the non-English film's; the copy only mismatched it, so
+    # dropping duplicates before the language filter keeps it unpublished.
+    def match_non_english_owner(movies: list[Movie], cached: list[Movie]) -> tuple[list[Movie], EnrichmentStats]:
+        enriched, stats = _match_sense_and_sensibility(movies, cached)
+        return [cast(Movie, {**m, "original_lang": "fr"}) if m["year"] == 1995 else m for m in enriched], stats
+
+    listings, stats = _build(_sense_and_sensibility_providers(renfloridablanca=False), enrich=match_non_english_owner)
+
+    assert listings["movies"] == []
+    assert stats["slot_duplicate_dropped_count"] == 1
+    assert stats["non_english_dropped_count"] == 1
+
+
 def test_collection_drops_invalid_movies_and_showtimes():
     """Provider output is normalized before anything downstream sees it."""
     provider = _provider(
@@ -384,6 +507,7 @@ def test_stats_account_for_every_movie_between_collection_and_publication():
         stats["raw_movie_count"]
         - stats["collection_merged_count"]
         - stats["post_enrichment_merged_count"]
+        - stats["slot_duplicate_dropped_count"]
         - stats["non_english_dropped_count"]
         == stats["published_movie_count"]
     )
