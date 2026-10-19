@@ -95,6 +95,54 @@ test("the day strip stays in view while a day's cinemas scroll", async ({ page }
   expect((await row.boundingBox())!.y).toBeGreaterThanOrEqual(stripBottom.y + stripBottom.height - 1);
 });
 
+/** Elements that scroll by themselves vertically, other than the page. */
+const ownScrollers = (page: Page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll("body *")]
+      .filter((el) => /auto|scroll/.test(getComputedStyle(el).overflowY) && el.scrollHeight > el.clientHeight + 1)
+      .map((el) => String(el.className)),
+  );
+
+test("on a phone the map follows the showtimes, and only the page scrolls", async ({ page }) => {
+  await gotoPremium(page);
+  const map = page.locator(".film-map");
+  test.skip((await map.count()) === 0, "every showing that day has started");
+  const panelBox = (await panel(page).boundingBox())!;
+  expect((await map.boundingBox())!.y).toBeGreaterThanOrEqual(panelBox.y + panelBox.height - 1);
+  expect(await ownScrollers(page)).toEqual([]);
+});
+
+test("on desktop the map sits under the synopsis, and the showtimes panel grows with the page", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await gotoPremium(page);
+  const map = page.locator(".film-map");
+  test.skip((await map.count()) === 0, "every showing that day has started");
+  await expect(map.locator("svg.map--d")).toBeVisible();
+  const mapBox = (await map.boundingBox())!;
+  const panelBox = (await panel(page).boundingBox())!;
+  const aboutBox = (await page.locator(".about").boundingBox())!;
+  expect(mapBox.x + mapBox.width).toBeLessThanOrEqual(panelBox.x);
+  expect(mapBox.y).toBeGreaterThanOrEqual(aboutBox.y + aboutBox.height - 1);
+  // Right under the about column, not pushed down by the panel's height.
+  expect(mapBox.y).toBeLessThan(aboutBox.y + aboutBox.height + 60);
+  expect(await ownScrollers(page)).toEqual([]);
+  // The panel's last row is reached by scrolling the page.
+  const last = panel(page).locator(".crow").last();
+  await last.scrollIntoViewIfNeeded();
+  await expect(last).toBeInViewport();
+  expect(await panel(page).evaluate((el) => el.scrollTop)).toBe(0);
+});
+
+test("every cinema on the film's map has a label", async ({ page }) => {
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    await gotoPremium(page);
+    const svg = page.locator(".film-map svg:visible");
+    test.skip((await svg.count()) === 0, "every showing that day has started");
+    await expect(svg.locator(".m-label")).toHaveCount(await svg.locator(".m-dot").count());
+  }
+});
+
 test("Seen it? marks the film, and This week shows it in Seen after Back from bfcache", async ({ page, browserName }) => {
   test.skip(browserName !== "chromium", "Playwright's WebKit never restores from bfcache");
   const errors = collectErrors(page);
