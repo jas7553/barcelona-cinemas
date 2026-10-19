@@ -48,7 +48,6 @@ export function CinemasPage({ data }: { data: CinemasPageData }) {
   return (
     <Layout
       data={data}
-      now={now}
       section="cinemas"
       heading={
         <div class="title">

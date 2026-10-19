@@ -30,7 +30,6 @@ export function WeekPage({ data }: { data: WeekPageData }) {
   return (
     <Layout
       data={data}
-      now={now}
       heading={
         <div class="title">
           <h1 class="display">This week</h1>

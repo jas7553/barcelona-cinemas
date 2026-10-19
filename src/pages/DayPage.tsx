@@ -72,7 +72,6 @@ export function DayPage({ data }: { data: DayPageData }) {
   return (
     <Layout
       data={data}
-      now={now}
       heading={
         <div class="title">
           <h1 class="display">{title}</h1>

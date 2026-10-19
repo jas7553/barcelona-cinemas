@@ -106,7 +106,7 @@ export function FilmPage({ data }: { data: FilmPageData }) {
           </div>
         )}
       </main>
-      <Footer generatedAt={data.generatedAt} now={now} />
+      <Footer generatedAt={data.generatedAt} />
       {ticket && ticketTheater && (
         <TicketSheet
           film={film}
