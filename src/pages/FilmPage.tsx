@@ -242,12 +242,14 @@ function About({ film, seen }: { film: FilmDetail; seen: boolean }) {
           <span class="if-off">Seen it?</span>
         </button>
         {film.imdb && (
-          <a class="pill" href={film.imdb}>
+          <a class="pill" href={film.imdb} target="_blank" rel="noopener">
             IMDb <IconExternal />
+            <span class="vh">(opens in a new tab)</span>
           </a>
         )}
-        <a class="pill" href={film.letterboxd}>
+        <a class="pill" href={film.letterboxd} target="_blank" rel="noopener">
           Letterboxd <IconExternal />
+          <span class="vh">(opens in a new tab)</span>
         </a>
       </div>
     </section>

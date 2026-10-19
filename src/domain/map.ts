@@ -269,8 +269,9 @@ export function buildMap(o: MapOptions): MapModel {
         const ex = Math.min(b.x + b.w, Math.max(b.x, x));
         const ey = Math.min(b.y + b.h, Math.max(b.y, y));
         const len = Math.hypot(ex - x, ey - y);
-        // Starts clear of its own dot's box, so only other boxes can block it.
-        const start = 7.5 / len;
+        // Starts clear of its own pin's box (Home's ±6 reaches 8.5 on a
+        // diagonal), so only other boxes can block it.
+        const start = 9 / len;
         const leader = { x1: x + (ex - x) * start, y1: y + (ey - y) * start, x2: ex, y2: ey };
         if (boxes.some((o2) => crossesBox(leader, o2)) || leaders.some((s) => crossesSegment(s, leader))) continue;
         return keep(b, text, kind, leader);
