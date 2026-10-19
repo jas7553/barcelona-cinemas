@@ -222,6 +222,8 @@
   display: none;
 }
 .chip {
+  /* Holds its .vh text, which would otherwise escape .chips' scroller and widen the page. */
+  position: relative;
   flex: none;
   display: flex;
   flex-direction: column;
@@ -352,4 +354,63 @@
 /* A section whose every row the pre-paint seen script hid. */
 section:has(> .films):not(:has(> .films > li:not([hidden]))) {
   display: none;
+}
+
+/* Times with no booking page of their own: dashed and unfilled, beside their ↗. */
+.chip--site {
+  border-style: dashed;
+  background: none;
+}
+.site-mark,
+.legend svg {
+  color: var(--sub);
+}
+.site-mark {
+  display: inline-flex;
+  margin-left: 4px;
+}
+/* Kept for its width, so a time starting after mount moves nothing. */
+.chip--past .site-mark {
+  visibility: hidden;
+}
+.site-mark svg,
+.legend svg {
+  width: 12px;
+  height: 12px;
+}
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+.legend--idle {
+  visibility: hidden;
+}
+.legend--desktop {
+  display: none;
+}
+
+/* Cinema week grid: every cell fits TIMES_UP_TO (CinemaPage.tsx) stacked
+   times, so a cell swapping its count for times, or back, moves nothing. */
+.films--times .cell {
+  height: 44px;
+}
+.cell--times {
+  align-content: center;
+  font-size: 11px;
+  line-height: 13px;
+}
+@media (min-width: 900px) {
+  .films--times .cell {
+    height: 48px;
+  }
+  .cell--times {
+    font-size: 12px;
+    line-height: 14px;
+  }
+  .legend--desktop {
+    display: flex;
+  }
 }

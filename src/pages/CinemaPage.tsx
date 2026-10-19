@@ -1,18 +1,20 @@
-import { useState } from "preact/hooks";
 import { useNow } from "../client/clock";
 import { toggleFavourite, usePrefs } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
 import { DayStrip } from "../components/DayStrip";
-import { Row, ShowingChip, Tags, WeekRow } from "../components/FilmRow";
+import { ChipTime, Row, SiteLegend, Tags, WeekRow } from "../components/FilmRow";
 import { IconExternal } from "../components/Icons";
 import { Layout } from "../components/Layout";
-import { TicketSheet } from "../components/TicketSheet";
 import { cinemaDayRows, cinemaWeekRows } from "../domain/cinema";
 import { distanceLabel } from "../domain/distance";
 import { plural, shortName } from "../domain/format";
+import { bookingHref, siteOnly } from "../domain/ticket";
 import { clockAt, dayAndDate, dayTitle, horizon, pageDays, ranking, type FilmRow } from "../domain/schedule";
-import type { CinemaPageData, ListFilm, Showing } from "../pageData";
+import type { CinemaPageData } from "../pageData";
+import type { Theater } from "../types";
 import { EAGER_ROWS, NotOutYet, StaleNotice } from "./listView";
+
+const TIMES_UP_TO = 3;
 
 export function CinemaPage({ data }: { data: CinemaPageData }) {
   const now = useNow(data.renderedAt);
@@ -20,7 +22,6 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
   const clock = clockAt(now);
   const theater = data.theaters.find((t) => t.id === data.theaterId)!;
   const rank = ranking(data.theaters, prefs.home, prefs.favourites);
-  const [ticket, setTicket] = useState<{ film: ListFilm; showing: Showing } | null>(null);
   const distance = distanceLabel(prefs.home, theater);
   const short = shortName(theater);
   const { date } = data;
@@ -35,7 +36,7 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
         <h2 id="programme" class="label">
           {plural(rows.length, "film")} this week
         </h2>
-        <ul class="films" data-seen-last>
+        <ul class="films films--times" data-seen-last>
           {rows.map((r) => (
             <WeekRow
               key={r.film.id}
@@ -45,6 +46,7 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
               eager={index++ < EAGER_ROWS}
               seen={prefs.seen.has(r.film.id)}
               cellHref={(d) => `/cinema/${theater.id}/${d}/#f${r.film.id}`}
+              timesUpTo={TIMES_UP_TO}
               summary={
                 <>
                   Next: {dayAndDate(r.showings[0].date, clock.today)} {r.showings[0].time}
@@ -80,10 +82,11 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
                 row={r}
                 eager={index++ < EAGER_ROWS}
                 seen={prefs.seen.has(r.film.id)}
-                onShowing={(film, showing) => setTicket({ film, showing })}
+                theater={theater}
               />
             ))}
           </ul>
+          {rows.some((r) => r.showings.some(siteOnly)) && <SiteLegend />}
         </section>
       );
     } else if (days.find((d) => d.date === date)?.status === "not-out") {
@@ -155,16 +158,6 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
       }
     >
       {body}
-      {ticket && (
-        <TicketSheet
-          film={ticket.film}
-          showing={ticket.showing}
-          theater={theater}
-          today={clock.today}
-          prefs={prefs}
-          onClose={() => setTicket(null)}
-        />
-      )}
     </Layout>
   );
 }
@@ -181,25 +174,22 @@ function FavouriteToggle({ id, on }: { id: string; on: boolean }) {
 
 interface CinemaDayRowProps {
   row: FilmRow;
+  theater: Theater;
   eager: boolean;
   seen: boolean;
-  onShowing: (film: ListFilm, s: Showing) => void;
 }
 
-/** A film's showings here that day: every one, with Book where there's a booking link. */
-function CinemaDayRow({ row, eager, seen, onShowing }: CinemaDayRowProps) {
+/** A film's showings here that day: each time links straight to its booking page, else the cinema's site (no ticket sheet). */
+function CinemaDayRow({ row, theater, eager, seen }: CinemaDayRowProps) {
   const { film, showings } = row;
   return (
     <Row film={film} href={`/film/${film.id}/${showings[0].date}/`} eager={eager} seen={seen} id={`f${film.id}`}>
       <div class="chips">
         {showings.map((s, i) => (
-          <ShowingChip key={i} href={`/film/${film.id}/${s.date}/`} onOpen={() => onShowing(film, s)}>
-            <span class="chip-t">
-              <b>{s.time}</b>
-              <Tags s={s} />
-            </span>
-            <span class="chip-w">{s.booking_url ? "Book" : "Details"}</span>
-          </ShowingChip>
+          <a key={i} class={siteOnly(s) ? "chip chip--site" : "chip"} href={bookingHref(s, theater)}>
+            <span class="vh">{film.title}, </span>
+            <ChipTime s={s} />
+          </a>
         ))}
       </div>
     </Row>

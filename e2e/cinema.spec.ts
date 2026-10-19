@@ -2,6 +2,7 @@
 // CSP, on the date-shifted fixture.
 
 import { expect, test, type Page } from "@playwright/test";
+import { bookableShowing, FIXTURE_BOOKING_URL } from "./fixture";
 import { collectErrors, expectHit44, HOME, readCls, seedPrefs, slowBundle, trackViewTransitions, viewTransitionDone, watchCls } from "./helpers";
 
 /** The cinemas on the index, top to bottom as painted (CSS order included). */
@@ -40,7 +41,7 @@ test("a week cell leads to the Day view, at that film", async ({ page }) => {
   expect(href).toMatch(/^\/cinema\/[^/]+\/\d{4}-\d{2}-\d{2}\/#f.+$/);
   await cell.click();
   await expect(page.locator(href.slice(href.indexOf("#")))).toBeVisible();
-  await expect(page.locator(`${href.slice(href.indexOf("#"))} a.chip[aria-haspopup]`).first()).toBeVisible();
+  await expect(page.locator(`${href.slice(href.indexOf("#"))} a.chip`).first()).toBeVisible();
 });
 
 test("a dot on the Cinemas map opens that cinema", async ({ page }) => {
@@ -133,4 +134,36 @@ test("cinema controls have 44px hit areas", async ({ page }) => {
   // The cross-document view transition's overlay takes every hit until it ends.
   await viewTransitionDone(page);
   await check([".pill--fav", "a.cell--on"]);
+});
+
+test("a time on a cinema's day opens that showing's booking page, and Back returns to the day", async ({
+  page,
+  browserName,
+}) => {
+  const { theaterId, date, time, filmId } = bookableShowing();
+  const errors = collectErrors(page);
+  const day = `/cinema/${theaterId}/${date}/`;
+  await page.route("https://tickets.example/**", (route) => route.fulfill({ body: "<title>Booking</title>", contentType: "text/html" }));
+  await page.goto(day);
+  await page.waitForLoadState("networkidle");
+
+  const row = page.locator(`#f${filmId}`);
+  const chip = row.locator("a.chip", { hasText: time });
+  await expect(chip).toHaveAttribute("href", FIXTURE_BOOKING_URL);
+  await expect(chip).not.toHaveAttribute("aria-haspopup");
+  await expectHit44(chip, "booking time");
+  await expect(page.locator(".chip-w")).toHaveCount(0);
+  await expect(row.getByRole("heading").getByRole("link")).toHaveAttribute("href", new RegExp(`^/film/${filmId}/`));
+  await expect(page.locator("a.chip--site .site-mark").first()).toBeVisible();
+  await expect(page.locator(".legend")).toHaveCount(1);
+
+  await chip.click();
+  await expect(page).toHaveURL(FIXTURE_BOOKING_URL);
+  // The day may come back from bfcache, which fires no load event.
+  await page.goBack({ waitUntil: "commit" });
+  await expect(page).toHaveURL(day);
+  await expect(chip).toHaveAttribute("href", FIXTURE_BOOKING_URL);
+  await chip.click();
+  await expect(page).toHaveURL(FIXTURE_BOOKING_URL);
+  if (browserName === "chromium") expect(errors).toEqual([]);
 });

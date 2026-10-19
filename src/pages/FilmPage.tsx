@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { useNow } from "../client/clock";
 import { toggleSeen, usePrefs } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
-import { ShowingChip, Tags } from "../components/FilmRow";
+import { ChipTime, ShowingChip, SiteLegend } from "../components/FilmRow";
 import { Footer } from "../components/Footer";
 import { IconExternal, IconStar } from "../components/Icons";
 import { TicketSheet } from "../components/TicketSheet";
@@ -11,6 +11,7 @@ import { distanceLabel } from "../domain/distance";
 import { byCinema } from "../domain/film";
 import { formatRuntime, largePoster, plural, shortName } from "../domain/format";
 import type { LatLng } from "../domain/prefs";
+import { bookingHref, siteOnly } from "../domain/ticket";
 import { clockAt, dayTitle, hasStarted, pageDays, ranking } from "../domain/schedule";
 import type { DateKey } from "../domain/time";
 import type { FilmDetail, FilmPageData, Showing } from "../pageData";
@@ -279,64 +280,66 @@ function DayShowings({ film, date, today, unpub, groups, theaters, home, favouri
       </div>
     );
   }
+  const site = groups
+    .filter((g) => theaters.has(g.theaterId))
+    .flatMap((g) => g.showings)
+    .filter(siteOnly);
   return (
-    <ul class="crows" data-sort>
-      {groups.map(({ theaterId, showings }) => {
-        const theater = theaters.get(theaterId);
-        if (!theater) return null;
-        return (
-          <li
-            key={theaterId}
-            class="crow"
-            data-id={theaterId}
-            data-lat={theater.lat ?? undefined}
-            data-lng={theater.lng ?? undefined}
-          >
-            <a class="crow-h" href={`/cinema/${theaterId}/${date}/`}>
-              <span class="cin">
-                {theater.name}
-                {favourite(theaterId) && (
-                  <span class="fav">
-                    <IconStar />
-                    <span class="vh">(my cinema)</span>
-                  </span>
+    <>
+      <ul class="crows" data-sort>
+        {groups.map(({ theaterId, showings }) => {
+          const theater = theaters.get(theaterId);
+          if (!theater) return null;
+          return (
+            <li
+              key={theaterId}
+              class="crow"
+              data-id={theaterId}
+              data-lat={theater.lat ?? undefined}
+              data-lng={theater.lng ?? undefined}
+            >
+              <a class="crow-h" href={`/cinema/${theaterId}/${date}/`}>
+                <span class="cin">
+                  {theater.name}
+                  {favourite(theaterId) && (
+                    <span class="fav">
+                      <IconStar />
+                      <span class="vh">(my cinema)</span>
+                    </span>
+                  )}
+                </span>
+                <span class="nb">
+                  {[theater.neighborhood, distanceLabel(home, theater)]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              </a>
+              <div class="tchips">
+                {showings.map((s, i) =>
+                  started(s) ? (
+                    <span key={i} class="chip chip--t chip--past">
+                      <ChipTime s={s} />
+                      <span class="vh">(started)</span>
+                    </span>
+                  ) : (
+                    // Before the bundle runs, straight to what the ticket would offer first.
+                    <ShowingChip
+                      key={i}
+                      href={bookingHref(s, theater)}
+                      class={siteOnly(s) ? "chip chip--t chip--site" : "chip chip--t"}
+                      onOpen={() => onShowing(s)}
+                    >
+                      <ChipTime s={s} />
+                    </ShowingChip>
+                  ),
                 )}
-              </span>
-              <span class="nb">
-                {[theater.neighborhood, distanceLabel(home, theater)]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
-            </a>
-            <div class="tchips">
-              {showings.map((s, i) =>
-                started(s) ? (
-                  <span key={i} class="chip chip--t chip--past">
-                    <span class="chip-t">
-                      <b>{s.time}</b>
-                      <Tags s={s} />
-                    </span>
-                    <span class="vh">(started)</span>
-                  </span>
-                ) : (
-                  // Before the bundle runs, straight to what the ticket would offer first.
-                  <ShowingChip
-                    key={i}
-                    href={s.booking_url ?? theater.website_url}
-                    class="chip chip--t"
-                    onOpen={() => onShowing(s)}
-                  >
-                    <span class="chip-t">
-                      <b>{s.time}</b>
-                      <Tags s={s} />
-                    </span>
-                  </ShowingChip>
-                ),
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {/* Started times hide their ↗ (CSS) but keep its width, and the legend likewise keeps its line. */}
+      {site.length > 0 && <SiteLegend only={site.every(started) ? "idle" : undefined} />}
+    </>
   );
 }

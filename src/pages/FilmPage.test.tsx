@@ -57,6 +57,7 @@ const data: FilmPageData = {
   date: null,
 };
 
+const LEGEND = /No booking page for this showing/;
 const cinemaRows = () => screen.getAllByRole("listitem").filter((li) => li.classList.contains("crow"));
 
 beforeEach(() => {
@@ -122,6 +123,39 @@ describe("Film page", () => {
       "href",
       "https://verdi.example/book/1",
     );
+  });
+
+  it("marks a time with no booking page of its own, and explains the mark once", () => {
+    const showtimes = [
+      ...FILM.showtimes,
+      { theater_id: "verdi", date: "2026-10-05", time: "20:00", booking_url: "https://verdi.example/book/2" },
+    ];
+    render(<FilmPage data={{ ...data, film: { ...FILM, showtimes }, date: "2026-10-05" }} />);
+    const site = screen.getByRole("link", { name: /18:00/ });
+    expect(site).toHaveAttribute("href", "https://girona.example");
+    expect(site).toHaveClass("chip--site");
+    expect(site.querySelector(".site-mark")).not.toBeNull();
+    expect(site).toHaveAccessibleName(/book on the cinema's site/);
+    const booked = screen.getByRole("link", { name: /20:00/ });
+    expect(booked).toHaveAttribute("href", "https://verdi.example/book/2");
+    expect(booked).not.toHaveClass("chip--site");
+    expect(booked.querySelector(".site-mark")).toBeNull();
+    expect(screen.getAllByText(LEGEND)).toHaveLength(1);
+    expect(screen.getByText(LEGEND)).not.toHaveClass("legend--idle");
+  });
+
+  it("has no legend when every time has its own booking page", () => {
+    const showtimes = [{ theater_id: "verdi", date: "2026-10-05", time: "20:00", booking_url: "https://verdi.example/book/2" }];
+    render(<FilmPage data={{ ...data, film: { ...FILM, showtimes }, date: "2026-10-05" }} />);
+    expect(screen.queryByText(LEGEND)).toBeNull();
+  });
+
+  it("hides the legend, keeping its line, when the only marked time has started", () => {
+    render(<FilmPage data={data} />);
+    expect(screen.getByText("16:00").closest(".chip")).toHaveClass("chip--past");
+    const legend = screen.getByText(LEGEND);
+    expect(legend).toHaveClass("legend--idle");
+    expect(legend).toHaveAttribute("aria-hidden", "true");
   });
 
   it("toggles Seen and stores it", () => {
