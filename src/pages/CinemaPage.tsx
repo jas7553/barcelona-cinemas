@@ -36,7 +36,7 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
         <h2 id="programme" class="label">
           {plural(rows.length, "film")} this week
         </h2>
-        <ul class="films" data-seen-last>
+        <ul class="films films--times" data-seen-last>
           {rows.map((r) => (
             <WeekRow
               key={r.film.id}
@@ -86,7 +86,7 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
               />
             ))}
           </ul>
-          <SiteLegend showings={rows.flatMap((r) => r.showings)} />
+          {rows.some((r) => r.showings.some(siteOnly)) && <SiteLegend />}
         </section>
       );
     } else if (days.find((d) => d.date === date)?.status === "not-out") {
@@ -179,7 +179,7 @@ interface CinemaDayRowProps {
   seen: boolean;
 }
 
-/** A film's showings here that day: every time links to that showing's booking page, as on the film page. */
+/** A film's showings here that day: each time links straight to its booking page, else the cinema's site (no ticket sheet). */
 function CinemaDayRow({ row, theater, eager, seen }: CinemaDayRowProps) {
   const { film, showings } = row;
   return (
@@ -187,7 +187,8 @@ function CinemaDayRow({ row, theater, eager, seen }: CinemaDayRowProps) {
       <div class="chips">
         {showings.map((s, i) => (
           <a key={i} class={siteOnly(s) ? "chip chip--site" : "chip"} href={bookingHref(s, theater)}>
-            <ChipTime s={s} mark />
+            <span class="vh">{film.title}, </span>
+            <ChipTime s={s} />
           </a>
         ))}
       </div>

@@ -46,6 +46,7 @@ const FILMS: ListFilm[] = [
   },
 ];
 
+const LEGEND = /No booking page for this showing/;
 const base = { renderedAt: RENDERED_AT, generatedAt: "2026-10-04T13:30:00Z", theaters: THEATERS };
 const calendar = [
   { date: "2026-10-04", cinemas: 2, last: "22:00" },
@@ -91,6 +92,40 @@ describe("Day", () => {
     expect(ticket).toHaveTextContent("No direct booking link for this showing");
     // Unknown runtime: start + 110 + 15.
     expect(ticket).toHaveTextContent("Out ~21:05");
+  });
+
+  it("marks a time with no booking page of its own, and explains the mark once", () => {
+    render(<DayPage data={dayData} />);
+    const site = screen.getByRole("link", { name: /^19:00/ });
+    expect(site).toHaveClass("chip--site");
+    expect(site.querySelector(".site-mark")).not.toBeNull();
+    expect(site).toHaveAccessibleName(/book on the cinema's site/);
+    const booked = screen.getByRole("link", { name: /^21:30/ });
+    expect(booked).not.toHaveClass("chip--site");
+    expect(booked.querySelector(".site-mark")).toBeNull();
+    expect(screen.getAllByText(LEGEND)).toHaveLength(1);
+  });
+
+  it("keeps the legend when the only marked time is a seen film's", () => {
+    localStorage.setItem(PREF_KEYS.seen, JSON.stringify(["drive"]));
+    const films = [{ ...FILMS[0], showtimes: FILMS[0].showtimes.filter((s) => s.booking_url) }, FILMS[1]];
+    render(<DayPage data={{ ...dayData, films }} />);
+    expect(screen.getByRole("group")).toHaveTextContent("Drive");
+    expect(screen.getAllByText(LEGEND)).toHaveLength(1);
+  });
+
+  it("has no legend when every time has its own booking page", () => {
+    const films = [{ ...FILMS[0], showtimes: FILMS[0].showtimes.filter((s) => s.booking_url) }];
+    render(<DayPage data={{ ...dayData, films }} />);
+    expect(screen.getByRole("link", { name: /^21:30/ })).toBeInTheDocument();
+    expect(screen.queryByText(LEGEND)).toBeNull();
+  });
+
+  it("shows the legend only on desktop when the marked time is behind phone's +N more", () => {
+    const at = (time: string, booking_url?: string) => ({ theater_id: "verdi", date: "2026-10-04", time, booking_url });
+    const booked = ["18:00", "18:30", "19:00", "19:30"].map((t) => at(t, `https://verdi.example/${t}`));
+    render(<DayPage data={{ ...dayData, films: [{ ...FILMS[0], showtimes: [...booked, at("20:00")] }] }} />);
+    expect(screen.getByText(LEGEND)).toHaveClass("legend--desktop");
   });
 
   it("shows distances from Home and moves seen films to the Seen group once prefs load", () => {

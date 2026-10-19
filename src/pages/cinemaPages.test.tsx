@@ -59,6 +59,7 @@ const cinema: CinemaPageData = {
   date: null,
 };
 
+const LEGEND = /No booking page for this showing/;
 const filmTitles = () => screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
 
 beforeEach(() => {
@@ -85,11 +86,19 @@ describe("Cinema, week", () => {
   });
 
   it("shows times in cells with 3 showings or fewer, and the count on busier days", () => {
-    const busy = film("busy", "Busy", ["10:00", "12:00", "14:00", "16:00"].map((time) => ({ theater_id: "verdi", date: "2026-10-05", time })));
-    render(<CinemaPage data={{ ...cinema, films: [...FILMS, busy] }} />);
+    const day = (id: string, title: string, times: string[]) =>
+      film(id, title, times.map((time) => ({ theater_id: "verdi", date: "2026-10-05", time })));
+    const trio = day("trio", "Trio", ["11:00", "13:00", "15:00"]);
+    const busy = day("busy", "Busy", ["10:00", "12:00", "14:00", "16:00"]);
+    render(<CinemaPage data={{ ...cinema, films: [...FILMS, trio, busy] }} />);
     expect(screen.getByRole("link", { name: "Monday: 2 showings at 20:00, 22:00" })).toHaveTextContent("20:0022:00");
+    const times = screen.getByRole("link", { name: /^Monday: 3 showings/ });
+    expect(times).toHaveAccessibleName(/at 11:00, 13:00, 15:00$/);
+    expect(times).toHaveClass("cell--times");
+    expect(times).toHaveAttribute("href", "/cinema/verdi/2026-10-05/#ftrio");
     const count = screen.getByRole("link", { name: "Monday: 4 showings" });
     expect(count).toHaveTextContent(/^4$/);
+    expect(count).not.toHaveClass("cell--times");
     expect(count).toHaveAttribute("href", "/cinema/verdi/2026-10-05/#fbusy");
   });
 
@@ -125,12 +134,22 @@ describe("Cinema, day", () => {
     const big = screen.getByRole("heading", { name: "Big" }).closest("li")!;
     expect(big).toHaveAttribute("id", "fbig");
     const chips = within(big).getAllByRole("link").filter((a) => a.classList.contains("chip"));
-    expect(chips.map((b) => b.textContent)).toEqual(["20:00", "22:00IMAX"]);
+    expect(chips.map((b) => b.textContent)).toEqual(["Big, 20:00", "Big, 22:00IMAX(book on the cinema's site)"]);
     expect(chips.map((b) => b.getAttribute("href"))).toEqual(["https://verdi.example/b", "https://verdi.example"]);
     expect(chips.map((b) => b.classList.contains("chip--site"))).toEqual([false, true]);
+    expect(chips.map((b) => b.querySelector(".site-mark") !== null)).toEqual([false, true]);
     expect(chips[0]).not.toHaveAttribute("aria-haspopup");
     expect(within(big).getByRole("link", { name: "Big" })).toHaveAttribute("href", "/film/big/2026-10-05/");
-    expect(screen.getByText(/Opens the cinema's site/)).toBeInTheDocument();
+    expect(screen.getAllByText(LEGEND)).toHaveLength(1);
+  });
+
+  it("has no legend when every time that day has its own booking page", () => {
+    const booked = film("booked", "Booked", [
+      { theater_id: "verdi", date: "2026-10-05", time: "19:00", booking_url: "https://verdi.example/b2" },
+    ]);
+    render(<CinemaPage data={{ ...cinema, films: [booked], date: "2026-10-05" }} />);
+    expect(screen.getByRole("link", { name: /19:00/ })).toHaveAttribute("href", "https://verdi.example/b2");
+    expect(screen.queryByText(LEGEND)).toBeNull();
   });
 
   it("says when nothing is on at the cinema that day", () => {

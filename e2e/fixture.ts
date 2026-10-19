@@ -8,9 +8,12 @@ import { fileURLToPath } from "url";
 // So every film page shows a tagline, as most real ones do.
 const FIXTURE_TAGLINE = "Believe the unbelievable.";
 
+/** A showtime in the internal cache, which names its cinema rather than a theater id. */
+type CacheShowtime = { date: string; time: string; cinema: string; premium_format?: string; booking_url?: string | null };
+/** A showtime in the published listings.json. */
 type FixtureShowtime = { date: string; time: string; theater_id: string; premium_format?: string; booking_url?: string };
 
-/** The one injected showing with its own booking page; the snapshot has none. */
+/** The booking page injected on one showing, whatever the source cache had; bookableShowing() finds it. */
 export const FIXTURE_BOOKING_URL = "https://tickets.example/fixture-booking";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url)) + "/..";
@@ -47,12 +50,19 @@ export function buildFixtureCache(): string {
     }
     m.tagline ??= FIXTURE_TAGLINE;
   }
-  // The snapshot rarely has IMAX; mark the first film's last showing (earlier
-  // ones may have started). premiumShowing() finds it.
-  const showtimes: FixtureShowtime[] = data.movies[0].showtimes;
+  // The first film's last showing (earlier ones may have started) becomes IMAX
+  // unless it has another format, and gets FIXTURE_BOOKING_URL; premiumShowing()
+  // and bookableShowing() find it. Another showing at that cinema that day loses
+  // its booking URL, so the day also has a site-only time.
+  const showtimes: CacheShowtime[] = data.movies[0].showtimes;
   const latest = showtimes.reduce((a, b) => (`${b.date}${b.time}` > `${a.date}${a.time}` ? b : a));
   latest.premium_format ??= "imax";
-  latest.booking_url ??= FIXTURE_BOOKING_URL;
+  latest.booking_url = FIXTURE_BOOKING_URL;
+  const sameDay = (data.movies as { showtimes?: CacheShowtime[] }[])
+    .flatMap((m) => m.showtimes ?? [])
+    .find((s) => s !== latest && s.cinema === latest.cinema && s.date === latest.date);
+  if (!sameDay) throw new Error("e2e: no other showing at the booked showing's cinema that day");
+  delete sameDay.booking_url;
   data.fetched_at = new Date().toISOString();
 
   const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "bmd-e2e-"));

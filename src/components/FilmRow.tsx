@@ -131,7 +131,7 @@ export function DayRow({ row, date, theaters, where, eager, onShowing }: DayRowP
               class={`${i < CHIPS_MOBILE ? "chip" : "chip chip--wide"}${siteOnly(s) ? " chip--site" : ""}`}
               onOpen={() => onShowing(film, s)}
             >
-              <ChipTime s={s} mark />
+              <ChipTime s={s} />
               <span class="chip-w">
                 {theater ? shortName(theater) : s.theater_id} · {where(s.theater_id)}
               </span>
@@ -174,28 +174,39 @@ export function ShowingChip({ href, class: cls = "chip", onOpen, children }: Sho
   );
 }
 
-/** A chip's time and tags; `mark` adds the ↗ when the time only opens the cinema's site. */
-export function ChipTime({ s, mark }: { s: Showing; mark?: boolean }) {
+/** A chip's time and tags, with a ↗ when the showing has no booking page of its own. */
+export function ChipTime({ s }: { s: Showing }) {
   return (
     <span class="chip-t">
       <b>{s.time}</b>
       <Tags s={s} />
-      {mark && siteOnly(s) && (
+      {siteOnly(s) && (
         <span class="site-mark">
           <IconExternal />
+          <span class="vh">(book on the cinema's site)</span>
         </span>
       )}
     </span>
   );
 }
 
-/** Explains the ↗ on times; shown once, and only when some time on the page has it. */
-export function SiteLegend({ showings }: { showings: Showing[] }) {
-  return showings.some(siteOnly) ? (
-    <p class="legend sub">
-      <IconExternal /> Opens the cinema's site, not this showing's booking page
+/**
+ * Explains the ↗, once per page; the caller renders it only when a time it
+ * draws has one. "desktop" shows it only at the width that draws that time;
+ * "idle" holds its line unseen, so the last marked time starting moves nothing.
+ */
+export function SiteLegend({ only }: { only?: "desktop" | "idle" }) {
+  return (
+    <p class={only ? `legend legend--${only} sub` : "legend sub"} aria-hidden={only === "idle" || undefined}>
+      <IconExternal /> No booking page for this showing. Book on the cinema's site.
     </p>
-  ) : null;
+  );
+}
+
+/** The Day view's legend, for the marked times drawn before "+N more" at each width. */
+export function DayLegend({ rows }: { rows: FilmRow[] }) {
+  const marked = (shown: number) => rows.some((r) => r.showings.slice(0, shown).some(siteOnly));
+  return marked(CHIPS_MOBILE) ? <SiteLegend /> : marked(CHIPS_DESKTOP) ? <SiteLegend only="desktop" /> : null;
 }
 
 /** IMAX and subtitle-version tags; never more than these two. */

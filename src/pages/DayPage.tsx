@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import { DayStrip } from "../components/DayStrip";
-import { DayRow, SiteLegend } from "../components/FilmRow";
+import { DayLegend, DayRow } from "../components/FilmRow";
 import { Layout } from "../components/Layout";
 import { SeenGroup } from "../components/SeenGroup";
 import { TicketSheet } from "../components/TicketSheet";
@@ -49,7 +49,8 @@ export function DayPage({ data }: { data: DayPageData }) {
           <ul class="films">{films.map(row)}</ul>
         </section>
         <SeenGroup count={seen.length}>{seen.map(row)}</SeenGroup>
-        <SiteLegend showings={rows.flatMap((r) => r.showings)} />
+        {/* Seen films' times count too: they're only collapsed, and prefs can't change the legend. */}
+        <DayLegend rows={rows} />
       </>
     );
   } else if (status === "not-out") {

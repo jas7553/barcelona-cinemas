@@ -280,6 +280,10 @@ function DayShowings({ film, date, today, unpub, groups, theaters, home, favouri
       </div>
     );
   }
+  const site = groups
+    .filter((g) => theaters.has(g.theaterId))
+    .flatMap((g) => g.showings)
+    .filter(siteOnly);
   return (
     <>
       <ul class="crows" data-sort>
@@ -325,7 +329,7 @@ function DayShowings({ film, date, today, unpub, groups, theaters, home, favouri
                       class={siteOnly(s) ? "chip chip--t chip--site" : "chip chip--t"}
                       onOpen={() => onShowing(s)}
                     >
-                      <ChipTime s={s} mark />
+                      <ChipTime s={s} />
                     </ShowingChip>
                   ),
                 )}
@@ -334,7 +338,8 @@ function DayShowings({ film, date, today, unpub, groups, theaters, home, favouri
           );
         })}
       </ul>
-    <SiteLegend showings={groups.flatMap((g) => g.showings)} />
+      {/* Started times hide their ↗ (CSS) but keep its width, and the legend likewise keeps its line. */}
+      {site.length > 0 && <SiteLegend only={site.every(started) ? "idle" : undefined} />}
     </>
   );
 }
