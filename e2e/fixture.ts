@@ -8,7 +8,10 @@ import { fileURLToPath } from "url";
 // So every film page shows a tagline, as most real ones do.
 const FIXTURE_TAGLINE = "Believe the unbelievable.";
 
-type FixtureShowtime = { date: string; time: string; premium_format?: string };
+type FixtureShowtime = { date: string; time: string; theater_id: string; premium_format?: string; booking_url?: string };
+
+/** The one injected showing with its own booking page; the snapshot has none. */
+export const FIXTURE_BOOKING_URL = "https://tickets.example/fixture-booking";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url)) + "/..";
 
@@ -49,6 +52,7 @@ export function buildFixtureCache(): string {
   const showtimes: FixtureShowtime[] = data.movies[0].showtimes;
   const latest = showtimes.reduce((a, b) => (`${b.date}${b.time}` > `${a.date}${a.time}` ? b : a));
   latest.premium_format ??= "imax";
+  latest.booking_url ??= FIXTURE_BOOKING_URL;
   data.fetched_at = new Date().toISOString();
 
   const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), "bmd-e2e-"));
@@ -65,4 +69,15 @@ export function premiumShowing(): { id: string; date: string } {
     if (s) return { id: m.id, date: s.date };
   }
   throw new Error("e2e: published listings carry no injected IMAX showtime");
+}
+
+/** The injected showing that has a booking page: where and when to find its time on a cinema's day. */
+export function bookableShowing(): { theaterId: string; date: string; time: string; filmId: string } {
+  const published = path.join(ROOT, "static", "data", "listings.json");
+  const data = JSON.parse(fs.readFileSync(published, "utf8"));
+  for (const m of data.movies as { id: string; showtimes: FixtureShowtime[] }[]) {
+    const s = m.showtimes.find((x) => x.booking_url === FIXTURE_BOOKING_URL);
+    if (s) return { theaterId: s.theater_id, date: s.date, time: s.time, filmId: m.id };
+  }
+  throw new Error("e2e: published listings carry no injected booking URL");
 }

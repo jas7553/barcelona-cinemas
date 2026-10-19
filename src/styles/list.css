@@ -353,3 +353,47 @@
 section:has(> .films):not(:has(> .films > li:not([hidden]))) {
   display: none;
 }
+
+/* Times that only open the cinema's site: dashed and unfilled, with a ↗. */
+.chip--site {
+  border-style: dashed;
+  background: none;
+}
+.site-mark,
+.legend svg {
+  color: var(--sub);
+}
+.site-mark {
+  display: inline-flex;
+  margin-left: 4px;
+}
+.site-mark svg,
+.legend svg {
+  width: 12px;
+  height: 12px;
+}
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 12px 0 0;
+  font-size: 12px;
+}
+
+/* Cinema week grid: up to three times stacked in a cell. */
+.cell--times {
+  height: auto;
+  min-height: 28px;
+  padding: 3px 0;
+  gap: 1px;
+  align-content: center;
+  font-size: 11px;
+  line-height: 1.25;
+}
+@media (min-width: 900px) {
+  .cell--times {
+    height: auto;
+    min-height: 40px;
+    font-size: 12px;
+  }
+}

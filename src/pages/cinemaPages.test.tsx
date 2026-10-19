@@ -76,12 +76,21 @@ describe("Cinema, week", () => {
     render(<CinemaPage data={cinema} />);
     expect(screen.getByRole("heading", { name: "2 films this week" })).toBeInTheDocument();
     expect(filmTitles()).toEqual(["Big", "Small"]);
-    expect(screen.getByRole("link", { name: "Monday: 2 showings" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Monday: 2 showings at 20:00, 22:00" })).toHaveAttribute(
       "href",
       "/cinema/verdi/2026-10-05/#fbig",
     );
     // Today's 16:00 has started, so Big's next is tomorrow.
     expect(screen.getByText(/Next: Mon 5 20:00/)).toBeInTheDocument();
+  });
+
+  it("shows times in cells with 3 showings or fewer, and the count on busier days", () => {
+    const busy = film("busy", "Busy", ["10:00", "12:00", "14:00", "16:00"].map((time) => ({ theater_id: "verdi", date: "2026-10-05", time })));
+    render(<CinemaPage data={{ ...cinema, films: [...FILMS, busy] }} />);
+    expect(screen.getByRole("link", { name: "Monday: 2 showings at 20:00, 22:00" })).toHaveTextContent("20:0022:00");
+    const count = screen.getByRole("link", { name: "Monday: 4 showings" });
+    expect(count).toHaveTextContent(/^4$/);
+    expect(count).toHaveAttribute("href", "/cinema/verdi/2026-10-05/#fbusy");
   });
 
   it("puts seen films last, faded and marked, rather than in a group", () => {
@@ -109,20 +118,19 @@ describe("Cinema, week", () => {
 });
 
 describe("Cinema, day", () => {
-  it("shows every showing that day with Book or Details, and opens the ticket", () => {
+  it("links every time straight to its booking page, or the cinema site, with no captions", () => {
     render(<CinemaPage data={{ ...cinema, date: "2026-10-05" }} />);
     expect(screen.getByRole("heading", { name: "2 films on Monday" })).toBeInTheDocument();
     expect(filmTitles()).toEqual(["Small", "Big"]);
     const big = screen.getByRole("heading", { name: "Big" }).closest("li")!;
     expect(big).toHaveAttribute("id", "fbig");
     const chips = within(big).getAllByRole("link").filter((a) => a.classList.contains("chip"));
-    expect(chips.map((b) => b.textContent)).toEqual(["20:00Book", "22:00IMAXDetails"]);
-    expect(chips[0]).toHaveAttribute("href", "/film/big/2026-10-05/");
-    fireEvent.click(within(big).getByRole("link", { name: /20:00/ }));
-    expect(within(screen.getByRole("dialog")).getByRole("link", { name: "Book at Verdi" })).toHaveAttribute(
-      "href",
-      "https://verdi.example/b",
-    );
+    expect(chips.map((b) => b.textContent)).toEqual(["20:00", "22:00IMAX"]);
+    expect(chips.map((b) => b.getAttribute("href"))).toEqual(["https://verdi.example/b", "https://verdi.example"]);
+    expect(chips.map((b) => b.classList.contains("chip--site"))).toEqual([false, true]);
+    expect(chips[0]).not.toHaveAttribute("aria-haspopup");
+    expect(within(big).getByRole("link", { name: "Big" })).toHaveAttribute("href", "/film/big/2026-10-05/");
+    expect(screen.getByText(/Opens the cinema's site/)).toBeInTheDocument();
   });
 
   it("says when nothing is on at the cinema that day", () => {

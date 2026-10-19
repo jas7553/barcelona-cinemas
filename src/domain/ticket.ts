@@ -1,4 +1,5 @@
 import type { Showing } from "../pageData";
+import type { Theater } from "../types";
 import { formatWeekday } from "./time";
 
 // Trailers and ads before the film, and the runtime to assume when it's unknown (requirements 5.6).
@@ -16,3 +17,10 @@ export function outTime(start: string, runtimeMinutes: number | null): string {
 export function shareText(title: string, cinema: string, s: Pick<Showing, "date" | "time">): string {
   return `${title} · ${cinema} · ${formatWeekday(s.date)} ${Number(s.date.slice(8))}, ${s.time}`;
 }
+
+/** Where a showing's time leads: its own booking page, else the cinema's site. */
+export function bookingHref(s: Pick<Showing, "booking_url">, theater: Pick<Theater, "website_url">): string {
+  return s.booking_url || theater.website_url;
+}
+
+export const siteOnly = (s: Pick<Showing, "booking_url">): boolean => !s.booking_url;

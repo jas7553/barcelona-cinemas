@@ -4,7 +4,8 @@ import { dayTitle, type DayStatus, type FilmRow } from "../domain/schedule";
 import type { DateKey } from "../domain/time";
 import type { ListFilm, Showing } from "../pageData";
 import type { Theater } from "../types";
-import { IconStar } from "./Icons";
+import { siteOnly } from "../domain/ticket";
+import { IconExternal, IconStar } from "./Icons";
 import { Poster } from "./Poster";
 
 /** Rating · up to 2 genres · runtime, and anything the caller adds */
@@ -64,23 +65,27 @@ interface WeekRowProps {
   seen?: boolean;
   /** Where a filled cell leads: the film on that day, or the cinema's Day view. */
   cellHref?: (date: DateKey) => string;
+  /** Days with this many showings or fewer show their times in the cell instead of the count. */
+  timesUpTo?: number;
 }
 
-export function WeekRow({ row, days, today, summary, eager, seen, cellHref }: WeekRowProps) {
+export function WeekRow({ row, days, today, summary, eager, seen, cellHref, timesUpTo = 0 }: WeekRowProps) {
   const { film } = row;
   return (
     <Row film={film} href={`/film/${film.id}/`} eager={eager} seen={seen}>
       {days.map(({ date, status }) => {
-        const n = row.showings.filter((s) => s.date === date).length;
+        const on = row.showings.filter((s) => s.date === date);
+        const n = on.length;
         if (n > 0) {
+          const times = n <= timesUpTo;
           return (
             <a
               key={date}
-              class="cell cell--on"
+              class={times ? "cell cell--on cell--times" : "cell cell--on"}
               href={cellHref ? cellHref(date) : `/film/${film.id}/${date}/`}
-              aria-label={`${dayTitle(date, today)}: ${plural(n, "showing")}`}
+              aria-label={`${dayTitle(date, today)}: ${plural(n, "showing")}${times ? ` at ${on.map((s) => s.time).join(", ")}` : ""}`}
             >
-              {n}
+              {times ? on.map((s, i) => <span key={i}>{s.time}</span>) : n}
             </a>
           );
         }
@@ -123,13 +128,10 @@ export function DayRow({ row, date, theaters, where, eager, onShowing }: DayRowP
             <ShowingChip
               key={i}
               href={href}
-              class={i < CHIPS_MOBILE ? "chip" : "chip chip--wide"}
+              class={`${i < CHIPS_MOBILE ? "chip" : "chip chip--wide"}${siteOnly(s) ? " chip--site" : ""}`}
               onOpen={() => onShowing(film, s)}
             >
-              <span class="chip-t">
-                <b>{s.time}</b>
-                <Tags s={s} />
-              </span>
+              <ChipTime s={s} mark />
               <span class="chip-w">
                 {theater ? shortName(theater) : s.theater_id} · {where(s.theater_id)}
               </span>
@@ -170,6 +172,30 @@ export function ShowingChip({ href, class: cls = "chip", onOpen, children }: Sho
       {children}
     </a>
   );
+}
+
+/** A chip's time and tags; `mark` adds the ↗ when the time only opens the cinema's site. */
+export function ChipTime({ s, mark }: { s: Showing; mark?: boolean }) {
+  return (
+    <span class="chip-t">
+      <b>{s.time}</b>
+      <Tags s={s} />
+      {mark && siteOnly(s) && (
+        <span class="site-mark">
+          <IconExternal />
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** Explains the ↗ on times; shown once, and only when some time on the page has it. */
+export function SiteLegend({ showings }: { showings: Showing[] }) {
+  return showings.some(siteOnly) ? (
+    <p class="legend sub">
+      <IconExternal /> Opens the cinema's site, not this showing's booking page
+    </p>
+  ) : null;
 }
 
 /** IMAX and subtitle-version tags; never more than these two. */
