@@ -213,6 +213,20 @@ def test_normalize_movie_discards_non_http_booking_url() -> None:
     assert "booking_url" not in movie["showtimes"][0]
 
 
+def test_normalize_movie_discards_booking_url_with_unfilled_placeholder(caplog: pytest.LogCaptureFixture) -> None:
+    movie = normalize_movie(
+        {
+            "title": "Digger",
+            "showtimes": [_showtime_payload(booking_url="https://tickets.example/?perfCode=1&language=%s&theatre=%s")],
+        },
+        source="test",
+    )
+
+    assert movie is not None
+    assert "booking_url" not in movie["showtimes"][0]
+    assert "unfilled %s placeholder" in caplog.text
+
+
 def test_normalize_tmdb_payload_keeps_valid_imdb_id() -> None:
     payload = normalize_tmdb_payload(
         {

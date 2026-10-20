@@ -137,7 +137,7 @@ def test_fetch_builds_english_booking_url_from_shop_template() -> None:
     by_cinema = {showtime["cinema"]: showtime for showtime in hail_mary["showtimes"]}
     assert (
         by_cinema["Aribau"].get("booking_url")
-        == "https://example-aribau.tickets.test/?p=tickets&perfCode=187518&language=en&theatre=BAL-ARIBAU"
+        == "https://example-aribau.tickets.test/?p=tickets&perfCode=187518&language=ENG&theatre=BAL-ARIBAU"
     )
     # Bosque's shop has no shop_url template — no booking link.
     assert "booking_url" not in by_cinema["Bosque"]

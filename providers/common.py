@@ -39,6 +39,10 @@ DEFAULT_HEADERS = {
     )
 }
 
+# Admit One's code for its English seat picker, as its own language switcher
+# sets it; "en" or a missing value falls back to the cinema's Catalan default.
+ADMIT_ONE_ENGLISH = "ENG"
+
 
 # Source feeds label audio/subtitle languages in mixed Catalan, Spanish, and
 # English free text (e.g. "Anglès", "Español", "English"). Substring matching

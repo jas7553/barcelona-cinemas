@@ -10,7 +10,13 @@ import requests
 from listings_config import secondary_listings_url
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
 from providers.cinema_aliases import build_cinema_alias_lookup, normalize_alias
-from providers.common import DEFAULT_HEADERS, base_movie, normalize_audio_lang, normalize_subtitle_lang
+from providers.common import (
+    ADMIT_ONE_ENGLISH,
+    DEFAULT_HEADERS,
+    base_movie,
+    normalize_audio_lang,
+    normalize_subtitle_lang,
+)
 from providers.diagnostics import record_entry_response
 from reconcile import reconcile
 
@@ -50,7 +56,7 @@ def _booking_url_builder(shop: Mapping[str, object]) -> tuple[str, str] | None:
     Validate the shop's ticket URL template once, e.g.
       https://example-theatre.tickets.test/?p=tickets&perfCode=%s&language=%s&theatre=%s
     Returns (template, theatre code) to fill per performance with
-    (performance code, "en", theatre code) — landing on the seat picker for
+    (performance code, ADMIT_ONE_ENGLISH, theatre code) — landing on the seat picker for
     that exact screening, in English.
     """
     template = shop.get("shop_url")
@@ -96,7 +102,7 @@ def _parse_showtime(
         # char elsewhere in the template (e.g. "%20") makes `template % (...)`
         # raise ValueError, which would abort the whole provider fetch.
         booking_url = template
-        for value in (perf_code, "en", theatre_code):
+        for value in (perf_code, ADMIT_ONE_ENGLISH, theatre_code):
             booking_url = booking_url.replace("%s", value, 1)
         showtime["booking_url"] = booking_url
     return showtime

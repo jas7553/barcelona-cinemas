@@ -195,7 +195,7 @@ def normalize_showtime(data: object, *, source: str) -> Showtime | None:
     subtitle_lang = _as_enum(data.get("subtitle_lang"), {"en", "es", "ca"}, source=f"{source} subtitle_lang")
     if subtitle_lang is not None:
         showtime["subtitle_lang"] = subtitle_lang
-    booking_url = _as_optional_http_url(data.get("booking_url"), source=f"{source} booking_url")
+    booking_url = _as_optional_booking_url(data.get("booking_url"), source=f"{source} booking_url")
     if booking_url is not None:
         showtime["booking_url"] = booking_url
     premium_format = _as_enum(data.get("premium_format"), PREMIUM_FORMATS, source=f"{source} premium_format")
@@ -315,6 +315,15 @@ def _as_optional_http_url(value: object, *, source: str) -> str | None:
     if url.startswith(("https://", "http://")):
         return url
     logger.warning("Discarded %s: expected http(s) URL", source)
+    return None
+
+
+def _as_optional_booking_url(value: object, *, source: str) -> str | None:
+    url = _as_optional_http_url(value, source=source)
+    if url is None or "%s" not in url:
+        return url
+    # Dropped, so a duplicate showing's real link wins the merge instead.
+    logger.warning("Discarded %s: unfilled %%s placeholder", source)
     return None
 
 

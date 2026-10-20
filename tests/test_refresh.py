@@ -247,6 +247,21 @@ def test_collection_dedups_showtimes_across_providers_and_keeps_the_booking_link
     assert showtimes[0]["language"] == "vo"
 
 
+def test_collection_prefers_a_filled_booking_link_over_an_unfilled_template():
+    template = _showtime(booking_url="https://tickets.example/?perfCode=1&language=%s&theatre=%s")
+    filled = _showtime(booking_url="https://tickets.example/?perfCode=1&language=ENG&theatre=T")
+    providers = [
+        _provider("sensacine", [_raw_movie("Digger", [template])]),
+        _provider("secondary", [_raw_movie("Digger", [filled])]),
+    ]
+
+    listings, _ = _build(providers)
+
+    showtimes = listings["movies"][0]["showtimes"]
+    assert len(showtimes) == 1
+    assert showtimes[0]["booking_url"] == filled["booking_url"]
+
+
 def test_collection_drops_invalid_movies_and_showtimes():
     """Provider output is normalized before anything downstream sees it."""
     provider = _provider(
