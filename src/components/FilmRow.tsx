@@ -122,11 +122,11 @@ interface DayRowProps {
  * as wide from first paint as once it's filled, so the chips beside it stay put.
  */
 function ChipWhere({ theater, home }: { theater: Theater; home: LatLng | null }) {
-  const located = theater.lat != null && theater.lng != null;
+  if (theater.lat == null || theater.lng == null) return <>{`${shortName(theater)} · ${theater.neighborhood}`}</>;
   return (
     <>
       {shortName(theater)} · <span class="if-no-home">{theater.neighborhood}</span>
-      <span class="chip-d if-home">{located ? distanceLabel(home, theater) : theater.neighborhood}</span>
+      <span class="chip-d if-home">{distanceLabel(home, theater)}</span>
     </>
   );
 }

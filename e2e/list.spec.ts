@@ -163,8 +163,11 @@ for (const path of ["/", "day"]) {
 for (const width of [375, 393]) {
   for (const path of ["/", "day"]) {
     test(`${path === "/" ? "This week" : "Day"} at ${width}px holds its layout as Home's distances fill in`, async ({ page }) => {
-      await page.goto("/");
-      const url = path === "/" ? "/" : (await strip(page).getByRole("link").nth(2).getAttribute("href"))!;
+      let url = path;
+      if (path === "day") {
+        await page.goto("/");
+        url = (await strip(page).getByRole("link").nth(2).getAttribute("href"))!;
+      }
       await expectSteadyAsHomeLoads(page, url, width);
     });
   }

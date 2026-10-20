@@ -178,13 +178,12 @@ export function rowSummary(row: FilmRow, theaters: ReadonlyMap<string, Theater>,
   const nearestKm = rank.km(nearestFirst[0]);
   const imax = showings.some((s) => s.premium_format === "imax") ? " · IMAX" : "";
 
-  let distance = "";
-  if (nearestKm != null) {
-    distance =
-      nearestFirst.length === 1
+  const distance =
+    nearestKm == null
+      ? ""
+      : nearestFirst.length === 1
         ? `${formatDistance(nearestKm)} from home`
         : `Nearest: ${name(nearestFirst[0])}, ${formatDistance(nearestKm)}`;
-  }
   if (showings.length === 1) {
     const [s] = showings;
     return { line: `${dayAndDate(s.date, today)}, ${s.time} · ${name(s.theater_id)}${imax}`, distance };

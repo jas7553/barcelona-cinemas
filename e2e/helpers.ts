@@ -46,9 +46,11 @@ export async function viewTransitionDone(page: Page) {
   await page.evaluate(() => (window as unknown as { revealed?: Promise<unknown> }).revealed);
 }
 
+const BUNDLE = /\/assets\/.*\.js$/;
+
 /** Paint well before hydration, as a phone on 4G would. */
 export async function slowBundle(page: Page) {
-  await page.route(/\/assets\/.*\.js$/, async (route) => {
+  await page.route(BUNDLE, async (route) => {
     await new Promise((r) => setTimeout(r, 800));
     await route.continue();
   });
@@ -111,7 +113,7 @@ function expectSameBoxes(painted: Awaited<ReturnType<typeof boxes>>, settled: ty
 export async function expectSteadyAsHomeLoads(page: Page, url: string, width: number) {
   let release = () => {};
   const held = new Promise<void>((resolve) => (release = resolve));
-  await page.route(/\/assets\/.*\.js$/, async (route) => {
+  await page.route(BUNDLE, async (route) => {
     await held;
     await route.continue();
   });
