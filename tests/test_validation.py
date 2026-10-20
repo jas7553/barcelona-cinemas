@@ -72,6 +72,17 @@ def test_normalize_movie_keeps_enriched_at() -> None:
     assert movie["enriched_at"] == "2026-09-13T23:51:53.103695+00:00"
 
 
+def test_normalize_movie_keeps_tmdb_match_version() -> None:
+    """Without it every cached match reads as made by older rules and is looked up again."""
+    movie = normalize_movie(
+        {"title": "Dune: Part Two", "tmdb_id": 693134, "tmdb_match_version": 2, "showtimes": []},
+        source="test movie",
+    )
+
+    assert movie is not None
+    assert movie["tmdb_match_version"] == 2
+
+
 def test_normalize_movie_discards_malformed_imdb_id() -> None:
     movie = normalize_movie(
         {

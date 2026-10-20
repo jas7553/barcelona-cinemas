@@ -208,4 +208,7 @@ def _merge_pair(left: Movie, right: Movie) -> Movie:
     enriched_at = _coalesce(left.get("enriched_at"), right.get("enriched_at"))
     if enriched_at is not None:
         merged["enriched_at"] = enriched_at
+    tmdb_match_version = _coalesce(left.get("tmdb_match_version"), right.get("tmdb_match_version"))
+    if tmdb_match_version is not None:
+        merged["tmdb_match_version"] = tmdb_match_version
     return merged

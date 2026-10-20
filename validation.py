@@ -138,6 +138,11 @@ def normalize_movie(data: object, *, source: str) -> Movie | None:
     enriched_at = _as_optional_string(data.get("enriched_at"), source=f"{source} enriched_at")
     if enriched_at is not None:
         movie["enriched_at"] = enriched_at
+    tmdb_match_version = _as_optional_positive_int(
+        data.get("tmdb_match_version"), source=f"{source} tmdb_match_version"
+    )
+    if tmdb_match_version is not None:
+        movie["tmdb_match_version"] = tmdb_match_version
     director = _as_optional_string(data.get("director"), source=f"{source} director")
     if director is not None:
         movie["director"] = director

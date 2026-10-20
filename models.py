@@ -39,6 +39,7 @@ class Movie(TypedDict):
     director: NotRequired[str | None]
     cast: NotRequired[list[str] | None]
     enriched_at: NotRequired[str]  # ISO 8601; when TMDb metadata was last fetched
+    tmdb_match_version: NotRequired[int]  # enricher matching rules the TMDb id came from; absent = 1
     showtimes: list[Showtime]
 
 
