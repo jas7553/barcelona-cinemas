@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 from models import CinemaInfo, CinemaRegistry
 from providers.sensacine_provider import (
+    _ADMIT_ONE_THEATRES,
     _SENSACINE_IDS,
     SensacineProvider,
     _booking_url,
@@ -13,6 +14,8 @@ from providers.sensacine_provider import (
     _premium_format,
     _subtitle_lang,
 )
+
+_MOOBY_TEMPLATE = "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=188474&language=%s&theatre=%s"
 
 _CINEMAS_PATH = pathlib.Path(__file__).parent.parent / "cinemas.json"
 
@@ -178,6 +181,23 @@ class TestHelpers:
     def test_booking_url_empty(self) -> None:
         assert _booking_url([]) is None
 
+    def test_booking_url_fills_admit_one_template_in_english(self) -> None:
+        ticketing: list[Mapping[str, object]] = [
+            {"provider": "default", "urls": [_MOOBY_TEMPLATE]},
+        ]
+        assert (
+            _booking_url(ticketing, "BAL-BALMES")
+            == "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=188474&language=ENG&theatre=BAL-BALMES"
+        )
+
+    def test_booking_url_skips_a_template_it_cannot_fill(self) -> None:
+        ticketing: list[Mapping[str, object]] = [
+            {"provider": "relay", "urls": ["https://relay.example.com/x"]},
+            {"provider": "default", "urls": [_MOOBY_TEMPLATE]},
+        ]
+        assert _booking_url(ticketing) == "https://relay.example.com/x"
+        assert _booking_url(ticketing[1:]) is None
+
 
 class TestSensacineProvider:
     def test_fetch_returns_english_films_only(self) -> None:
@@ -296,6 +316,31 @@ class TestSensacineProvider:
         # Supergirl should appear once even across multiple date fetches
         supergirl_entries = [m for m in movies if m["title"] == "Supergirl"]
         assert len(supergirl_entries) == 1
+
+    def test_fetch_fills_the_mooby_template_with_that_cinemas_theatre(self) -> None:
+        mooby_film = {
+            "movie": {"title": "Digger", "languages": ["ENGLISH"]},
+            "showtimes": {
+                "original": [
+                    {
+                        "startsAt": "2026-10-21T16:00:00",
+                        "tags": [],
+                        "data": {"ticketing": [{"provider": "default", "urls": [_MOOBY_TEMPLATE]}]},
+                    }
+                ]
+            },
+        }
+        balmes = {"Balmes": CinemaInfo(**{**CINEMAS["CinDiag"], "id": "balmes"})}
+        with patch("providers.sensacine_provider.requests.get", return_value=_mock_response({"results": [mooby_film]})):
+            movies = SensacineProvider().fetch(balmes)
+
+        assert movies[0]["showtimes"][0].get("booking_url") == (
+            "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=188474&language=ENG&theatre=BAL-BALMES"
+        )
+
+    def test_admit_one_theatres_are_sensacine_cinemas_in_the_registry(self) -> None:
+        registry = json.loads(_CINEMAS_PATH.read_text())
+        assert set(_ADMIT_ONE_THEATRES) <= set(_SENSACINE_IDS) & set(registry)
 
 
 class TestMeliesRegistry:

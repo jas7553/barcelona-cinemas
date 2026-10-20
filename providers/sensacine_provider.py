@@ -9,6 +9,7 @@ import requests
 
 from models import CinemaInfo, CinemaRegistry, Movie, Showtime
 from providers.common import (
+    ADMIT_ONE_ENGLISH,
     DEFAULT_HEADERS,
     base_movie,
     madrid_today,
@@ -43,6 +44,17 @@ _SENSACINE_IDS: dict[str, str] = {
     "Phenomena": "E0544",
 }
 
+# Admit One theatre codes for the Mooby cinemas, whose "default" ticketing URL
+# on SensaCine is a template: `...&perfCode=188474&language=%s&theatre=%s`.
+_ADMIT_ONE_THEATRES: dict[str, str] = {
+    "Balmes": "BAL-BALMES",
+    "Aribau": "BAL-ARIBAU",
+    "Bosque": "BAL-BOSQUE",
+    "Sarrià": "BAL-SARRIA",
+    "Glòries": "BAL-GLORIAS",
+    "Arenas": "BAL-ARENAS",
+}
+
 _DAYS_AHEAD = int(os.environ.get("SENSACINE_DAYS_AHEAD", "7"))
 
 _SUBTITLE_TAG_PREFIX = "Localization.Subtitle."
@@ -54,11 +66,20 @@ def _fetch_dates() -> list[date]:
     return [today + timedelta(days=i) for i in range(_DAYS_AHEAD)]
 
 
-def _booking_url(ticketing: list[Mapping[str, object]]) -> str | None:
+def _fill_placeholders(url: str, theatre_code: str | None) -> str | None:
+    """Fill an Admit One template's `language`/`theatre`; None if any `%s` is left."""
+    if theatre_code is not None:
+        url = url.replace("language=%s", f"language={ADMIT_ONE_ENGLISH}", 1)
+        url = url.replace("theatre=%s", f"theatre={theatre_code}", 1)
+    return None if "%s" in url else url
+
+
+def _booking_url(ticketing: list[Mapping[str, object]], theatre_code: str | None = None) -> str | None:
     """Return the most direct booking URL from SensaCine ticketing entries.
 
     Prefers the 'default' provider (direct cinema URL) over relay trackers.
-    Falls back to the first relay URL if no direct link exists.
+    Falls back to the first relay URL if no direct link exists, or if the
+    direct one is a template `theatre_code` can't complete.
     """
     relay_url: str | None = None
     for entry in ticketing:
@@ -67,7 +88,7 @@ def _booking_url(ticketing: list[Mapping[str, object]]) -> str | None:
         urls = list(raw_urls) if isinstance(raw_urls, list) else []
         if not urls:
             continue
-        url = str(urls[0]).strip()
+        url = _fill_placeholders(str(urls[0]).strip(), theatre_code)
         if not url:
             continue
         if provider == "default":
@@ -149,7 +170,7 @@ def _fetch_showtimes_for_cinema_date(
             premium_format = _premium_format(tags)
 
             ticketing_entries = (st.get("data") or {}).get("ticketing") or []
-            booking = _booking_url(ticketing_entries)
+            booking = _booking_url(ticketing_entries, _ADMIT_ONE_THEATRES.get(cinema_key))
 
             showtime = Showtime(
                 cinema=cinema_key,
