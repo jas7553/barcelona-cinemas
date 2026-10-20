@@ -8,7 +8,7 @@ import { renderDocument } from "./scripts/template.mjs";
 // @ts-expect-error — plain ESM helper, no types
 import { SITE_TIMEZONE, objectKeyFor } from "./scripts/site-constants.mjs";
 
-const DATA_FILE = path.resolve(__dirname, "static/data/listings.json");
+const DATA_FILE = path.resolve(import.meta.dirname, "static/data/listings.json");
 
 function readListings(): {
   generated_at: string;
@@ -76,7 +76,7 @@ export default defineConfig(({ command }) => ({
     manifest: true,
     rollupOptions: {
       input: {
-        client: path.resolve(__dirname, "src/client.tsx"),
+        client: path.resolve(import.meta.dirname, "src/client.tsx"),
       },
     },
   },
