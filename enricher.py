@@ -313,8 +313,7 @@ def _fetch_tmdb(
             details[movie_id] = cast(dict[str, Any], detail_resp.json())
         return details[movie_id]
 
-    # Runtime and release dates are only in the detail. Without a recent film in
-    # its Spanish first run, take the first feature-length candidate, else the top one.
+    # Runtime and release dates are only in the detail, so each probe costs a request.
     chosen = next(
         (
             c
