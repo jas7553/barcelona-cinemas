@@ -107,6 +107,14 @@ def test_merge_pair_preserves_enriched_at():
     assert merged.get("enriched_at") == "2026-07-23T10:00:00+00:00"
 
 
+def test_merge_pair_preserves_tmdb_match_version():
+    # Dropped, the merged movie reads as matched by older rules and is looked up every refresh.
+    a = _movie("Dune", imdb_id="tt1", tmdb_match_version=2)
+    b = _movie("Dune: Part One", imdb_id="tt1", tmdb_match_version=2)
+    [merged] = reconcile([a, b])
+    assert merged.get("tmdb_match_version") == 2
+
+
 def test_merge_pair_preserves_zero_vote_count():
     # vote_count == 0 is the "not yet rated" signal transform.py uses to suppress a
     # misleading 0.0 badge; dropping it in the merge defeats that suppression.

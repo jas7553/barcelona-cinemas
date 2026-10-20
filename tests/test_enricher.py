@@ -1,7 +1,7 @@
 """Tests for enricher.py — TMDb cache reuse and metadata merging."""
 
 from collections.abc import Iterator
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -10,6 +10,7 @@ import pytest
 import enricher
 import listings_config
 from models import Movie, Showtime
+from reconcile import reconcile
 
 
 def _movie(title: str, showtimes: list[Showtime] | None = None, **kwargs: Any) -> Movie:
@@ -27,6 +28,10 @@ def _movie(title: str, showtimes: list[Showtime] | None = None, **kwargs: Any) -
     )
     if "enriched_at" in kwargs:
         m["enriched_at"] = kwargs["enriched_at"]
+    if "tmdb_match_version" in kwargs:
+        m["tmdb_match_version"] = kwargs["tmdb_match_version"]
+    if "english_title" in kwargs:
+        m["english_title"] = kwargs["english_title"]
     return m
 
 
@@ -92,6 +97,7 @@ def test_reuses_cached_metadata(mock_env):
         synopsis="Old synopsis",
         rating=8.5,
         enriched_at=_fresh_enriched_at(),
+        tmdb_match_version=enricher._MATCH_VERSION,
         showtimes=[_showtime("2026-03-27")],
     )
     fresh = _movie("Dune: Part Two", showtimes=[_showtime("2026-03-28")])
@@ -364,6 +370,7 @@ def test_cache_hit_when_scraper_title_matches_cached_scraper_title(mock_env):
         imdb_id="tt0075860",
         synopsis="A UFO story.",
         enriched_at=_fresh_enriched_at(),
+        tmdb_match_version=enricher._MATCH_VERSION,
         showtimes=[_showtime("2026-03-27")],
     )
     cached["english_title"] = "Close Encounters of the Third Kind"
@@ -447,3 +454,301 @@ def test_original_lang_absent_yields_none(mock_env):
         result, _ = enricher.enrich([movie], [])
 
     assert result[0]["original_lang"] is None
+
+
+def _session(*payloads: dict[str, Any]) -> MagicMock:
+    """A TMDb session answering each GET with the next payload, in order."""
+    mock_session = MagicMock()
+    mock_session.__enter__ = MagicMock(return_value=mock_session)
+    mock_session.__exit__ = MagicMock(return_value=False)
+    mock_session.get.side_effect = [
+        MagicMock(status_code=200, json=lambda p=p: p, raise_for_status=lambda: None) for p in payloads
+    ]
+    return mock_session
+
+
+def _detail_ids(mock_session: MagicMock) -> list[str]:
+    return [
+        call[0][0].rsplit("/", 1)[1]
+        for call in mock_session.get.call_args_list
+        if "/movie/" in call[0][0] and not call[0][0].endswith(("/videos", "/credits"))
+    ]
+
+
+TODAY = date(2026, 10, 20)
+
+SENSE_AND_SENSIBILITY = [
+    {"id": 4584, "title": "Sense and Sensibility", "release_date": "1995-12-13", "genre_ids": [18, 10749]},
+    {"id": 1503762, "title": "Sense and Sensibility", "release_date": "2026-09-18", "genre_ids": [18, 10749]},
+    {"id": 1, "title": "Sense and Sensibility", "release_date": "1971-09-01", "genre_ids": [10770]},
+]
+
+
+def _ids(results: list[dict[str, Any]]) -> list[int]:
+    return [r["id"] for r in results]
+
+
+def _ranked_ids(title: str, results: list[dict[str, Any]], year: int | None = None) -> tuple[list[int], list[int]]:
+    first_run, ordered = enricher._rank_candidates(title, results, year=year, today=TODAY)
+    return _ids(first_run), _ids(ordered)
+
+
+def _days_ago(days: int) -> str:
+    return (datetime.now(UTC).date() - timedelta(days=days)).isoformat()
+
+
+def _spanish_release(released: str) -> dict[str, Any]:
+    return {
+        "results": [{"iso_3166_1": "ES", "release_dates": [{"release_date": f"{released}T00:00:00.000Z", "type": 3}]}]
+    }
+
+
+def test_same_title_tie_tries_a_recent_release_first_without_a_year():
+    assert _ranked_ids("Sense and Sensibility", SENSE_AND_SENSIBILITY) == ([1503762], [4584, 1503762])
+
+
+def test_provider_year_picks_the_film_from_that_year():
+    assert _ranked_ids("Sense and Sensibility", SENSE_AND_SENSIBILITY, year=1995) == ([], [4584, 1503762])
+
+
+def test_provider_year_allows_a_year_either_side_for_festival_premieres():
+    assert _ranked_ids("Sense and Sensibility", SENSE_AND_SENSIBILITY, year=2025) == ([], [1503762, 4584])
+
+
+def test_repertory_classic_keeps_tmdb_order_without_a_recent_namesake():
+    results = [
+        {"id": 7340, "title": "Carrie", "release_date": "1976-11-03"},
+        {"id": 133805, "title": "Carrie", "release_date": "2013-10-16"},
+    ]
+    assert _ranked_ids("Carrie", results) == ([], [7340, 133805])
+
+
+def test_recency_window_admits_a_preview_but_not_an_announced_film():
+    results = [
+        {"id": 8009, "title": "Highlander", "release_date": "1986-03-07"},
+        {"id": 2, "title": "Highlander", "release_date": "2027-06-01"},
+        {"id": 3, "title": "Highlander", "release_date": "2026-11-20"},
+    ]
+    assert _ranked_ids("Highlander", results)[0] == [3]
+
+
+def test_tv_movies_never_match():
+    results = [
+        {"id": 1163, "title": "The Miracle Worker", "release_date": "2000-10-29", "genre_ids": [18, 10770]},
+        {"id": 1162, "title": "The Miracle Worker", "release_date": "1962-05-23", "genre_ids": [18]},
+    ]
+    assert _ranked_ids("The Miracle Worker", results) == ([], [1162])
+    assert _ranked_ids("The Miracle Worker", results[:1]) == ([], [])
+
+
+def test_without_an_exact_title_the_top_result_stands_in():
+    results = [
+        {"id": 1503762, "title": "Sense and Sensibility", "release_date": "2026-09-18"},
+        {"id": 4584, "title": "Sense and Sensibility", "release_date": "1995-12-13"},
+    ]
+    assert _ranked_ids("Sentido y sensibilidad", results) == ([], [1503762])
+
+
+def test_enrich_matches_the_current_release_over_an_older_namesake(mock_env):
+    search = {
+        "results": [
+            {"id": 4584, "title": "Sense and Sensibility", "release_date": "1995-12-13"},
+            {"id": 1503762, "title": "Sense and Sensibility", "release_date": _days_ago(30)},
+        ]
+    }
+    detail = {
+        **TMDB_DETAIL,
+        "id": 1503762,
+        "imdb_id": "tt13609648",
+        "runtime": 132,
+        "release_dates": _spanish_release(_days_ago(-3)),
+    }
+    mock_session = _session(search, detail, TMDB_VIDEOS, TMDB_CREDITS)
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([_movie("Sense and Sensibility", [_showtime()])], [])
+
+    assert _detail_ids(mock_session) == ["1503762"]
+    assert result[0]["tmdb_id"] == 1503762
+    assert result[0]["imdb_id"] == "tt13609648"
+    assert result[0]["tmdb_match_version"] == enricher._MATCH_VERSION
+
+
+def test_repertory_classic_beats_a_recent_namesake_never_released_in_spain(mock_env):
+    search = {
+        "results": [
+            {"id": 152601, "title": "Her", "release_date": "2013-12-18"},
+            {"id": 1380868, "title": "Her", "release_date": _days_ago(300)},
+        ]
+    }
+    namesake = {**TMDB_DETAIL, "id": 1380868, "release_dates": {"results": [{"iso_3166_1": "US", "release_dates": []}]}}
+    classic = {**TMDB_DETAIL, "id": 152601, "runtime": 126, "release_dates": _spanish_release("2014-03-07")}
+    mock_session = _session(search, namesake, classic, TMDB_VIDEOS, TMDB_CREDITS)
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([_movie("Her", [_showtime()])], [])
+
+    assert _detail_ids(mock_session) == ["1380868", "152601"]
+    assert result[0]["tmdb_id"] == 152601
+
+
+def test_a_new_film_missing_its_spanish_release_keeps_its_tmdb_rank(mock_env):
+    search = {
+        "results": [
+            {"id": 1309083, "title": "Dolly", "release_date": _days_ago(200)},
+            {"id": 1069885, "title": "Dolly", "release_date": "2022-10-31"},
+        ]
+    }
+    no_spanish_release = {**TMDB_DETAIL, "id": 1309083, "runtime": 83, "release_dates": {"results": []}}
+    mock_session = _session(search, no_spanish_release, TMDB_VIDEOS, TMDB_CREDITS)
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([_movie("Dolly", [_showtime()])], [])
+
+    assert _detail_ids(mock_session) == ["1309083"]
+    assert result[0]["tmdb_id"] == 1309083
+
+
+def test_a_recent_namesake_long_out_in_spain_is_not_a_first_run():
+    detail = {"release_dates": _spanish_release("2025-01-29")}
+    assert not enricher._in_spanish_first_run(detail, TODAY)
+    assert enricher._in_spanish_first_run({"release_dates": _spanish_release("2026-10-23")}, TODAY)
+
+
+def test_a_short_loses_a_same_title_tie_to_the_feature(mock_env):
+    search = {
+        "results": [
+            {"id": 410051, "title": "Stranger Than Paradise", "release_date": "1982-01-01"},
+            {"id": 469, "title": "Stranger Than Paradise", "release_date": "1984-09-01"},
+        ]
+    }
+    short = {**TMDB_DETAIL, "id": 410051, "runtime": 32}
+    feature = {**TMDB_DETAIL, "id": 469, "runtime": 89}
+    mock_session = _session(search, short, feature, TMDB_VIDEOS, TMDB_CREDITS)
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([_movie("Stranger Than Paradise", [_showtime()])], [])
+
+    assert _detail_ids(mock_session) == ["410051", "469"]
+    assert result[0]["tmdb_id"] == 469
+    assert result[0]["runtime_mins"] == 89
+    assert mock_session.get.call_args_list[3][0][0].endswith("/movie/469/videos")
+
+
+def test_a_lone_short_still_matches(mock_env):
+    search = {"results": [{"id": 5, "title": "Short Film", "release_date": "2020-01-01"}]}
+    mock_session = _session(search, {**TMDB_DETAIL, "id": 5, "runtime": 12}, TMDB_VIDEOS, TMDB_CREDITS)
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([_movie("Short Film", [_showtime()])], [])
+
+    assert result[0]["tmdb_id"] == 5
+
+
+def test_a_match_from_older_rules_is_looked_up_again(mock_env):
+    cached = _movie(
+        "Sense and Sensibility",
+        tmdb_id=4584,
+        imdb_id="tt0114388",
+        enriched_at=_fresh_enriched_at(),
+        english_title="Sense and Sensibility",
+    )
+    mock_session = _session(TMDB_SEARCH, TMDB_DETAIL, TMDB_VIDEOS, TMDB_CREDITS)
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        _, stats = enricher.enrich([_movie("Sense and Sensibility", [_showtime()], imdb_id="tt0114388")], [cached])
+
+    assert stats["tmdb_reenriched_count"] == 1
+    assert stats["tmdb_cache_hit_count"] == 0
+
+
+def test_a_listing_under_the_english_title_reuses_the_cached_film(mock_env):
+    """A provider listing the English title finds the film another listed under its Spanish title."""
+    cached = _movie(
+        "Sentido y sensibilidad",
+        tmdb_id=1503762,
+        imdb_id="tt13609648",
+        enriched_at=_fresh_enriched_at(),
+        tmdb_match_version=enricher._MATCH_VERSION,
+        english_title="Sense and Sensibility",
+    )
+    fresh = _movie("Sense and Sensibility", [_showtime()], imdb_id="tt0114388")
+
+    with patch("enricher.requests.Session") as MockSession:
+        result, stats = enricher.enrich([fresh], [cached])
+
+    assert stats["tmdb_cache_hit_count"] == 1
+    assert result[0]["tmdb_id"] == 1503762
+    assert result[0]["imdb_id"] == "tt13609648"
+    MockSession.return_value.get.assert_not_called()
+
+
+def _routed_session(routes: dict[str, dict[str, Any]]) -> MagicMock:
+    """A TMDb session answering by URL suffix (search queries by their `query` param)."""
+
+    def get(url: str, params: dict[str, str], timeout: int) -> MagicMock:
+        key = params["query"] if url.endswith("/search/movie") else url.split("/3/", 1)[1]
+        payload = routes.get(key, {"results": []})
+        return MagicMock(status_code=200, json=lambda: payload, raise_for_status=lambda: None)
+
+    mock_session = MagicMock()
+    mock_session.__enter__ = MagicMock(return_value=mock_session)
+    mock_session.__exit__ = MagicMock(return_value=False)
+    mock_session.get.side_effect = get
+    return mock_session
+
+
+def test_every_provider_copy_of_a_remade_title_lands_on_one_film(mock_env):
+    """
+    The Sense and Sensibility split: the secondary feed tagged a preview
+    with the 1995 film's imdb_id, so collection kept two English-titled copies,
+    and SensaCine lists the Spanish title. All three must end up as the 2026 film.
+    """
+    preview = Showtime(cinema="Balmes", neighborhood="", address="", date="2026-10-22", time="20:00")
+    run = Showtime(cinema="Balmes", neighborhood="", address="", date="2026-10-23", time="16:00")
+    renoir = Showtime(
+        cinema="RenFlo", neighborhood="", address="", date="2026-10-23", time="19:00", booking_url="https://pillalas"
+    )
+    collected = reconcile(
+        [
+            _movie("Sense and Sensibility", [preview, renoir]),  # englishcinemabarcelona: no imdb_id
+            _movie("Sense and Sensibility", [preview], imdb_id="tt0114388"),  # secondary, mis-tagged
+            _movie("Sense and Sensibility", [run], imdb_id="tt13609648"),  # secondary
+            _movie("Sentido y sensibilidad", [preview, renoir]),  # sensacine
+        ]
+    )
+    assert len(collected) == 3
+
+    film_2026 = {
+        **TMDB_DETAIL,
+        "id": 1503762,
+        "imdb_id": "tt13609648",
+        "title": "Sense and Sensibility",
+        "release_dates": _spanish_release(_days_ago(-3)),
+    }
+    search = {
+        "results": [
+            {"id": 4584, "title": "Sense and Sensibility", "release_date": "1995-12-13"},
+            {"id": 1503762, "title": "Sense and Sensibility", "release_date": _days_ago(30)},
+        ]
+    }
+    mock_session = _routed_session(
+        {
+            "Sense and Sensibility": search,
+            "Sentido y sensibilidad": {"results": search["results"][::-1]},
+            "movie/1503762": film_2026,
+            "movie/4584": {**TMDB_DETAIL, "id": 4584, "imdb_id": "tt0114388"},
+        }
+    )
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        enriched, _ = enricher.enrich(collected, [])
+    [film] = reconcile(enriched)
+
+    assert film["tmdb_id"] == 1503762
+    assert [(s["date"], s["time"]) for s in film["showtimes"]] == [
+        ("2026-10-22", "20:00"),
+        ("2026-10-23", "16:00"),
+        ("2026-10-23", "19:00"),
+    ]
+    assert film["showtimes"][2]["booking_url"] == "https://pillalas"

@@ -3,7 +3,7 @@ TMDb enrichment: adds synopsis, rating, runtime, and genres to collected movies.
 
 For each movie title not already in the cache, TMDb is queried:
   1. /3/search/movie       — find best match and retrieve the TMDb ID
-  2. /3/movie/{id}         — retrieve runtime and named genres (search only returns IDs)
+  2. /3/movie/{id}         — retrieve runtime, named genres and release dates (search only returns IDs)
   3. /3/movie/{id}/videos  — retrieve trailer URL (non-fatal on failure)
   4. /3/movie/{id}/credits — retrieve director + top cast (non-fatal on failure)
 
@@ -12,7 +12,7 @@ Failures are logged and result in null metadata fields; this module never raises
 
 import logging
 import os
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any, NamedTuple, TypedDict, cast
 
 import requests
@@ -30,6 +30,23 @@ logger = logging.getLogger(__name__)
 
 _BASE_URL = "https://api.themoviedb.org/3"
 _ENRICH_TTL_DAYS = int(os.environ.get("ENRICH_TTL_DAYS", "7"))
+
+# Bump when the matching rules change, so cached matches made under the old
+# rules are looked up again on the next refresh instead of at their TTL.
+_MATCH_VERSION = 2
+
+_TV_MOVIE_GENRE_ID = 10770
+# Release windows for a new film (see `_rank_candidates`). The primary release
+# may be a festival premiere well before the Spanish one; ahead admits previews.
+_RECENT_RELEASE_BEFORE = timedelta(days=730)
+_FIRST_RUN_BEFORE = timedelta(days=365)
+_RELEASE_AHEAD = timedelta(days=90)
+# TMDb release types: premiere, limited theatrical, theatrical.
+_CINEMA_RELEASE_TYPES = {1, 2, 3}
+# Below this, a runtime marks a short (the Academy's cut-off).
+_MIN_FEATURE_RUNTIME = 40
+_MAX_FIRST_RUN_PROBES = 2
+_MAX_DETAIL_PROBES = 3
 
 
 class EnrichmentStats(TypedDict):
@@ -69,7 +86,11 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
         return movies, stats
 
     cached_by_imdb: dict[str, Movie] = {imdb_id: m for m in cached_movies if (imdb_id := m.get("imdb_id"))}
-    cached_by_title: dict[str, Movie] = {m["title"].lower(): m for m in cached_movies}
+    # English titles too: the cached copy may be held by another provider's Spanish-titled listing.
+    cached_by_title: dict[str, Movie] = {
+        english_title.lower(): m for m in cached_movies if (english_title := m.get("english_title"))
+    }
+    cached_by_title.update({m["title"].lower(): m for m in cached_movies})
 
     _retry = Retry(
         total=2,
@@ -115,6 +136,8 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
 
 
 def _needs_reenrichment(cached: Movie) -> bool:
+    if cached.get("tmdb_match_version", 1) < _MATCH_VERSION:
+        return True
     enriched_at_str = cached.get("enriched_at")
     if not enriched_at_str:
         return True
@@ -144,7 +167,9 @@ def _lookup_and_merge(
     """Look up a movie on TMDb and merge metadata into the Movie dict."""
     query = search_title or movie["title"]
     try:
-        raw_detail, raw_videos, raw_credits = _fetch_tmdb(query, session, api_key)
+        raw_detail, raw_videos, raw_credits = _fetch_tmdb(
+            query, session, api_key, year=movie.get("year"), today=datetime.now(UTC).date()
+        )
     except Exception as exc:
         status = http_status(exc)
         detail = f"HTTP {status}" if status else type(exc).__name__
@@ -164,6 +189,7 @@ def _lookup_and_merge(
     merged: Movie = {
         **movie,
         "enriched_at": datetime.now(UTC).isoformat(),
+        "tmdb_match_version": _MATCH_VERSION,
         "tmdb_id": tmdb_data.get("id"),
         "imdb_id": tmdb_data.get("imdb_id"),
         "year": tmdb_data.get("year"),
@@ -200,10 +226,69 @@ def _optional_get(
         return None
 
 
+def _parse_date(value: object) -> date | None:
+    try:
+        return date.fromisoformat(str(value or "")[:10])
+    except ValueError:
+        return None
+
+
+def _rank_candidates(
+    title: str, results: list[dict[str, Any]], *, year: int | None, today: date
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """
+    The search results that may be `title`: recent releases to try first, which
+    win only in their Spanish first run, then every candidate in order.
+
+    TV movies never match. A title match is exact; with none, TMDb's top result
+    stands in, as that is how a Spanish-titled listing finds its film. Among
+    several films sharing the title, those released in the provider's `year`
+    (±1, for festival premieres) come first when it gives one. Otherwise a new
+    release is the usual reason for a title clash, so recent ones are tried
+    first; failing that, TMDb's popularity order stands, which is what keeps a
+    repertory classic ahead of its obscure namesakes.
+    """
+    films = [r for r in results if _TV_MOVIE_GENRE_ID not in (r.get("genre_ids") or [])]
+    title_lower = title.lower()
+    exact = [r for r in films if str(r.get("title", "")).lower() == title_lower]
+    if not exact:
+        return [], films[:1]
+    if year is not None:
+        same_year = [
+            r for r in exact if (released := _parse_date(r.get("release_date"))) and abs(released.year - year) <= 1
+        ]
+        return [], same_year + [r for r in exact if r not in same_year]
+    recent = [
+        r
+        for r in exact
+        if (released := _parse_date(r.get("release_date")))
+        and today - _RECENT_RELEASE_BEFORE <= released <= today + _RELEASE_AHEAD
+    ]
+    return recent[:_MAX_FIRST_RUN_PROBES], exact
+
+
+def _in_spanish_first_run(detail: dict[str, Any], today: date) -> bool:
+    countries = (detail.get("release_dates") or {}).get("results") or []
+    return any(
+        (released := _parse_date(release.get("release_date")))
+        and release.get("type") in _CINEMA_RELEASE_TYPES
+        and today - _FIRST_RUN_BEFORE <= released <= today + _RELEASE_AHEAD
+        for country in countries
+        if country.get("iso_3166_1") == "ES"
+        for release in country.get("release_dates") or []
+    )
+
+
+def _is_feature_length(detail: dict[str, Any]) -> bool:
+    runtime = detail.get("runtime")
+    # TMDb gives 0 for an unknown runtime, common before release.
+    return not isinstance(runtime, int) or runtime == 0 or runtime >= _MIN_FEATURE_RUNTIME
+
+
 def _fetch_tmdb(
-    title: str, session: requests.Session, api_key: str
+    title: str, session: requests.Session, api_key: str, *, year: int | None, today: date
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
-    """Search TMDb for a title; return (detail, videos, credits), or all None on no results."""
+    """Search TMDb for a title; return (detail, videos, credits), or all None on no match."""
     common = {"language": "en-US", "api_key": api_key}
     search_resp = session.get(
         f"{_BASE_URL}/search/movie",
@@ -213,20 +298,36 @@ def _fetch_tmdb(
     search_resp.raise_for_status()
     results: list[dict[str, Any]] = search_resp.json().get("results", [])
 
-    if not results:
+    first_run, ordered = _rank_candidates(title, results, year=year, today=today)
+    details: dict[int, tuple[str, dict[str, Any]]] = {}
+
+    def fetch_detail(candidate: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+        if candidate["id"] not in details:
+            url = f"{_BASE_URL}/movie/{candidate['id']}"
+            detail_resp = session.get(url, params={**common, "append_to_response": "release_dates"}, timeout=10)
+            detail_resp.raise_for_status()
+            details[candidate["id"]] = (url, cast(dict[str, Any], detail_resp.json()))
+        return details[candidate["id"]]
+
+    # Runtime and release dates are only in the detail. Without a recent film in
+    # its Spanish first run, take the first feature-length candidate, else the top one.
+    chosen: tuple[str, dict[str, Any]] | None = None
+    for candidate in first_run:
+        fetched = fetch_detail(candidate)
+        if _in_spanish_first_run(fetched[1], today) and _is_feature_length(fetched[1]):
+            chosen = fetched
+            break
+    if chosen is None:
+        for candidate in ordered[:_MAX_DETAIL_PROBES]:
+            fetched = fetch_detail(candidate)
+            if chosen is None or _is_feature_length(fetched[1]):
+                chosen = fetched
+            if _is_feature_length(fetched[1]):
+                break
+    if chosen is None:
         logger.debug("No TMDb results for %r", title)
         return None, None, None
-
-    title_lower = title.lower()
-    match = next(
-        (r for r in results if r.get("title", "").lower() == title_lower),
-        results[0],
-    )
-
-    movie_url = f"{_BASE_URL}/movie/{match['id']}"
-    detail_resp = session.get(movie_url, params=common, timeout=10)
-    detail_resp.raise_for_status()
-    detail_data = cast(dict[str, Any], detail_resp.json())
+    movie_url, detail_data = chosen
 
     videos_data = _optional_get(session, f"{movie_url}/videos", common, title, "videos")
     credits_data = _optional_get(session, f"{movie_url}/credits", common, title, "credits")
