@@ -23,7 +23,8 @@ from http_errors import http_status
 from listings_config import resolve_env_or_ssm
 from models import Movie
 from observability import emit_metric, log_event
-from providers.common import assume_utc
+from providers.common import assume_utc, madrid_today
+from reconcile import normalize_title
 from validation import normalize_tmdb_payload
 
 logger = logging.getLogger(__name__)
@@ -168,7 +169,7 @@ def _lookup_and_merge(
     query = search_title or movie["title"]
     try:
         raw_detail, raw_videos, raw_credits = _fetch_tmdb(
-            query, session, api_key, year=movie.get("year"), today=datetime.now(UTC).date()
+            query, session, api_key, year=movie.get("year"), today=madrid_today()
         )
     except Exception as exc:
         status = http_status(exc)
@@ -233,6 +234,11 @@ def _parse_date(value: object) -> date | None:
         return None
 
 
+def _released_within(value: object, today: date, before: timedelta) -> bool:
+    released = _parse_date(value)
+    return released is not None and today - before <= released <= today + _RELEASE_AHEAD
+
+
 def _rank_candidates(
     title: str, results: list[dict[str, Any]], *, year: int | None, today: date
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -249,30 +255,26 @@ def _rank_candidates(
     repertory classic ahead of its obscure namesakes.
     """
     films = [r for r in results if _TV_MOVIE_GENRE_ID not in (r.get("genre_ids") or [])]
-    title_lower = title.lower()
-    exact = [r for r in films if str(r.get("title", "")).lower() == title_lower]
+    key = normalize_title(title)
+    exact = [r for r in films if normalize_title(str(r.get("title", ""))) == key]
     if not exact:
         return [], films[:1]
     if year is not None:
-        same_year = [
-            r for r in exact if (released := _parse_date(r.get("release_date"))) and abs(released.year - year) <= 1
-        ]
-        return [], same_year + [r for r in exact if r not in same_year]
-    recent = [
-        r
-        for r in exact
-        if (released := _parse_date(r.get("release_date")))
-        and today - _RECENT_RELEASE_BEFORE <= released <= today + _RELEASE_AHEAD
-    ]
+
+        def near_year(r: dict[str, Any]) -> bool:
+            released = _parse_date(r.get("release_date"))
+            return released is not None and abs(released.year - year) <= 1
+
+        return [], sorted(exact, key=lambda r: not near_year(r))
+    recent = [r for r in exact if _released_within(r.get("release_date"), today, _RECENT_RELEASE_BEFORE)]
     return recent[:_MAX_FIRST_RUN_PROBES], exact
 
 
 def _in_spanish_first_run(detail: dict[str, Any], today: date) -> bool:
     countries = (detail.get("release_dates") or {}).get("results") or []
     return any(
-        (released := _parse_date(release.get("release_date")))
-        and release.get("type") in _CINEMA_RELEASE_TYPES
-        and today - _FIRST_RUN_BEFORE <= released <= today + _RELEASE_AHEAD
+        release.get("type") in _CINEMA_RELEASE_TYPES
+        and _released_within(release.get("release_date"), today, _FIRST_RUN_BEFORE)
         for country in countries
         if country.get("iso_3166_1") == "ES"
         for release in country.get("release_dates") or []
@@ -299,35 +301,40 @@ def _fetch_tmdb(
     results: list[dict[str, Any]] = search_resp.json().get("results", [])
 
     first_run, ordered = _rank_candidates(title, results, year=year, today=today)
-    details: dict[int, tuple[str, dict[str, Any]]] = {}
+    details: dict[int, dict[str, Any]] = {}
 
-    def fetch_detail(candidate: dict[str, Any]) -> tuple[str, dict[str, Any]]:
-        if candidate["id"] not in details:
-            url = f"{_BASE_URL}/movie/{candidate['id']}"
-            detail_resp = session.get(url, params={**common, "append_to_response": "release_dates"}, timeout=10)
+    def fetch_detail(candidate: dict[str, Any]) -> dict[str, Any]:
+        movie_id = candidate["id"]
+        if movie_id not in details:
+            detail_resp = session.get(
+                f"{_BASE_URL}/movie/{movie_id}", params={**common, "append_to_response": "release_dates"}, timeout=10
+            )
             detail_resp.raise_for_status()
-            details[candidate["id"]] = (url, cast(dict[str, Any], detail_resp.json()))
-        return details[candidate["id"]]
+            details[movie_id] = cast(dict[str, Any], detail_resp.json())
+        return details[movie_id]
 
     # Runtime and release dates are only in the detail. Without a recent film in
     # its Spanish first run, take the first feature-length candidate, else the top one.
-    chosen: tuple[str, dict[str, Any]] | None = None
-    for candidate in first_run:
-        fetched = fetch_detail(candidate)
-        if _in_spanish_first_run(fetched[1], today) and _is_feature_length(fetched[1]):
-            chosen = fetched
-            break
+    chosen = next(
+        (
+            c
+            for c in first_run
+            if _in_spanish_first_run(detail := fetch_detail(c), today) and _is_feature_length(detail)
+        ),
+        None,
+    )
     if chosen is None:
         for candidate in ordered[:_MAX_DETAIL_PROBES]:
-            fetched = fetch_detail(candidate)
-            if chosen is None or _is_feature_length(fetched[1]):
-                chosen = fetched
-            if _is_feature_length(fetched[1]):
+            if chosen is None:
+                chosen = candidate
+            if _is_feature_length(fetch_detail(candidate)):
+                chosen = candidate
                 break
     if chosen is None:
         logger.debug("No TMDb results for %r", title)
         return None, None, None
-    movie_url, detail_data = chosen
+    detail_data = details[chosen["id"]]
+    movie_url = f"{_BASE_URL}/movie/{chosen['id']}"
 
     videos_data = _optional_get(session, f"{movie_url}/videos", common, title, "videos")
     credits_data = _optional_get(session, f"{movie_url}/credits", common, title, "credits")

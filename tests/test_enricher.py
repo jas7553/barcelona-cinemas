@@ -26,12 +26,9 @@ def _movie(title: str, showtimes: list[Showtime] | None = None, **kwargs: Any) -
         genres=kwargs.get("genres"),
         showtimes=showtimes or [],
     )
-    if "enriched_at" in kwargs:
-        m["enriched_at"] = kwargs["enriched_at"]
-    if "tmdb_match_version" in kwargs:
-        m["tmdb_match_version"] = kwargs["tmdb_match_version"]
-    if "english_title" in kwargs:
-        m["english_title"] = kwargs["english_title"]
+    for key in ("enriched_at", "tmdb_match_version", "english_title"):
+        if key in kwargs:
+            m[key] = kwargs[key]
     return m
 
 
@@ -456,15 +453,21 @@ def test_original_lang_absent_yields_none(mock_env):
     assert result[0]["original_lang"] is None
 
 
-def _session(*payloads: dict[str, Any]) -> MagicMock:
-    """A TMDb session answering each GET with the next payload, in order."""
+def _mock_session(get_side_effect: Any) -> MagicMock:
     mock_session = MagicMock()
     mock_session.__enter__ = MagicMock(return_value=mock_session)
     mock_session.__exit__ = MagicMock(return_value=False)
-    mock_session.get.side_effect = [
-        MagicMock(status_code=200, json=lambda p=p: p, raise_for_status=lambda: None) for p in payloads
-    ]
+    mock_session.get.side_effect = get_side_effect
     return mock_session
+
+
+def _response(payload: dict[str, Any]) -> MagicMock:
+    return MagicMock(status_code=200, json=lambda: payload, raise_for_status=lambda: None)
+
+
+def _session(*payloads: dict[str, Any]) -> MagicMock:
+    """A TMDb session answering each GET with the next payload, in order."""
+    return _mock_session([_response(p) for p in payloads])
 
 
 def _detail_ids(mock_session: MagicMock) -> list[str]:
@@ -688,14 +691,9 @@ def _routed_session(routes: dict[str, dict[str, Any]]) -> MagicMock:
 
     def get(url: str, params: dict[str, str], timeout: int) -> MagicMock:
         key = params["query"] if url.endswith("/search/movie") else url.split("/3/", 1)[1]
-        payload = routes.get(key, {"results": []})
-        return MagicMock(status_code=200, json=lambda: payload, raise_for_status=lambda: None)
+        return _response(routes.get(key, {"results": []}))
 
-    mock_session = MagicMock()
-    mock_session.__enter__ = MagicMock(return_value=mock_session)
-    mock_session.__exit__ = MagicMock(return_value=False)
-    mock_session.get.side_effect = get
-    return mock_session
+    return _mock_session(get)
 
 
 def test_every_provider_copy_of_a_remade_title_lands_on_one_film(mock_env):
