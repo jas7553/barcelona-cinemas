@@ -159,7 +159,7 @@ for (const path of ["/", "day"]) {
   });
 }
 
-// At 375px most where-lines are a word from wrapping, which the 0.02 budget alone misses.
+// At 375px most where-lines are a word from wrapping.
 for (const width of [375, 393]) {
   for (const path of ["/", "day"]) {
     test(`${path === "/" ? "This week" : "Day"} at ${width}px holds its layout as Home's distances fill in`, async ({ page }) => {

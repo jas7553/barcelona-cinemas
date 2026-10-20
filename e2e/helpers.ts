@@ -95,7 +95,7 @@ const boxes = (page: Page) =>
     })),
   );
 
-/** Every box measured both times, at the same size. */
+/** Same heights; chips are compared only where shown both times, not behind "+N more" in one. */
 function expectSameBoxes(painted: Awaited<ReturnType<typeof boxes>>, settled: typeof painted) {
   expect(settled.map((b) => b.height)).toEqual(painted.map((b) => b.height));
   settled.forEach((b, i) => {

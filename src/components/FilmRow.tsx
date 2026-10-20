@@ -63,7 +63,7 @@ interface WeekRowProps {
   days: { date: DateKey; status: DayStatus }[];
   today: DateKey;
   summary: ComponentChildren;
-  /** Distance from Home, on its own line, held from first paint whenever a Home is saved. */
+  /** Distance from Home, on a line of its own; leave out for no line. */
   distance?: string;
   eager: boolean;
   seen?: boolean;
