@@ -119,10 +119,12 @@ describe("Cinema, week", () => {
     expect(JSON.parse(localStorage.getItem(PREF_KEYS.favourites)!)).toEqual(["verdi"]);
   });
 
-  it("gives the distance from home once Home is known", () => {
+  it("gives the distance from home on its own line once Home is known", () => {
     localStorage.setItem(PREF_KEYS.home, JSON.stringify(HOME));
     render(<CinemaPage data={cinema} />);
-    expect(screen.getByText("Cines Verdi street · Cines Verdi barri · 250 m from home")).toBeInTheDocument();
+    const line = screen.getByText("250 m from home");
+    expect(line).toHaveClass("home-line");
+    expect(line.parentElement).toHaveTextContent(/^Cines Verdi street · Cines Verdi barri250 m from home$/);
   });
 });
 

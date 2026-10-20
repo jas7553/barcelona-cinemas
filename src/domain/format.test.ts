@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { distanceKm, whereLabel } from "./distance";
+import { distanceKm } from "./distance";
 import { formatDistance, formatRuntime, joinAnd, plural, shortName, smallPoster, smallPosterSrcset, subtitleLabel } from "./format";
 import { outTime, shareText } from "./ticket";
 
@@ -44,17 +44,10 @@ describe("format", () => {
 });
 
 describe("distance", () => {
-  const verdi = { lat: 41.404, lng: 2.1569, neighborhood: "Gràcia" };
+  const verdi = { lat: 41.404, lng: 2.1569 };
 
   it("measures straight-line km from Home", () => {
     expect(distanceKm({ lat: 41.4021, lng: 2.1558 }, verdi)).toBeCloseTo(0.23, 2);
-  });
-
-  it("falls back to the neighbourhood without Home or coordinates", () => {
-    const theater = { id: "v", name: "V", address: "", website_url: "", maps_url: "", ...verdi };
-    expect(whereLabel(null, theater)).toBe("Gràcia");
-    expect(whereLabel({ lat: 41.4, lng: 2.15 }, { ...theater, lat: null })).toBe("Gràcia");
-    expect(whereLabel({ lat: 41.4021, lng: 2.1558 }, theater)).toBe("250 m");
   });
 });
 

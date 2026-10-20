@@ -114,9 +114,8 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
           <div class="title cin-head">
             <h1 class="display">{theater.name}</h1>
             <p class="sub">
-              {[theater.address, theater.neighborhood, distance && `${distance} from home`]
-                .filter(Boolean)
-                .join(" · ")}
+              {[theater.address, theater.neighborhood].filter(Boolean).join(" · ")}
+              <span class="home-line if-home">{distance && `${distance} from home`}</span>
             </p>
             <div class="actions">
               <FavouriteToggle id={theater.id} on={prefs.favourites.has(theater.id)} />

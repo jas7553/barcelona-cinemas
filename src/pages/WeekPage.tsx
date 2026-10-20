@@ -15,16 +15,20 @@ export function WeekPage({ data }: { data: WeekPageData }) {
   const { few, all, seen } = weekSections(rows, prefs.seen);
 
   let index = 0;
-  const row = (r: FilmRow) => (
-    <WeekRow
-      key={r.film.id}
-      row={r}
-      days={days}
-      today={clock.today}
-      summary={rowSummary(r, theaters, rank, clock.today)}
-      eager={index++ < EAGER_ROWS}
-    />
-  );
+  const row = (r: FilmRow) => {
+    const { line, distance } = rowSummary(r, theaters, rank, clock.today);
+    return (
+      <WeekRow
+        key={r.film.id}
+        row={r}
+        days={days}
+        today={clock.today}
+        summary={line}
+        distance={distance}
+        eager={index++ < EAGER_ROWS}
+      />
+    );
+  };
 
   const subtitle = [formatRange(dates[0], dates[dates.length - 1]), plural(rows.length, "film"), notOutNote];
   return (

@@ -3,7 +3,18 @@
 
 import { expect, test, type Page } from "@playwright/test";
 import { bookableShowing, FIXTURE_BOOKING_URL } from "./fixture";
-import { collectErrors, expectHit44, HOME, readCls, seedPrefs, slowBundle, trackViewTransitions, viewTransitionDone, watchCls } from "./helpers";
+import {
+  collectErrors,
+  expectHit44,
+  expectSteadyAsHomeLoads,
+  HOME,
+  readCls,
+  seedPrefs,
+  slowBundle,
+  trackViewTransitions,
+  viewTransitionDone,
+  watchCls,
+} from "./helpers";
 
 /** The cinemas on the index, top to bottom as painted (CSS order included). */
 async function paintedCinemas(page: Page): Promise<string[]> {
@@ -119,6 +130,13 @@ for (const path of ["/cinemas/", "cinema"]) {
     const cls = await readCls(page);
     console.log(`[cls] ${url} with Home, My cinemas and a seen film: ${cls.toFixed(4)}`);
     expect(cls).toBeLessThan(0.02);
+  });
+}
+
+// Arenas' address line is the fixture's longest, the one an appended distance would wrap.
+for (const width of [375, 393]) {
+  test(`a cinema's week at ${width}px holds its layout as Home's distance fills in`, async ({ page }) => {
+    await expectSteadyAsHomeLoads(page, "/cinema/arenas/", width);
   });
 }
 

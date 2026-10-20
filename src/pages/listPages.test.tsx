@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/preact";
+import { renderToString } from "preact-render-to-string";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PREF_KEYS } from "../domain/prefs";
 import type { DayPageData, ListFilm, WeekPageData } from "../pageData";
@@ -132,7 +133,7 @@ describe("Day", () => {
     localStorage.setItem(PREF_KEYS.home, JSON.stringify({ lat: 41.4021, lng: 2.1558 }));
     localStorage.setItem(PREF_KEYS.seen, JSON.stringify(["drive"]));
     render(<DayPage data={dayData} />);
-    expect(screen.getByRole("link", { name: /21:30/ })).toHaveTextContent("Verdi · 250 m");
+    expect(screen.getByRole("link", { name: /21:30/ }).querySelector(".chip-d")).toHaveTextContent("250 m");
     const seen = screen.getByText("Seen (1)").closest("details")!;
     expect(within(seen).getByRole("heading", { name: "Drive" })).toBeInTheDocument();
   });
@@ -180,6 +181,16 @@ describe("This week", () => {
     ]);
     expect(screen.getByText("Today, 19:00 · Girona")).toBeInTheDocument();
     expect(screen.getByText("2 showings · Verdi, Girona")).toBeInTheDocument();
+  });
+
+  it("holds an empty distance line until Home loads, then fills it", () => {
+    localStorage.setItem(PREF_KEYS.home, JSON.stringify({ lat: 41.4021, lng: 2.1558 }));
+    const html = renderToString(<WeekPage data={weekData} />);
+    expect(html).toContain('<span class="home-line if-home"></span>');
+    const { container } = render(<WeekPage data={weekData} />);
+    expect([...container.querySelectorAll(".film-sum .home-line")].map((e) => e.textContent)).toContain(
+      "Nearest: Verdi, 250 m",
+    );
   });
 
   it("warns when the listings are more than a day old", () => {

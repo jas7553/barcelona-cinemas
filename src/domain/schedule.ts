@@ -158,12 +158,15 @@ export function daySections(rows: FilmRow[], seen: ReadonlySet<string>) {
   return { films: sorted.filter((r) => !seen.has(r.film.id)), seen: sorted.filter((r) => seen.has(r.film.id)) };
 }
 
-/**
- * The where-line under a This week row: "Tue 6, 18:30 · Glòries · 3.1 km" for a
- * single showing, else "N showings · M cinemas · nearest Verdi 250 m", naming
- * the cinemas when there are two or fewer.
- */
-export function rowSummary(row: FilmRow, theaters: ReadonlyMap<string, Theater>, rank: Ranking, today: DateKey): string {
+export interface RowSummary {
+  /** "Tue 6, 18:30 · Glòries" for a single showing, else "N showings · M cinemas", naming two or fewer. */
+  line: string;
+  /** From Home, on a line of its own: "3.1 km from home", or "Nearest: Verdi, 250 m" across cinemas. Empty without Home. */
+  distance: string;
+}
+
+/** The where-line under a This week row, and its distance from Home. */
+export function rowSummary(row: FilmRow, theaters: ReadonlyMap<string, Theater>, rank: Ranking, today: DateKey): RowSummary {
   const { showings } = row;
   const nearestFirst = [...new Set(showings.map((s) => s.theater_id))].sort(
     (a, b) => (rank.km(a) ?? Infinity) - (rank.km(b) ?? Infinity),
@@ -175,16 +178,17 @@ export function rowSummary(row: FilmRow, theaters: ReadonlyMap<string, Theater>,
   const nearestKm = rank.km(nearestFirst[0]);
   const imax = showings.some((s) => s.premium_format === "imax") ? " · IMAX" : "";
 
+  let distance = "";
+  if (nearestKm != null) {
+    distance =
+      nearestFirst.length === 1
+        ? `${formatDistance(nearestKm)} from home`
+        : `Nearest: ${name(nearestFirst[0])}, ${formatDistance(nearestKm)}`;
+  }
   if (showings.length === 1) {
     const [s] = showings;
-    const where = nearestKm == null ? "" : ` · ${formatDistance(nearestKm)}`;
-    return `${dayAndDate(s.date, today)}, ${s.time} · ${name(s.theater_id)}${where}${imax}`;
+    return { line: `${dayAndDate(s.date, today)}, ${s.time} · ${name(s.theater_id)}${imax}`, distance };
   }
-  const named = nearestFirst.length <= 2;
-  const cinemas = named ? nearestFirst.map(name).join(", ") : plural(nearestFirst.length, "cinema");
-  let nearest = "";
-  if (nearestKm != null) {
-    nearest = nearestFirst.length === 1 ? ` · nearest ${formatDistance(nearestKm)}` : ` · nearest ${name(nearestFirst[0])} ${formatDistance(nearestKm)}`;
-  }
-  return `${plural(showings.length, "showing")} · ${cinemas}${nearest}${imax}`;
+  const cinemas = nearestFirst.length <= 2 ? nearestFirst.map(name).join(", ") : plural(nearestFirst.length, "cinema");
+  return { line: `${plural(showings.length, "showing")} · ${cinemas}${imax}`, distance };
 }

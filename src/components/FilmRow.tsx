@@ -1,5 +1,7 @@
 import type { ComponentChildren } from "preact";
+import { distanceLabel } from "../domain/distance";
 import { formatRuntime, plural, shortName, subtitleLabel } from "../domain/format";
+import type { LatLng } from "../domain/prefs";
 import { dayTitle, type DayStatus, type FilmRow } from "../domain/schedule";
 import type { DateKey } from "../domain/time";
 import type { ListFilm, Showing } from "../pageData";
@@ -61,6 +63,8 @@ interface WeekRowProps {
   days: { date: DateKey; status: DayStatus }[];
   today: DateKey;
   summary: ComponentChildren;
+  /** Distance from Home, on its own line, held from first paint whenever a Home is saved. */
+  distance?: string;
   eager: boolean;
   seen?: boolean;
   /** Where a filled cell leads: the film on that day, or the cinema's Day view. */
@@ -69,7 +73,7 @@ interface WeekRowProps {
   timesUpTo?: number;
 }
 
-export function WeekRow({ row, days, today, summary, eager, seen, cellHref, timesUpTo = 0 }: WeekRowProps) {
+export function WeekRow({ row, days, today, summary, distance, eager, seen, cellHref, timesUpTo = 0 }: WeekRowProps) {
   const { film } = row;
   return (
     <Row film={film} href={`/film/${film.id}/`} eager={eager} seen={seen}>
@@ -91,7 +95,10 @@ export function WeekRow({ row, days, today, summary, eager, seen, cellHref, time
         }
         return <span key={date} class={status === "not-out" ? "cell cell--unpub" : "cell"} aria-hidden="true" />;
       })}
-      <p class="film-sum sub">{summary}</p>
+      <p class="film-sum sub">
+        {summary}
+        {distance !== undefined && <span class="home-line if-home">{distance}</span>}
+      </p>
     </Row>
   );
 }
@@ -105,12 +112,26 @@ interface DayRowProps {
   row: FilmRow;
   date: DateKey;
   theaters: ReadonlyMap<string, Theater>;
-  where: (theaterId: string) => string;
+  home: LatLng | null;
   eager: boolean;
   onShowing: (film: ListFilm, s: Showing) => void;
 }
 
-export function DayRow({ row, date, theaters, where, eager, onShowing }: DayRowProps) {
+/**
+ * "Verdi · Gràcia" without Home. With one, the distance takes a slot that's
+ * as wide from first paint as once it's filled, so the chips beside it stay put.
+ */
+function ChipWhere({ theater, home }: { theater: Theater; home: LatLng | null }) {
+  const located = theater.lat != null && theater.lng != null;
+  return (
+    <>
+      {shortName(theater)} · <span class="if-no-home">{theater.neighborhood}</span>
+      <span class="chip-d if-home">{located ? distanceLabel(home, theater) : theater.neighborhood}</span>
+    </>
+  );
+}
+
+export function DayRow({ row, date, theaters, home, eager, onShowing }: DayRowProps) {
   const { film, showings } = row;
   const href = `/film/${film.id}/${date}/`;
   const more = (shown: number, cls: string) =>
@@ -133,7 +154,7 @@ export function DayRow({ row, date, theaters, where, eager, onShowing }: DayRowP
             >
               <ChipTime s={s} />
               <span class="chip-w">
-                {theater ? shortName(theater) : s.theater_id} · {where(s.theater_id)}
+                {theater ? <ChipWhere theater={theater} home={home} /> : s.theater_id}
               </span>
             </ShowingChip>
           );

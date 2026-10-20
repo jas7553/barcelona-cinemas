@@ -250,6 +250,12 @@
   color: var(--sub);
   white-space: nowrap;
 }
+/* Wide enough for "12.3 km", so the chip's width is set before the distance is. */
+.chip-d {
+  display: inline-block;
+  min-width: 6ch;
+  font-variant-numeric: tabular-nums;
+}
 .chip--more {
   justify-content: center;
   border-style: dashed;
