@@ -1,7 +1,6 @@
 import { useMemo } from "preact/hooks";
 import { useNow } from "../client/clock";
 import { usePrefs } from "../client/prefs";
-import { whereLabel } from "../domain/distance";
 import { joinAnd } from "../domain/format";
 import { clockAt, dayShort, dayStatus, horizon, notOutFrom, ranking } from "../domain/schedule";
 import { formatDateLong, isStale, madridDateKey } from "../domain/time";
@@ -26,12 +25,7 @@ export function useListView(data: PageBase & ListData) {
     ? `${joinAnd(notOutDays.map((d) => dayShort(d.date, clock.today)))} listings ${mostly ? "mostly " : ""}not out yet`
     : null;
 
-  const where = (theaterId: string) => {
-    const theater = theaters.get(theaterId);
-    return theater ? whereLabel(prefs.home, theater) : "";
-  };
-
-  return { now, clock, prefs, theaters, rank, days, notOutNote, where };
+  return { now, clock, prefs, theaters, rank, days, notOutNote };
 }
 
 export const PUBLISH_NOTE = "Cinemas usually publish a few days ahead. Check back later in the week.";

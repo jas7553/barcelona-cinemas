@@ -2,7 +2,20 @@
 // CSP. The data is the date-shifted fixture, so the first day is always today.
 
 import { expect, test, type Page } from "@playwright/test";
-import { collectErrors, expectHit44, HOME, readCls, seedPrefs, slowBundle, trackViewTransitions, viewTransitionDone, watchCls } from "./helpers";
+import { PREF_KEYS } from "../src/domain/prefs";
+import {
+  collectErrors,
+  distanceShown,
+  expectHit44,
+  expectSteadyAsHomeLoads,
+  HOME,
+  readCls,
+  seedPrefs,
+  slowBundle,
+  trackViewTransitions,
+  viewTransitionDone,
+  watchCls,
+} from "./helpers";
 
 const strip = (page: Page) => page.getByRole("navigation", { name: "Days" });
 const rows = (page: Page) => page.locator("li.film");
@@ -143,6 +156,49 @@ for (const path of ["/", "day"]) {
     const cls = await readCls(page);
     console.log(`[cls] ${url} with Home + ${seen.length} seen: ${cls.toFixed(4)}`);
     expect(cls).toBeLessThan(0.02);
+  });
+}
+
+// At 375px most where-lines are a word from wrapping.
+for (const width of [375, 393]) {
+  for (const path of ["/", "day"]) {
+    test(`${path === "/" ? "This week" : "Day"} at ${width}px holds its layout as Home's distances fill in`, async ({ page }) => {
+      let url = path;
+      if (path === "day") {
+        await page.goto("/");
+        url = (await strip(page).getByRole("link").nth(2).getAttribute("href"))!;
+      }
+      await expectSteadyAsHomeLoads(page, url, width);
+    });
+  }
+}
+
+for (const when of ["before", "while away"] as const) {
+  test(`This week back from bfcache with Home set ${when} doesn't shift`, async ({ page, browserName }) => {
+    test.skip(browserName !== "chromium", "Playwright's WebKit never restores from bfcache");
+    await page.setViewportSize({ width: 375, height: 844 });
+    if (when === "before") await seedPrefs(page, { home: HOME });
+    await watchCls(page);
+    await page.addInitScript(() => {
+      window.addEventListener("pageshow", (e) => {
+        (window as unknown as { restored: boolean }).restored = e.persisted;
+      });
+    });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    const before = await readCls(page);
+    await page.locator("li.film h3 a").first().click();
+    await expect(page).toHaveURL(/\/film\//);
+    if (when === "while away") {
+      await page.evaluate(([k, v]) => localStorage.setItem(k, v), [PREF_KEYS.home, JSON.stringify(HOME)]);
+    }
+    await page.goBack({ waitUntil: "commit" });
+    await expect.poll(() => page.evaluate(() => (window as unknown as { restored?: boolean }).restored)).toBe(true);
+    await distanceShown(page);
+    await page.waitForTimeout(200);
+    const cls = (await readCls(page)) - before;
+    console.log(`[cls] / restored with Home set ${when}: ${cls.toFixed(4)}`);
+    expect(cls).toBeLessThan(0.001);
   });
 }
 

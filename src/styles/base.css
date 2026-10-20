@@ -190,6 +190,14 @@ html:not(.has-home) .if-home,
 [aria-pressed]:not([aria-pressed="true"]) .if-on {
   display: none;
 }
+/* A distance from Home: held one line high from first paint, so filling it after mount moves nothing. */
+.home-line {
+  display: block;
+  height: 1lh;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 
 /* Footer */
 .foot {

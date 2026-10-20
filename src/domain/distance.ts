@@ -19,8 +19,3 @@ export function distanceLabel(home: LatLng | null, theater: Pick<Theater, "lat" 
   const km = distanceKm(home, theater);
   return km == null ? null : formatDistance(km);
 }
-
-/** Distance from Home, or the neighbourhood when there's no Home or no coordinates. */
-export function whereLabel(home: LatLng | null, theater: Theater): string {
-  return distanceLabel(home, theater) ?? theater.neighborhood;
-}

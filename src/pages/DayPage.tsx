@@ -11,7 +11,7 @@ import type { DayPageData, ListFilm, Showing } from "../pageData";
 import { EAGER_ROWS, NotOutYet, StaleNotice, useListView } from "./listView";
 
 export function DayPage({ data }: { data: DayPageData }) {
-  const { now, clock, prefs, theaters, rank, days, where } = useListView(data);
+  const { now, clock, prefs, theaters, rank, days } = useListView(data);
   const [ticket, setTicket] = useState<{ film: ListFilm; showing: Showing } | null>(null);
   const { date } = data;
   const rows = filmRows(data.films, [date], clock, rank);
@@ -26,7 +26,7 @@ export function DayPage({ data }: { data: DayPageData }) {
       row={r}
       date={date}
       theaters={theaters}
-      where={where}
+      home={prefs.home}
       eager={index++ < EAGER_ROWS}
       onShowing={(film, showing) => setTicket({ film, showing })}
     />

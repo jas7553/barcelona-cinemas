@@ -46,9 +46,11 @@ export async function viewTransitionDone(page: Page) {
   await page.evaluate(() => (window as unknown as { revealed?: Promise<unknown> }).revealed);
 }
 
+const BUNDLE = /\/assets\/.*\.js$/;
+
 /** Paint well before hydration, as a phone on 4G would. */
 export async function slowBundle(page: Page) {
-  await page.route(/\/assets\/.*\.js$/, async (route) => {
+  await page.route(BUNDLE, async (route) => {
     await new Promise((r) => setTimeout(r, 800));
     await route.continue();
   });
@@ -68,6 +70,72 @@ export async function watchCls(page: Page) {
 }
 
 export const readCls = (page: Page) => page.evaluate(() => (window as unknown as { cls: number }).cls);
+
+const DISTANCE = /\d (k?m)\b/;
+
+/** Resolves once the page shows a distance from Home, which only the bundle renders. */
+export const distanceShown = (page: Page) => expect(page.locator("#root")).toContainText(DISTANCE);
+
+/**
+ * Each film row's and the cinema header's height, and its shown chips' widths
+ * keyed by time and cinema: Home may reorder chips at the same time, nearest first.
+ */
+const boxes = (page: Page) =>
+  page.$$eval("li.film, .cin-head", (els) =>
+    els.map((e) => ({
+      height: Math.round(e.getBoundingClientRect().height),
+      chips: Object.fromEntries(
+        [...e.querySelectorAll<HTMLElement>(".chip[aria-haspopup]")]
+          .filter((c) => c.offsetWidth > 0)
+          .map((c) => {
+            const cinema = c.querySelector(".chip-w")!.textContent!.split(" · ")[0];
+            return [`${c.querySelector(".chip-t")!.textContent} at ${cinema}`, c.offsetWidth];
+          }),
+      ),
+    })),
+  );
+
+/** Same heights; chips are compared only where shown both times, not behind "+N more" in one. */
+function expectSameBoxes(painted: Awaited<ReturnType<typeof boxes>>, settled: typeof painted) {
+  expect(settled.map((b) => b.height)).toEqual(painted.map((b) => b.height));
+  settled.forEach((b, i) => {
+    for (const [chip, width] of Object.entries(b.chips)) {
+      if (chip in painted[i].chips) expect(width, chip).toBe(painted[i].chips[chip]);
+    }
+  });
+}
+
+/**
+ * Loads `url` with a saved Home, holding the bundle back until the painted
+ * page has been measured, and checks that the distances it then fills in
+ * move nothing. WebKit has no layout-shift entries, so it gets the box check alone.
+ */
+export async function expectSteadyAsHomeLoads(page: Page, url: string, width: number) {
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route(BUNDLE, async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.setViewportSize({ width, height: 844 });
+  await seedPrefs(page, { home: HOME });
+  await watchCls(page);
+  // Not "domcontentloaded": that waits for the (deferred) module bundle.
+  await page.goto(url, { waitUntil: "commit" });
+  await page.locator("#__APP_DATA__").waitFor({ state: "attached" });
+  // Not document.fonts.ready, which WebKit holds until the load event.
+  await expect.poll(() => page.evaluate(() => document.fonts.status)).toBe("loaded");
+  expect(await page.locator("#root").textContent(), "the bundle ran before the first look").not.toMatch(DISTANCE);
+  const painted = await boxes(page);
+  release();
+  await distanceShown(page);
+  expectSameBoxes(painted, await boxes(page));
+  if (page.context().browser()?.browserType().name() === "chromium") {
+    const cls = await readCls(page);
+    console.log(`[cls] ${url} at ${width}px as Home loads: ${cls.toFixed(4)}`);
+    expect(cls).toBeLessThan(0.001);
+  }
+}
 
 /** The tappable span through the middle of a control is at least 44px; it needn't be centred on it. */
 export async function expectHit44(el: Locator, name?: string) {

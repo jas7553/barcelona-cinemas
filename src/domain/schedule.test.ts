@@ -165,18 +165,26 @@ describe("rowSummary", () => {
     return rowSummary(row, BY_ID, rank, clock.today);
   };
 
-  it("spells out a single showing with its day, time, cinema and distance", () => {
-    expect(summary([at("glories", "2026-10-06", "18:30")])).toBe("Tue 6, 18:30 · Glòries · 3.1 km");
-    expect(summary([at("glories", "2026-10-04", "18:30")], null)).toBe("Today, 18:30 · Glòries");
+  it("spells out a single showing with its day, time and cinema, and its distance", () => {
+    expect(summary([at("glories", "2026-10-06", "18:30")])).toEqual({
+      line: "Tue 6, 18:30 · Glòries",
+      distance: "3.1 km from home",
+    });
+    expect(summary([at("glories", "2026-10-04", "18:30")], null)).toEqual({ line: "Today, 18:30 · Glòries", distance: "" });
   });
 
-  it("names up to two cinemas, nearest first", () => {
-    expect(summary([at("glories", "2026-10-05", "18:00"), at("verdi", "2026-10-05", "20:00")])).toBe(
-      "2 showings · Verdi, Glòries · nearest Verdi 250 m",
-    );
-    expect(summary([at("verdi", "2026-10-05", "18:00"), at("verdi", "2026-10-06", "20:00")])).toBe(
-      "2 showings · Verdi · nearest 250 m",
-    );
+  it("gives one cinema's distance without calling it the nearest", () => {
+    expect(summary([at("verdi", "2026-10-05", "18:00"), at("verdi", "2026-10-06", "20:00")])).toEqual({
+      line: "2 showings · Verdi",
+      distance: "250 m from home",
+    });
+  });
+
+  it("names up to two cinemas, nearest first, and the nearest one's distance", () => {
+    expect(summary([at("glories", "2026-10-05", "18:00"), at("verdi", "2026-10-05", "20:00")])).toEqual({
+      line: "2 showings · Verdi, Glòries",
+      distance: "Nearest: Verdi, 250 m",
+    });
   });
 
   it("counts cinemas past two and flags IMAX", () => {
@@ -185,12 +193,18 @@ describe("rowSummary", () => {
       at("verdi-park", "2026-10-05", "18:00"),
       at("glories", "2026-10-05", "19:00", { premium_format: "imax" }),
     ];
-    expect(summary(shows)).toBe("3 showings · 3 cinemas · nearest Verdi Park 200 m · IMAX");
-    expect(summary(shows, null)).toBe("3 showings · 3 cinemas · IMAX");
+    expect(summary(shows)).toEqual({ line: "3 showings · 3 cinemas · IMAX", distance: "Nearest: Verdi Park, 200 m" });
+    expect(summary(shows, null)).toEqual({ line: "3 showings · 3 cinemas · IMAX", distance: "" });
+  });
+
+  // The line is painted before Home loads, so Home mustn't change how it wraps.
+  it("keeps the line's text the same length with and without Home", () => {
+    const shows = [at("glories", "2026-10-05", "18:00"), at("verdi", "2026-10-05", "20:00", { premium_format: "imax" })];
+    expect(summary(shows).line).toHaveLength(summary(shows, null).line.length);
   });
 
   it("leaves the distance out when the nearest cinema has no coordinates", () => {
-    expect(summary([at("nowhere", "2026-10-05", "18:00")])).toBe("Mon 5, 18:00 · Nowhere");
+    expect(summary([at("nowhere", "2026-10-05", "18:00")])).toEqual({ line: "Mon 5, 18:00 · Nowhere", distance: "" });
   });
 });
 
