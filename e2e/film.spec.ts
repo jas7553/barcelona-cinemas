@@ -29,6 +29,26 @@ test("a film page renders its showings by cinema and hydrates under the producti
   expect(errors).toEqual([]);
 });
 
+test("a film page has the site header, a way back, and its backdrop uncropped across the column", async ({ page }) => {
+  await gotoPremium(page);
+  const nav = page.getByRole("navigation", { name: "Site" });
+  await expect(nav.getByRole("link", { name: "Barcelona This Week" })).toBeVisible();
+  await expect(nav.getByRole("button")).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Cinemas" })).toBeVisible();
+  await expect(page.locator(".back")).toHaveText("‹ This week");
+
+  const backdrop = page.locator("img.backdrop");
+  test.skip((await backdrop.count()) === 0, "the fixture film has no backdrop");
+  const { w, h, column } = await backdrop.evaluate((img) => {
+    const wrap = img.parentElement!;
+    const pad = parseFloat(getComputedStyle(wrap).paddingLeft) + parseFloat(getComputedStyle(wrap).paddingRight);
+    const r = img.getBoundingClientRect();
+    return { w: r.width, h: r.height, column: wrap.clientWidth - pad };
+  });
+  expect(w).toBeCloseTo(column, 0);
+  expect(Math.abs(h - (w * 9) / 16)).toBeLessThan(1);
+});
+
 test("a showtime opens its ticket, with this showing's booking link or the cinema website", async ({ page }) => {
   await gotoPremium(page);
   const chip = panel(page).locator("a.chip[aria-haspopup]").first();

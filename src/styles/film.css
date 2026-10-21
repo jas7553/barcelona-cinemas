@@ -1,16 +1,24 @@
-/* Film page (guidelines §3): hero, about, and the showtimes panel. */
+/* Film page (guidelines §3): way back, backdrop, about, and the showtimes panel. */
 .backbar {
-  padding-top: 14px;
-  padding-bottom: 14px;
+  padding-top: 18px;
+  font-size: 14px;
+  font-weight: 600;
 }
-.hero {
-  height: 200px;
-  overflow: hidden;
+.back {
+  position: relative;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
 }
-.hero img {
+.back::before {
+  content: "";
+  position: absolute;
+  inset: -13px -8px;
+}
+.backdrop {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  margin-top: 14px;
 }
 
 .head {
@@ -152,12 +160,6 @@
 }
 
 @media (min-width: 900px) {
-  .hero {
-    height: 380px;
-  }
-  .hero--none {
-    height: 200px;
-  }
   /* The map goes under the about column; the 1fr row takes whatever
      height the panel needs beyond the about, so the map sits right under it. */
   .film-layout {

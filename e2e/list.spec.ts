@@ -200,8 +200,8 @@ for (const when of ["before", "while away"] as const) {
 }
 
 // Leaving This week for a film and coming back must not lose the visitor's place,
-// whichever way back they take: the browser's Back or the film page's own pill.
-for (const way of ["Back", "the This week pill"] as const) {
+// whichever way back they take: the browser's Back or the film page's own link.
+for (const way of ["Back", "the This week link"] as const) {
   test(`${way} returns to This week at the same scroll position`, async ({ page }) => {
     await page.goto("/");
     await page.evaluate(() => window.scrollTo(0, 800));
@@ -219,7 +219,7 @@ for (const way of ["Back", "the This week pill"] as const) {
     if (way === "Back") {
       await page.goBack({ waitUntil: "commit" });
     } else {
-      // Hydrated, so the pill's click handler is there to take it.
+      // Hydrated, so the link's click handler is there to take it.
       await page.waitForLoadState("networkidle");
       await page.locator(".back").click();
     }
