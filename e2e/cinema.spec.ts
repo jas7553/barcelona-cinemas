@@ -11,8 +11,6 @@ import {
   readCls,
   seedPrefs,
   slowBundle,
-  trackViewTransitions,
-  viewTransitionDone,
   watchCls,
 } from "./helpers";
 
@@ -144,13 +142,10 @@ test("cinema controls have 44px hit areas", async ({ page }) => {
   const check = async (selectors: string[]) => {
     for (const selector of selectors) await expectHit44(page.locator(selector).first(), selector);
   };
-  await trackViewTransitions(page);
   await page.goto("/cinemas/");
   await check(["li.cinema a", ".star"]);
   await page.locator("li.cinema a").first().click();
   await expect(page.locator(".pill--fav")).toBeVisible();
-  // The cross-document view transition's overlay takes every hit until it ends.
-  await viewTransitionDone(page);
   await check([".pill--fav", "a.cell--on"]);
 });
 

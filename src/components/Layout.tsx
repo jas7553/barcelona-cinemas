@@ -12,7 +12,7 @@ interface Props {
   section?: "cinemas";
   /** The page's title block, rendered inside the header under the bar. */
   heading?: ComponentChildren;
-  /** Full-width bar between the header and the content: the list pages' sticky day strip. */
+  /** Full-width bar between the header and the content: the list pages' day strip. */
   strip?: ComponentChildren;
   children: ComponentChildren;
 }

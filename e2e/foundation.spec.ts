@@ -55,7 +55,6 @@ test.describe("Home sheet", () => {
   test("drops a pin where the map is tapped, and saves it as Home", async ({ page }) => {
     await page.goto("/privacy/");
     await homePill(page).click();
-    await page.waitForFunction(() => document.getAnimations().length === 0);
     const map = homeSheet(page).locator("svg.map:visible");
     await map.click({ position: { x: 120, y: 90 } });
     await expect(homeSheet(page).getByRole("status")).toHaveText("Pin dropped. Save to use it as Home.");
@@ -154,7 +153,6 @@ test("header and Home sheet controls have 44px hit areas", async ({ page }) => {
   await expectHit44(homePill(page), "Home pill");
   await expectHit44(nav.getByRole("link", { name: "Cinemas" }), "Cinemas pill");
   await homePill(page).click();
-  await page.waitForFunction(() => document.getAnimations().length === 0);
   for (const name of ["Use my current location", "Save home here", "Cancel"]) {
     await expectHit44(homeSheet(page).getByRole("button", { name }), name);
   }

@@ -32,11 +32,6 @@ export const SPECULATION_RULES = JSON.stringify({
   prerender: [{ where: { href_matches: "/film/*" }, eagerness: "moderate" }],
 });
 
-// Skips the view transition on back/forward navigation, so bfcache restores
-// stay instant. Must be registered before `pagereveal` can fire, hence
-// inline in <head> rather than in the hydration entry. Both sides skip: the
-// outgoing page (`pageswap`) and the incoming one (`pagereveal`).
-export const VIEW_TRANSITION_SCRIPT = `(function(){function skip(e,a){try{var v=e.viewTransition;if(!v)return;v.ready.catch(function(){});if(a&&a.navigationType==="traverse")v.skipTransition();}catch(t){}}window.addEventListener("pageswap",function(e){skip(e,e.activation);});window.addEventListener("pagereveal",function(e){skip(e,navigation.activation);});})();`;
 
 /** Every inline script body the site serves, keyed by name for error messages. */
 export const INLINE_SCRIPTS = Object.freeze({
@@ -47,7 +42,6 @@ export const INLINE_SCRIPTS = Object.freeze({
   // Carried in a `type="speculationrules"` block. Chrome enforces script-src
   // against it exactly like an executable inline script, so it needs a hash too.
   SPECULATION_RULES,
-  VIEW_TRANSITION_SCRIPT,
 });
 
 /**
@@ -88,10 +82,9 @@ export function renderDocument(o) {
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="google-site-verification" content="8TY-GdWfEzMusHB1CLdFZYqlrJIE-p0LsmxkoAeuK7M" />
     ${o.notFound ? `<script>${EXPIRED_REDIRECT_SCRIPT}</script>\n    ` : ""}<script>${PREFS_SCRIPT}</script>
-    <script>${VIEW_TRANSITION_SCRIPT}</script>
     <link rel="preload" href="/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/playfair-display-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=5" />

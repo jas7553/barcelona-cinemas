@@ -12,8 +12,6 @@ import {
   readCls,
   seedPrefs,
   slowBundle,
-  trackViewTransitions,
-  viewTransitionDone,
   watchCls,
 } from "./helpers";
 
@@ -22,7 +20,6 @@ const rows = (page: Page) => page.locator("li.film");
 
 /**
  * Tomorrow's Day page: published in the fixture, and nothing on it has started yet.
- * A direct load, so no view transition is still animating when the test clicks.
  */
 async function gotoTomorrow(page: Page) {
   await page.goto("/");
@@ -206,19 +203,17 @@ for (const when of ["before", "while away"] as const) {
 // whichever way back they take: the browser's Back or the film page's own pill.
 for (const way of ["Back", "the This week pill"] as const) {
   test(`${way} returns to This week at the same scroll position`, async ({ page }) => {
-    await trackViewTransitions(page);
     await page.goto("/");
     await page.evaluate(() => window.scrollTo(0, 800));
     const before = await page.evaluate(() => window.scrollY);
     expect(before).toBeGreaterThan(0);
-    // A title already in view and clear of the sticky strip, so clicking doesn't scroll.
-    const index = await page.evaluate(() => {
-      const top = document.querySelector(".strip")!.getBoundingClientRect().bottom;
-      return [...document.querySelectorAll("li.film h3 a")].findIndex((a) => {
+    // A title already in view, so clicking doesn't scroll.
+    const index = await page.evaluate(() =>
+      [...document.querySelectorAll("li.film h3 a")].findIndex((a) => {
         const r = a.getBoundingClientRect();
-        return r.top >= top && r.bottom <= window.innerHeight;
-      });
-    });
+        return r.top >= 0 && r.bottom <= window.innerHeight;
+      }),
+    );
     await page.locator("li.film h3 a").nth(index).click();
     await expect(page).toHaveURL(/\/film\//);
     if (way === "Back") {
@@ -226,8 +221,7 @@ for (const way of ["Back", "the This week pill"] as const) {
     } else {
       // Hydrated, so the pill's click handler is there to take it.
       await page.waitForLoadState("networkidle");
-      await viewTransitionDone(page);
-      await page.locator(".hero .back").click();
+      await page.locator(".back").click();
     }
     await expect(page).toHaveURL("/");
     await expect(page.getByRole("heading", { level: 1, name: "This week" })).toBeAttached();
