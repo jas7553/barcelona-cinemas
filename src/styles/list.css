@@ -1,4 +1,4 @@
-/* This week and Day: the timetable grid (guidelines §3), shared by the sticky
+/* This week and Day: the timetable grid (guidelines §3), shared by the day
    strip and every film row so the day columns line up down the page. */
 .tt {
   --days: 7;
@@ -31,13 +31,7 @@
 
 /* Day strip */
 .strip {
-  position: sticky;
-  top: 0;
-  z-index: 5;
   margin-top: 16px;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
 }
 .strip .tt {

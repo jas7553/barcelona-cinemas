@@ -52,10 +52,6 @@
   color-scheme: light;
 }
 
-@view-transition {
-  navigation: auto;
-}
-
 *,
 *::before,
 *::after {
@@ -284,12 +280,6 @@ html:not(.has-home) .if-home,
   }
   .title h1 {
     font-size: 44px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  @view-transition {
-    navigation: none;
   }
 }
 

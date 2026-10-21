@@ -12,7 +12,7 @@ interface Props {
 }
 
 /**
- * The sticky header of the timetable: "Week", then one column per day. Shares
+ * The header of the timetable: "Week", then one column per day. Shares
  * the film rows' grid so the columns line up down the page.
  */
 export function DayStrip({ days, today, current, weekHref = "/", dayHref = (date) => `/day/${date}/` }: Props) {

@@ -1,6 +1,9 @@
 /* Film page (guidelines §3): hero, about, and the showtimes panel. */
+.backbar {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
 .hero {
-  position: relative;
   height: 200px;
   overflow: hidden;
 }
@@ -9,44 +12,13 @@
   height: 100%;
   object-fit: cover;
 }
-.hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 0%, transparent) 35%, var(--bg));
-}
-.hero--none {
-  height: 120px;
-  background: linear-gradient(180deg, var(--wash), var(--bg));
-}
-.hero--none::after {
-  display: none;
-}
-.back {
-  position: absolute;
-  top: 14px;
-  left: var(--pad);
-  z-index: 2;
-  background: color-mix(in srgb, var(--surface) 85%, transparent);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border-color: transparent;
-}
 
 .head {
-  position: relative;
-  z-index: 1;
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
   gap: 14px;
   align-items: end;
-  margin-top: -72px;
-}
-.hero--none + .film-layout .head {
-  margin-top: -40px;
-}
-.head .poster {
-  box-shadow: 0 10px 24px -10px rgba(60, 40, 10, 0.55);
+  margin-top: 14px;
 }
 .head .poster--none {
   padding: 8px;
@@ -118,25 +90,13 @@
   margin-bottom: 4px;
 }
 .days {
-  position: sticky;
-  top: 0;
-  z-index: 3;
   display: flex;
   gap: 4px;
-  /* The bottom margin keeps the first row's upward hit area out from under the strip. */
   margin: 0 calc(-1 * var(--pad)) 6px;
   padding: 8px var(--pad);
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--line);
   overflow-x: auto;
   scrollbar-width: none;
-}
-/* Scrolling to a row (or focusing its links) stops below the sticky strip. */
-.crow,
-.crow a {
-  scroll-margin-top: 64px;
 }
 .days::-webkit-scrollbar {
   display: none;
@@ -219,11 +179,7 @@
   .head {
     grid-template-columns: 180px minmax(0, 1fr);
     gap: 24px;
-    margin-top: -140px;
-  }
-  .hero--none + .film-layout .head,
-  .hero--none + .film-layout .panel {
-    margin-top: -60px;
+    margin-top: 24px;
   }
   .head h1 {
     font-size: 44px;
@@ -237,30 +193,18 @@
   /* Grows with the page: nothing on it scrolls by itself. */
   .panel {
     grid-area: panel;
-    position: relative;
-    z-index: 2;
-    margin-top: -140px;
+    margin-top: 24px;
     padding: 0 20px 12px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    box-shadow: 0 20px 40px -24px rgba(60, 40, 10, 0.35);
   }
   .panel-h {
     padding-top: 18px;
   }
-  /* The day strip doesn't stick on desktop, so nothing covers a row. */
-  .crow,
-  .crow a {
-    scroll-margin-top: 0;
-  }
   .days {
-    position: static;
     margin: 0;
     padding: 8px 0;
-    background: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
   }
 }
 

@@ -63,7 +63,7 @@ test("day hops replace history and keep the way back to the cinema", async ({ pa
   const cinema = (await panel(page).locator(".crow-h").first().getAttribute("href"))!;
   await page.goto(cinema);
   await page.locator(`a[href^="/film/${id}/"]`).first().click();
-  const back = page.locator(".hero .back");
+  const back = page.locator(".back");
   await expect(back).toHaveAttribute("href", new RegExp(`^${cinema.replace(/[^/]+\/$/, "")}`));
   const label = (await back.textContent())!;
 
@@ -77,22 +77,6 @@ test("day hops replace history and keep the way back to the cinema", async ({ pa
   // The cinema page may come back from bfcache, which fires no load event.
   await page.goBack({ waitUntil: "commit" });
   await expect(page).toHaveURL(new RegExp(`${cinema.replace(/[^/]+\/$/, "")}`));
-});
-
-test("the day strip stays in view while a day's cinemas scroll", async ({ page }) => {
-  const { id, date } = premiumShowing();
-  await page.goto(`/film/${id}/${date}/`);
-  const strip = panel(page).getByRole("navigation", { name: "Days" });
-  const start = (await strip.boundingBox())!.y;
-  await page.evaluate((y) => scrollBy(0, y), start + 200);
-  await expect.poll(async () => (await strip.boundingBox())!.y).toBeLessThan(1);
-  await expect.poll(async () => (await strip.boundingBox())!.y).toBeGreaterThan(-1);
-
-  // Scrolling to a cinema stops below the strip rather than under it.
-  const row = panel(page).locator(".crow-h").last();
-  await row.evaluate((node) => node.scrollIntoView());
-  const stripBottom = (await strip.boundingBox())!;
-  expect((await row.boundingBox())!.y).toBeGreaterThanOrEqual(stripBottom.y + stripBottom.height - 1);
 });
 
 /** Elements that scroll by themselves vertically, other than the page. */
@@ -205,7 +189,6 @@ test("film page controls have 44px hit areas", async ({ page }) => {
     panel(page).locator("a.chip[aria-haspopup]").first(),
   ];
   for (const el of targets) {
-    // Centred, clear of the sticky strip (Playwright's WebKit scroll ignores scroll-margin).
     await el.evaluate((node) => node.scrollIntoView({ block: "center" }));
     await expectHit44(el);
   }

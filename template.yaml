@@ -522,8 +522,8 @@ Resources:
           ContentSecurityPolicy:
             # script-src allows: bundled JS ('self'); the inline pre-paint prefs
             # script; the 404 page's expired-page redirect; the speculation
-            # rules; and the view-transition script. The hydration payload and
-            # any ld+json are inert data blocks, so they need no allowance.
+            # rules. The hydration payload and any ld+json are inert data
+            # blocks, so they need no allowance.
             #
             # Every sha256 value below is DERIVED from the script bodies in
             # scripts/template.mjs (INLINE_SCRIPTS) — that module is the single
@@ -541,7 +541,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-D2wJX2Hfm7kD6Lt91Ykdhkw2v3Gl/UAG9kw+zYZ5lLA=' 'sha256-Fkh/vpVjCSQLeCETZQAtg4VVkQqJ29UHbbBCgLrEcMM=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-D2wJX2Hfm7kD6Lt91Ykdhkw2v3Gl/UAG9kw+zYZ5lLA=' 'sha256-Fkh/vpVjCSQLeCETZQAtg4VVkQqJ29UHbbBCgLrEcMM=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true
@@ -582,7 +582,7 @@ Resources:
               img-src 'self' data: https:;
               manifest-src 'self';
               object-src 'none';
-              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-Bt9pZaheXvwrb/kpVP0FxpkcapXw53GcS51bs1jlO4c=' 'sha256-D2wJX2Hfm7kD6Lt91Ykdhkw2v3Gl/UAG9kw+zYZ5lLA=' 'sha256-Fkh/vpVjCSQLeCETZQAtg4VVkQqJ29UHbbBCgLrEcMM=';
+              script-src 'self' 'sha256-DdMgnjPa6F4EKcirirlMQPQ076QyJzopJLJwA/gY+/4=' 'sha256-jvbycYf2cg443+kgB11LriLmCdsg3n7gQZPkkBv5fCI=' 'sha256-fvF722QusUuBYf8/nVfTwurnDWm/YHrPO+nPGqoQ55g=' 'sha256-D2wJX2Hfm7kD6Lt91Ykdhkw2v3Gl/UAG9kw+zYZ5lLA=' 'sha256-Fkh/vpVjCSQLeCETZQAtg4VVkQqJ29UHbbBCgLrEcMM=';
               style-src 'self';
               upgrade-insecure-requests
             Override: true

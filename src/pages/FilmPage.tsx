@@ -161,22 +161,26 @@ function Hero({ film, theaters }: { film: FilmDetail; theaters: ReadonlyMap<stri
 
   const src = film.backdrop_url;
   return (
-    <div class={src ? "hero" : "hero hero--none"}>
+    <>
+      <div class="wrap backbar">
+        <a class="pill back" href={back.href} onClick={goBack}>
+          ‹ {back.label}
+        </a>
+      </div>
       {src && (
-        <img
-          src={src}
-          srcset={`${src.replace(/\/w\d+\//, "/w780/")} 780w, ${src} 1280w`}
-          sizes="100vw"
-          alt=""
-          width={1280}
-          height={720}
-          fetchpriority="high"
-        />
+        <div class="hero">
+          <img
+            src={src}
+            srcset={`${src.replace(/\/w\d+\//, "/w780/")} 780w, ${src} 1280w`}
+            sizes="100vw"
+            alt=""
+            width={1280}
+            height={720}
+            fetchpriority="high"
+          />
+        </div>
       )}
-      <a class="pill back" href={back.href} onClick={goBack}>
-        ‹ {back.label}
-      </a>
-    </div>
+    </>
   );
 }
 
