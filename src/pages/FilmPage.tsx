@@ -3,8 +3,8 @@ import { useNow } from "../client/clock";
 import { toggleSeen, usePrefs } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
 import { ChipTime, ShowingChip, SiteLegend } from "../components/FilmRow";
-import { Footer } from "../components/Footer";
 import { IconExternal, IconStar } from "../components/Icons";
+import { Layout } from "../components/Layout";
 import { TicketSheet } from "../components/TicketSheet";
 import { DayLink } from "../components/DayStrip";
 import { distanceLabel } from "../domain/distance";
@@ -45,68 +45,69 @@ export function FilmPage({ data }: { data: FilmPageData }) {
   const ticketTheater = ticket && theaters.get(ticket.theater_id);
 
   return (
-    <>
-      <Hero film={film} theaters={theaters} />
-      <main class="wrap film-layout">
-        <About film={film} seen={prefs.seen.has(film.id)} />
-        <section class="panel" aria-labelledby="showtimes">
-          <h2 id="showtimes" class="panel-h display">
-            Showtimes
-          </h2>
-          <StaleNotice data={data} now={now} />
-          {first === null || date === null ? (
-            <div class="empty">
-              <p class="empty-t">No more showings</p>
-              <p class="sub">
-                {film.title} has no showings left in the listings. Its run may be over, or new dates may not be out yet.
-              </p>
-              <a class="pill" href="/">
-                See what's on this week
-              </a>
-            </div>
-          ) : (
-            <>
-              <nav class="days" aria-label="Days">
-                {days.map((d) => (
-                  <DayLink key={d.date} {...d} today={clock.today} current={date} href={`/film/${film.id}/${d.date}/`} replace />
-                ))}
-              </nav>
-              <DayShowings
-                film={film}
-                date={date}
-                today={clock.today}
-                unpub={days.find((d) => d.date === date)?.status === "not-out"}
-                groups={groups}
-                theaters={theaters}
-                home={prefs.home}
-                favourite={(id) => prefs.favourites.has(id)}
-                started={(s) => hasStarted(s, clock)}
-                onShowing={setTicket}
-              />
-            </>
-          )}
-        </section>
-        {/* After the showtimes on a phone; under the synopsis on desktop (film.css). */}
-        {date && Object.keys(notes).length > 0 && (
-          <div class="map-wrap film-map">
-            <h3>Where, {date === clock.today ? "today" : dayTitle(date, clock.today)}</h3>
-            <CityMap
-              label={`Map of the ${plural(Object.keys(notes).length, "cinema")} showing ${film.title} ${date === clock.today ? "today" : `on ${dayTitle(date, clock.today)}`}`}
-              mobile={[358, 230]}
-              desktop={[440, 260]}
-              theaters={data.theaters}
-              frame={Object.keys(notes)}
-              notes={notes}
-              minSpan={2.5}
-              others={false}
-              home={prefs.home}
-              favourites={prefs.favourites}
-              link
-            />
+    <Layout
+      data={data}
+      heading={<BackLink film={film} theaters={theaters} />}
+      strip={film.backdrop_url && <Backdrop src={film.backdrop_url} />}
+      mainClass="film-layout"
+    >
+      <About film={film} seen={prefs.seen.has(film.id)} />
+      <section class="panel" aria-labelledby="showtimes">
+        <h2 id="showtimes" class="panel-h display">
+          Showtimes
+        </h2>
+        <StaleNotice data={data} now={now} />
+        {first === null || date === null ? (
+          <div class="empty">
+            <p class="empty-t">No more showings</p>
+            <p class="sub">
+              {film.title} has no showings left in the listings. Its run may be over, or new dates may not be out yet.
+            </p>
+            <a class="pill" href="/">
+              See what's on this week
+            </a>
           </div>
+        ) : (
+          <>
+            <nav class="days" aria-label="Days">
+              {days.map((d) => (
+                <DayLink key={d.date} {...d} today={clock.today} current={date} href={`/film/${film.id}/${d.date}/`} replace />
+              ))}
+            </nav>
+            <DayShowings
+              film={film}
+              date={date}
+              today={clock.today}
+              unpub={days.find((d) => d.date === date)?.status === "not-out"}
+              groups={groups}
+              theaters={theaters}
+              home={prefs.home}
+              favourite={(id) => prefs.favourites.has(id)}
+              started={(s) => hasStarted(s, clock)}
+              onShowing={setTicket}
+            />
+          </>
         )}
-      </main>
-      <Footer generatedAt={data.generatedAt} />
+      </section>
+      {/* After the showtimes on a phone; under the synopsis on desktop (film.css). */}
+      {date && Object.keys(notes).length > 0 && (
+        <div class="map-wrap film-map">
+          <h3>Where, {date === clock.today ? "today" : dayTitle(date, clock.today)}</h3>
+          <CityMap
+            label={`Map of the ${plural(Object.keys(notes).length, "cinema")} showing ${film.title} ${date === clock.today ? "today" : `on ${dayTitle(date, clock.today)}`}`}
+            mobile={[358, 230]}
+            desktop={[440, 260]}
+            theaters={data.theaters}
+            frame={Object.keys(notes)}
+            notes={notes}
+            minSpan={2.5}
+            others={false}
+            home={prefs.home}
+            favourites={prefs.favourites}
+            link
+          />
+        </div>
+      )}
       {ticket && ticketTheater && (
         <TicketSheet
           film={film}
@@ -117,19 +118,19 @@ export function FilmPage({ data }: { data: FilmPageData }) {
           onClose={() => setTicket(null)}
         />
       )}
-    </>
+    </Layout>
   );
 }
 
 /**
- * The backdrop, with a way back: to This week, or to the cinema page the
- * visitor came from (requirements 5.3). The referrer is only known in the
- * browser, so the cinema label arrives after mount. Day hops make the film
- * itself the referrer, so the way back is kept for the session. When the way
- * back is the page just left, the pill goes Back through history, so that page
- * returns where it was scrolled to (from bfcache, if it's there).
+ * A way back: to This week, or to the cinema page the visitor came from
+ * (requirements 5.3). The referrer is only known in the browser, so the cinema
+ * label arrives after mount. Day hops make the film itself the referrer, so the
+ * way back is kept for the session. When the way back is the page just left,
+ * the link goes Back through history, so that page returns where it was
+ * scrolled to (from bfcache, if it's there).
  */
-function Hero({ film, theaters }: { film: FilmDetail; theaters: ReadonlyMap<string, Theater> }) {
+function BackLink({ film, theaters }: { film: FilmDetail; theaters: ReadonlyMap<string, Theater> }) {
   const [back, setBack] = useState({ href: "/", label: "This week", inHistory: false });
   useEffect(() => {
     const key = `back:${film.id}`;
@@ -159,28 +160,30 @@ function Hero({ film, theaters }: { film: FilmDetail; theaters: ReadonlyMap<stri
     history.back();
   };
 
-  const src = film.backdrop_url;
   return (
-    <>
-      <div class="wrap backbar">
-        <a class="pill back" href={back.href} onClick={goBack}>
-          ‹ {back.label}
-        </a>
-      </div>
-      {src && (
-        <div class="hero">
-          <img
-            src={src}
-            srcset={`${src.replace(/\/w\d+\//, "/w780/")} 780w, ${src} 1280w`}
-            sizes="100vw"
-            alt=""
-            width={1280}
-            height={720}
-            fetchpriority="high"
-          />
-        </div>
-      )}
-    </>
+    <p class="backbar">
+      <a class="back" href={back.href} onClick={goBack}>
+        ‹ {back.label}
+      </a>
+    </p>
+  );
+}
+
+/** Whole, never cropped, across the content column. */
+function Backdrop({ src }: { src: string }) {
+  return (
+    <div class="wrap">
+      <img
+        class="backdrop"
+        src={src}
+        srcset={`${src.replace(/\/w\d+\//, "/w780/")} 780w, ${src} 1280w`}
+        sizes="(min-width: 1120px) 1056px, (min-width: 900px) calc(100vw - 64px), calc(100vw - 32px)"
+        alt=""
+        width={1280}
+        height={720}
+        fetchpriority="high"
+      />
+    </div>
   );
 }
 

@@ -126,10 +126,12 @@ p {
 }
 
 /* Header */
+/* Wraps only when zoomed in (WCAG reflow). */
 .bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 14px 8px;
   padding-top: 14px;
 }
 .brand {
