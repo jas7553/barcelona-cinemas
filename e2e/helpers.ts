@@ -3,9 +3,17 @@ import { PREF_KEYS } from "../src/domain/prefs";
 
 export const HOME = { lat: 41.4021, lng: 2.1558 };
 
+/** Answers the street map's tile requests locally: a run may not reach the tile host. */
+export function stubTiles(page: Page) {
+  return page.route(/basemaps\.cartocdn\.com/, (route) =>
+    route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"/>' }),
+  );
+}
+
 /** Console errors and uncaught exceptions, including CSP violations. */
 export function collectErrors(page: Page): string[] {
   const errors: string[] = [];
+  void stubTiles(page);
   page.on("console", (msg) => {
     // The 404 document itself arrives with a 404 status, which Chromium logs.
     if (msg.type() === "error" && !msg.text().includes("status of 404")) errors.push(msg.text());
@@ -92,6 +100,7 @@ function expectSameBoxes(painted: Awaited<ReturnType<typeof boxes>>, settled: ty
 export async function expectSteadyAsHomeLoads(page: Page, url: string, width: number) {
   let release = () => {};
   const held = new Promise<void>((resolve) => (release = resolve));
+  await stubTiles(page);
   await page.route(BUNDLE, async (route) => {
     await held;
     await route.continue();
