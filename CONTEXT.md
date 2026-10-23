@@ -29,7 +29,7 @@ Taxonomy decision (the HITL gate for this feature):
   all. So the model is the pair, not a single 3-value code.
 - Badge derivation, for an English speaker: English audio is the site's
   norm and gets **no badge**. Non-English audio gets its subtitle language:
-  **"English subs"**, **"Spanish subs"** or **"Catalan subs"**; with unknown
+  **"English subtitles"**, **"Spanish subtitles"** or **"Catalan subtitles"**; with unknown
   subtitles, **no badge** (requirements 6).
 - Unknown is never guessed. Empty/unrecognized source values and every
   primary-feed showtime stay unknown and show no badge — absence of a badge

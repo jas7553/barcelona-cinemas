@@ -103,8 +103,8 @@ export function WeekRow({ row, days, today, summary, distance, eager, seen, cell
   );
 }
 
-// Chips shown before "N more times" (requirements 5.2). Both counts are
-// rendered and CSS shows the one for the viewport, so the server render needn't know it.
+// Chips shown before "N more times" (requirements 5.2). Both counts are rendered and
+// CSS shows the one for the viewport, so the server render needn't know it.
 const CHIPS_MOBILE = 4;
 const CHIPS_DESKTOP = 7;
 
