@@ -24,7 +24,6 @@ jobs:
 
       - name: Install deps
         run: |
-          python3 -m ensurepip
           python3 -m pip install -r requirements.txt -r requirements-dev.txt pytest-cov
 
       - name: Ruff lint
@@ -97,7 +96,8 @@ jobs:
 
       - name: Install deps
         run: |
-          pip install -r requirements.txt
+          python3 -m ensurepip
+          python3 -m pip install -r requirements.txt
           npm ci
 
       # Playwright boots the Flask API itself (playwright.config.ts webServer),
