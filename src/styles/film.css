@@ -160,6 +160,11 @@
 }
 
 @media (min-width: 900px) {
+  /* Still 16:9 and uncropped, but capped (about 340px tall) so the first
+     showtime stays above the fold; width follows the ratio, left-aligned. */
+  .backdrop {
+    width: min(100%, 604px);
+  }
   /* The map goes under the about column; the 1fr row takes whatever
      height the panel needs beyond the about, so the map sits right under it. */
   .film-layout {
