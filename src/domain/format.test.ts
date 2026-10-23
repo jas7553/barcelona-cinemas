@@ -29,7 +29,7 @@ describe("format", () => {
   });
 
   it("tags subtitles only for non-English audio with known subtitles", () => {
-    expect(subtitleLabel({ audio_lang: "other", subtitle_lang: "es" })).toBe("Spanish subs");
+    expect(subtitleLabel({ audio_lang: "other", subtitle_lang: "es" })).toBe("Spanish subtitles");
     expect(subtitleLabel({ audio_lang: "en", subtitle_lang: "es" })).toBeNull();
     expect(subtitleLabel({ audio_lang: null, subtitle_lang: "es" })).toBeNull();
     expect(subtitleLabel({ audio_lang: "other", subtitle_lang: null })).toBeNull();

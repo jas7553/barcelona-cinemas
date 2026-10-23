@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/preact";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/preact";
 import { renderToString } from "preact-render-to-string";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PREF_KEYS } from "../domain/prefs";
@@ -81,7 +81,7 @@ describe("Day", () => {
     const book = within(ticket).getByRole("link", { name: "Book at Verdi" });
     expect(book).toHaveAttribute("href", "https://verdi.example/book/1");
     expect(ticket).toHaveTextContent("Today 4");
-    expect(ticket).toHaveTextContent("Out ~23:27");
+    expect(within(ticket).getByText("Ends about").nextElementSibling).toHaveTextContent("23:27");
     expect(within(ticket).getByRole("link", { name: "Cines Verdi" })).toHaveAttribute("href", "/cinema/verdi/2026-10-04/");
   });
 
@@ -92,7 +92,7 @@ describe("Day", () => {
     expect(within(ticket).getByRole("link", { name: "Girona website" })).toHaveAttribute("href", "https://girona.example");
     expect(ticket).toHaveTextContent("No direct booking link for this showing");
     // Unknown runtime: start + 110 + 15.
-    expect(ticket).toHaveTextContent("Out ~21:05");
+    expect(within(ticket).getByText("Ends about").nextElementSibling).toHaveTextContent("21:05");
   });
 
   it("marks a time with no booking page of its own, and explains the mark once", () => {
@@ -122,11 +122,37 @@ describe("Day", () => {
     expect(screen.queryByText(LEGEND)).toBeNull();
   });
 
-  it("shows the legend only on desktop when the marked time is behind phone's +N more", () => {
+  it("shows the legend only on desktop when the marked time is behind phone's N more times", () => {
     const at = (time: string, booking_url?: string) => ({ theater_id: "verdi", date: "2026-10-04", time, booking_url });
     const booked = ["18:00", "18:30", "19:00", "19:30"].map((t) => at(t, `https://verdi.example/${t}`));
     render(<DayPage data={{ ...dayData, films: [{ ...FILMS[0], showtimes: [...booked, at("20:00")] }] }} />);
     expect(screen.getByText(LEGEND)).toHaveClass("legend--desktop");
+  });
+
+  it("spells out how many more times are behind the chips", () => {
+    const at = (time: string) => ({ theater_id: "verdi", date: "2026-10-04", time });
+    const times = ["18:00", "18:30", "19:00", "19:30", "20:00", "20:30"].map(at);
+    render(<DayPage data={{ ...dayData, films: [{ ...FILMS[0], showtimes: times }] }} />);
+    expect(screen.getByText("2 more times")).toHaveClass("chip--m");
+    expect(screen.queryByText(/\+\d/)).toBeNull();
+  });
+
+  it("drops the neighbourhood when it repeats the cinema's name", () => {
+    const same = THEATERS.map((t) => (t.id === "verdi" ? { ...t, short_name: "Gràcia" } : t));
+    render(<DayPage data={{ ...dayData, theaters: same }} />);
+    const where = screen.getByRole("link", { name: /^21:30/ }).querySelector(".chip-w")!;
+    expect(where.textContent).not.toContain("Gràcia · Gràcia");
+    expect(where.textContent).toMatch(/^Gràcia/);
+  });
+
+  it("keeps the neighbourhood and distance when the name differs, and the name alone with no coordinates", () => {
+    localStorage.setItem(PREF_KEYS.home, JSON.stringify({ lat: 41.4021, lng: 2.1558 }));
+    render(<DayPage data={dayData} />);
+    expect(screen.getByRole("link", { name: /^21:30/ }).querySelector(".chip-w")).toHaveTextContent("Verdi · Gràcia · 250 m");
+    cleanup();
+    const noCoords = THEATERS.map((t) => (t.id === "verdi" ? { ...t, lat: null, lng: null } : t));
+    render(<DayPage data={{ ...dayData, theaters: noCoords }} />);
+    expect(screen.getByRole("link", { name: /^21:30/ }).querySelector(".chip-w")).toHaveTextContent(/^Verdi · Gràcia$/);
   });
 
   it("shows distances from Home and moves seen films to the Seen group once prefs load", () => {
