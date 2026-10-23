@@ -1,6 +1,8 @@
 // The film page on the static build, under the production CSP, on the
 // date-shifted fixture.
 
+import fs from "node:fs";
+import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { premiumShowing } from "./fixture";
 import { collectErrors, expectHit44, seedPrefs } from "./helpers";
@@ -195,11 +197,12 @@ test("on desktop the map sits under the synopsis, and the showtimes panel grows 
   await expect(map.locator("svg.map--d")).toBeVisible();
   const mapBox = (await map.boundingBox())!;
   const panelBox = (await panel(page).boundingBox())!;
-  const aboutBox = (await page.locator(".about").boundingBox())!;
+  // The week summary sits between the synopsis and the map in the same column.
+  const aboveBox = (await page.locator(".wk, .about").last().boundingBox())!;
   expect(mapBox.x + mapBox.width).toBeLessThanOrEqual(panelBox.x);
-  expect(mapBox.y).toBeGreaterThanOrEqual(aboutBox.y + aboutBox.height - 1);
-  // Right under the about column, not pushed down by the panel's height.
-  expect(mapBox.y).toBeLessThan(aboutBox.y + aboutBox.height + 60);
+  expect(mapBox.y).toBeGreaterThanOrEqual(aboveBox.y + aboveBox.height - 1);
+  // Right under that column, not pushed down by the panel's height.
+  expect(mapBox.y).toBeLessThan(aboveBox.y + aboveBox.height + 60);
   expect(await ownScrollers(page)).toEqual([]);
   // The panel's last row is reached by scrolling the page.
   const last = panel(page).locator(".crow").last();
@@ -343,4 +346,25 @@ test("no horizontal overflow at 200% zoom", async ({ page }) => {
     scrollW,
     `overflow past ${clientW}: ${JSON.stringify(offenders)}`,
   ).toBeLessThanOrEqual(clientW + 1);
+});
+
+test("the week summary lists the days and cinemas the film plays, each linking to its day", async ({ page }) => {
+  const { id } = await gotoPremium(page);
+  const published = JSON.parse(
+    fs.readFileSync(path.join(import.meta.dirname, "..", "static", "data", "listings.json"), "utf8"),
+  ) as { movies: { id: string; showtimes: { date: string }[] }[] };
+  const dates = new Set(published.movies.find((m) => m.id === id)!.showtimes.map((s) => s.date));
+
+  const lines = page.getByRole("region", { name: "Playing this week" }).getByRole("link");
+  const hrefs = await lines.evaluateAll((as) => as.map((a) => a.getAttribute("href")!));
+  expect(hrefs.length).toBeGreaterThan(0);
+  for (const href of hrefs) expect(dates).toContain(href.split("/")[3]);
+  expect(hrefs).toEqual([...hrefs].sort());
+  await expect(lines.first()).toContainText("·");
+
+  const last = lines.last();
+  const target = (await last.getAttribute("href"))!;
+  await last.click();
+  await page.waitForURL(`**${target}`);
+  await expect(panel(page).locator('.days [aria-current="date"]')).toHaveAttribute("href", target);
 });

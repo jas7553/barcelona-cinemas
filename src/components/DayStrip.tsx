@@ -62,7 +62,7 @@ export function DayLink({ date, status, today, current, href, replace }: DayLink
   );
 }
 
-function replaceOnClick(e: MouseEvent) {
+export function replaceOnClick(e: MouseEvent) {
   if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
   e.preventDefault();
   location.replace((e.currentTarget as HTMLAnchorElement).href);

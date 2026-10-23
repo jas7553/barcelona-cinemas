@@ -12,6 +12,7 @@ import {
   ranking,
   rowSummary,
   weekSections,
+  weekSummary,
   type Clock,
 } from "./schedule";
 
@@ -215,5 +216,36 @@ describe("film order", () => {
     const rows = filmRows(films, ["2026-10-05"], clock, rank);
     expect(daySections(rows, new Set()).films.map((r) => r.film.id)).toEqual(["a", "b"]);
     expect(weekSections(rows, new Set()).few.map((r) => r.film.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("weekSummary", () => {
+  const shows = [
+    at("verdi", "2026-10-04", "16:00"),
+    at("glories", "2026-10-04", "19:00"),
+    at("verdi", "2026-10-06", "20:00"),
+    at("verdi-park", "2026-10-06", "18:00"),
+    at("verdi", "2026-10-06", "21:00"),
+    at("nowhere", "2026-10-09", "20:00"),
+    at("verdi", "2026-10-11", "20:00"),
+    at("gone", "2026-10-07", "20:00"),
+  ];
+
+  it("lists each day in the horizon with its cinemas, alphabetically, omitting empty days", () => {
+    expect(weekSummary(shows, BY_ID, clock)).toEqual([
+      { date: "2026-10-04", cinemas: ["Glòries"] },
+      { date: "2026-10-06", cinemas: ["Verdi", "Verdi Park"] },
+      { date: "2026-10-09", cinemas: ["Nowhere"] },
+    ]);
+  });
+
+  it("follows the clock: past midnight the day rolls off and a new one comes in", () => {
+    const next: Clock = { today: "2026-10-05", time: "00:10" };
+    const days = weekSummary(shows, BY_ID, next).map((d) => d.date);
+    expect(days).toEqual(["2026-10-06", "2026-10-09", "2026-10-11"]);
+  });
+
+  it("is empty when nothing is left", () => {
+    expect(weekSummary(shows, BY_ID, { today: "2026-10-12", time: "00:00" })).toEqual([]);
   });
 });

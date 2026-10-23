@@ -6,13 +6,13 @@ import { ChipTime, ShowingChip, SiteLegend } from "../components/FilmRow";
 import { IconExternal, IconStar } from "../components/Icons";
 import { Layout } from "../components/Layout";
 import { TicketSheet } from "../components/TicketSheet";
-import { DayLink } from "../components/DayStrip";
+import { DayLink, replaceOnClick } from "../components/DayStrip";
 import { distanceLabel } from "../domain/distance";
 import { byCinema } from "../domain/film";
 import { formatRuntime, largePoster, plural, shortName } from "../domain/format";
 import type { LatLng } from "../domain/prefs";
 import { bookingHref, siteOnly } from "../domain/ticket";
-import { clockAt, dayTitle, hasStarted, pageDays, ranking } from "../domain/schedule";
+import { clockAt, dayAndDate, dayTitle, hasStarted, pageDays, ranking, weekSummary, type WeekSummaryDay } from "../domain/schedule";
 import type { DateKey } from "../domain/time";
 import type { FilmDetail, FilmPageData, Showing } from "../pageData";
 import type { Theater } from "../types";
@@ -52,6 +52,7 @@ export function FilmPage({ data }: { data: FilmPageData }) {
       mainClass="film-layout"
     >
       <About film={film} seen={prefs.seen.has(film.id)} />
+      <WeekSummary film={film} days={weekSummary(film.showtimes, theaters, clock)} today={clock.today} />
       <section class="panel" aria-labelledby="showtimes">
         <h2 id="showtimes" class="panel-h display">
           Showtimes
@@ -270,6 +271,25 @@ function About({ film, seen }: { film: FilmDetail; seen: boolean }) {
           <span class="vh">(opens in a new tab)</span>
         </a>
       </div>
+    </section>
+  );
+}
+
+/** Where the film plays across the week, a line per day; the showings below stay grouped day → cinema → time. */
+function WeekSummary({ film, days, today }: { film: FilmDetail; days: WeekSummaryDay[]; today: DateKey }) {
+  if (days.length === 0) return null;
+  return (
+    <section class="wk" aria-labelledby="wk-h">
+      <h2 id="wk-h" class="display">Playing this week</h2>
+      <ul>
+        {days.map((d) => (
+          <li key={d.date}>
+            <a href={`/film/${film.id}/${d.date}/`} onClick={replaceOnClick}>
+              <b>{dayAndDate(d.date, today)}</b> · {d.cinemas.join(", ")}
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

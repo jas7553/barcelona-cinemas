@@ -97,6 +97,19 @@
 .panel .notice {
   margin-bottom: 4px;
 }
+.wk h2 {
+  font-size: 18px;
+  padding-top: 20px;
+}
+.wk ul {
+  list-style: none;
+}
+.wk a {
+  display: block;
+  padding: 10px 0;
+  min-height: 44px;
+  line-height: 1.3;
+}
 .days {
   display: flex;
   gap: 4px;
@@ -170,13 +183,17 @@
   .film-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 440px;
-    grid-template-rows: auto 1fr;
-    grid-template-areas: "about panel" "map panel";
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas: "about panel" "wk panel" "map panel";
     column-gap: 56px;
     align-items: start;
   }
   .about {
     grid-area: about;
+  }
+  .wk {
+    grid-area: wk;
+    max-width: 440px;
   }
   .film-map {
     grid-area: map;

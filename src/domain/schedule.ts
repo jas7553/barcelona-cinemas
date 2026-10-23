@@ -191,3 +191,21 @@ export function rowSummary(row: FilmRow, theaters: ReadonlyMap<string, Theater>,
   const cinemas = nearestFirst.length <= 2 ? nearestFirst.map(name).join(", ") : plural(nearestFirst.length, "cinema");
   return { line: `${plural(showings.length, "showing")} · ${cinemas}${imax}`, distance };
 }
+
+export interface WeekSummaryDay {
+  date: DateKey;
+  /** Short names of the cinemas with a showing left that day, alphabetical (never by Home or favourites, which load after paint). */
+  cinemas: string[];
+}
+
+/** The days in the horizon on which a film still plays, and where. Days without a showing left are omitted. */
+export function weekSummary(showings: Showing[], theaters: ReadonlyMap<string, Theater>, clock: Clock): WeekSummaryDay[] {
+  return horizon(clock.today).flatMap((date) => {
+    const ids = new Set(showings.filter((s) => s.date === date && !hasStarted(s, clock)).map((s) => s.theater_id));
+    const cinemas = [...ids].flatMap((id) => {
+      const theater = theaters.get(id);
+      return theater ? [shortName(theater)] : [];
+    });
+    return cinemas.length ? [{ date, cinemas: cinemas.sort((a, b) => a.localeCompare(b)) }] : [];
+  });
+}
