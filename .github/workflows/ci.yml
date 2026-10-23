@@ -24,7 +24,8 @@ jobs:
 
       - name: Install deps
         run: |
-          pip install -r requirements.txt -r requirements-dev.txt pytest-cov
+          python3 -m ensurepip
+          python3 -m pip install -r requirements.txt -r requirements-dev.txt pytest-cov
 
       - name: Ruff lint
         run: ruff check .
