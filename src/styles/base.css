@@ -155,7 +155,9 @@ p {
 }
 
 /* Header */
-/* The brand yields width to the pills, so the bar is one row on a phone; it wraps only when zoomed in (WCAG reflow). */
+/* Row heights don't depend on the font showing. Narrow (and zoomed in, WCAG reflow): the brand has a row, then the pills.
+   From 375px: one row, the brand taking what the pills leave, in two lines' height whether it needs them or not; its
+   minimum width, not its text, decides when the bar wraps. */
 .bar {
   display: flex;
   flex-wrap: wrap;
@@ -168,8 +170,21 @@ p {
   font-family: var(--display);
   font-weight: 700;
   font-size: 15px;
-  flex: 1 1 0;
-  min-width: min-content;
+  line-height: 18px;
+  flex: 1 0 100%;
+}
+.bar .pill {
+  flex: none;
+}
+@media (min-width: 375px) {
+  .brand {
+    display: flex;
+    align-items: center;
+    min-height: 36px;
+    flex: 1 1 0;
+    min-width: 6.5em;
+    overflow-wrap: anywhere;
+  }
 }
 .brand::before {
   content: "";
