@@ -101,7 +101,7 @@ export interface MapOptions {
   frame: string[];
   /** Cinemas drawn large and labelled first; the frame by default. */
   focus?: ReadonlySet<string>;
-  /** Extra text after a focus cinema's name: "18:00 +2". */
+  /** Extra text after a focus cinema's name: "18:00, 2 more". */
   notes?: Readonly<Record<string, string>>;
   width: number;
   height: number;

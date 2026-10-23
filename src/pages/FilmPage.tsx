@@ -35,11 +35,11 @@ export function FilmPage({ data }: { data: FilmPageData }) {
   const date = data.date && data.date >= clock.today ? data.date : first;
   const [ticket, setTicket] = useState<Showing | null>(null);
   const groups = date ? byCinema(film.showtimes, date, rank) : [];
-  // Each cinema on the map with its first showing left and how many more: "18:00 +2".
+  // Each cinema on the map with its first showing left and how many more: "18:00, 2 more".
   const notes: Record<string, string> = {};
   for (const g of groups) {
     const left = g.showings.filter((s) => !hasStarted(s, clock));
-    if (left.length) notes[g.theaterId] = `${left[0].time}${left.length > 1 ? ` +${left.length - 1}` : ""}`;
+    if (left.length) notes[g.theaterId] = `${left[0].time}${left.length > 1 ? `, ${left.length - 1} more` : ""}`;
   }
 
   const ticketTheater = ticket && theaters.get(ticket.theater_id);
@@ -237,9 +237,9 @@ function About({ film, seen }: { film: FilmDetail; seen: boolean }) {
       )}
       {(film.director || film.cast.length > 0) && (
         <p class="credits sub">
-          {film.director && `Dir. ${film.director}`}
+          {film.director && `Directed by ${film.director}`}
           {film.director && film.cast.length > 0 && <br />}
-          {film.cast.length > 0 && `With ${film.cast.join(", ")}`}
+          {film.cast.length > 0 && `Starring ${film.cast.join(", ")}`}
         </p>
       )}
       <div class="actions">

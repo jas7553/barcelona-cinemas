@@ -71,6 +71,13 @@ afterEach(() => {
 });
 
 describe("Film page", () => {
+  it("spells out the credits", () => {
+    render(<FilmPage data={data} />);
+    const credits = document.querySelector(".credits")!;
+    expect(credits).toHaveTextContent("Directed by Charlotte Wells");
+    expect(credits).toHaveTextContent("Starring Paul Mescal, Frankie Corio");
+  });
+
   it("opens on today, one row per cinema, with started showings dimmed rather than removed", () => {
     render(<FilmPage data={data} />);
     expect(screen.getByRole("link", { current: "date" })).toHaveAttribute("href", "/film/aftersun/2026-10-04/");

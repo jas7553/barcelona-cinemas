@@ -74,7 +74,7 @@ const boxes = (page: Page) =>
     })),
   );
 
-/** Same heights; chips are compared only where shown both times, not behind "+N more" in one. */
+/** Same heights; chips are compared only where shown both times, not behind "N more times" in one. */
 function expectSameBoxes(painted: Awaited<ReturnType<typeof boxes>>, settled: typeof painted) {
   expect(settled.map((b) => b.height)).toEqual(painted.map((b) => b.height));
   settled.forEach((b, i) => {

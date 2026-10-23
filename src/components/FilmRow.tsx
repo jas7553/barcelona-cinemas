@@ -103,7 +103,7 @@ export function WeekRow({ row, days, today, summary, distance, eager, seen, cell
   );
 }
 
-// Chips shown before "+N more" (requirements 5.2). Both counts are rendered and
+// Chips shown before "N more times" (requirements 5.2). Both counts are rendered and
 // CSS shows the one for the viewport, so the server render needn't know it.
 const CHIPS_MOBILE = 4;
 const CHIPS_DESKTOP = 7;
@@ -122,11 +122,22 @@ interface DayRowProps {
  * as wide from first paint as once it's filled, so the chips beside it stay put.
  */
 function ChipWhere({ theater, home }: { theater: Theater; home: LatLng | null }) {
-  if (theater.lat == null || theater.lng == null) return <>{`${shortName(theater)} · ${theater.neighborhood}`}</>;
+  const name = shortName(theater);
+  const area = theater.neighborhood === name ? null : theater.neighborhood;
+  if (theater.lat == null || theater.lng == null) return <>{area ? `${name} · ${area}` : name}</>;
   return (
     <>
-      {shortName(theater)} · <span class="if-no-home">{theater.neighborhood}</span>
-      <span class="chip-d if-home">{distanceLabel(home, theater)}</span>
+      {name}
+      {area && (
+        <>
+          {" · "}
+          <span class="if-no-home">{area}</span>
+        </>
+      )}
+      <span class="if-home">
+        {" · "}
+        <span class="chip-d">{distanceLabel(home, theater)}</span>
+      </span>
     </>
   );
 }
@@ -137,7 +148,7 @@ export function DayRow({ row, date, theaters, home, eager, onShowing }: DayRowPr
   const more = (shown: number, cls: string) =>
     showings.length > shown && (
       <a class={`chip chip--more ${cls}`} href={href}>
-        +{showings.length - shown} more
+        {plural(showings.length - shown, "more time")}
       </a>
     );
   return (
@@ -224,7 +235,7 @@ export function SiteLegend({ only }: { only?: "desktop" | "idle" }) {
   );
 }
 
-/** The Day view's legend, for the marked times drawn before "+N more" at each width. */
+/** The Day view's legend, for the marked times drawn before "N more times" at each width. */
 export function DayLegend({ rows }: { rows: FilmRow[] }) {
   const marked = (shown: number) => rows.some((r) => r.showings.slice(0, shown).some(siteOnly));
   return marked(CHIPS_MOBILE) ? <SiteLegend /> : marked(CHIPS_DESKTOP) ? <SiteLegend only="desktop" /> : null;

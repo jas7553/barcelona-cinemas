@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { NO_PREFS, OBSOLETE_KEYS, PREF_KEYS, readPrefs, type LatLng, type Prefs } from "../domain/prefs";
 
 const listeners = new Set<(prefs: Prefs) => void>();
@@ -92,4 +92,12 @@ export function useSettledOrder(prefs: Prefs): void {
     for (const el of document.querySelectorAll<HTMLElement>("[data-sort] > *")) el.style.removeProperty("order");
     for (const el of document.querySelectorAll("[data-seen]")) el.removeAttribute("data-seen");
   }, [prefs]);
+}
+
+/** The favourites as first loaded, kept for the page's life, so a list grouped on them doesn't move when one is toggled. */
+export function useLoadedFavourites(prefs: Prefs): ReadonlySet<string> {
+  const loaded = useRef<ReadonlySet<string> | null>(null);
+  // eslint-disable-next-line react-hooks/immutability -- written once, on the render that first has the stored prefs
+  if (loaded.current === null && prefs !== NO_PREFS) loaded.current = prefs.favourites;
+  return loaded.current ?? prefs.favourites;
 }

@@ -70,7 +70,7 @@ export function TicketSheet({ film, showing: s, theater, today, prefs, onClose }
             <dd>{s.time}</dd>
           </div>
           <div>
-            <dt>Out ~</dt>
+            <dt>Ends about</dt>
             <dd>{outTime(s.time, film.runtime_minutes)}</dd>
           </div>
         </dl>

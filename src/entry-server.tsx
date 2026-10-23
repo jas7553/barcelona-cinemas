@@ -18,7 +18,7 @@ const SITE_NAME = "Barcelona This Week";
 // The home page's title: the site name, then the words people search for.
 const HOME_TITLE = `${SITE_NAME} · English-language movies at Barcelona cinemas`;
 const DEFAULT_DESC =
-  "English-language (VO) cinema showtimes across Barcelona this week — what's on, where, and when.";
+  "Original-language (English) cinema showtimes across Barcelona this week — what's on, where, and when.";
 // 512×512 app icon (the home-screen art).
 const OG_IMAGE_PATH = "/icon-512.png";
 
@@ -366,7 +366,7 @@ export function renderPage(data: PageData, siteUrl?: string): RenderedPage {
     }
     case "film": {
       const { film, date } = data;
-      const title = `${film.title} · In English (VO) at Barcelona cinemas`;
+      const title = `${film.title} · In English at Barcelona cinemas`;
       const undated = siteUrl ? `${siteUrl}/film/${film.id}/` : undefined;
       // Dated pages point search engines at the undated one; a film whose run
       // is over stays reachable for links but out of the index.
@@ -388,7 +388,7 @@ export function renderPage(data: PageData, siteUrl?: string): RenderedPage {
     }
     case "cinema": {
       const theater = data.theaters.find((t) => t.id === data.theaterId)!;
-      const title = `${theater.name} · English-language (VO) films in Barcelona`;
+      const title = `${theater.name} · English-language films in Barcelona`;
       const url = siteUrl ? `${siteUrl}/cinema/${theater.id}/` : undefined;
       return {
         html,
