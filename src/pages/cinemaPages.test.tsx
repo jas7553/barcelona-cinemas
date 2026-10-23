@@ -199,4 +199,35 @@ describe("Cinemas", () => {
     });
     expect(JSON.parse(localStorage.getItem(PREF_KEYS.favourites)!)).toEqual([]);
   });
+
+  it("leaves a cinema where it is when starred or unstarred, until the next load", () => {
+    localStorage.setItem(PREF_KEYS.favourites, JSON.stringify(["girona"]));
+    const { container } = render(<CinemasPage data={data} />);
+    const star = (name: string) => screen.getByRole("button", { name: `My cinema: ${name}` });
+    expect(container.querySelector(".cinemas")).toHaveAttribute("data-mine");
+    const before = names();
+    void act(() => {
+      fireEvent.click(star("Cines Verdi"));
+      fireEvent.click(star("Cinemes Girona"));
+    });
+    expect(star("Cines Verdi")).toHaveAttribute("aria-pressed", "true");
+    expect(star("Cinemes Girona")).toHaveAttribute("aria-pressed", "false");
+    expect(names()).toEqual(before);
+    expect(container.querySelector(".cinemas")).toHaveAttribute("data-mine");
+  });
+
+  it("drops data-mine when the favourites have nothing left on", () => {
+    localStorage.setItem(PREF_KEYS.favourites, JSON.stringify(["aribau"]));
+    const { container } = render(<CinemasPage data={data} />);
+    expect(container.querySelector(".cinemas")).not.toHaveAttribute("data-mine");
+  });
+
+  it("keeps the first star out of My cinemas until the next load", () => {
+    const { container } = render(<CinemasPage data={data} />);
+    void act(() => {
+      fireEvent.click(screen.getByRole("button", { name: "My cinema: Cines Verdi" }));
+    });
+    expect(names()).toEqual(["My cinemas", "OthersAll", "Cinemes Girona", "Cines Verdi"]);
+    expect(container.querySelector(".cinemas")).not.toHaveAttribute("data-mine");
+  });
 });

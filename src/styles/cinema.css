@@ -43,10 +43,10 @@
   font-size: 12px;
   margin-top: 2px;
 }
-/* Headings follow the pressed stars, which ORDER_SCRIPT sets before paint. */
-.cinemas:not(:has(.star[aria-pressed="true"])) [data-head="mine"],
-.cinemas:has(.star[aria-pressed="true"]) .if-no-fav,
-.cinemas:not(:has(.star[aria-pressed="true"])) .if-has-fav {
+/* data-mine: the list has a My cinemas group. */
+.cinemas:not([data-mine]) [data-head="mine"],
+.cinemas[data-mine] .if-no-fav,
+.cinemas:not([data-mine]) .if-has-fav {
   display: none;
 }
 

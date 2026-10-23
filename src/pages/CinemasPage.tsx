@@ -1,30 +1,42 @@
+import { useLayoutEffect, useRef } from "preact/hooks";
 import { useNow } from "../client/clock";
-import { toggleFavourite, usePrefs } from "../client/prefs";
+import { toggleFavourite, useLoadedFavourites, usePrefs } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
 import { IconStar } from "../components/Icons";
 import { Layout } from "../components/Layout";
 import { cinemaOrder, filmsLeft } from "../domain/cinema";
 import { distanceKm, distanceLabel } from "../domain/distance";
 import { plural } from "../domain/format";
+import { NO_PREFS } from "../domain/prefs";
 import { clockAt, ranking } from "../domain/schedule";
 import type { CinemasPageData } from "../pageData";
 
 // With a Home, the map frames the cinemas this close and pins the rest to its edge.
 const FRAME_KM = 4;
 
-/** Every cinema with something on, My cinemas first (requirements 5.5). One list, headings included, so ORDER_SCRIPT can reorder it. */
+/**
+ * Every cinema with something on, My cinemas first (requirements 5.5). One list, headings included, so ORDER_SCRIPT can reorder it.
+ * Grouped by the favourites stored at load, so starring a row presses its toggle but leaves it in place; it regroups on the next load.
+ */
 export function CinemasPage({ data }: { data: CinemasPageData }) {
   const now = useNow(data.renderedAt);
   const prefs = usePrefs();
   const clock = clockAt(now);
-  const rank = ranking(data.theaters, prefs.home, prefs.favourites);
+  const grouped = useLoadedFavourites(prefs);
+  const rank = ranking(data.theaters, prefs.home, grouped);
   const order = cinemaOrder(rank);
   const showing = data.theaters
     .map((t) => ({ theater: t, films: filmsLeft(data.lastShowings[t.id], clock) }))
     .filter((c) => c.films > 0)
     .sort((a, b) => order(a.theater, b.theater));
-  const mine = showing.filter((c) => prefs.favourites.has(c.theater.id));
-  const rest = showing.filter((c) => !prefs.favourites.has(c.theater.id));
+  const mine = showing.filter((c) => grouped.has(c.theater.id));
+  const rest = showing.filter((c) => !grouped.has(c.theater.id));
+  const listRef = useRef<HTMLUListElement>(null);
+  // ORDER_SCRIPT sets data-mine from the baked markup; the live clock may have emptied the group.
+  const loaded = prefs !== NO_PREFS;
+  useLayoutEffect(() => {
+    if (loaded) listRef.current?.toggleAttribute("data-mine", mine.length > 0);
+  }, [loaded, mine.length]);
 
   const row = ({ theater: t, films }: (typeof showing)[number]) => (
     <li key={t.id} class="cinema" data-id={t.id} data-lat={t.lat ?? undefined} data-lng={t.lng ?? undefined}>
@@ -79,7 +91,7 @@ export function CinemasPage({ data }: { data: CinemasPageData }) {
             link
           />
         </div>
-        <ul class="cinemas" data-sort>
+        <ul class="cinemas" data-sort ref={listRef}>
           <li class="label" data-head="mine">
             My cinemas
           </li>
