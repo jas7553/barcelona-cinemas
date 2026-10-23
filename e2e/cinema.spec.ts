@@ -76,6 +76,32 @@ test("starring a cinema puts it under My cinemas on the index", async ({ page })
   await expect(page.locator(`[data-fav="${last}"].star`)).toHaveAttribute("aria-pressed", "true");
 });
 
+test("starring a cinema on the index leaves every row where it was, and regroups on reload", async ({ page }) => {
+  await page.goto("/cinemas/");
+  await page.waitForLoadState("networkidle");
+  const ids = await paintedCinemas(page);
+  const id = ids[Math.floor(ids.length / 2)];
+  const boxes = () =>
+    page.locator("li.cinema, li.label:visible").evaluateAll((els) =>
+      els.map((e) => {
+        const b = e.getBoundingClientRect();
+        return [e.getAttribute("data-id") ?? e.textContent, b.x, b.y + scrollY, b.width, b.height];
+      }),
+    );
+  const before = await boxes();
+  const star = page.locator(`[data-fav="${id}"].star`);
+  await star.click();
+  await expect(star).toHaveAttribute("aria-pressed", "true");
+  expect(await boxes()).toEqual(before);
+  expect(await paintedCinemas(page)).toEqual(ids);
+
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+  await expect(page.getByText("My cinemas", { exact: true })).toBeVisible();
+  expect((await paintedCinemas(page))[0]).toBe(id);
+  await expect(page.locator(`[data-fav="${id}"].star`)).toHaveAttribute("aria-pressed", "true");
+});
+
 test.describe("before the bundle runs", () => {
   test.beforeEach(async ({ page }) => {
     await page.route(/\/assets\/.*\.js$/, (route) => route.abort());
