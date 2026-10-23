@@ -161,7 +161,7 @@
 
 @media (min-width: 900px) {
   /* Still 16:9 and uncropped, but capped (about 340px tall) so the first
-     showtime stays above the fold; width follows the ratio, left-aligned. */
+     showtime stays above the fold (keep in step with `sizes` in FilmPage.tsx); width follows the ratio, left-aligned. */
   .backdrop {
     width: min(100%, 604px);
   }
