@@ -31,7 +31,7 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* Stand-ins while the webfonts load: system faces scaled to the webfont's width and line box, so the swap moves nothing. */
+/* Stand-ins while the webfonts load: system faces scaled to the webfont's width and line box, so the swap shifts nothing. */
 @font-face {
   font-family: "DM Sans Fallback";
   font-weight: 400 500;
@@ -155,7 +155,7 @@ p {
 }
 
 /* Header */
-/* The brand yields width to the pills, whichever font it is in, so a phone's bar is always one row; it wraps only when zoomed in (WCAG reflow). */
+/* The brand yields width to the pills, so the bar is one row on a phone; it wraps only when zoomed in (WCAG reflow). */
 .bar {
   display: flex;
   flex-wrap: wrap;
