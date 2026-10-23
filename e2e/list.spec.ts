@@ -137,7 +137,7 @@ test("timetable cells and showtime chips have 44px hit areas", async ({ page }) 
 
 test("Day showtime chips are named with time, cinema, day and whether they book", async ({ page }) => {
   await gotoTomorrow(page);
-  const name = /^\d{2}:\d{2}, .+, \w+day \d{1,2} \w+, (book tickets|no booking page, cinema site)$/;
+  const name = /^\d{2}:\d{2}.*, \w+day \d{1,2} \w+, (book tickets|no booking page, cinema site)$/;
   await expect(rows(page).first().locator("a.chip[aria-haspopup]").first()).toHaveAccessibleName(name);
   await expect(page.getByRole("link", { name }).first()).toBeVisible();
 });

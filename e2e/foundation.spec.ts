@@ -157,7 +157,7 @@ test("the first Tab reaches a visible Skip to content link, which moves focus to
   await expect(page.locator("main#main")).toBeFocused();
 });
 
-test("header and Home sheet controls have 44px hit areas",async ({ page }) => {
+test("header and Home sheet controls have 44px hit areas", async ({ page }) => {
   await page.goto("/privacy/");
   const nav = page.getByRole("navigation", { name: "Site" });
   await expectHit44(nav.getByRole("link", { name: "Barcelona This Week" }), "brand");

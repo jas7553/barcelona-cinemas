@@ -51,11 +51,11 @@ test("a film page has the site header, a way back, and its backdrop uncropped ac
 
 test("film page showtime chips are named with time, cinema, day and whether they book", async ({ page }) => {
   await gotoPremium(page);
-  const name = /^\d{2}:\d{2}, .+, \w+day \d{1,2} \w+, (book tickets|no booking page, cinema site)$/;
+  const name = /^\d{2}:\d{2}.*, \w+day \d{1,2} \w+, (book tickets|no booking page, cinema site)$/;
   await expect(panel(page).getByRole("link", { name }).first()).toBeVisible();
 });
 
-test("a showtime opens its ticket,with this showing's booking link or the cinema website", async ({ page }) => {
+test("a showtime opens its ticket, with this showing's booking link or the cinema website", async ({ page }) => {
   await gotoPremium(page);
   const chip = panel(page).locator("a.chip[aria-haspopup]").first();
   const time = (await chip.locator("b").textContent())!;

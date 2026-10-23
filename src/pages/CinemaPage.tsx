@@ -2,12 +2,12 @@ import { useNow } from "../client/clock";
 import { toggleFavourite, usePrefs } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
 import { DayStrip } from "../components/DayStrip";
-import { chipName, ChipTime, Row, SiteLegend, Tags, WeekRow } from "../components/FilmRow";
+import { ChipTime, Row, SiteLegend, Tags, WeekRow } from "../components/FilmRow";
 import { IconExternal } from "../components/Icons";
 import { Layout } from "../components/Layout";
 import { cinemaDayRows, cinemaWeekRows } from "../domain/cinema";
 import { distanceLabel } from "../domain/distance";
-import { plural, shortName } from "../domain/format";
+import { plural, shortName, showingDetail } from "../domain/format";
 import { bookingHref, siteOnly } from "../domain/ticket";
 import { clockAt, dayAndDate, dayTitle, horizon, pageDays, ranking, type FilmRow } from "../domain/schedule";
 import type { CinemaPageData } from "../pageData";
@@ -188,9 +188,9 @@ function CinemaDayRow({ row, theater, eager, seen }: CinemaDayRowProps) {
             key={i}
             class={siteOnly(s) ? "chip chip--site" : "chip"}
             href={bookingHref(s, theater)}
-            aria-label={chipName(s, shortName(theater), film.title)}
           >
             <ChipTime s={s} />
+            <span class="vh">{showingDetail(s, film.title)}</span>
           </a>
         ))}
       </div>

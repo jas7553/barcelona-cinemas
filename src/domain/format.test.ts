@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { distanceKm } from "./distance";
-import { formatDistance, formatRuntime, joinAnd, plural, shortName, showingName, smallPoster, smallPosterSrcset, subtitleLabel } from "./format";
+import { formatDistance, formatRuntime, joinAnd, plural, shortName, smallPoster, showingDetail, smallPosterSrcset, subtitleLabel } from "./format";
 import { outTime, shareText } from "./ticket";
 
 describe("format", () => {
@@ -9,6 +9,12 @@ describe("format", () => {
     expect(shortName({ name: "Cinesa Diagonal Mar" })).toBe("Diagonal Mar");
     expect(shortName({ name: "Mooby Balmes" })).toBe("Balmes");
     expect(shortName({ name: "Filmoteca de Catalunya" })).toBe("Filmoteca de Catalunya");
+  });
+
+  it("details what a chip's visible text leaves out: lead, day, and whether it books", () => {
+    const s = { date: "2026-10-23", booking_url: "https://x.example" };
+    expect(showingDetail(s, "Verdi")).toBe(", Verdi, Friday 23 October, book tickets");
+    expect(showingDetail({ ...s, booking_url: null })).toBe(", Friday 23 October, no booking page, cinema site");
   });
 
   it("rounds distances to 50 m under 1 km, then tenths of a km", () => {
@@ -55,15 +61,6 @@ describe("ticket", () => {
   it("estimates Out ~ as start + runtime + 15, or + 110 when unknown, across midnight", () => {
     expect(outTime("22:20", 157)).toBe("01:12");
     expect(outTime("18:45", null)).toBe("20:50");
-  });
-
-  it("names a showing chip by time, cinema, day and whether it books", () => {
-    const base = { time: "21:00", date: "2026-10-23", cinema: "Verdi", siteOnly: false };
-    expect(showingName(base)).toBe("21:00, Verdi, Friday 23 October, book tickets");
-    expect(showingName({ ...base, siteOnly: true })).toBe("21:00, Verdi, Friday 23 October, no booking page, cinema site");
-    expect(showingName({ ...base, title: "Aftersun", tags: ["IMAX", null, "English subtitles"] })).toBe(
-      "Aftersun, 21:00, IMAX, English subtitles, Verdi, Friday 23 October, book tickets",
-    );
   });
 
   it("writes share text with the short weekday and day", () => {

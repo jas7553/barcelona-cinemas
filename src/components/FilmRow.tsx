@@ -1,6 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { distanceLabel } from "../domain/distance";
-import { formatRuntime, plural, shortName, showingName, subtitleLabel } from "../domain/format";
+import { formatRuntime, plural, shortName, showingDetail, subtitleLabel } from "../domain/format";
 import type { LatLng } from "../domain/prefs";
 import { dayTitle, type DayStatus, type FilmRow } from "../domain/schedule";
 import type { DateKey } from "../domain/time";
@@ -142,18 +142,6 @@ function ChipWhere({ theater, home }: { theater: Theater; home: LatLng | null })
   );
 }
 
-/** A showing chip's accessible name: time, tags, cinema, day, and whether it books. */
-export function chipName(s: Showing, cinema: string, title?: string): string {
-  return showingName({
-    time: s.time,
-    date: s.date,
-    cinema,
-    siteOnly: siteOnly(s),
-    title,
-    tags: [s.premium_format === "imax" ? "IMAX" : null, subtitleLabel(s)],
-  });
-}
-
 export function DayRow({ row, date, theaters, home, eager, onShowing }: DayRowProps) {
   const { film, showings } = row;
   const href = `/film/${film.id}/${date}/`;
@@ -172,7 +160,7 @@ export function DayRow({ row, date, theaters, home, eager, onShowing }: DayRowPr
             <ShowingChip
               key={i}
               href={href}
-              label={chipName(s, theater ? shortName(theater) : s.theater_id)}
+              detail={showingDetail(s)}
               class={`${i < CHIPS_MOBILE ? "chip" : "chip chip--wide"}${siteOnly(s) ? " chip--site" : ""}`}
               onOpen={() => onShowing(film, s)}
             >
@@ -194,8 +182,8 @@ interface ShowingChipProps {
   /** Where a tap goes before the bundle runs, and with a modifier key after. */
   href: string;
   class?: string;
-  /** The chip's accessible name, from `chipName`. */
-  label: string;
+  /** What the visible text leaves out, from `showingDetail`. */
+  detail: string;
   onOpen: () => void;
   children: ComponentChildren;
 }
@@ -204,12 +192,11 @@ interface ShowingChipProps {
  * A showtime chip. It's a real link, so a tap before the bundle runs still
  * goes somewhere useful; once it runs, a plain tap opens the ticket in place.
  */
-export function ShowingChip({ href, class: cls = "chip", label, onOpen, children }: ShowingChipProps) {
+export function ShowingChip({ href, class: cls = "chip", detail, onOpen, children }: ShowingChipProps) {
   return (
     <a
       class={cls}
       href={href}
-      aria-label={label}
       aria-haspopup="dialog"
       onClick={(e) => {
         if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -218,6 +205,7 @@ export function ShowingChip({ href, class: cls = "chip", label, onOpen, children
       }}
     >
       {children}
+      <span class="vh">{detail}</span>
     </a>
   );
 }

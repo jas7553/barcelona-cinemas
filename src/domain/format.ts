@@ -1,5 +1,7 @@
 import type { Showtime, Theater } from "../types";
-import { formatDayFull, type DateKey } from "./time";
+import type { Showing } from "../pageData";
+import { siteOnly } from "./ticket";
+import { formatDayMonth, formatWeekdayLong } from "./time";
 
 // Chain prefixes dropped from cinema names in chips and summaries (guidelines §7).
 const CHAIN_PREFIX = /^(?:Cines|Cine|Cinema|Cinemes|Cinesa|Mooby|Yelmo)\s+/;
@@ -57,23 +59,14 @@ export function smallPosterSrcset(url: string): string {
   return `${url.replace(POSTER_SIZE, "/t/p/w92/")} 92w, ${smallPoster(url)} 154w`;
 }
 
-interface ShowingNameInput {
-  time: string;
-  date: DateKey;
-  cinema: string;
-  /** No booking page of its own: the time leads to the cinema's site. */
-  siteOnly: boolean;
-  /** Leads the name where the page doesn't already say which film. */
-  title?: string;
-  /** Tags the chip draws, such as "IMAX". */
-  tags?: (string | null)[];
-}
-
-/** "21:00, Verdi, Friday 24 October, book tickets": a showtime chip's accessible name. */
-export function showingName({ time, date, cinema, siteOnly, title, tags = [] }: ShowingNameInput): string {
-  return [title, time, ...tags, cinema, formatDayFull(date), siteOnly ? "no booking page, cinema site" : "book tickets"]
-    .filter(Boolean)
-    .join(", ");
+/**
+ * What a chip's visible text leaves out, to follow it in the accessible name:
+ * ", Verdi, Friday 24 October, book tickets". `lead` names what the page doesn't,
+ * such as the cinema or the film.
+ */
+export function showingDetail(s: Pick<Showing, "date" | "booking_url">, ...lead: string[]): string {
+  const booking = siteOnly(s) ? "no booking page, cinema site" : "book tickets";
+  return `, ${[...lead, `${formatWeekdayLong(s.date)} ${formatDayMonth(s.date)}`, booking].join(", ")}`;
 }
 
 /** A TMDb poster URL resized for the film page. */

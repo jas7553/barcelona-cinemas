@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   addDays,
   formatDateLong,
-  formatDayFull,
   formatInstant,
   formatWeekday,
   formatWeekdayLong,
@@ -31,7 +30,6 @@ describe("date keys", () => {
     expect(formatWeekday("2026-10-02")).toBe("Fri");
     expect(formatWeekdayLong("2026-10-04")).toBe("Sunday");
     expect(formatDateLong("2026-10-02")).toBe("Fri 2 Oct");
-    expect(formatDayFull("2026-10-24")).toBe("Saturday 24 October");
   });
 });
 
