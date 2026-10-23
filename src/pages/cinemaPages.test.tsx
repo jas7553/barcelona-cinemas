@@ -136,7 +136,10 @@ describe("Cinema, day", () => {
     const big = screen.getByRole("heading", { name: "Big" }).closest("li")!;
     expect(big).toHaveAttribute("id", "fbig");
     const chips = within(big).getAllByRole("link").filter((a) => a.classList.contains("chip"));
-    expect(chips.map((b) => b.textContent)).toEqual(["Big, 20:00", "Big, 22:00IMAX(book on the cinema's site)"]);
+    expect(chips.map((b) => b.textContent)).toEqual([
+      "20:00, Big, Monday 5 October, book tickets",
+      "22:00IMAX, Big, Monday 5 October, no booking page, cinema site",
+    ]);
     expect(chips.map((b) => b.getAttribute("href"))).toEqual(["https://verdi.example/b", "https://verdi.example"]);
     expect(chips.map((b) => b.classList.contains("chip--site"))).toEqual([false, true]);
     expect(chips.map((b) => b.querySelector(".site-mark") !== null)).toEqual([false, true]);

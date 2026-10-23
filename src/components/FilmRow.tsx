@@ -1,6 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { distanceLabel } from "../domain/distance";
-import { formatRuntime, plural, shortName, subtitleLabel } from "../domain/format";
+import { formatRuntime, plural, shortName, showingDetail, subtitleLabel } from "../domain/format";
 import type { LatLng } from "../domain/prefs";
 import { dayTitle, type DayStatus, type FilmRow } from "../domain/schedule";
 import type { DateKey } from "../domain/time";
@@ -160,6 +160,7 @@ export function DayRow({ row, date, theaters, home, eager, onShowing }: DayRowPr
             <ShowingChip
               key={i}
               href={href}
+              detail={showingDetail(s)}
               class={`${i < CHIPS_MOBILE ? "chip" : "chip chip--wide"}${siteOnly(s) ? " chip--site" : ""}`}
               onOpen={() => onShowing(film, s)}
             >
@@ -181,6 +182,8 @@ interface ShowingChipProps {
   /** Where a tap goes before the bundle runs, and with a modifier key after. */
   href: string;
   class?: string;
+  /** What the visible text leaves out, from `showingDetail`. */
+  detail: string;
   onOpen: () => void;
   children: ComponentChildren;
 }
@@ -189,7 +192,7 @@ interface ShowingChipProps {
  * A showtime chip. It's a real link, so a tap before the bundle runs still
  * goes somewhere useful; once it runs, a plain tap opens the ticket in place.
  */
-export function ShowingChip({ href, class: cls = "chip", onOpen, children }: ShowingChipProps) {
+export function ShowingChip({ href, class: cls = "chip", detail, onOpen, children }: ShowingChipProps) {
   return (
     <a
       class={cls}
@@ -202,6 +205,7 @@ export function ShowingChip({ href, class: cls = "chip", onOpen, children }: Sho
       }}
     >
       {children}
+      <span class="vh">{detail}</span>
     </a>
   );
 }
@@ -215,7 +219,6 @@ export function ChipTime({ s }: { s: Showing }) {
       {siteOnly(s) && (
         <span class="site-mark">
           <IconExternal />
-          <span class="vh">(book on the cinema's site)</span>
         </span>
       )}
     </span>

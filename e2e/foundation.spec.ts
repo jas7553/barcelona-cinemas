@@ -146,6 +146,17 @@ test("Back restores the page from bfcache with prefs changed elsewhere", async (
   expect(errors).toEqual([]);
 });
 
+test("the first Tab reaches a visible Skip to content link, which moves focus to the page", async ({ page, browserName }) => {
+  test.skip(browserName === "webkit", "Safari does not Tab to links by default");
+  await page.goto("/privacy/");
+  await page.keyboard.press("Tab");
+  const skip = page.getByRole("link", { name: "Skip to content" });
+  await expect(skip).toBeFocused();
+  await expect(skip).toBeInViewport({ ratio: 1 });
+  await page.keyboard.press("Enter");
+  await expect(page.locator("main#main")).toBeFocused();
+});
+
 test("header and Home sheet controls have 44px hit areas", async ({ page }) => {
   await page.goto("/privacy/");
   const nav = page.getByRole("navigation", { name: "Site" });

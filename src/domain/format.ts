@@ -1,4 +1,7 @@
 import type { Showtime, Theater } from "../types";
+import type { Showing } from "../pageData";
+import { siteOnly } from "./ticket";
+import { formatDayMonth, formatWeekdayLong } from "./time";
 
 // Chain prefixes dropped from cinema names in chips and summaries (guidelines §7).
 const CHAIN_PREFIX = /^(?:Cines|Cine|Cinema|Cinemes|Cinesa|Mooby|Yelmo)\s+/;
@@ -54,6 +57,16 @@ export function smallPoster(url: string): string {
 /** A `srcset` for the small slot, so a 1x screen takes w92 rather than w154. */
 export function smallPosterSrcset(url: string): string {
   return `${url.replace(POSTER_SIZE, "/t/p/w92/")} 92w, ${smallPoster(url)} 154w`;
+}
+
+/**
+ * What a chip's visible text leaves out, to follow it in the accessible name:
+ * ", Verdi, Friday 24 October, book tickets". `lead` names what the page doesn't,
+ * such as the cinema or the film.
+ */
+export function showingDetail(s: Pick<Showing, "date" | "booking_url">, ...lead: string[]): string {
+  const booking = siteOnly(s) ? "no booking page, cinema site" : "book tickets";
+  return `, ${[...lead, `${formatWeekdayLong(s.date)} ${formatDayMonth(s.date)}`, booking].join(", ")}`;
 }
 
 /** A TMDb poster URL resized for the film page. */

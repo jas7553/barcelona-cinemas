@@ -7,7 +7,7 @@ import { IconExternal } from "../components/Icons";
 import { Layout } from "../components/Layout";
 import { cinemaDayRows, cinemaWeekRows } from "../domain/cinema";
 import { distanceLabel } from "../domain/distance";
-import { plural, shortName } from "../domain/format";
+import { plural, shortName, showingDetail } from "../domain/format";
 import { bookingHref, siteOnly } from "../domain/ticket";
 import { clockAt, dayAndDate, dayTitle, horizon, pageDays, ranking, type FilmRow } from "../domain/schedule";
 import type { CinemaPageData } from "../pageData";
@@ -184,9 +184,13 @@ function CinemaDayRow({ row, theater, eager, seen }: CinemaDayRowProps) {
     <Row film={film} href={`/film/${film.id}/${showings[0].date}/`} eager={eager} seen={seen} id={`f${film.id}`}>
       <div class="chips">
         {showings.map((s, i) => (
-          <a key={i} class={siteOnly(s) ? "chip chip--site" : "chip"} href={bookingHref(s, theater)}>
-            <span class="vh">{film.title}, </span>
+          <a
+            key={i}
+            class={siteOnly(s) ? "chip chip--site" : "chip"}
+            href={bookingHref(s, theater)}
+          >
             <ChipTime s={s} />
+            <span class="vh">{showingDetail(s, film.title)}</span>
           </a>
         ))}
       </div>
