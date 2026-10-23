@@ -170,7 +170,7 @@ function BackLink({ film, theaters }: { film: FilmDetail; theaters: ReadonlyMap<
   );
 }
 
-/** Whole, never cropped, across the content column. */
+/** Whole, never cropped: across the content column on a phone, capped at 604px wide (see .backdrop in film.css) from 900px. */
 function Backdrop({ src }: { src: string }) {
   return (
     <div class="wrap">
@@ -178,7 +178,7 @@ function Backdrop({ src }: { src: string }) {
         class="backdrop"
         src={src}
         srcset={`${src.replace(/\/w\d+\//, "/w780/")} 780w, ${src} 1280w`}
-        sizes="(min-width: 1120px) 1056px, (min-width: 900px) calc(100vw - 64px), calc(100vw - 32px)"
+        sizes="(min-width: 900px) 604px, calc(100vw - 32px)"
         alt=""
         width={1280}
         height={720}
