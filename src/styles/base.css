@@ -31,6 +31,35 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
+/* Stand-ins while the webfonts load: system faces scaled to the webfont's width and line box, so the swap shifts nothing. */
+@font-face {
+  font-family: "DM Sans Fallback";
+  font-weight: 400 500;
+  src: local("Arial"), local("ArialMT");
+  size-adjust: 106.13%;
+  ascent-override: 93.47%;
+  descent-override: 29.21%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "DM Sans Fallback";
+  font-weight: 600 700;
+  src: local("Arial Bold"), local("Arial-BoldMT");
+  size-adjust: 102.69%;
+  ascent-override: 96.6%;
+  descent-override: 30.19%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: "Playfair Display Fallback";
+  font-weight: 400 700;
+  src: local("Georgia Bold"), local("Georgia-Bold");
+  size-adjust: 89.23%;
+  ascent-override: 121.26%;
+  descent-override: 28.13%;
+  line-gap-override: 0%;
+}
+
 /* Tokens */
 :root {
   --bg: #faf6ef;
@@ -45,8 +74,8 @@
   --solid: #a06626;
   --ink: #8f5620;
   --wash: #f5e8d4;
-  --display: "Playfair Display", Georgia, serif;
-  --ui: "DM Sans", system-ui, sans-serif;
+  --display: "Playfair Display", "Playfair Display Fallback", Georgia, serif;
+  --ui: "DM Sans", "DM Sans Fallback", system-ui, sans-serif;
   --pad: 16px;
   --max: 1120px;
   color-scheme: light;
@@ -64,6 +93,8 @@ html {
 }
 body {
   font-family: var(--ui);
+  /* DM Sans's own "normal", fixed so no fallback font can change a line's height. */
+  line-height: 1.3;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
@@ -126,7 +157,9 @@ p {
 }
 
 /* Header */
-/* Wraps only when zoomed in (WCAG reflow). */
+/* Row heights don't depend on the font showing. Narrow (and zoomed in, WCAG reflow): the brand has a row, then the pills.
+   From 375px: one row, the brand taking what the pills leave, in two lines' height whether it needs them or not; its
+   minimum width, not its text, decides when the bar wraps. */
 .bar {
   display: flex;
   flex-wrap: wrap;
@@ -139,7 +172,21 @@ p {
   font-family: var(--display);
   font-weight: 700;
   font-size: 15px;
-  margin-right: auto;
+  line-height: 18px;
+  flex: 1 0 100%;
+}
+.bar .pill {
+  flex: none;
+}
+@media (min-width: 375px) {
+  .brand {
+    display: flex;
+    align-items: center;
+    min-height: 36px;
+    flex: 1 1 0;
+    min-width: 6.5em;
+    overflow-wrap: anywhere;
+  }
 }
 .brand::before {
   content: "";
