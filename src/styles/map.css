@@ -123,3 +123,33 @@
     margin-top: 20px;
   }
 }
+
+/* Street maps: real tiles round one cinema. */
+.street {
+  position: relative;
+}
+.street a {
+  display: block;
+}
+.street-credit {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.75);
+  font: 500 9px var(--ui);
+  color: var(--sub);
+  pointer-events: none;
+}
+.st-pin {
+  fill: var(--solid);
+  stroke: #fff;
+  stroke-width: 2;
+}
+.st-pin-hole {
+  fill: #fff;
+}
+.st-label {
+  stroke: #fff;
+}

@@ -1,10 +1,10 @@
 import { useNow } from "../client/clock";
 import { toggleFavourite, usePrefs } from "../client/prefs";
-import { CityMap } from "../components/CityMap";
 import { DayStrip } from "../components/DayStrip";
 import { ChipTime, Row, SiteLegend, Tags, WeekRow } from "../components/FilmRow";
 import { IconExternal } from "../components/Icons";
 import { Layout } from "../components/Layout";
+import { StreetMap } from "../components/StreetMap";
 import { cinemaDayRows, cinemaWeekRows } from "../domain/cinema";
 import { distanceLabel } from "../domain/distance";
 import { plural, shortName, showingDetail } from "../domain/format";
@@ -130,16 +130,13 @@ export function CinemaPage({ data }: { data: CinemaPageData }) {
           </div>
           {theater.lat != null && (
             <div class="cin-map">
-              <CityMap
-                label={`Map of ${theater.name}${prefs.home ? " and Home" : ""}, with the cinemas nearby`}
-                mobile={[358, 180]}
-                desktop={[480, 240]}
-                theaters={data.theaters}
-                frame={[theater.id]}
-                minSpan={3.2}
+              <StreetMap
+                place={{ lat: theater.lat, lng: theater.lng! }}
+                name={theater.name}
+                href={theater.maps_url}
                 home={prefs.home}
-                favourites={prefs.favourites}
-                link
+                mobile={[358, 200]}
+                desktop={[480, 240]}
               />
             </div>
           )}
