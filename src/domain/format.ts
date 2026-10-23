@@ -31,7 +31,7 @@ export function joinAnd(items: string[]): string {
   return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
 }
 
-const SUBTITLE_LABEL = { en: "English subs", es: "Spanish subs", ca: "Catalan subs" } as const;
+const SUBTITLE_LABEL = { en: "English subtitles", es: "Spanish subtitles", ca: "Catalan subtitles" } as const;
 
 /**
  * The subtitle version tag. English audio is the site's norm and unknown audio

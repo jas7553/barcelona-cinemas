@@ -184,7 +184,7 @@ describe("film pages", () => {
 
   it("keeps the synopsis out of share previews and points dated pages at the undated one", () => {
     const dated = renderPage(pages.find((p) => p.path === "film/1/2026-10-05.html")!.data, "https://x.test");
-    expect(dated.title).toBe("Aftersun · In English (VO) at Barcelona cinemas");
+    expect(dated.title).toBe("Aftersun · In English at Barcelona cinemas");
     expect(dated.headExtra).toContain('content="Aftersun (2022) in English at Cines Verdi this week. Drama."');
     expect(dated.headExtra).not.toContain("spoiler");
     expect(dated.headExtra).toContain('rel="canonical" href="https://x.test/film/1/"');
@@ -234,7 +234,7 @@ describe("cinema pages", () => {
 
   it("points a cinema's Day views at its week view", () => {
     const out = renderPage(pages.find((p) => p.path === "cinema/verdi/2026-10-05.html")!.data, "https://x.test");
-    expect(out.title).toBe("Cines Verdi · English-language (VO) films in Barcelona");
+    expect(out.title).toBe("Cines Verdi · English-language films in Barcelona");
     expect(out.headExtra).toContain('rel="canonical" href="https://x.test/cinema/verdi/"');
   });
 

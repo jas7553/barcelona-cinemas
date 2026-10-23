@@ -15,7 +15,7 @@ test("Privacy renders and hydrates under the production CSP without errors", asy
   const errors = collectErrors(page);
   await page.goto("/privacy/");
   await expect(page.getByRole("heading", { level: 1, name: "Privacy" })).toBeVisible();
-  await expect(page.locator("footer")).toContainText(/^Updated .+ · VO screenings only · Data from TMDb · Privacy$/);
+  await expect(page.locator("footer")).toContainText(/^Updated .+ · Original-language \(English\) screenings only · Data from TMDb · Privacy$/);
   await homePill(page).click();
   await expect(homeSheet(page)).toBeVisible();
   expect(errors).toEqual([]);

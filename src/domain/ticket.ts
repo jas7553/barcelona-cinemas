@@ -6,7 +6,7 @@ import { formatWeekday } from "./time";
 const PRE_SHOW_MIN = 15;
 const UNKNOWN_RUNTIME_MIN = 110;
 
-/** "Out ~" time: start + runtime + 15 min, wrapping past midnight. */
+/** "Ends about" time: start + runtime + 15 min, wrapping past midnight. */
 export function outTime(start: string, runtimeMinutes: number | null): string {
   const [h, m] = start.split(":").map(Number);
   const end = h * 60 + m + (runtimeMinutes || UNKNOWN_RUNTIME_MIN) + PRE_SHOW_MIN;
