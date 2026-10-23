@@ -43,7 +43,7 @@
   font-size: 12px;
   margin-top: 2px;
 }
-/* Headings follow the grouping at load: data-mine is set by ORDER_SCRIPT before paint, then by the page. */
+/* data-mine: the list has a My cinemas group. */
 .cinemas:not([data-mine]) [data-head="mine"],
 .cinemas[data-mine] .if-no-fav,
 .cinemas:not([data-mine]) .if-has-fav {

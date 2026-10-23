@@ -213,6 +213,12 @@ describe("Cinemas", () => {
     expect(container.querySelector(".cinemas")).toHaveAttribute("data-mine");
   });
 
+  it("drops data-mine when the favourites have nothing left on", () => {
+    localStorage.setItem(PREF_KEYS.favourites, JSON.stringify(["aribau"]));
+    const { container } = render(<CinemasPage data={data} />);
+    expect(container.querySelector(".cinemas")).not.toHaveAttribute("data-mine");
+  });
+
   it("keeps the first star out of My cinemas until the next load", () => {
     const { container } = render(<CinemasPage data={data} />);
     void act(() => {
