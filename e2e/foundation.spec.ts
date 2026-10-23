@@ -166,3 +166,38 @@ test("a page with a saved Home doesn't shift as it hydrates", async ({ page, bro
   await page.waitForLoadState("networkidle");
   expect(await readCls(page)).toBeLessThan(0.02);
 });
+
+test.describe("webfonts arriving late", () => {
+  const FONT_DELAY_MS = 2000;
+  const barHeight = (page: Page) => page.locator("header nav.bar").evaluate((e) => e.getBoundingClientRect().height);
+
+  for (const width of [320, 390]) {
+    for (const path of ["/", "/privacy/", "/cinemas/"]) {
+      test(`${path} at ${width}px keeps its header height and doesn't shift when the fonts swap in`, async ({
+        page,
+        browserName,
+      }) => {
+        await page.setViewportSize({ width, height: 800 });
+        let released = false;
+        await page.route("**/fonts/**", async (route) => {
+          await new Promise((r) => setTimeout(r, FONT_DELAY_MS));
+          released = true;
+          await route.continue();
+        });
+        await watchCls(page);
+        // The font preloads hold the load event, so don't wait for it.
+        await page.goto(path, { waitUntil: "commit" });
+        await expect(homePill(page)).toHaveAccessibleName("Set home");
+        const withFallback = await barHeight(page);
+        expect(released, "painted and measured before any font arrived").toBe(false);
+
+        await page.waitForLoadState("networkidle");
+        await page.evaluate(() => document.fonts.ready);
+        expect(released).toBe(true);
+        expect(await barHeight(page)).toBe(withFallback);
+        // WebKit has no layout-shift entries.
+        if (browserName === "chromium") expect(await readCls(page)).toBeLessThan(0.02);
+      });
+    }
+  }
+});
