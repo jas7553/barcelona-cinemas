@@ -74,6 +74,11 @@ export function formatWeekdayLong(key: DateKey): string {
   return weekdayLong.format(keyToUtcMs(key));
 }
 
+/** "Thursday 2 October" */
+export function formatDayFull(key: DateKey): string {
+  return `${formatWeekdayLong(key)} ${Number(key.slice(8))} ${monthLong.format(keyToUtcMs(key))}`;
+}
+
 /** "Thu 2 Oct" */
 export function formatDateLong(key: DateKey): string {
   return `${formatWeekday(key)} ${Number(key.slice(8))} ${monthShort.format(keyToUtcMs(key))}`;

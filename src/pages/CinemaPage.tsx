@@ -2,7 +2,7 @@ import { useNow } from "../client/clock";
 import { toggleFavourite, usePrefs } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
 import { DayStrip } from "../components/DayStrip";
-import { ChipTime, Row, SiteLegend, Tags, WeekRow } from "../components/FilmRow";
+import { chipName, ChipTime, Row, SiteLegend, Tags, WeekRow } from "../components/FilmRow";
 import { IconExternal } from "../components/Icons";
 import { Layout } from "../components/Layout";
 import { cinemaDayRows, cinemaWeekRows } from "../domain/cinema";
@@ -184,8 +184,12 @@ function CinemaDayRow({ row, theater, eager, seen }: CinemaDayRowProps) {
     <Row film={film} href={`/film/${film.id}/${showings[0].date}/`} eager={eager} seen={seen} id={`f${film.id}`}>
       <div class="chips">
         {showings.map((s, i) => (
-          <a key={i} class={siteOnly(s) ? "chip chip--site" : "chip"} href={bookingHref(s, theater)}>
-            <span class="vh">{film.title}, </span>
+          <a
+            key={i}
+            class={siteOnly(s) ? "chip chip--site" : "chip"}
+            href={bookingHref(s, theater)}
+            aria-label={chipName(s, shortName(theater), film.title)}
+          >
             <ChipTime s={s} />
           </a>
         ))}

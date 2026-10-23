@@ -100,8 +100,8 @@ describe("Day", () => {
     const site = screen.getByRole("link", { name: /^19:00/ });
     expect(site).toHaveClass("chip--site");
     expect(site.querySelector(".site-mark")).not.toBeNull();
-    expect(site).toHaveAccessibleName(/book on the cinema's site/);
-    const booked = screen.getByRole("link", { name: /^21:30/ });
+    expect(site).toHaveAccessibleName(/, no booking page, cinema site$/);
+    const booked = screen.getByRole("link", { name: /^21:30.*book tickets$/ });
     expect(booked).not.toHaveClass("chip--site");
     expect(booked.querySelector(".site-mark")).toBeNull();
     expect(screen.getAllByText(LEGEND)).toHaveLength(1);
@@ -118,7 +118,7 @@ describe("Day", () => {
   it("has no legend when every time has its own booking page", () => {
     const films = [{ ...FILMS[0], showtimes: FILMS[0].showtimes.filter((s) => s.booking_url) }];
     render(<DayPage data={{ ...dayData, films }} />);
-    expect(screen.getByRole("link", { name: /^21:30/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^21:30.*book tickets$/ })).toBeInTheDocument();
     expect(screen.queryByText(LEGEND)).toBeNull();
   });
 
@@ -140,7 +140,7 @@ describe("Day", () => {
   it("drops the neighbourhood when it repeats the cinema's name", () => {
     const same = THEATERS.map((t) => (t.id === "verdi" ? { ...t, short_name: "Gràcia" } : t));
     render(<DayPage data={{ ...dayData, theaters: same }} />);
-    const where = screen.getByRole("link", { name: /^21:30/ }).querySelector(".chip-w")!;
+    const where = screen.getByRole("link", { name: /^21:30.*book tickets$/ }).querySelector(".chip-w")!;
     expect(where.textContent).not.toContain("Gràcia · Gràcia");
     expect(where.textContent).toMatch(/^Gràcia/);
   });

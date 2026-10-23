@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { useNow } from "../client/clock";
 import { toggleSeen, usePrefs } from "../client/prefs";
 import { CityMap } from "../components/CityMap";
-import { ChipTime, ShowingChip, SiteLegend } from "../components/FilmRow";
+import { chipName, ChipTime, ShowingChip, SiteLegend } from "../components/FilmRow";
 import { IconExternal, IconStar } from "../components/Icons";
 import { Layout } from "../components/Layout";
 import { TicketSheet } from "../components/TicketSheet";
@@ -347,6 +347,7 @@ function DayShowings({ film, date, today, unpub, groups, theaters, home, favouri
                     <ShowingChip
                       key={i}
                       href={bookingHref(s, theater)}
+                      label={chipName(s, shortName(theater))}
                       class={siteOnly(s) ? "chip chip--t chip--site" : "chip chip--t"}
                       onOpen={() => onShowing(s)}
                     >

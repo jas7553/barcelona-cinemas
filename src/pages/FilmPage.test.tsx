@@ -142,7 +142,7 @@ describe("Film page", () => {
     expect(site).toHaveAttribute("href", "https://girona.example");
     expect(site).toHaveClass("chip--site");
     expect(site.querySelector(".site-mark")).not.toBeNull();
-    expect(site).toHaveAccessibleName(/book on the cinema's site/);
+    expect(site).toHaveAccessibleName(/, no booking page, cinema site$/);
     const booked = screen.getByRole("link", { name: /20:00/ });
     expect(booked).toHaveAttribute("href", "https://verdi.example/book/2");
     expect(booked).not.toHaveClass("chip--site");
