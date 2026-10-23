@@ -43,6 +43,12 @@ export async function watchCls(page: Page) {
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries() as unknown as { value: number; hadRecentInput: boolean }[]) {
         if (!entry.hadRecentInput) w.cls += entry.value;
+        const e = entry as unknown as { sources: { node: Element | null; previousRect: DOMRect; currentRect: DOMRect }[] };
+        const d = ((w as unknown as { dbg?: string[] }).dbg ??= []);
+        for (const x of e.sources) {
+          const n = x.node as HTMLElement | null;
+          d.push(`${(entry as unknown as { value: number }).value.toFixed(4)} ${n?.tagName}.${n?.className} y ${Math.round(x.previousRect.y)}->${Math.round(x.currentRect.y)} h ${Math.round(x.previousRect.height)}->${Math.round(x.currentRect.height)} w ${Math.round(x.previousRect.width)}->${Math.round(x.currentRect.width)} font=${n ? getComputedStyle(n).fontFamily.slice(0, 60) : ""}`);
+        }
       }
     }).observe({ type: "layout-shift", buffered: true });
   });

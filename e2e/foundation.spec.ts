@@ -200,7 +200,10 @@ test.describe("webfonts arriving late", () => {
       expect(released).toBe(true);
       expect(await barHeight(page)).toBe(withFallback);
       // WebKit has no layout-shift entries.
-      if (browserName === "chromium") expect(await readCls(page)).toBeLessThan(0.02);
+      if (browserName === "chromium") {
+        const dbg = await page.evaluate(() => (window as unknown as { dbg?: string[] }).dbg ?? []);
+        expect(await readCls(page), dbg.join("\n")).toBeLessThan(0.02);
+      }
     });
   }
 });
