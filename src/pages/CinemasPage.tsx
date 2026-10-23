@@ -7,6 +7,7 @@ import { Layout } from "../components/Layout";
 import { cinemaOrder, filmsLeft } from "../domain/cinema";
 import { distanceKm, distanceLabel } from "../domain/distance";
 import { plural } from "../domain/format";
+import { NO_PREFS } from "../domain/prefs";
 import { clockAt, ranking } from "../domain/schedule";
 import type { CinemasPageData } from "../pageData";
 
@@ -32,9 +33,10 @@ export function CinemasPage({ data }: { data: CinemasPageData }) {
   const rest = showing.filter((c) => !grouped.has(c.theater.id));
   const listRef = useRef<HTMLUListElement>(null);
   // ORDER_SCRIPT sets data-mine from the baked markup; the live clock may have emptied the group.
+  const loaded = prefs !== NO_PREFS;
   useLayoutEffect(() => {
-    listRef.current?.toggleAttribute("data-mine", mine.length > 0);
-  }, [mine.length]);
+    if (loaded) listRef.current?.toggleAttribute("data-mine", mine.length > 0);
+  }, [loaded, mine.length]);
 
   const row = ({ theater: t, films }: (typeof showing)[number]) => (
     <li key={t.id} class="cinema" data-id={t.id} data-lat={t.lat ?? undefined} data-lng={t.lng ?? undefined}>
