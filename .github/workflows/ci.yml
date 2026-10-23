@@ -73,14 +73,22 @@ jobs:
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest
+    # Browsers and their system libraries come baked into the image, so a slow
+    # apt mirror can't stall the job. Keep the tag in step with @playwright/test
+    # in package-lock.json (a mismatch makes Playwright look for missing browsers).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble
+      options: --ipc=host
     steps:
       - uses: actions/checkout@v7
 
+      # The image's python3 lacks the project's requirements and its pip is
+      # externally managed, so keep setup-python (fetched from GitHub, not apt).
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-          cache: pip
 
+      # Pins the Node from .nvmrc rather than the image's own.
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -88,16 +96,14 @@ jobs:
 
       - name: Install deps
         run: |
-          pip install -r requirements.txt
+          python3 -m ensurepip
+          python3 -m pip install -r requirements.txt
           npm ci
 
       # Playwright boots the Flask API itself (playwright.config.ts webServer),
       # against the committed e2e/fixtures/listings.json — no TMDb access needed.
       # One browser per project in playwright.config.ts: mobile-chromium and
       # mobile-webkit.
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
-
       - name: Run e2e
         run: npm run e2e
 
