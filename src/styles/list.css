@@ -108,6 +108,15 @@
   font-size: 18px;
   line-height: 1.15;
 }
+/* Reaches 44px from the title line; the row above and the meta below have no links. */
+.film-h a {
+  position: relative;
+}
+.film-h a::before {
+  content: "";
+  position: absolute;
+  inset: -12px 0;
+}
 .film .meta {
   grid-column: 2 / -1;
   grid-row: 2;

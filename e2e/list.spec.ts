@@ -135,6 +135,18 @@ test("timetable cells and showtime chips have 44px hit areas", async ({ page }) 
   expect(box!.height).toBeGreaterThanOrEqual(44);
 });
 
+test("Day showtime chips are named with time, cinema, day and whether they book", async ({ page }) => {
+  await gotoTomorrow(page);
+  const name = /^\d{2}:\d{2}.*, \w+day \d{1,2} \w+, (book tickets|no booking page, cinema site)$/;
+  await expect(rows(page).first().locator("a.chip[aria-haspopup]").first()).toHaveAccessibleName(name);
+  await expect(page.getByRole("link", { name }).first()).toBeVisible();
+});
+
+test("film titles have a 44px hit area", async ({ page }) => {
+  await page.goto("/");
+  await expectHit44(rows(page).first().locator(".film-h a"), "film title");
+});
+
 for (const path of ["/", "day"]) {
   test(`${path === "/" ? "This week" : "Day"} with a saved Home and seen films doesn't shift when the bundle is slow`, async ({
     page,

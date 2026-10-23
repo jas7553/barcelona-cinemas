@@ -9,7 +9,7 @@ import { TicketSheet } from "../components/TicketSheet";
 import { DayLink, replaceOnClick } from "../components/DayStrip";
 import { distanceLabel } from "../domain/distance";
 import { byCinema } from "../domain/film";
-import { formatRuntime, largePoster, plural, shortName } from "../domain/format";
+import { formatRuntime, largePoster, plural, shortName, showingDetail } from "../domain/format";
 import type { LatLng } from "../domain/prefs";
 import { bookingHref, siteOnly } from "../domain/ticket";
 import { clockAt, dayAndDate, dayTitle, hasStarted, pageDays, ranking, weekSummary, type WeekSummaryDay } from "../domain/schedule";
@@ -367,6 +367,7 @@ function DayShowings({ film, date, today, unpub, groups, theaters, home, favouri
                     <ShowingChip
                       key={i}
                       href={bookingHref(s, theater)}
+                      detail={showingDetail(s, shortName(theater))}
                       class={siteOnly(s) ? "chip chip--t chip--site" : "chip chip--t"}
                       onOpen={() => onShowing(s)}
                     >

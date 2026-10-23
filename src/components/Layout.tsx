@@ -25,11 +25,16 @@ export function Layout({ data, section, heading, strip, mainClass, children }: P
   const [homeOpen, setHomeOpen] = useState(false);
   return (
     <>
+      <a class="skip" href="#main">
+        Skip to content
+      </a>
       <Header section={section} onHome={() => setHomeOpen(true)}>
         {heading}
       </Header>
       {strip}
-      <main class={mainClass ? `wrap ${mainClass}` : "wrap"}>{children}</main>
+      <main id="main" tabIndex={-1} class={mainClass ? `wrap ${mainClass}` : "wrap"}>
+        {children}
+      </main>
       <Footer generatedAt={data.generatedAt} />
       {homeOpen && <HomeSheet home={prefs.home} theaters={data.theaters} onClose={() => setHomeOpen(false)} />}
     </>

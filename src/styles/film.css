@@ -76,7 +76,7 @@
 .more::before {
   content: "";
   position: absolute;
-  inset: -12px -8px;
+  inset: -14px -8px;
 }
 .credits {
   font-size: 13px;

@@ -100,7 +100,7 @@ describe("Day", () => {
     const site = screen.getByRole("link", { name: /^19:00/ });
     expect(site).toHaveClass("chip--site");
     expect(site.querySelector(".site-mark")).not.toBeNull();
-    expect(site).toHaveAccessibleName(/book on the cinema's site/);
+    expect(site).toHaveAccessibleName(/^19:00.*Girona.*, Sunday 4 October, no booking page, cinema site$/);
     const booked = screen.getByRole("link", { name: /^21:30/ });
     expect(booked).not.toHaveClass("chip--site");
     expect(booked.querySelector(".site-mark")).toBeNull();
