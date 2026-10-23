@@ -93,6 +93,8 @@ html {
 }
 body {
   font-family: var(--ui);
+  /* DM Sans's own "normal", fixed so no fallback font can change a line's height. */
+  line-height: 1.3;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
