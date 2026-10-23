@@ -49,6 +49,22 @@ test("a film page has the site header, a way back, and its backdrop uncropped ac
   expect(Math.abs(h - (w * 9) / 16)).toBeLessThan(1);
 });
 
+for (const [width, height] of [
+  [1440, 900],
+  [1280, 800],
+]) {
+  test(`on a ${width}x${height} desktop the first showtime is above the fold, behind a capped 16:9 backdrop`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await gotoPremium(page);
+    const backdrop = page.locator("img.backdrop");
+    test.skip((await backdrop.count()) === 0, "the fixture film has no backdrop");
+    expect((await panel(page).locator("a.chip").first().boundingBox())!.y).toBeLessThan(height);
+    const box = (await backdrop.boundingBox())!;
+    expect(Math.abs(box.height - (box.width * 9) / 16)).toBeLessThan(1);
+    expect(box.height).toBeLessThanOrEqual(340);
+  });
+}
+
 test("a showtime opens its ticket, with this showing's booking link or the cinema website", async ({ page }) => {
   await gotoPremium(page);
   const chip = panel(page).locator("a.chip[aria-haspopup]").first();
