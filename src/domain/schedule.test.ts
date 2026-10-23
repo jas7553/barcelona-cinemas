@@ -233,16 +233,23 @@ describe("weekSummary", () => {
 
   it("lists each day in the horizon with its cinemas, alphabetically, omitting empty days", () => {
     expect(weekSummary(shows, BY_ID, clock)).toEqual([
-      { date: "2026-10-04", cinemas: ["Glòries"] },
+      { date: "2026-10-04", cinemas: ["Glòries", "Verdi"] },
       { date: "2026-10-06", cinemas: ["Verdi", "Verdi Park"] },
+      { date: "2026-10-07", cinemas: ["gone"] },
       { date: "2026-10-09", cinemas: ["Nowhere"] },
     ]);
+  });
+
+  it("is the same before and after a showing starts, so nothing moves under the reader", () => {
+    const early = weekSummary(shows, BY_ID, { today: "2026-10-04", time: "09:00" });
+    expect(weekSummary(shows, BY_ID, { today: "2026-10-04", time: "23:00" })).toEqual(early);
+    expect(early[0]).toEqual({ date: "2026-10-04", cinemas: ["Glòries", "Verdi"] });
   });
 
   it("follows the clock: past midnight the day rolls off and a new one comes in", () => {
     const next: Clock = { today: "2026-10-05", time: "00:10" };
     const days = weekSummary(shows, BY_ID, next).map((d) => d.date);
-    expect(days).toEqual(["2026-10-06", "2026-10-09", "2026-10-11"]);
+    expect(days).toEqual(["2026-10-06", "2026-10-07", "2026-10-09", "2026-10-11"]);
   });
 
   it("is empty when nothing is left", () => {

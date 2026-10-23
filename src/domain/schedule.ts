@@ -194,18 +194,28 @@ export function rowSummary(row: FilmRow, theaters: ReadonlyMap<string, Theater>,
 
 export interface WeekSummaryDay {
   date: DateKey;
-  /** Short names of the cinemas with a showing left that day, alphabetical (never by Home or favourites, which load after paint). */
+  /** Alphabetical, so Home and favourites can't reorder it. */
   cinemas: string[];
 }
 
-/** The days in the horizon on which a film still plays, and where. Days without a showing left are omitted. */
+/**
+ * The days in the horizon a film plays and where, whether or not a showing has
+ * started: it depends on the date alone, so it only changes at midnight.
+ */
 export function weekSummary(showings: Showing[], theaters: ReadonlyMap<string, Theater>, clock: Clock): WeekSummaryDay[] {
+  const byDate = new Map<DateKey, Set<string>>();
+  for (const s of showings) {
+    const ids = byDate.get(s.date);
+    if (ids) ids.add(s.theater_id);
+    else byDate.set(s.date, new Set([s.theater_id]));
+  }
   return horizon(clock.today).flatMap((date) => {
-    const ids = new Set(showings.filter((s) => s.date === date && !hasStarted(s, clock)).map((s) => s.theater_id));
-    const cinemas = [...ids].flatMap((id) => {
+    const ids = byDate.get(date);
+    if (!ids) return [];
+    const cinemas = [...ids].map((id) => {
       const theater = theaters.get(id);
-      return theater ? [shortName(theater)] : [];
+      return theater ? shortName(theater) : id;
     });
-    return cinemas.length ? [{ date, cinemas: cinemas.sort((a, b) => a.localeCompare(b)) }] : [];
+    return [{ date, cinemas: cinemas.sort((a, b) => a.localeCompare(b)) }];
   });
 }

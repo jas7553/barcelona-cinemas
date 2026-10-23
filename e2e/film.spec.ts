@@ -142,12 +142,13 @@ test("on desktop the map sits under the synopsis, and the showtimes panel grows 
   await expect(map.locator("svg.map--d")).toBeVisible();
   const mapBox = (await map.boundingBox())!;
   const panelBox = (await panel(page).boundingBox())!;
-  // The week summary sits between the synopsis and the map in the same column.
-  const aboveBox = (await page.locator(".wk, .about").last().boundingBox())!;
+  const aboutBox = (await page.locator(".about").boundingBox())!;
+  const weekBox = (await page.locator(".wk").boundingBox())!;
   expect(mapBox.x + mapBox.width).toBeLessThanOrEqual(panelBox.x);
-  expect(mapBox.y).toBeGreaterThanOrEqual(aboveBox.y + aboveBox.height - 1);
-  // Right under that column, not pushed down by the panel's height.
-  expect(mapBox.y).toBeLessThan(aboveBox.y + aboveBox.height + 60);
+  expect(aboutBox.y + aboutBox.height).toBeLessThanOrEqual(weekBox.y + 1);
+  expect(weekBox.y + weekBox.height).toBeLessThanOrEqual(mapBox.y + 1);
+  // Right under the summary, not pushed down by the panel's height.
+  expect(mapBox.y).toBeLessThan(weekBox.y + weekBox.height + 60);
   expect(await ownScrollers(page)).toEqual([]);
   // The panel's last row is reached by scrolling the page.
   const last = panel(page).locator(".crow").last();
@@ -249,23 +250,42 @@ test("no horizontal overflow at 200% zoom", async ({ page }) => {
   expect(scrollW, `overflow past ${clientW}: ${JSON.stringify(offenders)}`).toBeLessThanOrEqual(clientW + 1);
 });
 
-test("the week summary lists the days and cinemas the film plays, each linking to its day", async ({ page }) => {
+test("the week summary lists every day and cinema the film plays, each linking to its day", async ({ page }) => {
   const { id } = await gotoPremium(page);
   const published = JSON.parse(
     fs.readFileSync(path.join(import.meta.dirname, "..", "static", "data", "listings.json"), "utf8"),
-  ) as { movies: { id: string; showtimes: { date: string }[] }[] };
-  const dates = new Set(published.movies.find((m) => m.id === id)!.showtimes.map((s) => s.date));
+  ) as {
+    theaters: { id: string; name: string; short_name?: string }[];
+    movies: { id: string; showtimes: { date: string; theater_id: string }[] }[];
+  };
+  const name = (tid: string) => {
+    const t = published.theaters.find((x) => x.id === tid)!;
+    return t.short_name || t.name;
+  };
+  const day = (offset: number) => {
+    const d = new Date(Date.now() + offset * 864e5);
+    return d.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+  };
+  const horizon = new Set(Array.from({ length: 7 }, (_, i) => day(i)));
+  const expected = new Map<string, string[]>();
+  for (const s of published.movies.find((m) => m.id === id)!.showtimes) {
+    if (!horizon.has(s.date)) continue;
+    expected.set(s.date, [...new Set([...(expected.get(s.date) ?? []), name(s.theater_id)])].sort());
+  }
+  expect(expected.size).toBeGreaterThan(0);
 
   const lines = page.getByRole("region", { name: "Playing this week" }).getByRole("link");
-  const hrefs = await lines.evaluateAll((as) => as.map((a) => a.getAttribute("href")!));
-  expect(hrefs.length).toBeGreaterThan(0);
-  for (const href of hrefs) expect(dates).toContain(href.split("/")[3]);
-  expect(hrefs).toEqual([...hrefs].sort());
-  await expect(lines.first()).toContainText("·");
+  const actual = await lines.evaluateAll((as) =>
+    as.map((a) => [a.getAttribute("href")!.split("/")[3], a.textContent!.split(" · ")[1].split(", ")] as const),
+  );
+  expect(new Map(actual.map(([d, names]) => [d, [...names].sort()]))).toEqual(expected);
+  expect(actual.map(([d]) => d)).toEqual([...expected.keys()].sort());
 
   const last = lines.last();
   const target = (await last.getAttribute("href"))!;
+  const before = await page.evaluate(() => history.length);
   await last.click();
   await page.waitForURL(`**${target}`);
+  expect(await page.evaluate(() => history.length)).toBe(before);
   await expect(panel(page).locator('.days [aria-current="date"]')).toHaveAttribute("href", target);
 });

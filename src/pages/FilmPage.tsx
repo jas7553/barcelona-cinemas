@@ -52,7 +52,7 @@ export function FilmPage({ data }: { data: FilmPageData }) {
       mainClass="film-layout"
     >
       <About film={film} seen={prefs.seen.has(film.id)} />
-      <WeekSummary film={film} days={weekSummary(film.showtimes, theaters, clock)} today={clock.today} />
+      <WeekSummary filmId={film.id} days={weekSummary(film.showtimes, theaters, clock)} today={clock.today} />
       <section class="panel" aria-labelledby="showtimes">
         <h2 id="showtimes" class="panel-h display">
           Showtimes
@@ -275,8 +275,8 @@ function About({ film, seen }: { film: FilmDetail; seen: boolean }) {
   );
 }
 
-/** Where the film plays across the week, a line per day; the showings below stay grouped day → cinema → time. */
-function WeekSummary({ film, days, today }: { film: FilmDetail; days: WeekSummaryDay[]; today: DateKey }) {
+/** A line per day the film plays, linking to that day. */
+function WeekSummary({ filmId, days, today }: { filmId: string; days: WeekSummaryDay[]; today: DateKey }) {
   if (days.length === 0) return null;
   return (
     <section class="wk" aria-labelledby="wk-h">
@@ -284,7 +284,7 @@ function WeekSummary({ film, days, today }: { film: FilmDetail; days: WeekSummar
       <ul>
         {days.map((d) => (
           <li key={d.date}>
-            <a href={`/film/${film.id}/${d.date}/`} onClick={replaceOnClick}>
+            <a href={`/film/${filmId}/${d.date}/`} onClick={replaceOnClick}>
               <b>{dayAndDate(d.date, today)}</b> · {d.cinemas.join(", ")}
             </a>
           </li>
