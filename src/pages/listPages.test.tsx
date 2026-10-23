@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/preact";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/preact";
 import { renderToString } from "preact-render-to-string";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PREF_KEYS } from "../domain/prefs";
@@ -81,7 +81,7 @@ describe("Day", () => {
     const book = within(ticket).getByRole("link", { name: "Book at Verdi" });
     expect(book).toHaveAttribute("href", "https://verdi.example/book/1");
     expect(ticket).toHaveTextContent("Today 4");
-    expect(ticket).toHaveTextContent("Ends about23:27");
+    expect(within(ticket).getByText("Ends about").nextElementSibling).toHaveTextContent("23:27");
     expect(within(ticket).getByRole("link", { name: "Cines Verdi" })).toHaveAttribute("href", "/cinema/verdi/2026-10-04/");
   });
 
@@ -92,7 +92,7 @@ describe("Day", () => {
     expect(within(ticket).getByRole("link", { name: "Girona website" })).toHaveAttribute("href", "https://girona.example");
     expect(ticket).toHaveTextContent("No direct booking link for this showing");
     // Unknown runtime: start + 110 + 15.
-    expect(ticket).toHaveTextContent("Ends about21:05");
+    expect(within(ticket).getByText("Ends about").nextElementSibling).toHaveTextContent("21:05");
   });
 
   it("marks a time with no booking page of its own, and explains the mark once", () => {
@@ -143,6 +143,16 @@ describe("Day", () => {
     const where = screen.getByRole("link", { name: /^21:30.*book tickets$/ }).querySelector(".chip-w")!;
     expect(where.textContent).not.toContain("Gràcia · Gràcia");
     expect(where.textContent).toMatch(/^Gràcia/);
+  });
+
+  it("keeps the neighbourhood and distance when the name differs, and the name alone with no coordinates", () => {
+    localStorage.setItem(PREF_KEYS.home, JSON.stringify({ lat: 41.4021, lng: 2.1558 }));
+    render(<DayPage data={dayData} />);
+    expect(screen.getByRole("link", { name: /^21:30/ }).querySelector(".chip-w")).toHaveTextContent("Verdi · Gràcia · 250 m");
+    cleanup();
+    const noCoords = THEATERS.map((t) => (t.id === "verdi" ? { ...t, lat: null, lng: null } : t));
+    render(<DayPage data={{ ...dayData, theaters: noCoords }} />);
+    expect(screen.getByRole("link", { name: /^21:30/ }).querySelector(".chip-w")).toHaveTextContent(/^Verdi · Gràcia$/);
   });
 
   it("shows distances from Home and moves seen films to the Seen group once prefs load", () => {
