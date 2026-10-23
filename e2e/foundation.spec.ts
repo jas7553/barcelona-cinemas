@@ -193,6 +193,14 @@ test.describe("webfonts arriving late", () => {
       await page.goto(path, { waitUntil: "commit" });
       await expect(homePill(page)).toHaveAccessibleName(home ? "Home" : "Set home");
       const withFallback = await barHeight(page);
+      const snap = () =>
+        page.evaluate(() =>
+          [...document.querySelectorAll("main *, header *")].map((e) => {
+            const r = e.getBoundingClientRect();
+            return `${e.tagName}.${String(e.className).slice(0, 30)}|${Math.round(r.top)}|${Math.round(r.height * 10) / 10}|${Math.round(r.width)}`;
+          }),
+        );
+      const before = await snap();
       expect(released, "measured before any font arrived").toBe(false);
 
       await page.waitForLoadState("networkidle");
@@ -201,7 +209,9 @@ test.describe("webfonts arriving late", () => {
       expect(await barHeight(page)).toBe(withFallback);
       // WebKit has no layout-shift entries.
       if (browserName === "chromium") {
-        const dbg = await page.evaluate(() => (window as unknown as { dbg?: string[] }).dbg ?? []);
+        const after = await snap();
+        const diffs = before.map((b, i) => (b === after[i] ? "" : `${b} => ${after[i]}`)).filter(Boolean).slice(0, 12);
+        const dbg = [...(await page.evaluate(() => (window as unknown as { dbg?: string[] }).dbg ?? [])), ...diffs];
         expect(await readCls(page), dbg.join("\n")).toBeLessThan(0.02);
       }
     });
