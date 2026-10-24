@@ -1,9 +1,9 @@
 pytest==9.1.1
 pytest-cov==7.1.0
 mypy==2.4.0
-ruff==0.17.0
+ruff==0.17.1
 pre-commit==4.7.0
-cfn-lint==1.57.2
+cfn-lint==1.58.0
 types-requests==2.33.0.20261006
 types-beautifulsoup4==4.12.0.20250516
-boto3==1.43.113
+boto3==1.43.116
