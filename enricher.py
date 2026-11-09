@@ -34,7 +34,7 @@ _ENRICH_TTL_DAYS = int(os.environ.get("ENRICH_TTL_DAYS", "7"))
 
 # Bump when the matching rules change, so cached matches made under the old
 # rules are looked up again on the next refresh instead of at their TTL.
-_MATCH_VERSION = 3
+_MATCH_VERSION = 4
 
 _TV_MOVIE_GENRE_ID = 10770
 # Release windows for a new film (see `_rank_candidates`). The primary release
@@ -116,7 +116,7 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
                     movie,
                     session,
                     key,
-                    search_title=cached.get("english_title") if cached else None,
+                    known_title=cached.get("english_title") if cached else None,
                 )
                 if result.enriched:
                     stats["tmdb_enriched_count"] += 1
@@ -195,13 +195,12 @@ def _find_cached_movie(
 
 
 def _lookup_and_merge(
-    movie: Movie, session: requests.Session, api_key: str, *, search_title: str | None = None
+    movie: Movie, session: requests.Session, api_key: str, *, known_title: str | None = None
 ) -> _LookupResult:
     """Look up a movie on TMDb and merge metadata into the Movie dict."""
-    query = search_title or movie["title"]
     try:
         raw_detail, raw_videos, raw_credits = _fetch_tmdb(
-            query, session, api_key, year=movie.get("year"), today=madrid_today()
+            movie["title"], session, api_key, year=movie.get("year"), today=madrid_today(), known_title=known_title
         )
     except Exception as exc:
         status = http_status(exc)
@@ -328,29 +327,44 @@ def _is_feature_length(detail: dict[str, Any]) -> bool:
 
 
 def _fetch_tmdb(
-    title: str, session: requests.Session, api_key: str, *, year: int | None, today: date
+    title: str,
+    session: requests.Session,
+    api_key: str,
+    *,
+    year: int | None,
+    today: date,
+    known_title: str | None = None,
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
-    """Search TMDb for a title; return (detail, videos, credits), or all None on no match."""
+    """
+    Search TMDb for a listed title; return (detail, videos, credits), or all None on no match.
+
+    `known_title` is the English title an earlier match gave this listing. It
+    is searched only when the listed title names no film exactly, in English
+    or Spanish: searching it first would repeat an earlier wrong guess forever.
+    """
     common = {"language": "en-US", "api_key": api_key}
 
-    def search(language: str) -> list[dict[str, Any]]:
+    def search(query: str, language: str = "en-US") -> list[dict[str, Any]]:
         resp = session.get(
             f"{_BASE_URL}/search/movie",
-            params={**common, "query": title, "language": language},
+            params={**common, "query": query, "language": language},
             timeout=10,
         )
         resp.raise_for_status()
         return cast(list[dict[str, Any]], resp.json().get("results", []))
 
-    results = search("en-US")
-    if results and not _exact_matches(title, results):
+    results = search(title)
+    if not _exact_matches(title, results):
         # Probably a Spanish-titled listing. TMDb found these films by some
         # translation of their title but names them in English, so nothing
         # says which one is meant. Named in Spanish, the film whose title
         # this is can be told from one that merely resembles it.
-        spanish = search("es-ES")
+        spanish = search(title, "es-ES") if results else []
         if _exact_matches(title, spanish):
             results = spanish
+        elif known_title and normalize_title(known_title) != normalize_title(title):
+            title = known_title
+            results = search(known_title)
 
     first_run, ordered = _rank_candidates(title, results, year=year, today=today)
     details: dict[int, dict[str, Any]] = {}
