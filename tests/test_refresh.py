@@ -670,6 +670,30 @@ def test_fallback_movies_go_through_reconciliation_and_enrichment() -> None:
     assert sorted(s["time"] for s in aftersun["showtimes"]) == ["18:00", "21:00"]
 
 
+def test_a_provider_that_came_back_too_short_falls_back_and_its_metric_carries_the_trigger(
+    caplog: pytest.LogCaptureFixture, find_event: FindEvent
+) -> None:
+    """`ProviderPartialFailureAlarm` watches Trigger=schedule; the metric is emitted on the provider's thread."""
+    movie = _raw_movie("Aftersun", [_showtime(date="2026-03-28")])
+
+    def _short(_cinemas: Any) -> list[dict[str, Any]]:
+        diagnostics.report_partial_failure("verdi", "showtimes without a sala", failed=3, total=4)
+        return []
+
+    providers = [_provider("verdi", fetch=_short), _provider("other", [_raw_movie("Dune")])]
+    observability.set_context(trigger="schedule")
+    try:
+        listings, stats = _build(providers, cached=_snapshot_cache({"verdi": (NOW.isoformat(), [movie])}))
+    finally:
+        observability.clear_context()
+
+    assert stats["provider_fallback_count"] == 1
+    assert "Aftersun" in {m["title"] for m in listings["movies"]}
+    assert find_event("collection_failure")["exception_type"] == "PartialFetchError"
+    # Once per attempt: the first, and the retry.
+    assert [m["Trigger"] for m in _find_metrics(caplog, "ProviderPartialFailure")] == ["schedule", "schedule"]
+
+
 def test_a_failed_provider_without_a_snapshot_is_left_out(find_event: FindEvent) -> None:
     cached = _snapshot_cache({"other": (NOW.isoformat(), [_raw_movie("Unrelated")])})
 

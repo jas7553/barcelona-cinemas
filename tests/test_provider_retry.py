@@ -177,6 +177,7 @@ def test_time_spent_gathering_diagnostics_counts_against_the_budget(clock: _Cloc
         (_http_error(503), True),
         (_http_error(404), False),
         (ValueError("bad json"), False),
+        (diagnostics.PartialFetchError("too many pages failed"), True),
     ],
 )
 def test_is_retryable(exc: Exception, retryable: bool) -> None:

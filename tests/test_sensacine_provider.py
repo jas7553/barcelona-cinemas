@@ -1,10 +1,14 @@
 import json
+import logging
 import pathlib
 from collections.abc import Mapping
 from datetime import date
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from models import CinemaInfo, CinemaRegistry
+from providers.diagnostics import PartialFetchError
 from providers.sensacine_provider import (
     _ADMIT_ONE_THEATRES,
     _SENSACINE_IDS,
@@ -14,6 +18,8 @@ from providers.sensacine_provider import (
     _premium_format,
     _subtitle_lang,
 )
+
+from .conftest import FindEvent
 
 _MOOBY_TEMPLATE = "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=188474&language=%s&theatre=%s"
 
@@ -277,14 +283,41 @@ class TestSensacineProvider:
         st = mystery["showtimes"][0]
         assert st.get("booking_url") == "https://relay.mvtx.us/ticketing/xyz"
 
-    def test_fetch_degrades_gracefully_on_http_error(self) -> None:
+    def test_fetch_fails_when_every_page_fails(self) -> None:
+        """Not an empty result: the refresh should retry, then use the last good snapshot."""
+
         def raise_error(*args: object, **kwargs: object) -> None:
             raise RuntimeError("connection refused")
 
-        with patch("providers.sensacine_provider.requests.get", side_effect=raise_error):
+        with (
+            patch("providers.sensacine_provider.requests.get", side_effect=raise_error),
+            pytest.raises(PartialFetchError),
+        ):
+            SensacineProvider().fetch(CINEMAS)
+
+    def test_fetch_keeps_the_rest_when_a_few_pages_fail_and_reports_them(self, find_event: FindEvent) -> None:
+        failing_day = _fetch_dates()[0].isoformat()
+
+        def one_day_down(url: str, **kwargs: object) -> MagicMock:
+            if "theater-E0381" in url and failing_day in url:
+                raise RuntimeError("read timed out")
+            return _mock_response(_API_RESPONSE)
+
+        with patch("providers.sensacine_provider.requests.get", side_effect=one_day_down):
             movies = SensacineProvider().fetch(CINEMAS)
 
-        assert movies == []
+        assert "Supergirl" in {m["title"] for m in movies}
+        report = find_event("provider_partial_failure")
+        pages = len(_fetch_dates()) * sum(key in CINEMAS for key in _SENSACINE_IDS)
+        assert (report["provider"], report["kind"]) == ("sensacine", "pages")
+        assert (report["failed_count"], report["total_count"]) == (1, pages)
+
+    def test_fetch_reports_nothing_when_every_page_answers(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.set_level(logging.INFO, logger="observability")
+        with patch("providers.sensacine_provider.requests.get", return_value=_mock_response(_API_RESPONSE)):
+            SensacineProvider().fetch(CINEMAS)
+
+        assert "ProviderPartialFailure" not in caplog.text
 
     def test_fetch_skips_missing_cinema_keys(self) -> None:
         # Only CinDiag is in cinemas, Malda is absent

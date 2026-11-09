@@ -477,6 +477,34 @@ Resources:
       OKActions:
         - !Ref AlertTopic
 
+  # A provider that answers but comes back short: failed SensaCine pages, Verdi
+  # film pages, or Verdi showtimes whose sala lookup failed. The refresh still
+  # succeeds and the provider still returns movies, so no other alarm sees it.
+  # One or two lost requests in a run is ordinary (a stray timeout); five in an
+  # hour is a run that lost a visible part of a cinema's week. Past a quarter
+  # of a fetch the provider fails outright and ProviderDegradationAlarm fires.
+  ProviderPartialFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: A listings provider answered but left out part of its listings (failed pages or sala lookups) — coverage may be short
+      Namespace: BarcelonaMovieDatabase
+      MetricName: ProviderPartialFailure
+      Dimensions:
+        - Name: Environment
+          Value: prod
+        - Name: Trigger
+          Value: schedule
+      Statistic: Sum
+      Period: 3600
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlertTopic
+      OKActions:
+        - !Ref AlertTopic
+
   # Backstop for coverage collapsing without any single provider reporting
   # failure or zero-result — e.g. every provider partially degrades at once,
   # or a downstream bug (enrichment, English filter, reconciliation) drops

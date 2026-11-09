@@ -1,6 +1,7 @@
 """
 Classify a Provider fetch failure, and gather what tells "host down" or "host
-blocking our egress IP" apart from an honest empty result. Never raises.
+blocking our egress IP" apart from an honest empty result. Only
+`report_partial_failure` raises.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from urllib.parse import urlsplit
 import requests
 
 from http_errors import http_status
+from observability import emit_metric, log_event
 
 logger = logging.getLogger(__name__)
 
@@ -28,13 +30,47 @@ _BODY_HEAD_CHARS = 300
 _entry_response: ContextVar[requests.Response | None] = ContextVar("entry_response", default=None)
 
 
+# Past this share of a fetch lost, the Provider's last good snapshot is the
+# better answer than what did come back.
+MAX_FAILED_SHARE = 0.25
+
+
+class PartialFetchError(Exception):
+    """A Provider's entry page answered but too many of the requests behind it did not."""
+
+
+def report_partial_failure(provider: str, kind: str, *, failed: int, total: int) -> None:
+    """
+    Account for the part of a fetch a Provider had to leave out: `failed` of
+    `total` of `kind`, a plural ("pages"). The Provider still returns
+    Movies, so nothing else says the listings came back short.
+
+    Raises PartialFetchError past `MAX_FAILED_SHARE`, which fails the Provider
+    into its retry and snapshot fallback. Call it on the Provider's own thread:
+    the metric takes its dimensions from the calling context.
+    """
+    if not failed:
+        return
+    emit_metric("ProviderPartialFailure", failed)
+    log_event(
+        "provider_partial_failure",
+        level=logging.WARNING,
+        provider=provider,
+        kind=kind,
+        failed_count=failed,
+        total_count=total,
+    )
+    if failed > total * MAX_FAILED_SHARE:
+        raise PartialFetchError(f"{provider} lost {failed} of {total} {kind}")
+
+
 def is_retryable(exc: BaseException) -> bool:
     """
     Transient network failures and the statuses an overloaded or blocking host
     answers with (bot filters answer with 403). Parse errors fail the same way
     twice.
     """
-    if isinstance(exc, requests.ConnectionError | requests.Timeout):
+    if isinstance(exc, requests.ConnectionError | requests.Timeout | PartialFetchError):
         return True
     if isinstance(exc, requests.HTTPError):
         status = http_status(exc)
