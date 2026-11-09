@@ -62,6 +62,10 @@ class Listings(TypedDict):
     ended: NotRequired[list[EndedMovie]]  # absent in caches predating film retention
     # Keyed by Provider name. Internal to the cache; never published.
     provider_snapshots: NotRequired[dict[str, ProviderSnapshot]]
+    # Every TMDb-matched Movie as Enrichment returned it, without Showtimes:
+    # the ones a later merge or the English filter removed from `movies` too.
+    # Internal to the cache; never published.
+    enriched: NotRequired[list[Movie]]
 
 
 class CinemaInfo(TypedDict):

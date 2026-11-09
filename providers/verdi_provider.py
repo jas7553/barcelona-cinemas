@@ -154,12 +154,17 @@ def sala_map_from_cache(cached: Listings | None) -> dict[str, str]:
     A session's sala never changes once assigned, so a resolution from any
     earlier refresh stays valid for the life of that session id. Returns an
     empty map on a cold cache — the provider then just does the lookups.
+
+    Reads this Provider's snapshot as well as the published Movies: the
+    snapshot still has the films the English filter dropped, whose sessions
+    would otherwise be looked up again on every refresh.
     """
     if cached is None:
         return {}
 
+    snapshot = cached.get("provider_snapshots", {}).get(VerdiProvider.name)
     sala_map: dict[str, str] = {}
-    for movie in cached.get("movies", []):
+    for movie in [*cached.get("movies", []), *(snapshot["movies"] if snapshot else [])]:
         for showtime in movie.get("showtimes", []):
             cinema_key = showtime.get("cinema")
             booking_url = showtime.get("booking_url")

@@ -28,6 +28,28 @@ def test_normalize_listings_round_trips_provider_snapshots_and_drops_invalid_one
     assert [m["title"] for m in snapshots["verdi"]["movies"]] == ["Aftersun"]
 
 
+def test_normalize_listings_round_trips_enriched_movies_and_drops_invalid_ones() -> None:
+    """Without this the cache read would lose them, and every filtered film would be looked up again."""
+    listings = normalize_listings(
+        {
+            "fetched_at": "2026-03-27T09:00:00+00:00",
+            "movies": [],
+            "enriched": [{"title": "El drama", "tmdb_id": 2, "showtimes": []}, {"title": ""}],
+        },
+        source="test cache",
+    )
+
+    assert listings is not None
+    assert [(m["title"], m["tmdb_id"]) for m in listings.get("enriched", [])] == [("El drama", 2)]
+
+
+def test_normalize_listings_accepts_a_cache_predating_enriched_movies() -> None:
+    listings = normalize_listings({"fetched_at": "2026-03-27T09:00:00+00:00", "movies": []}, source="test cache")
+
+    assert listings is not None
+    assert "enriched" not in listings
+
+
 def test_normalize_movie_keeps_valid_imdb_id() -> None:
     movie = normalize_movie(
         {

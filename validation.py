@@ -40,6 +40,9 @@ def normalize_listings(data: object, *, source: str) -> Listings | None:
     snapshots_raw = data.get("provider_snapshots")
     if snapshots_raw is not None:
         listings["provider_snapshots"] = normalize_provider_snapshots(snapshots_raw, source=f"{source} snapshots")
+    enriched_raw = data.get("enriched")
+    if enriched_raw is not None:
+        listings["enriched"] = normalize_movies(enriched_raw, source=f"{source} enriched")
     return listings
 
 
