@@ -84,9 +84,12 @@ jobs:
 
       # The image's python3 lacks the project's requirements and its pip is
       # externally managed, so keep setup-python (fetched from GitHub, not apt).
+      # Pinned to 3.12.15: the 3.12.16 build (published 2026-10-26) has no ssl
+      # module inside this container, so pip can't reach PyPI. Try "3.12" again
+      # when a newer 3.12 build is out or the Playwright image changes.
       - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: "3.12.15"
 
       # Pins the Node from .nvmrc rather than the image's own.
       - uses: actions/setup-node@v7
