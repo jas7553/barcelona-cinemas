@@ -103,8 +103,9 @@ jobs:
           python3 -m pip install -r requirements.txt
           npm ci
 
-      # Playwright boots the Flask API itself (playwright.config.ts webServer),
-      # against the committed e2e/fixtures/listings.json — no TMDb access needed.
+      # Playwright builds, renders and serves the static site itself
+      # (playwright.config.ts webServer), from the committed
+      # e2e/fixtures/listings.json — no provider or TMDb access needed.
       # One browser per project in playwright.config.ts: mobile-chromium and
       # mobile-webkit.
       - name: Run e2e

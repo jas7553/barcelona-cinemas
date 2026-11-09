@@ -71,8 +71,7 @@ const DELETE_BATCH = 1000;
 // Per-film output prefixes the prune sweeps, each paired with the only
 // extension it may delete there — derived from the shared constant, in this
 // sink's dialect (trailing slash). ListObjectsV2 matches on a literal prefix,
-// so `film/` does NOT cover `data/film/` — each needs its own listing pass.
-// See scripts/site-constants.mjs.
+// so each prefix needs its own listing pass. See scripts/site-constants.mjs.
 const PRUNE_PREFIXES = prunePrefixesS3();
 
 /**

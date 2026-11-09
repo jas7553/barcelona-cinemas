@@ -232,7 +232,7 @@ Resources:
                 - s3:GetObject
                 - s3:PutObject
               Resource: !Sub "${FrontendBucket.Arn}/*"
-            # Prune stale output: list film/, data/film/, day/ and cinema/ to
+            # Prune stale output: list film/, day/ and cinema/ to
             # find pages whose movie left the listings or whose day has passed,
             # then delete them. Delete is scoped to those prefixes only — the renderer must
             # stay unable to remove data/listings.json, the hashed assets, or
@@ -250,7 +250,6 @@ Resources:
                 - s3:DeleteObject
               Resource:
                 - !Sub "${FrontendBucket.Arn}/film/*"
-                - !Sub "${FrontendBucket.Arn}/data/film/*"
                 - !Sub "${FrontendBucket.Arn}/day/*"
                 - !Sub "${FrontendBucket.Arn}/cinema/*"
             - Sid: CloudFrontInvalidate
