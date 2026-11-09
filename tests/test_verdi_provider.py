@@ -301,6 +301,9 @@ def test_fetch_deduplicates_same_time_slot_sala_lookup() -> None:
     assert "400001" in seat_urls_fetched[0]
 
 
+_SEATS = "https://verdibcn.admit-one.eu/seats"
+
+
 def _listings_with(showtimes: list[dict[str, object]]) -> Listings:
     return {
         "fetched_at": "2026-07-28T20:00:00+00:00",
@@ -332,6 +335,19 @@ def test_cached_sala_map_ignores_non_verdi_and_foreign_urls() -> None:
 
 def test_cached_sala_map_empty_on_cold_cache() -> None:
     assert sala_map_from_cache(None) == {}
+
+
+def test_cached_sala_map_reads_the_verdi_snapshot_too() -> None:
+    """The English filter drops films from `movies`; their sessions live on in the snapshot."""
+    listings = _listings_with([{"cinema": "Verdi", "booking_url": "https://verdibcn.admit-one.eu/seats/500001/"}])
+    filtered = {"title": "El drama", "showtimes": [{"cinema": "VP", "booking_url": f"{_SEATS}/500002/"}]}
+    other = {"title": "Dune", "showtimes": [{"cinema": "Verdi", "booking_url": f"{_SEATS}/500003/"}]}
+    listings["provider_snapshots"] = {
+        "verdi": {"fetched_at": listings["fetched_at"], "movies": [filtered]},  # type: ignore[list-item]
+        "sensacine": {"fetched_at": listings["fetched_at"], "movies": [other]},  # type: ignore[list-item]
+    }
+
+    assert sala_map_from_cache(listings) == {"500001": "Verdi", "500002": "VP"}
 
 
 def test_fetch_skips_network_when_session_is_in_cached_sala_map() -> None:

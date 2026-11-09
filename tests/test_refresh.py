@@ -304,6 +304,42 @@ def test_non_english_movie_survives_collection_then_the_filter_drops_it_and_says
     assert [movie["title"] for movie in listings["movies"]] == ["Dune: Part Two"]
 
 
+def test_a_filtered_or_merged_movie_still_seeds_the_next_refreshs_enrichment() -> None:
+    """
+    Neither is in `movies` afterwards, so without `enriched` both would cost a
+    full TMDb lookup on every refresh.
+    """
+    providers = [
+        _provider("one", [_raw_movie("The Odyssey")]),
+        _provider("two", [_raw_movie("La Odisea", [_showtime(cinema="Balmes")]), _raw_movie("El drama")]),
+        _provider("three", [_raw_movie("Unmatched")]),
+    ]
+    matches: dict[str, dict[str, Any]] = {
+        "The Odyssey": {"tmdb_id": 1, "imdb_id": "tt0000001", "original_lang": "en"},
+        "La Odisea": {"tmdb_id": 1, "imdb_id": "tt0000001", "original_lang": "en"},
+        "El drama": {"tmdb_id": 2, "imdb_id": "tt0000002", "original_lang": "es"},
+    }
+    seen: list[list[Movie]] = []
+
+    def _match(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie], EnrichmentStats]:
+        seen.append(cached_movies)
+        return [cast(Movie, {**m, **matches.get(m["title"], {})}) for m in movies], _NO_ENRICHMENT.copy()
+
+    listings, _ = _build(providers, enrich=_match)
+
+    assert [movie["title"] for movie in listings["movies"]] == ["The Odyssey", "Unmatched"]
+    # Unmatched films are left out: a record without a TMDb id is never a cache hit.
+    assert [(m["title"], m["showtimes"]) for m in listings.get("enriched", [])] == [
+        ("The Odyssey", []),
+        ("La Odisea", []),
+        ("El drama", []),
+    ]
+
+    _build(providers, cached=listings, enrich=_match)
+
+    assert {"La Odisea", "El drama"} <= {movie["title"] for movie in seen[1]}
+
+
 def test_filter_keeps_unknown_original_lang():
     """Absent `original_lang` means 'we don't know', not 'not English'."""
     listings, stats = _build([_provider("one", [_raw_movie("Mystery Film")])])

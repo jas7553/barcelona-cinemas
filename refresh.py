@@ -142,13 +142,16 @@ def build_listings(
     Run the refresh ritual and return the fresh Listings plus their stats.
 
     `cached` is the previous refresh's Listings (None on a cold cache); it seeds
-    Enrichment so unchanged Movies cost no TMDb request, and its
-    `provider_snapshots` stand in for a Provider that fails. Raises
+    Enrichment so unchanged Movies cost no TMDb request (its `enriched` covers
+    the ones the previous run merged away or filtered out, which `movies` no
+    longer holds), and its `provider_snapshots` stand in for a Provider that
+    fails. Raises
     RuntimeError if no Provider returned fresh Movies (fallbacks
     notwithstanding) or collection produced nothing — the caller must then
     leave the existing cache in place.
     """
-    cached_movies: list[Movie] = cached["movies"] if cached else []
+    # `enriched` last, so its per-title records win over the merged `movies`.
+    cached_movies: list[Movie] = [*cached["movies"], *cached.get("enriched", [])] if cached else []
 
     previous_snapshots = cached.get("provider_snapshots", {}) if cached else {}
     collection = _collect_movies(providers, cinemas, previous_snapshots, now)
@@ -163,6 +166,7 @@ def build_listings(
         "movies": published,
         "ended": ended,
         "provider_snapshots": collection.snapshots,
+        "enriched": [{**movie, "showtimes": []} for movie in enriched if movie.get("tmdb_id") is not None],
     }
     stats: RefreshStats = {
         "provider_success_count": collection.success_count,
