@@ -48,32 +48,33 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 pip install -r requirements-dev.txt
-python app.py
 ```
 
-The backend runs on `http://localhost:5000` by default.
-
-Frontend:
-
-```bash
-npm install
-npm run dev
-```
-
-The Vite dev server runs on `http://localhost:5173`.
-
-Important:
-
-- Vite proxies `/api` to `http://localhost:5000` by default, matching Flask's default `PORT`, so the standard setup works with no changes.
-- To point the proxy elsewhere, set `API_PROXY_TARGET` (see [`vite.config.ts`](vite.config.ts)).
-
-Refreshing the local cache:
+There is no backend server to run: `app.py` is the Lambda handler for the scheduled refresh. Locally the refresh is a script that fills the file cache:
 
 ```bash
 npm run refresh-cache
 ```
 
-This command loads local `.env` values automatically, refreshes the file cache, and prints how many movies have poster URLs after the refresh.
+This command loads local `.env` values automatically, fetches the providers, refreshes the file cache, and prints how many movies have poster URLs after the refresh.
+
+Frontend:
+
+```bash
+npm install
+npm run export-data   # cache/listings.json -> static/data/listings.json
+npm run dev
+```
+
+The Vite dev server runs on `http://localhost:5173` and renders each page on request from `static/data/listings.json`. The site renders empty if that file is missing or has no upcoming dates, so refresh the cache and export it first.
+
+To render the whole static site the way production does:
+
+```bash
+npm run build         # empties static/, so export after it
+npm run export-data
+TZ=Europe/Madrid node scripts/render.mjs
+```
 
 ## Environment Variables
 
@@ -84,7 +85,6 @@ Local development works without TMDb credentials, but enrichment is skipped and 
 | `TMDB_API_KEY` | none | Optional locally; enables TMDb enrichment in development. |
 | `CACHE_BACKEND` | `file` | Use `file` locally and `s3` in AWS. |
 | `CACHE_DIR` | `./cache` | File cache directory for local use. |
-| `PORT` | `5000` | Flask development port. |
 | `S3_BUCKET` | none | Required only when `CACHE_BACKEND=s3`. |
 | `S3_KEY` | `listings.json` | Required only when `CACHE_BACKEND=s3`. |
 | `TMDB_SSM_PARAMETER` | none | Optional parameter name for AWS-hosted deployments. |
@@ -92,17 +92,13 @@ Local development works without TMDb credentials, but enrichment is skipped and 
 | `LISTINGS_FEED_SSM_PARAMETER` | none | Optional parameter name for the listings feed URL in AWS-hosted deployments. |
 | `SECONDARY_LISTINGS_URL` | none | Optional local override for the secondary listings feed URL. |
 | `SECONDARY_LISTINGS_SSM_PARAMETER` | none | Optional parameter name for the secondary listings feed URL in AWS-hosted deployments. |
-| `ORIGIN_VERIFY_TOKEN` | none | Optional locally; when set, API requests must include the matching `X-Origin-Verify` header. |
-| `APP_DEBUG` | none | Optional local-only flag to enable Flask debug mode outside Lambda. |
 
 Example local `.env`:
 
 ```bash
 CACHE_DIR=./cache
-PORT=5000
 LISTINGS_FEED_URL=https://example.com/listings-feed
 TMDB_API_KEY=your_tmdb_key
-# APP_DEBUG=true
 ```
 
 ## Quality Checks
@@ -147,14 +143,12 @@ Requirements:
 - AWS CLI configured for the target account.
 - AWS SAM CLI installed.
 - A TMDb API key stored in AWS Systems Manager Parameter Store.
-- A long random origin verification token for the deployed API.
 
 Notes:
 
 - The template configures the Lambda to read its TMDb key from SSM at runtime instead of storing the secret in the repo.
 - The template also configures the listings feed URLs (primary and secondary) to come from SSM at runtime, while local development can set `LISTINGS_FEED_URL` / `SECONDARY_LISTINGS_URL` directly.
-- `ApiOriginVerifyToken` is still required after removing WAF. It is what lets CloudFront identify itself to the API origin so direct origin requests can be rejected.
-- `deploy.sh` expects a `samconfig.toml` with a configured `stack_name` and a saved `ApiOriginVerifyToken`; if you are starting from a fresh clone, create that first with `sam deploy --guided`.
+- `deploy.sh` expects a `samconfig.toml` with a configured `stack_name`; if you are starting from a fresh clone, create that first with `sam deploy --guided`.
 - `NotificationEmail` is required and has no default: it is the address that receives CloudWatch alarm emails via SNS. Set it in `samconfig.toml` `parameter_overrides` (gitignored) — do not commit it. After the first deploy, AWS sends a subscription confirmation email that must be clicked before any alerts are delivered.
 - Avoid committing environment files, deployment config with secrets, or copied production values into the repository.
 
@@ -165,7 +159,7 @@ sam build
 sam deploy --guided
 ```
 
-During the guided deploy, set `ApiOriginVerifyToken` to a long random string. SAM can save it into your local `samconfig.toml` for future non-guided deploys.
+During the guided deploy, set `NotificationEmail`. SAM can save it into your local `samconfig.toml` for future non-guided deploys.
 
 Subsequent deploys:
 

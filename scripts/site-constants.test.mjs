@@ -89,14 +89,13 @@ describe("FACT C — the prune prefixes", () => {
 
   it("keeps the trailing slash on the S3 form", () => {
     // Load-bearing: ListObjectsV2 matches a literal prefix, so a bare `film`
-    // would also sweep `filmy/…`, and `film/` correctly excludes `data/film/`.
+    // would also sweep `filmy/…`.
     for (const [prefix] of prunePrefixesS3()) {
       expect(prefix.endsWith("/")).toBe(true);
     }
     expect(prunePrefixesS3().some(([p]) => p === "film/")).toBe(true);
-    expect(prunePrefixesS3().some(([p]) => p === "data/film/")).toBe(true);
-    // `film/` must not be a prefix of the keys `data/film/` owns.
-    expect("data/film/dune.json".startsWith("film/")).toBe(false);
+    // Nothing under data/ is prunable: data/listings.json lives there.
+    expect(prunePrefixesS3().some(([p]) => p.startsWith("data"))).toBe(false);
   });
 
   it("pairs every prefix with exactly one deletable extension", () => {

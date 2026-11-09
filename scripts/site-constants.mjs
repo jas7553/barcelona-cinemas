@@ -43,15 +43,13 @@ export function assertSiteTimezone(context) {
  *   - filesystem (scripts/render.mjs) joins it with path.join
  *   - S3 (ssg-lambda/index.mjs) needs a TRAILING SLASH, because ListObjectsV2
  *     matches a literal prefix and a bare `film` would also match `filmy/…`
- *     while `film/` correctly excludes `data/film/` (which needs its own pass)
+ *     (and `film/` would not cover a nested `data/film/`: one pass per prefix)
  *   - template.yaml scopes s3:DeleteObject to `<prefix>/*` for the same prefixes
  *
  * Widening this widens a delete permission. Don't.
  */
 export const PRUNE_PREFIXES = Object.freeze([
   Object.freeze({ prefix: "film", ext: ".html" }),
-  // Legacy: nothing writes here now; drop once a deploy has swept it.
-  Object.freeze({ prefix: "data/film", ext: ".json" }),
   Object.freeze({ prefix: "day", ext: ".html" }),
   Object.freeze({ prefix: "cinema", ext: ".html" }),
 ]);

@@ -164,8 +164,8 @@ describe("renderAll() prune", () => {
         keep = k;
       },
     });
-    // data/listings.json sits under data/ but NOT under data/film/, so the
-    // sweep can never reach it — but a stray keep-set entry would be a smell.
+    // No prune prefix covers these, so the sweep can never reach them — but
+    // a stray keep-set entry would be a smell.
     for (const p of ["index.html", "privacy.html", "cinemas.html", "sitemap.xml", "data/listings.json"]) {
       expect(keep.has(p)).toBe(false);
     }
