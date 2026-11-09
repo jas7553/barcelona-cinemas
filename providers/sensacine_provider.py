@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
 
 import requests
@@ -16,6 +17,7 @@ from providers.common import (
     normalize_premium_format,
     normalize_subtitle_lang,
 )
+from providers.diagnostics import report_partial_failure
 from reconcile import reconcile
 
 logger = logging.getLogger(__name__)
@@ -56,6 +58,10 @@ _ADMIT_ONE_THEATRES: dict[str, str] = {
 }
 
 _DAYS_AHEAD = int(os.environ.get("SENSACINE_DAYS_AHEAD", "7"))
+
+# One page per cinema per day, over a hundred in all. A few at a time: enough
+# to stop one slow page holding up the rest, few enough to stay a polite client.
+_PAGE_WORKERS = 4
 
 _SUBTITLE_TAG_PREFIX = "Localization.Subtitle."
 _FORMAT_TAG_PREFIX = "Format.Projection."
@@ -121,7 +127,8 @@ def _fetch_showtimes_for_cinema_date(
     cinema_key: str,
     cinema: CinemaInfo,
     show_date: date,
-) -> list[Movie]:
+) -> list[Movie] | None:
+    """One cinema's English films on one day, or None if the page could not be fetched."""
     url = f"{_BASE_URL}/_/showtimes/theater-{sensacine_id}/d-{show_date.isoformat()}/"
     try:
         resp = requests.get(url, headers=DEFAULT_HEADERS, timeout=15)
@@ -129,7 +136,7 @@ def _fetch_showtimes_for_cinema_date(
         payload = resp.json()
     except Exception as exc:
         logger.warning("sensacine: failed %s on %s: %s", cinema_key, show_date, exc)
-        return []
+        return None
 
     results = payload.get("results") or []
     movies: list[Movie] = []
@@ -203,23 +210,22 @@ class SensacineProvider:
 
     def fetch(self, cinemas: CinemaRegistry) -> list[Movie]:
         dates = _fetch_dates()
-        all_movies: list[Movie] = []
-        missing_keys: list[str] = []
-
-        for cinema_key, sensacine_id in _SENSACINE_IDS.items():
-            cinema = cinemas.get(cinema_key)
-            if cinema is None:
-                missing_keys.append(cinema_key)
-                continue
-
-            for show_date in dates:
-                day_movies = _fetch_showtimes_for_cinema_date(sensacine_id, cinema_key, cinema, show_date)
-                all_movies.extend(day_movies)
-
+        missing_keys = [cinema_key for cinema_key in _SENSACINE_IDS if cinema_key not in cinemas]
         if missing_keys:
             logger.warning(
                 "sensacine: cinema keys not in registry (update _SENSACINE_IDS or cinemas.json): %s",
                 sorted(missing_keys),
             )
 
-        return reconcile(all_movies)
+        pages = [
+            (sensacine_id, cinema_key, cinemas[cinema_key], show_date)
+            for cinema_key, sensacine_id in _SENSACINE_IDS.items()
+            if cinema_key in cinemas
+            for show_date in dates
+        ]
+        # `map` yields in page order, so the reconciled output doesn't depend on which page answers first.
+        with ThreadPoolExecutor(max_workers=_PAGE_WORKERS) as executor:
+            results = list(executor.map(lambda page: _fetch_showtimes_for_cinema_date(*page), pages))
+
+        report_partial_failure(self.name, "pages", failed=results.count(None), total=len(pages))
+        return reconcile([movie for day_movies in results if day_movies for movie in day_movies])

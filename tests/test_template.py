@@ -46,6 +46,7 @@ def test_template_includes_observability_resources() -> None:
     assert "RefreshFailureAlarm" in template
     assert "RefreshHeartbeatAlarm" in template
     assert "ProviderDegradationAlarm" in template
+    assert "ProviderPartialFailureAlarm" in template
     assert "CoverageDropAlarm" in template
 
 
@@ -113,6 +114,17 @@ def test_provider_degradation_alarm_fires_on_a_single_bad_run(template: dict[str
     assert properties["EvaluationPeriods"] == 1
     assert properties["DatapointsToAlarm"] == 1
     assert properties["Threshold"] == 1
+    assert properties["ComparisonOperator"] == "GreaterThanOrEqualToThreshold"
+    assert properties["TreatMissingData"] == "notBreaching"
+
+
+def test_partial_failure_alarm_tolerates_a_stray_timeout(template: dict[str, Any]) -> None:
+    properties = template["Resources"]["ProviderPartialFailureAlarm"]["Properties"]
+
+    assert properties["MetricName"] == "ProviderPartialFailure"
+    assert properties["Statistic"] == "Sum"
+    # One or two lost requests a run is normal (3 across 8 runs, 5-9 Nov 2026).
+    assert properties["Threshold"] > 2
     assert properties["ComparisonOperator"] == "GreaterThanOrEqualToThreshold"
     assert properties["TreatMissingData"] == "notBreaching"
 

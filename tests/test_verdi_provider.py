@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from models import CinemaInfo, CinemaRegistry, Listings
+from providers.diagnostics import PartialFetchError
 from providers.verdi_provider import (
     VerdiProvider,
     _extract_film_meta,
@@ -11,6 +12,8 @@ from providers.verdi_provider import (
     _resolve_cinema_key,
     sala_map_from_cache,
 )
+
+from .conftest import FindEvent
 
 # The sala map is injected, so a provider constructed without one is a cold
 # start — no test here depends on whatever sits in the developer's ./cache.
@@ -83,6 +86,14 @@ _CARTELLERA_HTML = """
 
 def _film_html_with_sessions(sessions: str) -> str:
     return _LDJSON_BLOCK + sessions
+
+
+def _vo_session(session_id: int, day: int, time: str) -> str:
+    stamp = f"202606{day:02d}{time.replace(':', '')}00"
+    return (
+        f'\n<a href="https://verdibcn.admit-one.eu/seats/{session_id}/" x-show="!isPast(&#039;{stamp}&#039;)"'
+        f' x-cloak target="_blank"><time>{time}</time><small>V.O. SUB. CASTELLÀ</small></a>'
+    )
 
 
 def _mock_response(text: str) -> MagicMock:
@@ -248,11 +259,46 @@ def test_fetch_skips_showtime_when_sala_lookup_fails() -> None:
         "https://barcelona.cines-verdi.com/obsession": film_html,
         "https://verdibcn.admit-one.eu/seats/300001/": "<html>No sala info</html>",
     }
-    with patch("providers.verdi_provider.requests.get", side_effect=_make_get(responses)):
+    with (
+        patch("providers.verdi_provider.requests.get", side_effect=_make_get(responses)),
+        pytest.raises(PartialFetchError),
+    ):
+        VerdiProvider().fetch(CINEMAS)
+
+
+def _one_slot_down_of_five() -> dict[str, str]:
+    """A film with five time slots; the 22:00 slot's seat page names no sala."""
+    times = ["14:00", "16:00", "18:00", "20:00", "22:00"]
+    sessions = "".join(_vo_session(310001 + i, 28, time) for i, time in enumerate(times))
+    return {
+        "https://barcelona.cines-verdi.com/cartellera": '<a href="/obsession" class="group"></a>',
+        "https://barcelona.cines-verdi.com/obsession": _film_html_with_sessions(sessions),
+        **{f"https://verdibcn.admit-one.eu/seats/{310001 + i}/": _SEAT_PAGE_VERDI for i in range(4)},
+        "https://verdibcn.admit-one.eu/seats/310005/": "<html>No sala info</html>",
+    }
+
+
+def test_fetch_leaves_out_a_showtime_without_a_sala_and_reports_it(find_event: FindEvent) -> None:
+    with patch("providers.verdi_provider.requests.get", side_effect=_make_get(_one_slot_down_of_five())):
         movies = VerdiProvider().fetch(CINEMAS)
 
-    # No showtimes → no movie returned.
-    assert movies == []
+    assert [st["time"] for st in movies[0]["showtimes"]] == ["14:00", "16:00", "18:00", "20:00"]
+    report = find_event("provider_partial_failure")
+    assert (report["provider"], report["kind"]) == ("verdi", "showtimes without a sala")
+    assert (report["failed_count"], report["total_count"]) == (1, 5)
+
+
+def test_a_second_fetch_repeats_only_the_lookups_that_failed() -> None:
+    """The refresh retries a failed fetch on the same provider instance."""
+    get = _make_get(_one_slot_down_of_five())
+    provider = VerdiProvider()
+    with patch("providers.verdi_provider.requests.get", get):
+        provider.fetch(CINEMAS)
+        get.reset_mock()
+        provider.fetch(CINEMAS)
+
+    seat_urls = [call.args[0] for call in get.call_args_list if "admit-one" in call.args[0]]
+    assert seat_urls == ["https://verdibcn.admit-one.eu/seats/310005/"]
 
 
 def test_fetch_raises_when_cartellera_fetch_fails() -> None:
@@ -270,10 +316,28 @@ def test_fetch_skips_film_when_film_page_fails() -> None:
             return _mock_response('<a href="/obsession" class="group"></a>')
         raise Exception("timeout")
 
+    with patch("providers.verdi_provider.requests.get", side_effect=_get), pytest.raises(PartialFetchError):
+        VerdiProvider().fetch(CINEMAS)
+
+
+def test_fetch_skips_a_film_whose_page_fails_and_reports_it(find_event: FindEvent) -> None:
+    slugs = ["/obsession", "/two", "/three", "/four"]
+
+    def _get(url: str, **kwargs: object) -> MagicMock:
+        if "cartellera" in url:
+            return _mock_response("".join(f'<a href="{slug}" class="group"></a>' for slug in slugs))
+        if url.endswith("/four"):
+            raise Exception("timeout")
+        if "cines-verdi.com" in url:
+            return _mock_response(_film_html_with_sessions(_vo_session(320000 + len(url), 28, "18:00")))
+        return _mock_response(_SEAT_PAGE_VERDI)
+
     with patch("providers.verdi_provider.requests.get", side_effect=_get):
         movies = VerdiProvider().fetch(CINEMAS)
 
-    assert movies == []
+    assert len(movies) == 1  # the three pages that answered carry the same film
+    report = find_event("provider_partial_failure")
+    assert (report["kind"], report["failed_count"], report["total_count"]) == ("film pages", 1, 4)
 
 
 def test_fetch_deduplicates_same_time_slot_sala_lookup() -> None:
@@ -298,7 +362,31 @@ def test_fetch_deduplicates_same_time_slot_sala_lookup() -> None:
 
     # Three sessions at the same time → only ONE sala lookup.
     assert len(seat_urls_fetched) == 1
-    assert "400001" in seat_urls_fetched[0]
+    assert "400003" in seat_urls_fetched[0]
+
+
+def test_a_slot_is_resolved_from_its_latest_session_not_one_that_has_started() -> None:
+    """admit-one answers for a started session with an "expired" page that names no sala."""
+    responses = {
+        "https://barcelona.cines-verdi.com/cartellera": '<a href="/obsession" class="group"></a>',
+        "https://barcelona.cines-verdi.com/obsession": _film_html_with_sessions(
+            _vo_session(450001, 28, "16:00") + _vo_session(450002, 29, "16:00") + _vo_session(450003, 30, "16:00")
+        ),
+        "https://verdibcn.admit-one.eu/seats/450001/": "<html>Sessió no seleccionada o expirada.</html>",
+        "https://verdibcn.admit-one.eu/seats/450003/": _SEAT_PAGE_VP,
+    }
+    get = _make_get(responses)
+    with patch("providers.verdi_provider.requests.get", get):
+        movies = VerdiProvider().fetch(CINEMAS)
+
+    assert [(st["date"], st["cinema"]) for st in movies[0]["showtimes"]] == [
+        ("2026-06-28", "VP"),
+        ("2026-06-29", "VP"),
+        ("2026-06-30", "VP"),
+    ]
+    assert [call.args[0] for call in get.call_args_list if "admit-one" in call.args[0]] == [
+        "https://verdibcn.admit-one.eu/seats/450003/"
+    ]
 
 
 _SEATS = "https://verdibcn.admit-one.eu/seats"

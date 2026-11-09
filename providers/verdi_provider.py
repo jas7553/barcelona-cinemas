@@ -11,9 +11,15 @@ per film covers the whole weekly run.
 
 admit-one is the slowest and least reliable dependency in the pipeline: a bad
 spell there once ate the entire 120s Lambda budget in 10s timeouts and killed
-the whole refresh. Two guards: a short per-request timeout, and a session ->
+the whole refresh. Three guards: a short per-request timeout, a session ->
 cinema map recovered from the previous run's cached showtimes, which skips the
-network entirely for any session already resolved once.
+network entirely for any session already resolved once, and the remaining
+lookups run a few at a time, after every film page is in. The film pages
+themselves stay one at a time: their host has blocked this client before.
+
+A showtime whose sala can't be resolved is left out and reported
+(`report_partial_failure`); past its limit the whole fetch fails, so the
+refresh retries and then falls back to the last good snapshot.
 
 That second guard is a read-behind on the previous refresh's Listings, and it is
 injected, not fetched: `sala_map_from_cache` is a pure function of a Listings
@@ -28,13 +34,14 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import TYPE_CHECKING
+from concurrent.futures import ThreadPoolExecutor
+from typing import TYPE_CHECKING, NamedTuple
 
 import requests
 
 from models import CinemaRegistry, Listings, Movie, Showtime
 from providers.common import DEFAULT_HEADERS, base_movie, normalize_subtitle_lang
-from providers.diagnostics import record_entry_response
+from providers.diagnostics import record_entry_response, report_partial_failure
 from reconcile import reconcile
 
 if TYPE_CHECKING:
@@ -46,9 +53,10 @@ _VERDI_BASE = "https://barcelona.cines-verdi.com"
 _ADMIT_ONE_BASE = "https://verdibcn.admit-one.eu"
 
 # Seat pages answer in well under a second when healthy. The ceiling exists to
-# bound a hung host, not to wait out a slow one — every second here is spent
-# serially, once per unique time slot, inside the refresh Lambda's timeout.
+# bound a hung host, not to wait out a slow one: every unique time slot not in
+# the cached map costs up to this long, inside the refresh Lambda's timeout.
 _SALA_TIMEOUT = 3
+_SALA_WORKERS = 4
 
 # Session id inside a stored booking_url, for rebuilding the sala map from cache.
 _BOOKING_SESSION_RE = re.compile(r"/seats/(\d+)/")
@@ -178,6 +186,33 @@ def sala_map_from_cache(cached: Listings | None) -> dict[str, str]:
     return sala_map
 
 
+class _Session(NamedTuple):
+    date: str  # YYYY-MM-DD
+    time: str  # HH:MM
+    id: str
+    booking_url: str
+    language: str
+
+
+class _Film(NamedTuple):
+    title: str
+    imdb_id: str | None
+    sessions: list[_Session]  # V.O. only
+
+    def slots(self) -> list[list[str]]:
+        """
+        Session ids grouped by time slot, each slot's latest date first. A
+        slot's sessions all sit in the same sala.
+        """
+        by_time: dict[str, list[_Session]] = {}
+        for session in self.sessions:
+            by_time.setdefault(session.time, []).append(session)
+        return [
+            [session.id for session in sorted(slot, key=lambda session: session.date, reverse=True)]
+            for slot in by_time.values()
+        ]
+
+
 class VerdiProvider:
     name = "verdi"
 
@@ -187,7 +222,10 @@ class VerdiProvider:
         refresh (see `sala_map_from_cache`). Omitting it is a cold start: every
         time slot costs one admit-one lookup.
         """
-        self._sala_map: Mapping[str, str] = sala_map or {}
+        # Copied: lookups are added to it, and the injected map belongs to the
+        # caller. Kept on the instance so a retried fetch repeats only the
+        # lookups that failed.
+        self._salas: dict[str, str] = dict(sala_map or {})
 
     def fetch(self, cinemas: CinemaRegistry) -> list[Movie]:
         # The cartellera fetch is the one failure mode that means "Verdi is
@@ -196,24 +234,44 @@ class VerdiProvider:
         # refresh.py's _fetch_provider_movies classify it as ProviderFailure
         # instead of ProviderZeroResult — swallowed here, it previously looked
         # identical to an honest empty cartellera and never tripped the
-        # degradation alarm. Per-film failures below stay swallowed: one bad
-        # film page shouldn't fail the whole provider.
+        # degradation alarm. One bad film page shouldn't fail the whole
+        # provider, so those are skipped and counted.
         slugs = self._fetch_slugs()
+        logger.info("Verdi sala map seeded with %d cached session(s)", len(self._salas))
 
-        # Copied: the fetch memoizes newly resolved sessions into it across
-        # films, and the injected map belongs to the caller.
-        known_salas = dict(self._sala_map)
-        logger.info("Verdi sala map seeded with %d cached session(s)", len(known_salas))
-
-        movies: list[Movie] = []
+        films: list[_Film] = []
+        failed_pages = 0
         for slug in slugs:
             try:
-                movie = self._process_film(slug, cinemas, known_salas)
+                film = self._fetch_film(slug)
             except Exception as exc:
                 logger.warning("Verdi film %s skipped: %s", slug, exc)
+                failed_pages += 1
                 continue
-            if movie is not None:
-                movies.append(movie)
+            if film is not None:
+                films.append(film)
+        report_partial_failure(self.name, "film pages", failed=failed_pages, total=len(slugs))
+
+        self._resolve_salas(films)
+
+        movies: list[Movie] = []
+        unresolved = 0
+        for film in films:
+            showtimes: list[Showtime] = []
+            for session in film.sessions:
+                cinema_key = self._salas.get(session.id)
+                if cinema_key is None:
+                    unresolved += 1
+                elif cinema_key in cinemas:
+                    showtimes.append(_showtime(session, cinema_key, cinemas))
+            if showtimes:
+                movies.append(base_movie(film.title, film.imdb_id, showtimes))
+        report_partial_failure(
+            self.name,
+            "showtimes without a sala",
+            failed=unresolved,
+            total=sum(len(film.sessions) for film in films),
+        )
 
         return reconcile(movies)
 
@@ -223,12 +281,8 @@ class VerdiProvider:
         record_entry_response(resp)
         return list(dict.fromkeys(_FILM_LINK_RE.findall(resp.text)))
 
-    def _process_film(
-        self,
-        slug: str,
-        cinemas: CinemaRegistry,
-        known_salas: dict[str, str] | None = None,
-    ) -> Movie | None:
+    def _fetch_film(self, slug: str) -> _Film | None:
+        """A film page's title and V.O. sessions, or None if it has neither."""
         resp = requests.get(f"{_VERDI_BASE}{slug}", headers=DEFAULT_HEADERS, timeout=15)
         resp.raise_for_status()
         html = resp.text
@@ -236,52 +290,43 @@ class VerdiProvider:
         title, imdb_id = _extract_film_meta(html)
         if not title:
             return None
+        sessions = [_Session(*session) for session in _parse_sessions(html) if _is_vo(session[4])]
+        return _Film(title, imdb_id, sessions) if sessions else None
 
-        sessions = _parse_sessions(html)
-        vo_sessions = [(d, t, sid, url, lang) for d, t, sid, url, lang in sessions if _is_vo(lang)]
-        if not vo_sessions:
-            return None
+    def _resolve_salas(self, films: list[_Film]) -> None:
+        """
+        Fill `self._salas` for every session of `films` whose slot can be
+        resolved: from a slot-mate already in the map, else by one admit-one
+        lookup per slot, a few at a time.
 
-        # One sala lookup per unique time slot covers the whole run. A slot's
-        # sessions all sit in the same sala, so any one of them already in the
-        # cached map answers for the slot without touching the network.
-        known = known_salas or {}
-        sessions_by_time: dict[str, list[str]] = {}
-        for _d, time_slot, sess_id, _url, _lang in vo_sessions:
-            sessions_by_time.setdefault(time_slot, []).append(sess_id)
+        The lookup asks about the slot's latest session. Film pages still list
+        today's sessions that have started, and admit-one answers for those
+        with a "session expired" page that names no sala.
+        """
+        slots = [session_ids for film in films for session_ids in film.slots()]
+        unknown = [ids[0] for ids in slots if not any(session_id in self._salas for session_id in ids)]
+        with ThreadPoolExecutor(max_workers=_SALA_WORKERS) as executor:
+            resolved = list(executor.map(_resolve_cinema_key, unknown))
+        self._salas.update({sid: key for sid, key in zip(unknown, resolved, strict=True) if key is not None})
 
-        cinema_by_time: dict[str, str | None] = {}
-        for time_slot, sess_ids in sessions_by_time.items():
-            cached_key = next((known[sid] for sid in sess_ids if sid in known), None)
-            if cached_key is not None:
-                cinema_by_time[time_slot] = cached_key
-                continue
-            resolved = _resolve_cinema_key(sess_ids[0])
-            cinema_by_time[time_slot] = resolved
-            if resolved is not None:
-                known[sess_ids[0]] = resolved
+        for session_ids in slots:
+            cinema_key = next((self._salas[sid] for sid in session_ids if sid in self._salas), None)
+            if cinema_key is not None:
+                self._salas.update(dict.fromkeys(session_ids, cinema_key))
 
-        showtimes: list[Showtime] = []
-        for date, time_str, _sess_id, booking_url, lang in vo_sessions:
-            cinema_key = cinema_by_time.get(time_str)
-            if cinema_key is None or cinema_key not in cinemas:
-                continue
-            cinema_info = cinemas[cinema_key]
-            showtime = Showtime(
-                cinema=cinema_key,
-                neighborhood=cinema_info["neighborhood"],
-                address=cinema_info["address"],
-                date=date,
-                time=time_str,
-                language="vo",
-                booking_url=booking_url,
-            )
-            subtitle_lang = normalize_subtitle_lang(lang)
-            if subtitle_lang is not None:
-                showtime["subtitle_lang"] = subtitle_lang
-            showtimes.append(showtime)
 
-        if not showtimes:
-            return None
-
-        return base_movie(title, imdb_id, showtimes)
+def _showtime(session: _Session, cinema_key: str, cinemas: CinemaRegistry) -> Showtime:
+    cinema_info = cinemas[cinema_key]
+    showtime = Showtime(
+        cinema=cinema_key,
+        neighborhood=cinema_info["neighborhood"],
+        address=cinema_info["address"],
+        date=session.date,
+        time=session.time,
+        language="vo",
+        booking_url=session.booking_url,
+    )
+    subtitle_lang = normalize_subtitle_lang(session.language)
+    if subtitle_lang is not None:
+        showtime["subtitle_lang"] = subtitle_lang
+    return showtime
