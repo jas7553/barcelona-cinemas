@@ -347,8 +347,10 @@ def test_scraper_title_preserved_as_cache_key_and_english_title_set(mock_env):
     mock_session = MagicMock()
     mock_session.__enter__ = MagicMock(return_value=mock_session)
     mock_session.__exit__ = MagicMock(return_value=False)
+    spanish_search = {"results": [{"id": 42, "title": "Encuentros en la tercera fase"}]}
     mock_session.get.side_effect = [
         MagicMock(status_code=200, json=lambda: search, raise_for_status=lambda: None),
+        MagicMock(status_code=200, json=lambda: spanish_search, raise_for_status=lambda: None),
         MagicMock(status_code=200, json=lambda: detail, raise_for_status=lambda: None),
     ]
 
@@ -384,7 +386,7 @@ def test_cache_hit_when_scraper_title_matches_cached_scraper_title(mock_env):
 
 def test_populates_original_lang_from_tmdb(mock_env):
     """original_lang is populated from TMDb original_language."""
-    movie = _movie("Anatomy of a Fall", showtimes=[_showtime()])
+    movie = _movie("Dune: Part Two", showtimes=[_showtime()])
     detail = {**TMDB_DETAIL, "original_language": "fr"}
 
     mock_session = MagicMock()
@@ -750,3 +752,117 @@ def test_every_provider_copy_of_a_remade_title_lands_on_one_film(mock_env):
         ("2026-10-23", "19:00"),
     ]
     assert film["showtimes"][2]["booking_url"] == "https://pillalas"
+
+
+def _searches(mock_session: MagicMock) -> list[tuple[str, str]]:
+    return [
+        (call[1]["params"]["query"], call[1]["params"]["language"])
+        for call in mock_session.get.call_args_list
+        if call[0][0].endswith("/search/movie")
+    ]
+
+
+def test_a_spanish_title_picks_the_film_it_names_over_tmdbs_top_result(mock_env):
+    """
+    The Social Reckoning split: SensaCine lists it as "El precio de la red",
+    and TMDb's top result for that, named in English, was "Ida Red".
+    """
+    ida_red = {"id": 818192, "release_date": "2021-11-05"}
+    reckoning = {"id": 1281331, "release_date": _days_ago(20)}
+
+    def get(url: str, params: dict[str, str], timeout: int) -> MagicMock:
+        if url.endswith("/search/movie"):
+            if params["language"] == "es-ES":
+                titles = ("Ida Red", "El precio de la red")
+            else:
+                titles = ("Ida Red", "The Social Reckoning")
+            return _response({"results": [{**ida_red, "title": titles[0]}, {**reckoning, "title": titles[1]}]})
+        film_id = int(url.rsplit("/", 1)[1]) if url.rsplit("/", 1)[1].isdigit() else 0
+        return _response({**TMDB_DETAIL, "id": film_id, "title": "The Social Reckoning", "imdb_id": "tt37510326"})
+
+    mock_session = _mock_session(get)
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([_movie("El precio de la red", [_showtime()])], [])
+
+    assert _searches(mock_session) == [("El precio de la red", "en-US"), ("El precio de la red", "es-ES")]
+    assert _detail_ids(mock_session) == ["1281331"]
+    assert result[0]["tmdb_id"] == 1281331
+    assert result[0]["title"] == "El precio de la red"
+    assert result[0]["english_title"] == "The Social Reckoning"
+
+
+def test_an_english_title_that_matches_is_searched_once(mock_env):
+    mock_session = _session(TMDB_SEARCH, TMDB_DETAIL, TMDB_VIDEOS, TMDB_CREDITS)
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        enricher.enrich([_movie("Dune: Part Two", [_showtime()])], [])
+
+    assert _searches(mock_session) == [("Dune: Part Two", "en-US")]
+
+
+def test_a_cached_match_sharing_its_title_with_another_film_is_looked_up_again(mock_env):
+    """
+    The 1995 film is cached from a repertory run; the secondary feed then tags
+    a preview of the 2026 film with the 1995 imdb_id, while Verdi lists the
+    2026 film in Spanish. The cache hit must not keep the preview on the 1995 film.
+    """
+    cached = _movie(
+        "Sense and Sensibility",
+        tmdb_id=4584,
+        imdb_id="tt0114388",
+        enriched_at=_fresh_enriched_at(),
+        tmdb_match_version=enricher._MATCH_VERSION,
+        english_title="Sense and Sensibility",
+    )
+    search = {
+        "results": [
+            {"id": 4584, "title": "Sense and Sensibility", "release_date": "1995-12-13"},
+            {"id": 1503762, "title": "Sense and Sensibility", "release_date": _days_ago(30)},
+        ]
+    }
+    mock_session = _routed_session(
+        {
+            "Sense and Sensibility": search,
+            "Sentido y sensibilidad": {"results": search["results"][1:]},
+            "movie/1503762": {
+                **TMDB_DETAIL,
+                "id": 1503762,
+                "imdb_id": "tt13609648",
+                "title": "Sense and Sensibility",
+                "release_dates": _spanish_release(_days_ago(-3)),
+            },
+        }
+    )
+    collected = [
+        _movie("Sense and Sensibility", [_showtime("2026-10-22")], imdb_id="tt0114388"),
+        _movie("Sentido y sensibilidad", [_showtime("2026-10-23")], imdb_id="tt13609648"),
+    ]
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        enriched, stats = enricher.enrich(collected, [cached])
+
+    assert [m["tmdb_id"] for m in enriched] == [1503762, 1503762]
+    assert len(reconcile(enriched)) == 1
+    assert stats["tmdb_cache_hit_count"] == 0
+    assert stats["tmdb_reenriched_count"] == 1
+    assert stats["tmdb_enriched_count"] == 2
+
+
+def test_cached_matches_with_different_titles_are_left_alone(mock_env):
+    cached = [
+        _movie(
+            title,
+            tmdb_id=tmdb_id,
+            enriched_at=_fresh_enriched_at(),
+            tmdb_match_version=enricher._MATCH_VERSION,
+            english_title=title,
+        )
+        for title, tmdb_id in (("Fargo", 275), ("Rocky", 1366))
+    ]
+
+    with patch("enricher.requests.Session") as MockSession:
+        _, stats = enricher.enrich([_movie("Fargo", [_showtime()]), _movie("Rocky", [_showtime()])], cached)
+
+    assert stats["tmdb_cache_hit_count"] == 2
+    MockSession.return_value.get.assert_not_called()

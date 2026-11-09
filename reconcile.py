@@ -43,9 +43,15 @@ def same_movie(left: Movie, right: Movie) -> bool:
 
 def reconcile(movies: list[Movie], *, stage: str | None = None) -> list[Movie]:
     """
-    Collapse movies that satisfy `same_movie` into one each, in first-seen
-    order. Merges showtimes (deduped, booking links preserved) and coalesces
-    every other field to the first non-null value seen.
+    Collapse movies that are the same film into one each, in first-seen order.
+    Merges showtimes (deduped, booking links preserved) and coalesces every
+    other field to the first non-null value seen.
+
+    Identity is `same_movie`, except that a merged movie answers to the title
+    of every copy folded into it, not only the one it kept. So a copy without
+    an imdb_id joins the film whatever order the providers arrive in: a
+    Spanish-titled copy still finds its film after an imdb_id match has merged
+    that title into an English-titled one.
 
     Pass `stage` to log a `reconcile_summary` for the collapse. Without it the
     reconcile is silent — providers reconcile their own output before the
@@ -53,18 +59,23 @@ def reconcile(movies: list[Movie], *, stage: str | None = None) -> list[Movie]:
     `provider_collection_summary`.
     """
     merged: list[Movie] = []
+    titles: list[set[str]] = []
     cross_title_merges: list[str] = []
     for movie in movies:
+        title = normalize_title(movie["title"])
+        imdb_id = movie.get("imdb_id")
         for index, existing in enumerate(merged):
-            if same_movie(existing, movie):
-                # Only the logged stages pay for the title comparison; providers
-                # reconcile their own output on every fetch.
-                if stage is not None and normalize_title(existing["title"]) != normalize_title(movie["title"]):
+            existing_imdb = existing.get("imdb_id")
+            same = existing_imdb == imdb_id if existing_imdb and imdb_id else title in titles[index]
+            if same:
+                if stage is not None and normalize_title(existing["title"]) != title:
                     cross_title_merges.append(f"{existing['title']} ← {movie['title']}")
                 merged[index] = _merge_pair(existing, movie)
+                titles[index].add(title)
                 break
         else:
             merged.append(movie)
+            titles.append({title})
     if stage is not None:
         _log_reconcile_summary(stage, movies, merged, cross_title_merges)
     return merged

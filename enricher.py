@@ -34,7 +34,7 @@ _ENRICH_TTL_DAYS = int(os.environ.get("ENRICH_TTL_DAYS", "7"))
 
 # Bump when the matching rules change, so cached matches made under the old
 # rules are looked up again on the next refresh instead of at their TTL.
-_MATCH_VERSION = 2
+_MATCH_VERSION = 3
 
 _TV_MOVIE_GENRE_ID = 10770
 # Release windows for a new film (see `_rank_candidates`). The primary release
@@ -103,10 +103,11 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
     with requests.Session() as session:
         session.mount("https://", HTTPAdapter(max_retries=_retry))
         enriched: list[Movie] = []
-        for movie in movies:
+        cache_hits: set[int] = set()
+        for index, movie in enumerate(movies):
             cached = _find_cached_movie(movie, cached_by_imdb, cached_by_title)
             if cached and cached.get("tmdb_id") is not None and not _needs_reenrichment(cached):
-                stats["tmdb_cache_hit_count"] += 1
+                cache_hits.add(index)
                 enriched.append({**cached, "showtimes": movie["showtimes"]})
             else:
                 if cached and cached.get("tmdb_id") is not None:
@@ -129,11 +130,42 @@ def enrich(movies: list[Movie], cached_movies: list[Movie]) -> tuple[list[Movie]
                     enriched.append({**cached, "showtimes": movie["showtimes"]})
                 else:
                     enriched.append(result.movie)
+        # A cached match can be stale (a classic cached before its remake was
+        # listed) or reached through a provider's wrong imdb_id. Either shows
+        # up as two films sharing an English title, so those are looked up
+        # again by their listed title, as they would be with nothing cached.
+        for index in sorted(cache_hits & _namesake_clashes(enriched)):
+            result = _lookup_and_merge(movies[index], session, key)
+            cache_hits.discard(index)
+            stats["tmdb_reenriched_count"] += 1
+            if result.enriched:
+                stats["tmdb_enriched_count"] += 1
+                enriched[index] = result.movie
+            if result.failed:
+                stats["tmdb_failure_count"] += 1
+        stats["tmdb_cache_hit_count"] = len(cache_hits)
         if stats["tmdb_failure_count"]:
             emit_metric("TmdbLookupFailure", stats["tmdb_failure_count"])
         emit_metric("MoviesEnriched", stats["tmdb_enriched_count"])
         log_event("tmdb_enrichment_summary", movie_count=len(movies), **stats)
         return enriched, stats
+
+
+def _namesake_clashes(movies: list[Movie]) -> set[int]:
+    """Indexes of the movies whose English title is shared by a different TMDb film."""
+    films_by_title: dict[str, set[int]] = {}
+    for movie in movies:
+        if (tmdb_id := movie.get("tmdb_id")) is not None:
+            films_by_title.setdefault(_english_key(movie), set()).add(tmdb_id)
+    return {
+        index
+        for index, movie in enumerate(movies)
+        if movie.get("tmdb_id") is not None and len(films_by_title[_english_key(movie)]) > 1
+    }
+
+
+def _english_key(movie: Movie) -> str:
+    return normalize_title(movie.get("english_title") or movie["title"])
 
 
 def _needs_reenrichment(cached: Movie) -> bool:
@@ -254,9 +286,8 @@ def _rank_candidates(
     first; failing that, TMDb's popularity order stands, which is what keeps a
     repertory classic ahead of its obscure namesakes.
     """
-    films = [r for r in results if _TV_MOVIE_GENRE_ID not in (r.get("genre_ids") or [])]
-    key = normalize_title(title)
-    exact = [r for r in films if normalize_title(str(r.get("title", ""))) == key]
+    films = _films(results)
+    exact = _exact_matches(title, results)
     if not exact:
         return [], films[:1]
     if year is not None:
@@ -268,6 +299,15 @@ def _rank_candidates(
         return [], sorted(exact, key=lambda r: not near_year(r))
     recent = [r for r in exact if _released_within(r.get("release_date"), today, _RECENT_RELEASE_BEFORE)]
     return recent[:_MAX_FIRST_RUN_PROBES], exact
+
+
+def _films(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [r for r in results if _TV_MOVIE_GENRE_ID not in (r.get("genre_ids") or [])]
+
+
+def _exact_matches(title: str, results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    key = normalize_title(title)
+    return [r for r in _films(results) if normalize_title(str(r.get("title", ""))) == key]
 
 
 def _in_spanish_first_run(detail: dict[str, Any], today: date) -> bool:
@@ -292,13 +332,25 @@ def _fetch_tmdb(
 ) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
     """Search TMDb for a title; return (detail, videos, credits), or all None on no match."""
     common = {"language": "en-US", "api_key": api_key}
-    search_resp = session.get(
-        f"{_BASE_URL}/search/movie",
-        params={"query": title, **common},
-        timeout=10,
-    )
-    search_resp.raise_for_status()
-    results: list[dict[str, Any]] = search_resp.json().get("results", [])
+
+    def search(language: str) -> list[dict[str, Any]]:
+        resp = session.get(
+            f"{_BASE_URL}/search/movie",
+            params={**common, "query": title, "language": language},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return cast(list[dict[str, Any]], resp.json().get("results", []))
+
+    results = search("en-US")
+    if results and not _exact_matches(title, results):
+        # Probably a Spanish-titled listing. TMDb found these films by some
+        # translation of their title but names them in English, so nothing
+        # says which one is meant. Named in Spanish, the film whose title
+        # this is can be told from one that merely resembles it.
+        spanish = search("es-ES")
+        if _exact_matches(title, spanish):
+            results = spanish
 
     first_run, ordered = _rank_candidates(title, results, year=year, today=today)
     details: dict[int, dict[str, Any]] = {}
