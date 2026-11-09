@@ -866,3 +866,67 @@ def test_cached_matches_with_different_titles_are_left_alone(mock_env):
 
     assert stats["tmdb_cache_hit_count"] == 2
     MockSession.return_value.get.assert_not_called()
+
+
+def _language_routed_session(searches: dict[tuple[str, str], list[dict[str, Any]]]) -> MagicMock:
+    """A TMDb session answering searches by (query, language); a film's detail echoes its id."""
+
+    def get(url: str, params: dict[str, str], timeout: int) -> MagicMock:
+        if url.endswith("/search/movie"):
+            return _response({"results": searches.get((params["query"], params["language"]), [])})
+        tail = url.rsplit("/", 1)[1]
+        return _response({**TMDB_DETAIL, "id": int(tail), "title": f"Film {tail}"} if tail.isdigit() else {})
+
+    return _mock_session(get)
+
+
+def _stale_match(title: str, english_title: str, tmdb_id: int) -> Movie:
+    return _movie(
+        title,
+        tmdb_id=tmdb_id,
+        enriched_at=_fresh_enriched_at(),
+        tmdb_match_version=enricher._MATCH_VERSION - 1,
+        english_title=english_title,
+    )
+
+
+def test_a_repeat_lookup_goes_by_the_listed_title_not_the_earlier_guess(mock_env):
+    """
+    "Sospecha" was once guessed to be "Sofia's Suspicion". Searching that
+    English title again would confirm the guess; the listed title finds Hitchcock's.
+    """
+    guess = {"id": 1520850, "release_date": "2025-03-01"}
+    mock_session = _language_routed_session(
+        {
+            ("Sospecha", "en-US"): [{**guess, "title": "Sofia's Suspicion"}, {"id": 11462, "title": "Suspicion"}],
+            ("Sospecha", "es-ES"): [{**guess, "title": "La sospecha de Sofía"}, {"id": 11462, "title": "Sospecha"}],
+            ("Sofia's Suspicion", "en-US"): [{**guess, "title": "Sofia's Suspicion"}],
+        }
+    )
+    cached = _stale_match("Sospecha", "Sofia's Suspicion", 1520850)
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([_movie("Sospecha", [_showtime()])], [cached])
+
+    assert result[0]["tmdb_id"] == 11462
+    assert ("Sofia's Suspicion", "en-US") not in _searches(mock_session)
+
+
+def test_a_repeat_lookup_falls_back_to_the_known_english_title(mock_env):
+    """A listed title that names no film exactly, in either language, keeps the film it had."""
+    listed = "Verity. La sombra de un engaño"
+    other = [{"id": 7, "title": "Shadow of a Doubt"}]
+    mock_session = _language_routed_session(
+        {
+            (listed, "en-US"): other,
+            (listed, "es-ES"): [{"id": 7, "title": "La sombra de una duda"}],
+            ("Verity", "en-US"): [{"id": 1283515, "title": "Verity"}],
+        }
+    )
+    cached = _stale_match(listed, "Verity", 1283515)
+
+    with patch("enricher.requests.Session", return_value=mock_session):
+        result, _ = enricher.enrich([_movie(listed, [_showtime()])], [cached])
+
+    assert result[0]["tmdb_id"] == 1283515
+    assert _searches(mock_session) == [(listed, "en-US"), (listed, "es-ES"), ("Verity", "en-US")]
