@@ -78,6 +78,26 @@ def test_reconcile_merges_imdb_and_titleonly_copies_and_unions_showtimes():
     assert len(merged["showtimes"]) == 2
 
 
+def test_reconcile_matches_a_title_folded_in_by_an_earlier_imdb_merge():
+    """Verdi's Spanish title joins the English copy on imdb_id; SensaCine's id-less Spanish copy must follow."""
+    [film] = reconcile(
+        [
+            _movie(
+                "The Social Reckoning", imdb_id="tt37510326", showtimes=[_showtime("Balmes", "2026-11-10", "18:00")]
+            ),
+            _movie("El precio de la red", imdb_id="tt37510326", showtimes=[_showtime("Verdi", "2026-11-10", "20:00")]),
+            _movie("El precio de la red", showtimes=[_showtime("RenFlo", "2026-11-10", "22:00")]),
+        ]
+    )
+
+    assert film["title"] == "The Social Reckoning"
+    assert [s["cinema"] for s in film["showtimes"]] == ["Balmes", "Verdi", "RenFlo"]
+
+
+def test_reconcile_keeps_same_title_copies_with_different_imdb_ids_apart():
+    assert len(reconcile([_movie("Nosferatu", imdb_id="tt0013442"), _movie("Nosferatu", imdb_id="tt5040012")])) == 2
+
+
 def test_reconcile_keeps_distinct_films_separate():
     out = reconcile([_movie("Dune"), _movie("Oppenheimer")])
     assert {m["title"] for m in out} == {"Dune", "Oppenheimer"}
