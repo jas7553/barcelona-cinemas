@@ -1,9 +1,10 @@
 import type { Page } from "@playwright/test";
 
 /**
- * The page doesn't scroll sideways, and no element pokes past the viewport's
- * edges, so `overflow-x: hidden` on the root can't hide a too-wide element.
- * Only content inside its own horizontal scroller may be wider (WCAG 1.4.10).
+ * Nothing scrolls sideways (brief): not the page, and not any element of its
+ * own, so an `overflow-x: auto|scroll` box wider inside than out fails. No
+ * element pokes past the viewport's edges either, so `overflow-x: hidden` on
+ * the root or on a scroller can't hide a too-wide element.
  */
 export async function checkNoOverflow(page: Page): Promise<void> {
   const problems = await page.evaluate(() => {
@@ -12,19 +13,20 @@ export async function checkNoOverflow(page: Page): Promise<void> {
     const found: string[] = [];
     if (root.scrollWidth > width)
       found.push(`the page is ${root.scrollWidth}px wide in ${width}px`);
-    const scrolls = (el: Element) => /auto|scroll/.test(getComputedStyle(el).overflowX);
     const offenders: Element[] = [];
-    for (const el of document.body.querySelectorAll("*")) {
+    for (const el of [document.body, ...document.body.querySelectorAll("*")]) {
+      if (
+        /auto|scroll/.test(getComputedStyle(el).overflowX) &&
+        el.scrollWidth > el.clientWidth + 1
+      ) {
+        const tag = el.outerHTML.slice(0, el.outerHTML.indexOf(">") + 1).slice(0, 80);
+        found.push(`${tag} scrolls sideways: ${el.scrollWidth}px in ${el.clientWidth}px`);
+      }
       const box = el.getBoundingClientRect();
       if (box.width <= 1 || box.height <= 1) continue;
       const left = box.left + scrollX;
       const right = box.right + scrollX;
       if (left >= -1 && right <= width + 1) continue;
-      let ancestor = el.parentElement;
-      while (ancestor && ancestor !== document.body && !scrolls(ancestor)) {
-        ancestor = ancestor.parentElement;
-      }
-      if (ancestor !== document.body) continue;
       if (offenders.some((o) => o.contains(el))) continue;
       offenders.push(el);
       found.push(`${el.outerHTML.slice(0, 80)} spans ${Math.round(left)}–${Math.round(right)}px`);

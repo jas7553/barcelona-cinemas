@@ -35,6 +35,9 @@ export default defineConfig({
   ...(CI ? { workers: 2 } : {}),
   forbidOnly: CI,
   retries: CI ? 2 : 0,
+  // A retry still records a trace, but a pass on retry fails the run, so a
+  // flaky layout regression can't go green.
+  failOnFlakyTests: CI,
   reporter: CI ? [["github"], ["html", { open: "never" }]] : [["list"]],
 
   use: {

@@ -118,6 +118,7 @@ h3 {
 }
 
 .button {
+  gap: 0.25em;
   padding-inline: 1rem;
   border: 1px solid currentcolor;
   border-radius: 0.5rem;
