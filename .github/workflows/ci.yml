@@ -77,7 +77,7 @@ jobs:
     # apt mirror can't stall the job. Keep the tag in step with @playwright/test
     # in package-lock.json (a mismatch makes Playwright look for missing browsers).
     container:
-      image: mcr.microsoft.com/playwright:v1.64.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
       options: --ipc=host
     steps:
       - uses: actions/checkout@v7
