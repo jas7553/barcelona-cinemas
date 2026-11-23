@@ -1,0 +1,5 @@
+/* Hides the overflow instead of fixing it; the overflow check still sees it. */
+html,
+body {
+  overflow-x: hidden;
+}

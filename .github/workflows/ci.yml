@@ -90,6 +90,40 @@ jobs:
       - name: Test
         run: npm test
 
+  app-e2e:
+    name: App E2E (Playwright)
+    runs-on: ubuntu-latest
+    # The e2e job's image: browsers and fonts baked in, the Linux that layout
+    # and font checks count on. Keep the tag in step with @playwright/test.
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pins the Node from .nvmrc rather than the image's own.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run e2e
+        run: npm run e2e
+
+      - name: Budgets
+        run: npm run budgets
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-playwright-report
+          path: app/e2e/playwright-report/
+          retention-days: 7
+
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest

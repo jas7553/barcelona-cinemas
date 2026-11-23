@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>This week | Barcelona This Week</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/assets/site.css" />
+    <script type="module" src="/assets/app.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">Barcelona This Week</a>
+      <nav aria-label="Site">
+        <ul>
+          <li><a href="/" aria-current="page">This week</a></li>
+          <li><a href="/film/the-stub-film">The Stub Film</a></li>
+        </ul>
+      </nav>
+    </header>
+    <main>
+      <h1>This week</h1>
+      <noscript>
+        <search class="filters">
+          <form action="/" method="get">
+            <label for="day">Day</label>
+            <select id="day" name="day">
+              <option value="">Any day</option>
+              <option value="2026-11-28">Friday 28</option>
+              <option value="2026-11-29">Saturday 29</option>
+            </select>
+            <button type="submit">Show films</button>
+          </form>
+        </search>
+      </noscript>
+      <ul class="films" role="list">
+        <li class="film">
+          <h2><a class="title-link" href="/film/the-stub-film">The Stub Film</a></h2>
+          <img
+            src="https://image.tmdb.org/t/p/w185/the-stub-film.jpg"
+            alt=""
+            width="92"
+            height="138"
+          />
+          <div>
+            <h3><time datetime="2026-11-28">Friday 28</time></h3>
+            <ul class="showings" role="list">
+              <li data-showing>
+                <a data-booking href="https://tickets.example/the-stub-film/2026-11-28/1715"
+                  ><time datetime="2026-11-28T17:15">17:15</time></a
+                >
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes&amp;query_place_id=ChIJstubMoobyBalmes0000001"
+                  >Mooby Balmes</a
+                >
+              </li>
+              <li data-showing>
+                <a href="https://cinema.example/"
+                  ><time datetime="2026-11-28T19:00">19:00</time
+                  ><span class="visually-hidden"> (cinema website)</span>
+                  <span aria-hidden="true">↗</span></a
+                >
+                Cines Girona
+              </li>
+              <li data-showing>
+                <a data-booking href="https://tickets.example/the-stub-film/2026-11-28/2130"
+                  ><time datetime="2026-11-28T21:30">21:30</time></a
+                >
+                Verdi
+              </li>
+            </ul>
+            <h3><time datetime="2026-11-29">Saturday 29</time></h3>
+            <ul class="showings" role="list">
+              <li data-showing>
+                <a data-booking href="https://tickets.example/the-stub-film/2026-11-29/1600"
+                  ><time datetime="2026-11-29T16:00">16:00</time></a
+                >
+                Mooby Balmes
+              </li>
+              <li data-showing>
+                <a data-booking href="https://tickets.example/the-stub-film/2026-11-29/2045"
+                  ><time datetime="2026-11-29T20:45">20:45</time></a
+                >
+                Verdi
+              </li>
+              <li data-showing>
+                <a data-booking href="https://tickets.example/the-stub-film/2026-11-29/2250"
+                  ><time datetime="2026-11-29T22:50">22:50</time></a
+                >
+                Yelmo Icaria
+              </li>
+            </ul>
+          </div>
+        </li>
+        <li class="film">
+          <h2>
+            <a class="title-link" href="/film/the-stub-film"
+              >A Long Title That Wraps Onto Two Lines on a Phone</a
+            >
+          </h2>
+          <img
+            src="https://image.tmdb.org/t/p/w185/a-long-title.jpg"
+            alt=""
+            width="92"
+            height="138"
+          />
+          <div>
+            <h3><time datetime="2026-11-28">Friday 28</time></h3>
+            <ul class="showings" role="list">
+              <li data-showing>
+                <a data-booking href="https://tickets.example/a-long-title/2026-11-28/1805"
+                  ><time datetime="2026-11-28T18:05">18:05</time></a
+                >
+                Renoir Floridablanca
+              </li>
+              <li data-showing>
+                <a data-booking href="https://tickets.example/a-long-title/2026-11-28/2010"
+                  ><time datetime="2026-11-28T20:10">20:10</time></a
+                >
+                Verdi
+              </li>
+            </ul>
+            <h3><time datetime="2026-11-30">Sunday 30</time></h3>
+            <ul class="showings" role="list">
+              <li data-showing>
+                <a data-booking href="https://tickets.example/a-long-title/2026-11-30/0015"
+                  ><time datetime="2026-11-30T00:15">00:15</time></a
+                >
+                Yelmo Icaria
+              </li>
+              <li data-showing>
+                <a data-booking href="https://tickets.example/a-long-title/2026-11-30/1740"
+                  ><time datetime="2026-11-30T17:40">17:40</time></a
+                >
+                Mooby Balmes
+              </li>
+            </ul>
+          </div>
+        </li>
+        <li class="film">
+          <h2><a class="title-link" href="/film/the-stub-film">Quiet Night</a></h2>
+          <img
+            src="https://image.tmdb.org/t/p/w185/quiet-night.jpg"
+            alt=""
+            width="92"
+            height="138"
+          />
+          <div>
+            <h3><time datetime="2026-11-29">Saturday 29</time></h3>
+            <ul class="showings" role="list">
+              <li data-showing>
+                <a data-booking href="https://tickets.example/quiet-night/2026-11-29/1530"
+                  ><time datetime="2026-11-29T15:30">15:30</time></a
+                >
+                Cines Girona
+              </li>
+              <li data-showing>
+                <a data-booking href="https://tickets.example/quiet-night/2026-11-29/1920"
+                  ><time datetime="2026-11-29T19:20">19:20</time></a
+                >
+                Renoir Floridablanca
+              </li>
+              <li data-showing>
+                <a data-booking href="https://tickets.example/quiet-night/2026-11-29/2100"
+                  ><time datetime="2026-11-29T21:00">21:00</time></a
+                >
+                Verdi
+              </li>
+            </ul>
+            <h3><time datetime="2026-12-01">Monday 1</time></h3>
+            <ul class="showings" role="list">
+              <li data-showing>
+                <a data-booking href="https://tickets.example/quiet-night/2026-12-01/1800"
+                  ><time datetime="2026-12-01T18:00">18:00</time></a
+                >
+                Mooby Balmes
+              </li>
+              <li data-showing>
+                <a data-booking href="https://tickets.example/quiet-night/2026-12-01/2030"
+                  ><time datetime="2026-12-01T20:30">20:30</time></a
+                >
+                Yelmo Icaria
+              </li>
+            </ul>
+          </div>
+        </li>
+        <li class="film">
+          <h2><a class="title-link" href="/film/the-stub-film">Small Hours</a></h2>
+          <img
+            src="https://image.tmdb.org/t/p/w185/small-hours.jpg"
+            alt=""
+            width="92"
+            height="138"
+          />
+          <div>
+            <h3><time datetime="2026-11-30">Sunday 30</time></h3>
+            <ul class="showings" role="list">
+              <li data-showing>
+                <a data-booking href="https://tickets.example/small-hours/2026-11-30/1645"
+                  ><time datetime="2026-11-30T16:45">16:45</time></a
+                >
+                Verdi
+              </li>
+              <li data-showing>
+                <a data-booking href="https://tickets.example/small-hours/2026-11-30/1910"
+                  ><time datetime="2026-11-30T19:10">19:10</time></a
+                >
+                Mooby Balmes
+              </li>
+            </ul>
+            <h3><time datetime="2026-12-02">Tuesday 2</time></h3>
+            <ul class="showings" role="list">
+              <li data-showing>
+                <a data-booking href="https://tickets.example/small-hours/2026-12-02/2115"
+                  ><time datetime="2026-12-02T21:15">21:15</time></a
+                >
+                Cines Girona
+              </li>
+              <li data-showing>
+                <a data-booking href="https://tickets.example/small-hours/2026-12-02/2240"
+                  ><time datetime="2026-12-02T22:40">22:40</time></a
+                >
+                Renoir Floridablanca
+              </li>
+            </ul>
+          </div>
+        </li>
+      </ul>
+    </main>
+    <footer class="site-footer">
+      <p>
+        Film data and posters from <a href="https://www.themoviedb.org/">TMDb ↗</a>. Popcorn not
+        included.
+      </p>
+    </footer>
+  </body>
+</html>

@@ -18,12 +18,15 @@
     "legacy:test:run": "vitest run",
     "legacy:test:coverage": "vitest run --coverage",
     "legacy:e2e": "playwright test",
-    "typecheck": "tsc -p app/shared && tsc -p app/domain && tsc -p app/pipeline && tsc -p app/render && tsc -p app/client && tsc -p app/fixture && tsc -p app/lint && tsc -p app",
+    "typecheck": "tsc -p app/shared && tsc -p app/domain && tsc -p app/pipeline && tsc -p app/render && tsc -p app/client && tsc -p app/fixture && tsc -p app/lint && tsc -p app/e2e && tsc -p app",
     "check": "npm run typecheck && eslint -c eslint.app.config.js app && stylelint \"app/**/*.css\" --allow-empty-input && depcruise app --config .dependency-cruiser.cjs && knip && npm run format:check",
     "format": "prettier --write app eslint.app.config.js .dependency-cruiser.cjs knip.json stylelint.config.mjs",
     "format:check": "prettier --check app eslint.app.config.js .dependency-cruiser.cjs knip.json stylelint.config.mjs",
     "test": "vitest run --config app/vitest.config.ts",
-    "fixture": "tsx app/fixture/write.ts"
+    "fixture": "tsx app/fixture/write.ts",
+    "e2e": "playwright test -c app/e2e/playwright.config.ts",
+    "shots": "playwright test -c app/e2e/tools.config.ts --project=shots",
+    "budgets": "playwright test -c app/e2e/tools.config.ts --project=budgets"
   },
   "dependencies": {
     "preact": "~11.2.0",

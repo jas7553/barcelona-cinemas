@@ -6,13 +6,9 @@
     "app/render/render.tsx",
     "app/lint/stylelint.config.ts",
     "app/**/*.test.{ts,tsx}",
-    "app/e2e/**/*.ts"
+    "app/e2e/*.config.ts",
+    "app/e2e/*.{spec,tool}.ts"
   ],
   "project": ["app/**/*.{ts,tsx}"],
-  "ignoreDependencies": [
-    "@testing-library/user-event",
-    "@axe-core/playwright",
-    "cheerio",
-    "html-validate"
-  ]
+  "ignoreDependencies": ["@testing-library/user-event", "cheerio"]
 }

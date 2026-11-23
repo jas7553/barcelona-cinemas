@@ -1,0 +1,154 @@
+:root {
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #fff;
+}
+
+body {
+  margin: 0;
+  overflow-wrap: break-word;
+}
+
+.site-header,
+main,
+.site-footer {
+  max-inline-size: 40rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 1rem;
+}
+
+nav ul,
+.films,
+.showings,
+.facts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+}
+
+a {
+  color: #0b57d0;
+}
+
+a:focus-visible,
+button:focus-visible,
+select:focus-visible {
+  outline: 3px solid #0b57d0;
+  outline-offset: 2px;
+}
+
+/* Every target outside running text is at least 44×44 (Apple HIG). */
+.brand,
+nav a,
+.title-link,
+.showings a,
+.button,
+select,
+button {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 2.75rem;
+  min-inline-size: 2.75rem;
+  box-sizing: border-box;
+}
+
+.brand {
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.film {
+  display: grid;
+  grid-template-columns: 5.75rem 1fr;
+  gap: 0 1rem;
+  padding-block: 1rem;
+  border-block-end: 1px solid #ccc;
+}
+
+.film > img,
+.poster {
+  inline-size: 5.75rem;
+  block-size: auto;
+}
+
+.film > h2 {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.showings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+}
+
+.showings li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.showings a {
+  gap: 0.25em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.button {
+  padding-inline: 1rem;
+  border: 1px solid currentcolor;
+  border-radius: 0.5rem;
+  text-decoration: none;
+}
+
+select,
+button {
+  font: inherit;
+  font-size: max(1rem, 1em);
+}
+
+.filters form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  clip-path: inset(50%);
+  overflow: hidden;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  white-space: nowrap;
+}
+
+.site-footer {
+  padding-block: 2rem;
+}

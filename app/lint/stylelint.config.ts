@@ -8,6 +8,8 @@ const CSS_WIDE = ["inherit", "initial", "unset", "revert", "revert-layer"];
 const NEGATED_TOKEN = "/^calc\\(\\s*-1\\s*\\*\\s*var\\(--[\\w-]+\\)\\s*\\)$/";
 
 const config: Config = {
+  // Test scaffolding for the page checks; the bad stubs break the rules on purpose.
+  ignoreFiles: ["app/e2e/stub/**"],
   plugins: [strictValue, ...guardrails],
   rules: {
     // The visual system's "these values and nothing else".
