@@ -24,14 +24,21 @@ repos:
 
       - id: tsc
         name: tsc
-        entry: npm run typecheck
+        entry: npm run legacy:typecheck
         language: system
-        types_or: [ts, tsx]
+        files: ^((src|scripts|e2e)/.*\.(ts|tsx)|vite\.config\.ts|tsconfig[^/]*\.json)$
         pass_filenames: false
 
       - id: eslint
         name: eslint
-        entry: npm run lint
+        entry: npm run legacy:lint
         language: system
-        types_or: [ts, tsx]
+        files: ^(src|scripts|e2e)/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: app-check
+        name: app-check
+        entry: npm run check
+        language: system
+        files: ^(app/|package(-lock)?\.json$|eslint\.app\.config\.js$|\.dependency-cruiser\.cjs$|knip\.json$|\.prettier(rc\.json|ignore)$|stylelint\.config\.mjs$)
         pass_filenames: false

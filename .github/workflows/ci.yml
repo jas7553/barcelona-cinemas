@@ -62,13 +62,67 @@ jobs:
         run: npm ci
 
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run legacy:typecheck
 
       - name: ESLint
-        run: npm run lint
+        run: npm run legacy:lint
 
       - name: Vitest + coverage
-        run: npm run test:coverage
+        run: npm run legacy:test:coverage
+
+  app:
+    name: App (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Check
+        run: npm run check
+
+      - name: Test
+        run: npm test
+
+  app-e2e:
+    name: App E2E (Playwright)
+    runs-on: ubuntu-latest
+    # The e2e job's image: browsers and fonts baked in, the Linux that layout
+    # and font checks count on. Keep the tag in step with @playwright/test.
+    container:
+      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pins the Node from .nvmrc rather than the image's own.
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run e2e
+        run: npm run e2e
+
+      - name: Budgets
+        run: npm run budgets
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-playwright-report
+          path: app/e2e/playwright-report/
+          retention-days: 7
 
   e2e:
     name: E2E (Playwright)
@@ -109,7 +163,7 @@ jobs:
       # One browser per project in playwright.config.ts: mobile-chromium and
       # mobile-webkit.
       - name: Run e2e
-        run: npm run e2e
+        run: npm run legacy:e2e
 
       - name: Upload report on failure
         if: failure()

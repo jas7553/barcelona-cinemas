@@ -54,3 +54,10 @@ coverage/
 # Playwright
 playwright-report/
 test-results/
+app/e2e/playwright-report/
+app/e2e/test-results/
+shots/
+
+# Tool caches
+.eslintcache
+*.tsbuildinfo
