@@ -40,5 +40,5 @@ repos:
         name: app-check
         entry: npm run check
         language: system
-        files: ^(app/|package(-lock)?\.json$|eslint\.app\.config\.js$|\.dependency-cruiser\.cjs$|knip\.json$|\.prettier(rc\.json|ignore)$|\.stylelintrc\.json$)
+        files: ^(app/|package(-lock)?\.json$|eslint\.app\.config\.js$|\.dependency-cruiser\.cjs$|knip\.json$|\.prettier(rc\.json|ignore)$|stylelint\.config\.mjs$)
         pass_filenames: false

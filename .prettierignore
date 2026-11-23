@@ -5,5 +5,5 @@
 !/.dependency-cruiser.cjs
 !/knip.json
 !/.prettierrc.json
-!/.stylelintrc.json
+!/stylelint.config.mjs
 node_modules
