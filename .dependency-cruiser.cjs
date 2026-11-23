@@ -1,4 +1,5 @@
 const PREACT = "node_modules/(preact|preact-render-to-string)/";
+const ZOD = "node_modules/zod/";
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -25,27 +26,31 @@ module.exports = {
     },
     {
       name: "shared-imports-nothing",
+      comment: "shared imports only shared, and zod for the schemas",
       severity: "error",
-      from: { path: "^app/shared/" },
-      to: { path: "^app/(domain|pipeline|render|client|e2e)/" },
-    },
-    {
-      name: "client-no-render",
-      severity: "error",
-      from: { path: "^app/client/" },
-      to: { path: "^app/render/" },
-    },
-    {
-      name: "client-no-preact",
-      severity: "error",
-      from: { path: "^app/client/" },
-      to: { path: PREACT },
+      from: { path: "^app/shared/", pathNot: "\\.test\\.ts$" },
+      to: { pathNot: `^app/shared/|${ZOD}` },
     },
     {
       name: "client-only-shared-and-domain",
+      comment: "client imports only client, shared and domain: no npm packages, so no framework",
       severity: "error",
-      from: { path: "^app/client/" },
-      to: { path: "^app/(pipeline|render|e2e)/" },
+      from: { path: "^app/client/", pathNot: "\\.test\\.tsx?$" },
+      to: { pathNot: "^app/(client|shared|domain)/" },
+    },
+    {
+      name: "schemas-only-as-types-in-the-browser",
+      comment:
+        "Everything the client can reach (client, domain, shared) imports listings.ts for its types only, so zod stays out of the browser. A `reachable` rule can't say this: it follows type-only imports too.",
+      severity: "error",
+      from: {
+        path: "^app/(client|domain|shared)/",
+        pathNot: "(\\.test\\.tsx?$|^app/shared/listings\\.ts$)",
+      },
+      to: {
+        path: `^app/shared/listings\\.ts$|${ZOD}`,
+        dependencyTypesNot: ["type-only"],
+      },
     },
     {
       name: "pipeline-render-share-only-shared",
@@ -67,9 +72,9 @@ module.exports = {
     },
     {
       name: "fixture-only-in-tests-and-dev",
-      comment: "the fixture is test data: only tests, e2e and dev scripts import it",
+      comment: "the fixture is test data: only tests, e2e and the fixture's own writer import it",
       severity: "error",
-      from: { pathNot: "(\\.test\\.tsx?$|^app/(e2e|fixture|dev)/)" },
+      from: { pathNot: "(\\.test\\.tsx?$|^app/(e2e|fixture)/)" },
       to: { path: "^app/fixture/" },
     },
     {

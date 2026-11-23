@@ -26,7 +26,7 @@ repos:
         name: tsc
         entry: npm run legacy:typecheck
         language: system
-        files: ^(src|scripts|e2e)/.*\.(ts|tsx)$
+        files: ^((src|scripts|e2e)/.*\.(ts|tsx)|vite\.config\.ts|tsconfig[^/]*\.json)$
         pass_filenames: false
 
       - id: eslint

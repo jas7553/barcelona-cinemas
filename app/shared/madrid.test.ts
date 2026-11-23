@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addDays, MADRID_TZ, madridIso, madridWallClock } from "./madrid.ts";
+import { addDays, cinemaDay, MADRID_TZ, madridIso, madridWallClock } from "./madrid.ts";
 
 it("names a valid IANA zone", () => {
   expect(() => new Intl.DateTimeFormat("en", { timeZone: MADRID_TZ })).not.toThrow();
@@ -31,4 +31,21 @@ it("addDays crosses months, years and DST changes", () => {
   expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
   expect(addDays("2026-03-28", 2)).toBe("2026-03-30");
   expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
+});
+
+it("madridWallClock rolls over at Madrid midnight, not UTC", () => {
+  expect(madridWallClock(new Date("2026-06-30T22:30:00Z")).date).toBe("2026-07-01");
+  expect(madridWallClock(new Date("2026-06-30T21:30:00Z")).date).toBe("2026-06-30");
+});
+
+it.each([
+  ["2026-11-23T05:59:00+01:00", "2026-11-22"],
+  ["2026-11-23T06:00:00+01:00", "2026-11-23"],
+  ["2026-11-24T00:30:00+01:00", "2026-11-23"],
+  ["2026-11-23T23:59:00+01:00", "2026-11-23"],
+  ["2026-10-25T05:30:00+01:00", "2026-10-24"],
+  ["2026-03-29T05:59:00+02:00", "2026-03-28"],
+  ["2026-03-29T06:00:00+02:00", "2026-03-29"],
+])("the cinema day of %s is %s", (iso, day) => {
+  expect(cinemaDay(new Date(iso))).toBe(day);
 });

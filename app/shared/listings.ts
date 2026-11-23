@@ -3,15 +3,16 @@
  * schemas are the only definition of its types.
  *
  * - Missing data is an absent key, never `null`, `""` or `[]`: a present list has at least one item.
+ *   The one exception is a film's `showings`.
  * - Showings nest under their film, which every page starts from, and name their cinema by id.
  * - `starts_at` is ISO-8601 at Madrid's offset for that instant (`2026-11-23T21:00+01:00`): one
  *   unambiguous instant, whose date and `HH:MM` are also the Madrid wall clock. The cinema day is
- *   derived from it in domain code, never stored.
+ *   derived from it with `cinemaDay()`, never stored.
  * - Images and trailers are stored as TMDb poster paths and YouTube keys: the renderer picks the
  *   poster sizes, and URLs can only point at `image.tmdb.org` and YouTube.
  */
 import { z } from "zod";
-import { madridWallClock } from "./madrid.ts";
+import { cinemaDay, madridWallClock } from "./madrid.ts";
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const FILM_ID = /^(?:[1-9][0-9]*|(?=[a-z0-9-]*[a-z])[a-z0-9]+(?:-[a-z0-9]+)*)$/;
@@ -108,7 +109,12 @@ export const Film = z
       .string()
       .regex(/^[\w-]{11}$/)
       .exactOptional(),
-    showings: z.array(Showing).min(1),
+    /**
+     * Always present, and empty once the film's run has ended: the film stays so its address keeps
+     * working. The pipeline dedupes these before validating: two rooms at one cinema showing the
+     * same version at the same `starts_at` are one showing on the site.
+     */
+    showings: z.array(Showing),
   })
   .superRefine((film, ctx) => {
     const idOk =
@@ -152,6 +158,7 @@ function rejectDuplicates(
 export const Listings = z
   .strictObject({
     schema_version: z.literal(2),
+    /** Stamped as the document is written, after its sources answered: no `checked_at` is later. */
     generated_at: Instant,
     cinemas: z.array(Cinema).min(1),
     films: z.array(Film),
@@ -191,7 +198,7 @@ export const Listings = z
     });
 
     const cinemaIds = new Set(doc.cinemas.map((c) => c.id));
-    const showingCinemaIds = new Set<string>();
+    const startsByCinema = new Map<string, number[]>();
     doc.films.forEach((film, i) => {
       film.showings.forEach((s, j) => {
         if (!cinemaIds.has(s.cinema_id)) {
@@ -201,16 +208,33 @@ export const Listings = z
             path: ["films", i, "showings", j, "cinema_id"],
           });
         }
-        showingCinemaIds.add(s.cinema_id);
+        const starts = startsByCinema.get(s.cinema_id) ?? [];
+        starts.push(Date.parse(s.starts_at));
+        startsByCinema.set(s.cinema_id, starts);
       });
     });
 
     const generatedAt = Date.parse(doc.generated_at);
     doc.cinemas.forEach((c, i) => {
-      if (showingCinemaIds.has(c.id) && c.published_through === undefined) {
+      const starts = startsByCinema.get(c.id);
+      if (starts !== undefined && c.published_through === undefined) {
         ctx.addIssue({
           code: "custom",
           message: "a cinema with showings needs published_through",
+          path: ["cinemas", i, "published_through"],
+        });
+      }
+      // Malformed values are reported on their own field; leave them out here.
+      const latest = Math.max(...(starts ?? []).filter(Number.isFinite));
+      if (
+        c.published_through !== undefined &&
+        IsoDate.safeParse(c.published_through).success &&
+        Number.isFinite(latest) &&
+        c.published_through < cinemaDay(new Date(latest))
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "published_through is before the cinema day of its latest showing",
           path: ["cinemas", i, "published_through"],
         });
       }

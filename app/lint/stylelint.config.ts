@@ -47,6 +47,7 @@ const config: Config = {
       "contrast-color",
       "device-cmyk",
     ],
+    "btw/shorthand-system-colors": true,
     // The shorthand sets font-size; form controls still need `font: inherit`.
     "declaration-property-value-allowed-list": { font: CSS_WIDE },
 
@@ -55,6 +56,7 @@ const config: Config = {
     "keyframe-declaration-no-important": true,
     "property-disallowed-list": [
       "/^(?:-webkit-)?box-shadow$/i",
+      "text-shadow",
       "/^(?:-webkit-)?line-clamp$/i",
       "view-transition-name",
       "view-transition-class",
@@ -80,6 +82,7 @@ const config: Config = {
         "color-no-hex": null,
         "color-named": null,
         "function-disallowed-list": null,
+        "btw/shorthand-system-colors": null,
         "btw/tokens-file-defines-only": true,
       },
     },

@@ -1,8 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { cinemaDay } from "../domain/madrid-date.ts";
 import { Listings } from "../shared/listings.ts";
-import { addDays, madridWallClock } from "../shared/madrid.ts";
+import { addDays, cinemaDay, madridWallClock } from "../shared/madrid.ts";
 import { buildFixture } from "./build.ts";
 
 const NOW = new Date("2026-11-23T18:00:00+01:00");
@@ -91,7 +90,9 @@ describe("covers", () => {
   });
 
   it("a film starting after today and one whose last showing is tomorrow", () => {
-    expect(doc.films.some((f) => days(f.id).every((d) => d > today))).toBe(true);
+    expect(doc.films.some((f) => f.showings.length > 0 && days(f.id).every((d) => d > today))).toBe(
+      true,
+    );
     expect(doc.films.some((f) => days(f.id).sort().at(-1) === addDays(today, 1))).toBe(true);
   });
 
@@ -108,5 +109,9 @@ describe("covers", () => {
 
   it("a film with a previous id", () => {
     expect(doc.films.some((f) => f.previous_ids !== undefined)).toBe(true);
+  });
+
+  it("an ended film, with no showings", () => {
+    expect(doc.films.some((f) => f.showings.length === 0)).toBe(true);
   });
 });
