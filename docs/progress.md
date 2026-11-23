@@ -6,7 +6,7 @@ The orchestrator's state for the `drive-slice` loop (plan §8). Newest entries a
 
 | Slice | Track | Status | PR |
 |---|---|---|---|
-| 1 TypeScript foundation + guardrails | — | not started | |
+| 1 TypeScript foundation + guardrails | — | in progress (branch `slice/1-foundation`) | |
 | 2 Port the pipeline | data | not started | |
 | 3 Extend the data | data | not started | |
 | 4 Renderer and infrastructure | UI | not started | |
