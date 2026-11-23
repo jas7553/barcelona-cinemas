@@ -1,9 +1,13 @@
 version: 2
+# Version updates are paused (open-pull-requests-limit: 0) during the redesign
+# rewrite, so bumps to the old code don't churn the cutover merge. Security
+# updates still arrive. Restore the limits after the cutover.
 updates:
   - package-ecosystem: pip
     directory: "/"
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
     groups:
       python:
         patterns: ["*"]
@@ -12,6 +16,7 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
     groups:
       npm:
         patterns: ["*"]
@@ -25,3 +30,4 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    open-pull-requests-limit: 0
