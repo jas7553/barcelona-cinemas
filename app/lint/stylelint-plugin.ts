@@ -208,9 +208,9 @@ const rawCustomProperties = plugin(
   (decl) => decl.prop.startsWith("--") && hasRawLength(decl.value),
 );
 
-/** Shorthands that mix a color with other values, which the strict-value rule can't check. */
+/** Shorthands that mix a color with other values, which the strict-value rule can't check. Custom properties are checked too. */
 const COLOR_SHORTHAND =
-  /^(?:border(?:-(?:top|right|bottom|left|block|inline)(?:-(?:start|end))?)?|outline|text-decoration|column-rule)$/i;
+  /^(?:border(?:-(?:top|right|bottom|left|block|inline)(?:-(?:start|end))?)?|outline|text-decoration|column-rule|text-emphasis|-webkit-text-stroke)$/i;
 /** CSS system colors, current and deprecated. */
 const SYSTEM_COLOR = new RegExp(
   `(?<![\\w-])(?:${[
@@ -263,7 +263,9 @@ const SYSTEM_COLOR = new RegExp(
 const shorthandSystemColors = plugin(
   "shorthand-system-colors",
   `System colors belong in ${TOKENS_FILE}: use a token`,
-  (decl) => COLOR_SHORTHAND.test(decl.prop) && SYSTEM_COLOR.test(decl.value),
+  (decl) =>
+    (decl.prop.startsWith("--") || COLOR_SHORTHAND.test(decl.prop)) &&
+    SYSTEM_COLOR.test(decl.value),
 );
 
 const tokensFileDefinesOnly = plugin(

@@ -135,6 +135,9 @@ describe("stylelint", () => {
     ["outline: 2px solid Highlight", SYSTEM_COLORS],
     ["text-decoration: underline LinkText", SYSTEM_COLORS],
     ["column-rule: 1px solid GrayText", SYSTEM_COLORS],
+    ["text-emphasis: dot CanvasText", SYSTEM_COLORS],
+    ["-webkit-text-stroke: 1px CanvasText", SYSTEM_COLORS],
+    ["--tint: CanvasText", SYSTEM_COLORS],
   ])("closes the color loophole %s", async (declaration, rule) => {
     expect(await rules(`.card { ${declaration}; }`)).toContain(rule);
   });
@@ -405,6 +408,12 @@ describe("eslint", () => {
       "domain",
       'import { readFileSync } from "fs";\nexport const f = readFileSync;\n',
       "no-restricted-imports",
+    ],
+    [
+      "an inline type import that still loads the schema in client",
+      "client",
+      'import { type Film } from "../shared/listings.ts";\nexport type F = Film;\n',
+      "@typescript-eslint/no-import-type-side-effects",
     ],
   ])("rejects %s", async (_, layer, code, rule) => {
     expect(await lint(layer, code)).toContain(rule);

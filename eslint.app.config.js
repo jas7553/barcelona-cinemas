@@ -35,6 +35,7 @@ export default tseslint.config(
       "@typescript-eslint/no-non-null-assertion": "error",
       "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
       "@typescript-eslint/consistent-type-imports": "error",
+      "@typescript-eslint/no-import-type-side-effects": "error",
       "@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
       "no-restricted-imports": ["error", { paths: preactPaths, patterns: preactPatterns }],
     },
