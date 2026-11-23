@@ -4,6 +4,7 @@
     "app/client/main.ts",
     "app/pipeline/handler.ts",
     "app/render/render.tsx",
+    "app/lint/stylelint.config.ts",
     "app/**/*.test.{ts,tsx}",
     "app/e2e/**/*.ts"
   ],
@@ -14,8 +15,6 @@
     "@axe-core/playwright",
     "cheerio",
     "fast-check",
-    "html-validate",
-    "postcss",
-    "stylelint-declaration-strict-value"
+    "html-validate"
   ]
 }
