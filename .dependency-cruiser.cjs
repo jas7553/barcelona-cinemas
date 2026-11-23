@@ -66,6 +66,13 @@ module.exports = {
       to: { path: "^app/(pipeline|e2e)/" },
     },
     {
+      name: "fixture-only-in-tests-and-dev",
+      comment: "the fixture is test data: only tests, e2e and dev scripts import it",
+      severity: "error",
+      from: { pathNot: "(\\.test\\.tsx?$|^app/(e2e|fixture|dev)/)" },
+      to: { path: "^app/fixture/" },
+    },
+    {
       name: "preact-only-in-render",
       severity: "error",
       from: { path: "^app/", pathNot: "^app/render/" },

@@ -10,10 +10,8 @@
   "project": ["app/**/*.{ts,tsx}"],
   "ignoreDependencies": [
     "@testing-library/user-event",
-    "zod",
     "@axe-core/playwright",
     "cheerio",
-    "fast-check",
     "html-validate",
     "postcss",
     "stylelint-declaration-strict-value"
