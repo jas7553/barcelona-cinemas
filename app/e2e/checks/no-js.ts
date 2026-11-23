@@ -6,7 +6,8 @@ import type { PageEntry } from "../pages.ts";
  * With JavaScript off (the page must come from a `javaScriptEnabled: false`
  * context), the page works as the registry says:
  * - it loads, and every same-origin link on it loads too;
- * - listings: showings are there, each with an http(s) link around a `<time>`;
+ * - listings: showings are there, each with an http(s) link around a `<time>`
+ *   (the booking link, among the showing's cinema links);
  * - filter form: a `<noscript>` form shows (proof that scripting is off), and
  *   submitting it loads a page whose URL carries the form's fields, so a
  *   filtered view can be shared and reloaded.
@@ -31,8 +32,8 @@ export async function checkNoJs(page: Page, entry: PageEntry): Promise<void> {
       const all = [...document.querySelectorAll(`[${marker}]`)];
       const broken = all
         .filter((s) => {
-          const link = s.querySelector<HTMLAnchorElement>("a[href]");
-          return !link?.querySelector("time") || !/^https?:$/.test(new URL(link.href).protocol);
+          const link = s.querySelector<HTMLAnchorElement>("a[href]:has(time)");
+          return !link || !/^https?:$/.test(new URL(link.href).protocol);
         })
         .map((s) => s.outerHTML.slice(0, 100));
       return { count: all.length, broken };

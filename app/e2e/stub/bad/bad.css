@@ -4,6 +4,23 @@
   inline-size: 40rem;
 }
 
+.scroller,
+.small-scroller {
+  overflow-x: auto;
+}
+
+.small-scroller {
+  inline-size: 10rem;
+}
+
+.wider {
+  inline-size: 15rem;
+}
+
+.no-ring:focus-visible {
+  outline: none;
+}
+
 .tiny {
   font-size: 0.75rem;
 }

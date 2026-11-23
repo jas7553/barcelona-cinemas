@@ -2,6 +2,7 @@ import { checkAxe } from "./checks/axe.ts";
 import { watchConsole } from "./checks/console.ts";
 import { watchCsp } from "./checks/csp.ts";
 import { checkExternalLinks } from "./checks/external-links.ts";
+import { checkFocus } from "./checks/focus.ts";
 import { checkHtml } from "./checks/html.ts";
 import { watchNetwork } from "./checks/network.ts";
 import { checkNoOverflow } from "./checks/overflow.ts";
@@ -54,6 +55,11 @@ for (const entry of PAGES) {
         test("axe", async ({ page }) => {
           await page.goto(entry.path);
           await checkAxe(page);
+        });
+
+        test("keyboard focus", async ({ page }) => {
+          await page.goto(entry.path);
+          await checkFocus(page);
         });
       }
     });

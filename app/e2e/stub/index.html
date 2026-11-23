@@ -35,7 +35,7 @@
       </noscript>
       <ul class="films" role="list">
         <li class="film">
-          <h2><a class="title-link" href="/film/the-stub-film">The Stub Film</a></h2>
+          <h2 data-film-text><a class="title-link" href="/film/the-stub-film">The Stub Film</a></h2>
           <img
             src="https://image.tmdb.org/t/p/w185/the-stub-film.jpg"
             alt=""
@@ -46,55 +46,115 @@
             <h3><time datetime="2026-11-28">Friday 28</time></h3>
             <ul class="showings" role="list">
               <li data-showing>
-                <a data-booking href="https://tickets.example/the-stub-film/2026-11-28/1715"
-                  ><time datetime="2026-11-28T17:15">17:15</time></a
-                >
                 <a
                   data-place
-                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes&amp;query_place_id=ChIJstubMoobyBalmes0000001"
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes"
+                  ><svg
+                    role="img"
+                    aria-label="Mooby Balmes"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/the-stub-film/2026-11-28/1715"
+                  ><time datetime="2026-11-28T17:15">17:15</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes"
                   >Mooby Balmes</a
                 >
               </li>
               <li data-showing>
-                <a href="https://cinema.example/"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Cines%20Girona"
+                  ><svg
+                    role="img"
+                    aria-label="Cines Girona"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a href="https://cinema.example/"
                   ><time datetime="2026-11-28T19:00">19:00</time
                   ><span class="visually-hidden"> (cinema website)</span>
                   <span aria-hidden="true">↗</span></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Cines%20Girona"
+                  >Cines Girona</a
                 >
-                Cines Girona
               </li>
               <li data-showing>
-                <a data-booking href="https://tickets.example/the-stub-film/2026-11-28/2130"
+                <a data-place href="https://www.google.com/maps/search/?api=1&amp;query=Verdi"
+                  ><svg role="img" aria-label="Verdi" viewBox="0 0 24 24" width="24" height="24">
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/the-stub-film/2026-11-28/2130"
                   ><time datetime="2026-11-28T21:30">21:30</time></a
+                ><a data-place href="https://www.google.com/maps/search/?api=1&amp;query=Verdi"
+                  >Verdi</a
                 >
-                Verdi
               </li>
             </ul>
             <h3><time datetime="2026-11-29">Saturday 29</time></h3>
             <ul class="showings" role="list">
               <li data-showing>
-                <a data-booking href="https://tickets.example/the-stub-film/2026-11-29/1600"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes"
+                  ><svg
+                    role="img"
+                    aria-label="Mooby Balmes"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/the-stub-film/2026-11-29/1600"
                   ><time datetime="2026-11-29T16:00">16:00</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes"
+                  >Mooby Balmes</a
                 >
-                Mooby Balmes
               </li>
               <li data-showing>
-                <a data-booking href="https://tickets.example/the-stub-film/2026-11-29/2045"
+                <a data-place href="https://www.google.com/maps/search/?api=1&amp;query=Verdi"
+                  ><svg role="img" aria-label="Verdi" viewBox="0 0 24 24" width="24" height="24">
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/the-stub-film/2026-11-29/2045"
                   ><time datetime="2026-11-29T20:45">20:45</time></a
+                ><a data-place href="https://www.google.com/maps/search/?api=1&amp;query=Verdi"
+                  >Verdi</a
                 >
-                Verdi
               </li>
               <li data-showing>
-                <a data-booking href="https://tickets.example/the-stub-film/2026-11-29/2250"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Yelmo%20Icaria"
+                  ><svg
+                    role="img"
+                    aria-label="Yelmo Icaria"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/the-stub-film/2026-11-29/2250"
                   ><time datetime="2026-11-29T22:50">22:50</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Yelmo%20Icaria"
+                  >Yelmo Icaria</a
                 >
-                Yelmo Icaria
               </li>
             </ul>
           </div>
         </li>
         <li class="film">
-          <h2>
+          <h2 data-film-text>
             <a class="title-link" href="/film/the-stub-film"
               >A Long Title That Wraps Onto Two Lines on a Phone</a
             >
@@ -109,37 +169,85 @@
             <h3><time datetime="2026-11-28">Friday 28</time></h3>
             <ul class="showings" role="list">
               <li data-showing>
-                <a data-booking href="https://tickets.example/a-long-title/2026-11-28/1805"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Renoir%20Floridablanca"
+                  ><svg
+                    role="img"
+                    aria-label="Renoir Floridablanca"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/a-long-title/2026-11-28/1805"
                   ><time datetime="2026-11-28T18:05">18:05</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Renoir%20Floridablanca"
+                  >Renoir Floridablanca</a
                 >
-                Renoir Floridablanca
               </li>
               <li data-showing>
-                <a data-booking href="https://tickets.example/a-long-title/2026-11-28/2010"
+                <a data-place href="https://www.google.com/maps/search/?api=1&amp;query=Verdi"
+                  ><svg role="img" aria-label="Verdi" viewBox="0 0 24 24" width="24" height="24">
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/a-long-title/2026-11-28/2010"
                   ><time datetime="2026-11-28T20:10">20:10</time></a
+                ><a data-place href="https://www.google.com/maps/search/?api=1&amp;query=Verdi"
+                  >Verdi</a
                 >
-                Verdi
               </li>
             </ul>
             <h3><time datetime="2026-11-30">Sunday 30</time></h3>
             <ul class="showings" role="list">
               <li data-showing>
-                <a data-booking href="https://tickets.example/a-long-title/2026-11-30/0015"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Yelmo%20Icaria"
+                  ><svg
+                    role="img"
+                    aria-label="Yelmo Icaria"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/a-long-title/2026-11-30/0015"
                   ><time datetime="2026-11-30T00:15">00:15</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Yelmo%20Icaria"
+                  >Yelmo Icaria</a
                 >
-                Yelmo Icaria
               </li>
               <li data-showing>
-                <a data-booking href="https://tickets.example/a-long-title/2026-11-30/1740"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes"
+                  ><svg
+                    role="img"
+                    aria-label="Mooby Balmes"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/a-long-title/2026-11-30/1740"
                   ><time datetime="2026-11-30T17:40">17:40</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes"
+                  >Mooby Balmes</a
                 >
-                Mooby Balmes
               </li>
             </ul>
           </div>
         </li>
         <li class="film">
-          <h2><a class="title-link" href="/film/the-stub-film">Quiet Night</a></h2>
+          <h2 data-film-text lang="ca">
+            <a class="title-link" href="/film/the-stub-film">Col·lecció d’il·lusions</a>
+          </h2>
           <img
             src="https://image.tmdb.org/t/p/w185/quiet-night.jpg"
             alt=""
@@ -150,43 +258,103 @@
             <h3><time datetime="2026-11-29">Saturday 29</time></h3>
             <ul class="showings" role="list">
               <li data-showing>
-                <a data-booking href="https://tickets.example/quiet-night/2026-11-29/1530"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Cines%20Girona"
+                  ><svg
+                    role="img"
+                    aria-label="Cines Girona"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/quiet-night/2026-11-29/1530"
                   ><time datetime="2026-11-29T15:30">15:30</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Cines%20Girona"
+                  >Cines Girona</a
                 >
-                Cines Girona
               </li>
               <li data-showing>
-                <a data-booking href="https://tickets.example/quiet-night/2026-11-29/1920"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Renoir%20Floridablanca"
+                  ><svg
+                    role="img"
+                    aria-label="Renoir Floridablanca"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/quiet-night/2026-11-29/1920"
                   ><time datetime="2026-11-29T19:20">19:20</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Renoir%20Floridablanca"
+                  >Renoir Floridablanca</a
                 >
-                Renoir Floridablanca
               </li>
               <li data-showing>
-                <a data-booking href="https://tickets.example/quiet-night/2026-11-29/2100"
+                <a data-place href="https://www.google.com/maps/search/?api=1&amp;query=Verdi"
+                  ><svg role="img" aria-label="Verdi" viewBox="0 0 24 24" width="24" height="24">
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/quiet-night/2026-11-29/2100"
                   ><time datetime="2026-11-29T21:00">21:00</time></a
+                ><a data-place href="https://www.google.com/maps/search/?api=1&amp;query=Verdi"
+                  >Verdi</a
                 >
-                Verdi
               </li>
             </ul>
             <h3><time datetime="2026-12-01">Monday 1</time></h3>
             <ul class="showings" role="list">
               <li data-showing>
-                <a data-booking href="https://tickets.example/quiet-night/2026-12-01/1800"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes"
+                  ><svg
+                    role="img"
+                    aria-label="Mooby Balmes"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/quiet-night/2026-12-01/1800"
                   ><time datetime="2026-12-01T18:00">18:00</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes"
+                  >Mooby Balmes</a
                 >
-                Mooby Balmes
               </li>
               <li data-showing>
-                <a data-booking href="https://tickets.example/quiet-night/2026-12-01/2030"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Yelmo%20Icaria"
+                  ><svg
+                    role="img"
+                    aria-label="Yelmo Icaria"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/quiet-night/2026-12-01/2030"
                   ><time datetime="2026-12-01T20:30">20:30</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Yelmo%20Icaria"
+                  >Yelmo Icaria</a
                 >
-                Yelmo Icaria
               </li>
             </ul>
           </div>
         </li>
         <li class="film">
-          <h2><a class="title-link" href="/film/the-stub-film">Small Hours</a></h2>
+          <h2 data-film-text><a class="title-link" href="/film/the-stub-film">3:10 to Yuma</a></h2>
           <img
             src="https://image.tmdb.org/t/p/w185/small-hours.jpg"
             alt=""
@@ -197,31 +365,77 @@
             <h3><time datetime="2026-11-30">Sunday 30</time></h3>
             <ul class="showings" role="list">
               <li data-showing>
-                <a data-booking href="https://tickets.example/small-hours/2026-11-30/1645"
+                <a data-place href="https://www.google.com/maps/search/?api=1&amp;query=Verdi"
+                  ><svg role="img" aria-label="Verdi" viewBox="0 0 24 24" width="24" height="24">
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/small-hours/2026-11-30/1645"
                   ><time datetime="2026-11-30T16:45">16:45</time></a
+                ><a data-place href="https://www.google.com/maps/search/?api=1&amp;query=Verdi"
+                  >Verdi</a
                 >
-                Verdi
               </li>
               <li data-showing>
-                <a data-booking href="https://tickets.example/small-hours/2026-11-30/1910"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes"
+                  ><svg
+                    role="img"
+                    aria-label="Mooby Balmes"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/small-hours/2026-11-30/1910"
                   ><time datetime="2026-11-30T19:10">19:10</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Mooby%20Balmes"
+                  >Mooby Balmes</a
                 >
-                Mooby Balmes
               </li>
             </ul>
             <h3><time datetime="2026-12-02">Tuesday 2</time></h3>
             <ul class="showings" role="list">
               <li data-showing>
-                <a data-booking href="https://tickets.example/small-hours/2026-12-02/2115"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Cines%20Girona"
+                  ><svg
+                    role="img"
+                    aria-label="Cines Girona"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/small-hours/2026-12-02/2115"
                   ><time datetime="2026-12-02T21:15">21:15</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Cines%20Girona"
+                  >Cines Girona</a
                 >
-                Cines Girona
               </li>
               <li data-showing>
-                <a data-booking href="https://tickets.example/small-hours/2026-12-02/2240"
+                <a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Renoir%20Floridablanca"
+                  ><svg
+                    role="img"
+                    aria-label="Renoir Floridablanca"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    height="24"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="5" fill="currentColor" /></svg></a
+                ><a data-booking href="https://tickets.example/small-hours/2026-12-02/2240"
                   ><time datetime="2026-12-02T22:40">22:40</time></a
+                ><a
+                  data-place
+                  href="https://www.google.com/maps/search/?api=1&amp;query=Renoir%20Floridablanca"
+                  >Renoir Floridablanca</a
                 >
-                Renoir Floridablanca
               </li>
             </ul>
           </div>

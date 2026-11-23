@@ -1,5 +1,5 @@
-// Serves app/e2e/stub/ with clean URLs and the production CSP, until the
-// renderer replaces it.
+// Serves app/e2e/stub/ with clean URLs and a strict stand-in CSP, until the
+// renderer replaces it and brings the real policy.
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import path from "node:path";
