@@ -1,0 +1,9 @@
+# Only app/ and the new config files are formatted; everything else is legacy.
+/*
+!/app
+!/eslint.app.config.js
+!/.dependency-cruiser.cjs
+!/knip.json
+!/.prettierrc.json
+!/.stylelintrc.json
+node_modules

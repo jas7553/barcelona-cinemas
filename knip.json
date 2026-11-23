@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "app/client/main.ts",
+    "app/pipeline/handler.ts",
+    "app/render/render.tsx",
+    "app/**/*.test.{ts,tsx}",
+    "app/e2e/**/*.ts"
+  ],
+  "project": ["app/**/*.{ts,tsx}"],
+  "ignoreDependencies": [
+    "@testing-library/user-event",
+    "zod",
+    "@axe-core/playwright",
+    "cheerio",
+    "fast-check",
+    "html-validate",
+    "postcss",
+    "stylelint-declaration-strict-value"
+  ]
+}

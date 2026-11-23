@@ -34,6 +34,6 @@ export default tseslint.config(
     },
   },
   {
-    ignores: ["node_modules/", "static/"],
+    ignores: ["node_modules/", "static/", "app/"],
   },
 );
