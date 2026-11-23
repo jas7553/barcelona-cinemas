@@ -5,16 +5,15 @@
     "app/pipeline/handler.ts",
     "app/render/render.tsx",
     "app/**/*.test.{ts,tsx}",
-    "app/e2e/**/*.ts"
+    "app/e2e/*.config.ts",
+    "app/e2e/*.{spec,tool}.ts"
   ],
   "project": ["app/**/*.{ts,tsx}"],
   "ignoreDependencies": [
     "@testing-library/user-event",
     "zod",
-    "@axe-core/playwright",
     "cheerio",
     "fast-check",
-    "html-validate",
     "postcss",
     "stylelint-declaration-strict-value"
   ]

@@ -1,0 +1,13 @@
+/* Each rule breaks one check, on the bad page that uses it. */
+
+.too-wide {
+  inline-size: 40rem;
+}
+
+.tiny {
+  font-size: 0.75rem;
+}
+
+.faint {
+  color: #ccc;
+}
