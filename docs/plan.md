@@ -50,7 +50,7 @@ The result goes to the cache (versioned S3), then `transform.py` publishes `data
 | Visual system | Replace | Tokens, Newsreader and Schibsted Grotesk (self-hosted subsets, metric-matched fallbacks), icons. |
 | Data rules | Change (big) | See below. |
 | States and edge cases | New | Each state becomes a tested rule. |
-| Checking the build | Change | The Playwright harness and fixture approach are kept. Screenshots, axe, budgets, LCP and the no-mutation test are added. |
+| Checking the build | Change | The Playwright harness and fixture approach are kept. Screenshots, axe, budgets, LCP and the layout-shift checks are added. |
 
 **Data gaps.**
 
@@ -78,7 +78,7 @@ The result goes to the cache (versioned S3), then `transform.py` publishes `data
 | 6 | Refresh | 4 a day: 06:00, 12:00, 17:00, 22:00 Madrid | New days appear within ~6 h; polite to the upstream sites. |
 | 7 | Templating | Server-only JSX via `preact-render-to-string` | Typed and auto-escaping; no client framework at all. |
 | 8 | Filter changes | Swap the results in place + `replaceState`; `<noscript>` submit button | Keeps focus (WCAG 3.2.2); Back leaves the page; one renderer. |
-| 9 | After-midnight showings | The cinema day ends 06:00. Showings go in the previous day's Late column, sorted last, marked "after midnight" | Matches the Afternoon/Evening/Late model; never misread. |
+| 9 | After-midnight showings | The cinema day ends 06:00, and the site's "today" changes at 06:00 too (date picker, Last chance, Starting soon, the late-night state). Showings after midnight go in the previous day's Late column, sorted last, marked "after midnight" | Matches the Afternoon/Evening/Late model; never misread; at 01:00 tonight's late showings are still "today". |
 | 10 | Default "in English" | Original version + English audio. Subtitled foreign films only under "all showings" | Matches the brief; subtitle data is patchy. |
 | 11 | Maps | Google Maps | Your choice. |
 | 12 | Filmax | Dropped | Outside the city, poorly covered, would force a 7th icon. |
@@ -99,7 +99,7 @@ There's no publish or render step. Enrichment is capped per run so a cold cache 
 **Render (TypeScript Lambda behind CloudFront).**
 - Loads the document at start and re-reads it after 60 s.
 - Routes `/`, `/film/<id>/`, `/cinemas/`, `/about/`, `/privacy/`, and redirects, then renders JSX to HTML with the real `now` (Madrid time) and the query string.
-- CloudFront caches each URL for 60 s, serves a stale copy for up to a day if the renderer errors, and serves static assets (CSS, fonts, icons, the client script) from S3 with year-long immutable caching.
+- CloudFront doesn't cache HTML: every page is rendered fresh, and a renderer error shows a plain error page rather than an old copy (an old page would show started showings and the wrong day). With one user, an edge cache would rarely be hit anyway. Static assets (CSS, fonts, icons, the client script) come from S3 with year-long immutable caching.
 - A scheduled ping keeps the renderer warm. CSP comes from the existing headers policy.
 
 **Browser.** A few kilobytes of plain TypeScript, no framework:
@@ -107,7 +107,7 @@ There's no publish or render step. Enrichment is capped per run so a cold cache 
 - the filter swap
 - one pre-paint inline script, CSP-hashed: it fades seen films and, when "hiding films I've seen" is on, hides them and fixes the count before first paint
 
-**The rule:** after first paint, the DOM changes only in direct response to a tap. An e2e test enforces it by failing on any DOM mutation or layout shift between navigation and 2 s after load, on reload and on Back with bfcache disabled, in WebKit at phone width.
+**The rule:** no jump while loading (the brief's "minimal CLS"). Pages arrive already correct for the current time and query, so nothing gets regrouped after paint, and reload and Back land where you left off. It's a best practice, not a ban on change: a page restored from bfcache may update its seen state, for example. The e2e checks in §7.2 enforce it.
 
 **Strong typing.**
 - **Strictest compiler settings:** `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, typescript-eslint `strict-type-checked`.
@@ -136,15 +136,15 @@ Each slice is a PR into `redesign`, merged when CI is green. Screenshots come fr
 
 | # | Slice | Brief sections | Checked by |
 |---|---|---|---|
-| 1 | **TypeScript foundation + guardrails.** Repo layout (pipeline, render, client, shared), strict config, zod schemas as the single source of data types, Vitest, esbuild via SAM, CI. All of §7.1's static checks, the Playwright harness with the §7.2 page assertions wired up (they run against a stub page), `slice-done` finalized (drafted in `.claude/skills/slice-done/`; command names confirmed and the skill tested on this slice's own PR). Python untouched. | — | CI green; each guardrail shown failing on a deliberate violation once |
+| 1 | **TypeScript foundation + guardrails.** Repo layout (pipeline, render, client, shared), strict config, zod schemas as the single source of data types, Vitest, esbuild via SAM, CI. All of §7.1's static checks, the Playwright harness with the §7.2 page assertions wired up (they run against a stub page), `slice-done` finalized (drafted in `.claude/skills/slice-done/`; command names confirmed and the skill tested on this slice's own PR). **The `v2` data document's schema and a fixture generator** (date-shifted, hand-built), the contract both tracks build on: after this slice, a schema change is an escalation. Python untouched. | — | CI green; each guardrail shown failing on a deliberate violation once; the fixture validates against the schema |
 | 2 | **Port the pipeline.** Providers, reconciliation and TMDb enrichment in TS. | — | **Output parity with Python** on recorded source and TMDb fixtures, for behavior that survives: parsing, booking URLs, Verdi room lookups, merging, TMDb matching |
-| 3 | **Extend the data.** All languages; version and audio; English test; event exclusion; published-through (exact or lower bound) and `checked_at`; 21-day window; popularity and vote count; ID aliases; registry fields and Google place IDs; Filmax and Méliès removed; enrichment cap and seeding; `v2` cache key. Alarms retuned. The labeled eval sets (§7.3) and the every-state fixture. A local `fix-listing` skill (trace a wrong listing to its source and stage, add it to the eval set first, fix, re-run the evals). | What's listed, Published through, Language filter, Sort data, Seen IDs, Cinema data | Unit test per rule. A timed local refresh against real sources (refresh time vs Lambda timeout, TMDb calls, films and showings by version, events excluded). Diff of the English OV set against live. |
-| 4 | **Renderer and infrastructure.** Handler, router, data loading, CloudFront → Lambda origin (OAC), 60 s cache and serve-stale-on-error, assets origin, CSP, keep-warm ping, redirects, 404, `deploy.sh`; `SsgFunction` removed. Pages bare. | Every page (addresses), Page not found | Local handler e2e, cfn-lint, a redirect table test |
+| 3 | **Extend the data.** All languages; version and audio; English test; event exclusion; published-through (exact or lower bound) and `checked_at`; 21-day window; popularity and vote count; ID aliases; registry fields and Google place IDs; Filmax and Méliès removed; enrichment cap and seeding; the pipeline writes the slice-1 schema to the `v2` cache key. Alarms retuned. The labeled eval sets (§7.3); the fixture extended to every state. A local `fix-listing` skill (trace a wrong listing to its source and stage, add it to the eval set first, fix, re-run the evals). | What's listed, Published through, Language filter, Sort data, Seen IDs, Cinema data | Unit test per rule. A timed local refresh against real sources (refresh time vs Lambda timeout, TMDb calls, films and showings by version, events excluded). Diff of the English OV set against live. |
+| 4 | **Renderer and infrastructure.** Handler, router, data loading, CloudFront → Lambda origin (OAC), uncached HTML and an error page, assets origin, CSP, keep-warm ping, redirects, 404, `deploy.sh`; `SsgFunction` removed. Pages bare. | Every page (addresses), Page not found | Local handler e2e, cfn-lint, a redirect table test |
 | 5 | **Visual foundation.** Tokens, fonts and fallbacks, header, footer, octagon, chain and line icons, buttons, focus. About and Privacy pages. | Every page, About, Privacy, Visual system | Screenshots; axe; contrast unit test against the brief's figures; font swap with no shift on Linux; icon sheet under simulated color blindness vs `color-system.png` |
-| 6 | **Home.** Server-side filters and sentence; results swapped in place; three sections and notes; relevance blend tuned against real data (a script prints the ranking); seen toggle, fade and hide; every empty, stale and late-night state; no-JS form. | Home, Data rules (sections, sorts, filters, dates, seen, stale), States | Domain unit tests per rule; no-mutation/no-shift e2e; filters survive Back, reload and a shared link; focus stays on the picker; no-JS e2e; screenshots per state |
+| 6 | **Home.** Server-side filters and sentence; results swapped in place; three sections and notes; relevance blend tuned against real data (a script prints the ranking); seen toggle, fade and hide; every empty, stale and late-night state; no-JS form. | Home, Data rules (sections, sorts, filters, dates, seen, stale), States | Domain unit tests per rule; no-shift e2e; filters survive Back, reload and a shared link; focus stays on the picker; no-JS e2e; screenshots per state |
 | 7 | **Film page.** Layout (side column only when the main column gets ≥600 px); day × Afternoon/Evening/Late grid with empty columns dropped; after-midnight marker; showing line; Google Maps links; site-only ↗; "Showing at" filter by chain; language-hiding note and link; "More showings may be added". | Film page, Time of day, Booking link, Today's past showings, Many cinemas, Partly published days | Domain tests (16:59, 17:00, 20:59, 21:00, 00:30, 05:59 boundaries); e2e for the filter and accessible names; screenshots incl. a 15-cinema film |
 | 8 | **Cinemas page.** Lead line; map with icon pins linking to entries; name list; chain groups; entries with Directions, Website and posters; "English showings only" note for La Maquinista and Filmoteca. | Cinemas page | Map placement tests ported; e2e for anchors and legacy redirects; screenshots |
-| 9 | **Checking the build + cleanup.** Brief checklist; page budgets in CI; LCP on a mid-range-phone 4G profile; WCAG 2.2 AA (axe + keyboard + VoiceOver). Delete Python and the old front end. Rewrite `CLAUDE.md`, `CONTEXT.md`, README. | Checking the build | A checklist in the PR, each rule linked to its test or screenshot |
+| 9 | **Checking the build + cleanup.** Brief checklist; page budgets in CI; a one-off Lighthouse run for LCP on a mid-range-phone 4G profile; visual regression baselines, now that the design is frozen; WCAG 2.2 AA (axe + keyboard + VoiceOver). Delete Python and the old front end. Rewrite `CLAUDE.md`, `CONTEXT.md`, README. | Checking the build | A checklist in the PR, each rule linked to its test or screenshot |
 
 ## 5. Cutover
 
@@ -206,10 +206,10 @@ The aim: every brief rule that can be checked by a machine is, and fails the bui
   - sorting is total and stable
 - Provider parsers run against recorded fixtures, and slice 2 checks parity with Python.
 
-**Rendered output (Playwright against the local renderer on the date-shifted fixture, run in Linux CI).** The fixture is extended in slice 3 to contain every state in the brief's "States and edge cases" table, so every page × state is reachable by URL.
+**Rendered output (Playwright against the local renderer on the date-shifted fixture, run in Linux CI).** The fixture (generator from slice 1) covers every state in the brief's "States and edge cases" table by slice 3, plus component edge cases (long titles, each missing field, placeholder posters), so every page × state is reachable by URL.
 - **HTML conformance:** html-validate (Node-native, fast) on every page × state. In slice 9, a one-off run of the reference validator (vnu, which needs Java).
 - **Accessibility:**
-  - axe with `wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa` on every page × state × width
+  - axe with `wcag2a, wcag2aa, wcag21a, wcag21aa, wcag22aa` on every page × state at 390 and 1440 wide
   - Playwright **aria snapshots** for the structures that matter: the filter sentence, showtime names ("21:30, Mooby Balmes, Friday 28, books online"), section headings
   - a keyboard-only walk (tab order, visible focus, picker focus kept after a filter swap)
 - **Brief rules as assertions,** on every page × width:
@@ -222,13 +222,14 @@ The aim: every brief rule that can be checked by a machine is, and fails the bui
   - zero CSP violations and zero console errors
   - with JS disabled, listings, booking links and the noscript filter form work
 - **No jump:**
-  - Chromium: zero `layout-shift` entries on load, reload, and Back with bfcache disabled
-  - WebKit: the bounding boxes of headings and cards at first paint vs 2 s later must be identical, and a MutationObserver sees no changes without input. WebKit doesn't report layout-shift entries, so CLS can't be measured there.
+  - Chromium: CLS < 0.02 on load, reload, and Back with bfcache disabled
+  - WebKit (which doesn't report layout shifts): after reload and Back, the scroll position matches where it was left, and the heading in view hasn't moved 2 s later
   - bfcache: Back restores from bfcache (Chromium `notRestoredReasons` empty)
-- **Visual regression:** `toHaveScreenshot` at the 5 widths for each page × key state, in the Linux container (fonts are deterministic there). Baselines change only in the PR that intends it, and that PR shows the before/after.
-- **Budgets:** gzip sizes per page (HTML ≤ 60 KB, CSS ≤ 15 KB, JS ≤ 20 KB, though it'll be far less) and **Lighthouse CI** with mobile 4G throttling: LCP ≤ 1.5 s, CLS 0, TBT ~0. Lighthouse uses Chrome, so it's a proxy; Safari is covered by manual checks.
+- **Budgets:** gzip sizes per page (HTML ≤ 60 KB, CSS ≤ 15 KB, JS ≤ 20 KB, though it'll be far less).
 
-**Instead of Storybook:** a dev-only `/__catalog` route renders every component in every state: chain icons, cards with each missing field, long titles, placeholder posters, buttons on and off, every empty-state sentence. It gets screenshots, axe and html-validate like any page. Storybook's value is interactive client components, and we have none; it would add a large dependency to show server-rendered strings.
+**Added in slice 9, once the design is frozen** (during the build, they'd only churn):
+- **Visual regression:** `toHaveScreenshot` at the 5 widths for each page × key state, in the Linux container (fonts are deterministic there). After that, baselines change only in the PR that intends it, and that PR shows the before/after. Until then, `npm run shots` and the visual reviewer cover it.
+- **Lighthouse,** one run with mobile 4G throttling: LCP ≤ 1.5 s. It's Chrome, so a proxy; Safari is covered by manual checks.
 
 ### 7.3 Evals (repeatable quality measurements, not pass/fail on one example)
 
@@ -241,21 +242,11 @@ The aim: every brief rule that can be checked by a machine is, and fails the bui
 
 The labeled sets are built in slice 3 from real data and grow every time a mismatch is found in production. That's the loop: a bad match becomes a test case before it's fixed.
 
-### 7.4 Agent workflow (how I build each slice)
+### 7.4 Agent workflow
 
-1. **Before writing HTML, CSS or browser JS:** run `modern-web-guidance` (search, then retrieve) for each pattern touched: native pickers, forms, focus, fonts and CLS, images and LCP, CSP. Each PR includes the skill's "Modern Web Guidance" disclosure, so you can see what shaped the code.
-2. **Tests first for rules.** A brief rule's test lands in the same commit as its implementation, never after. Flow and e2e tests ship with the feature, bfcache path included.
-3. **Before every commit:** `comment-review` on the diff.
-4. **Before opening a PR, a self-review against a fixed checklist** (a small project skill, `slice-done`, local to this repo in `.claude/skills/`, so it costs no context elsewhere). It checks:
-   - **Scope:** only this slice's items; anything else goes to `BACKLOG.md`.
-   - **Reuse:** no logic duplicated from `domain/` or `shared/`; any new dependency is justified in the PR body; knip clean. This stands in for the "reuse-review" you imagined.
-   - **Brief traceability:** each brief rule the slice covers is listed with the test or screenshot that proves it.
-   - **Visual:** I look at every screenshot at all 5 widths against the brief, then the mocks (the brief wins).
-   - **Decisions:** if any §3 decision turned out wrong, the plan is updated in the same PR and the PR says so.
-5. **CI green before "done":** watch `gh pr checks --watch`; a local pass isn't enough.
-6. **Real Safari check** (Safari MCP) for slices 5–8: reload and Back on iPhone width, landing at the same scroll position with nothing moving. Playwright's WebKit isn't Safari.
-7. **Your review points:** `/simplify` and `/review` are yours to run (they're user-invocable only here). Worth it at slices 2, 6 and 9. Run `/security-review` at slice 4 (new public runtime, CSP, Lambda permissions) and slice 9.
-8. **Optional: independent review.** For slices 2, 4 and 6, a fresh-context reviewer agent gets only the brief, the plan and the diff, not my reasoning, and reports where they disagree. I'd only spawn it with your OK, since it costs a cold start each time.
+How each slice is built and reviewed is §8, with the detail in two local skills (`.claude/skills/`): `drive-slice` (the loop, task-brief constraints such as `modern-web-guidance` and `comment-review`, and escalation) and `slice-done` (the definition of done: scope, reuse, rule-to-evidence table, screenshots, real Safari, CI green).
+
+**Your review points:** `/simplify` and `/review` are yours to run (they're user-invocable only here). Worth it at slices 2, 6 and 9. Run `/security-review` at slice 4 (new public runtime, CSP, Lambda permissions) and slice 9.
 
 ### 7.5 After cutover (production guardrails)
 
@@ -270,7 +261,8 @@ The labeled sets are built in slice 3 from real data and grow every time a misma
 ### 7.6 Explicitly not adding
 
 - **Jest:** Vitest already covers it, and two runners is churn.
-- **Storybook:** see above.
+- **Storybook or a component catalog:** there are no interactive client components, and the fixture already reaches every state through real pages.
+- **Lighthouse on every PR:** a simulated, flaky signal for a small server-rendered page; gzip budgets run in CI instead.
 - **Mutation testing:** high cost; the property tests and evals target the risky logic directly.
 - **Separate staging:** you chose in-place.
 - **Pre-commit running e2e:** too slow; CI runs it.
@@ -289,7 +281,7 @@ The work is driven one slice at a time by an orchestrator session using the loca
 - **An independent reviewer sees only the brief, the plan and the diff.** For UI slices, a visual reviewer checks every screenshot.
 - **At most two fix rounds** before a task is replanned or escalated.
 
-**Tracks:** after slice 1, the data track (2 → 3) and the UI track (4 → 5) run in parallel, in separate worktrees. Slices 6, 7, 8 and 9 follow in sequence.
+**Tracks:** after slice 1, the data track (2 → 3) and the UI track (4 → 5) run in parallel. Their contract is slice 1's `v2` schema and fixture. Slices 6, 7, 8 and 9 follow in sequence. How to split work within a slice (worktrees, branches, parallel subagents) is the orchestrator's call.
 
 **Merging:** the orchestrator squash-merges a slice PR into `redesign` once CI is green, the review passed and nothing is escalated. Merging `redesign` into `main` and deploying stay with you.
 
