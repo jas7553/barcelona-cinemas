@@ -70,16 +70,25 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+  {
+    files: ["app/shared/**/*.ts", "app/domain/**/*.ts"],
+    rules: {
       "no-restricted-syntax": [
         "error",
-        {
-          selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+        ...[
+          "MemberExpression[object.name='Date'][property.name='now']",
+          "NewExpression[callee.name='Date'][arguments.length=0]",
+          // `Date(x)` ignores `x` and returns the current time as a string.
+          "CallExpression[callee.name='Date']",
+          "MemberExpression[object.name='globalThis'][property.name='Date']",
+          // A date formatter called with no date formats the current time.
+          "CallExpression[callee.property.name=/^(?:format|formatToParts)$/][arguments.length=0]",
+        ].map((selector) => ({
+          selector,
           message: "time is passed in: take `now: Date` as a parameter.",
-        },
-        {
-          selector: "NewExpression[callee.name='Date'][arguments.length=0]",
-          message: "time is passed in: take `now: Date` as a parameter.",
-        },
+        })),
       ],
     },
   },

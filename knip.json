@@ -10,5 +10,5 @@
     "app/e2e/*.{spec,tool}.ts"
   ],
   "project": ["app/**/*.{ts,tsx}"],
-  "ignoreDependencies": ["@testing-library/user-event", "cheerio"]
+  "ignoreDependencies": ["@testing-library/user-event"]
 }

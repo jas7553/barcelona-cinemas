@@ -62,7 +62,9 @@ describe("document invariants", () => {
   it("rejects duplicate film ids", () => {
     const d = doc();
     d.films.push(at(doc().films, 0));
-    expect(issues(d)).toEqual([{ path: "films.8.id", message: "duplicate film id" }]);
+    expect(issues(d)).toEqual([
+      { path: `films.${d.films.length - 1}.id`, message: "duplicate film id" },
+    ]);
   });
 
   it("rejects a previous id that is another film's current id", () => {
@@ -96,6 +98,31 @@ describe("document invariants", () => {
       {
         path: "cinemas.0.published_through",
         message: "a cinema with showings needs published_through",
+      },
+    ]);
+  });
+
+  it("rejects published_through before the cinema day of the cinema's latest showing", () => {
+    const d = doc();
+    const balmes = cinema(d);
+    expect(balmes.published_through).toBe("2026-12-13");
+    film(d, "900001").showings.push({
+      cinema_id: balmes.id,
+      starts_at: "2026-12-14T00:30+01:00",
+      version: "original",
+      audio: "en",
+    });
+    expect(issues(d)).toEqual([]);
+    film(d, "900001").showings.push({
+      cinema_id: balmes.id,
+      starts_at: "2026-12-14T06:00+01:00",
+      version: "original",
+      audio: "en",
+    });
+    expect(issues(d)).toEqual([
+      {
+        path: "cinemas.0.published_through",
+        message: "published_through is before the cinema day of its latest showing",
       },
     ]);
   });
@@ -171,7 +198,7 @@ describe("film invariants", () => {
     ["a trailer URL instead of a YouTube key", { trailer_youtube_key: "https://youtu.be/x" }],
     ["a malformed IMDb id", { imdb_id: "9000001" }],
     ["a rating with no votes", { rating: { average: 0, votes: 0 } }],
-    ["no showings", { showings: [] }],
+    ["missing showings", { showings: undefined }],
   ])("rejects %s", (_, patch) => {
     const d = doc();
     Object.assign(film(d, "900008"), patch);

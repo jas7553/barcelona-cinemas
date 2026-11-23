@@ -78,14 +78,29 @@ function resolvedSelectors(rule: StyleRule): string[] {
   );
 }
 
-/** Compounds outside any `:is()`, `:not()`, `:has()` or attribute brackets. */
+/** The selector outside any `:is()`, `:not()`, `:has()` or attribute brackets. */
+const outsideBrackets = (selector: string) =>
+  selector.replace(/\((?:[^()]|\([^()]*\))*\)|\[[^\]]*\]/g, "");
+
+/** Compounds outside any brackets. */
 function compounds(selector: string): string[] {
-  const flat = selector.replace(/\((?:[^()]|\([^()]*\))*\)|\[[^\]]*\]/g, "");
-  return flat.split(/\s*[\s>+~]\s*/).filter(Boolean);
+  return outsideBrackets(selector)
+    .split(/\s*[\s>+~]\s*/)
+    .filter(Boolean);
 }
 
 const hasClass = (compound: string, name: string) =>
   new RegExp(`\\.${name}(?![\\w-])`).test(compound);
+
+/** The subject is an element with class `name` or inside one: no `+` or `~` follows that class. */
+function withinClass(selector: string, name: string): boolean {
+  // Compounds at even indices, the combinators between them at odd ones.
+  const parts = outsideBrackets(selector)
+    .trim()
+    .split(/\s*([\s>+~])\s*/);
+  const last = parts.findLastIndex((part, i) => i % 2 === 0 && hasClass(part, name));
+  return last >= 0 && parts.slice(last + 1).every((part) => part !== "+" && part !== "~");
+}
 
 const nearestRule = (decl: Declaration) => ancestors(decl).find(isRule);
 
@@ -148,9 +163,7 @@ const motionOnlyOnSeenToggle = plugin(
     const rule = outer.find(isRule);
     const onToggle =
       rule !== undefined &&
-      resolvedSelectors(rule).every((selector) =>
-        compounds(selector).some((compound) => hasClass(compound, SEEN_TOGGLE_CLASS)),
-      );
+      resolvedSelectors(rule).every((selector) => withinClass(selector, SEEN_TOGGLE_CLASS));
     const optedIn = outer.some(
       (node) =>
         isAtRule(node) && node.name.toLowerCase() === "media" && optsIntoMotion(node.params),
@@ -195,6 +208,64 @@ const rawCustomProperties = plugin(
   (decl) => decl.prop.startsWith("--") && hasRawLength(decl.value),
 );
 
+/** Shorthands that mix a color with other values, which the strict-value rule can't check. */
+const COLOR_SHORTHAND =
+  /^(?:border(?:-(?:top|right|bottom|left|block|inline)(?:-(?:start|end))?)?|outline|text-decoration|column-rule)$/i;
+/** CSS system colors, current and deprecated. */
+const SYSTEM_COLOR = new RegExp(
+  `(?<![\\w-])(?:${[
+    "AccentColor",
+    "AccentColorText",
+    "ActiveText",
+    "ButtonBorder",
+    "ButtonFace",
+    "ButtonText",
+    "Canvas",
+    "CanvasText",
+    "Field",
+    "FieldText",
+    "GrayText",
+    "Highlight",
+    "HighlightText",
+    "LinkText",
+    "Mark",
+    "MarkText",
+    "SelectedItem",
+    "SelectedItemText",
+    "VisitedText",
+    "ActiveBorder",
+    "ActiveCaption",
+    "AppWorkspace",
+    "Background",
+    "ButtonHighlight",
+    "ButtonShadow",
+    "CaptionText",
+    "InactiveBorder",
+    "InactiveCaption",
+    "InactiveCaptionText",
+    "InfoBackground",
+    "InfoText",
+    "Menu",
+    "MenuText",
+    "Scrollbar",
+    "ThreeDDarkShadow",
+    "ThreeDFace",
+    "ThreeDHighlight",
+    "ThreeDLightShadow",
+    "ThreeDShadow",
+    "Window",
+    "WindowFrame",
+    "WindowText",
+  ].join("|")})(?![\\w-])`,
+  "i",
+);
+
+const shorthandSystemColors = plugin(
+  "shorthand-system-colors",
+  `System colors belong in ${TOKENS_FILE}: use a token`,
+  (decl) => COLOR_SHORTHAND.test(decl.prop) && SYSTEM_COLOR.test(decl.value),
+);
+
 const tokensFileDefinesOnly = plugin(
   "tokens-file-defines-only",
   "The tokens file only defines custom properties: style elements elsewhere",
@@ -206,5 +277,6 @@ export default [
   motionOnlyOnSeenToggle,
   tokenFallbacks,
   rawCustomProperties,
+  shorthandSystemColors,
   tokensFileDefinesOnly,
 ];

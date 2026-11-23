@@ -30,6 +30,7 @@ describe("stylelint", () => {
   const PROPERTY_BAN = "property-disallowed-list";
   const CAPS = "btw/caps-only-on-label";
   const MOTION = "btw/motion-only-on-seen-toggle";
+  const SYSTEM_COLORS = "btw/shorthand-system-colors";
   const motionQuery = "@media (prefers-reduced-motion: no-preference)";
 
   it("passes a clean, token-using stylesheet with valid options", async () => {
@@ -84,6 +85,7 @@ describe("stylelint", () => {
     ["display: none !important", "declaration-no-important"],
     ["view-transition-name: card", PROPERTY_BAN],
     ["scroll-behavior: smooth", VALUE_BAN],
+    ["text-shadow: 0 1px 0 var(--rule)", PROPERTY_BAN],
   ])("bans %s", async (declaration, rule) => {
     expect(await rules(`.card { ${declaration}; }`)).toContain(rule);
   });
@@ -128,6 +130,11 @@ describe("stylelint", () => {
     ["--tint: white", "color-named"],
     ["--tint: oklch(0.5 0.12 180)", "function-disallowed-list"],
     ["color: var(--ink, #000)", "btw/token-fallbacks"],
+    ["border: 1px solid CanvasText", SYSTEM_COLORS],
+    ["border-block-end: 1px solid buttonborder", SYSTEM_COLORS],
+    ["outline: 2px solid Highlight", SYSTEM_COLORS],
+    ["text-decoration: underline LinkText", SYSTEM_COLORS],
+    ["column-rule: 1px solid GrayText", SYSTEM_COLORS],
   ])("closes the color loophole %s", async (declaration, rule) => {
     expect(await rules(`.card { ${declaration}; }`)).toContain(rule);
   });
@@ -253,6 +260,18 @@ describe("stylelint", () => {
     ],
     ["for a longhand", `.card { transition-duration: 0.2s; }`],
     ["for an animation longhand", `.card { animation-name: pop; }`],
+    [
+      "on a sibling after the toggle (~)",
+      `${motionQuery} { .${SEEN_TOGGLE_CLASS} ~ .poster { transition: opacity 0.2s; } }`,
+    ],
+    [
+      "on the next sibling (+)",
+      `${motionQuery} { .${SEEN_TOGGLE_CLASS} + .card { transition: opacity 0.2s; } }`,
+    ],
+    [
+      "on a sibling, nested",
+      `.${SEEN_TOGGLE_CLASS} { ${motionQuery} { & + .card svg { animation: pop 0.3s; } } }`,
+    ],
   ])("rejects motion %s", async (_, code) => {
     expect(await rules(code)).toContain(MOTION);
   });
@@ -263,6 +282,10 @@ describe("stylelint", () => {
     [
       "on a part of the toggle",
       `${motionQuery} { .${SEEN_TOGGLE_CLASS}:active svg { transition: scale 0.2s; } }`,
+    ],
+    [
+      "on a child of a toggle that follows a sibling",
+      `${motionQuery} { .card + .${SEEN_TOGGLE_CLASS} > svg { transition: scale 0.2s; } }`,
     ],
     [
       "with another feature",
@@ -372,18 +395,6 @@ describe("eslint", () => {
       "no-restricted-imports",
     ],
     [
-      "Date.now() in domain",
-      "domain",
-      "export const f = () => Date.now();\n",
-      "no-restricted-syntax",
-    ],
-    [
-      "new Date() in domain",
-      "domain",
-      "export const f = () => new Date();\n",
-      "no-restricted-syntax",
-    ],
-    [
       "node:fs in domain",
       "domain",
       'import { readFileSync } from "node:fs";\nexport const f = readFileSync;\n',
@@ -397,6 +408,28 @@ describe("eslint", () => {
     ],
   ])("rejects %s", async (_, layer, code, rule) => {
     expect(await lint(layer, code)).toContain(rule);
+  });
+
+  const readsTheClock: [string, string][] = [
+    ["Date.now()", "export const f = () => Date.now();\n"],
+    ["Date.now as a value", "export const f = Date.now;\n"],
+    ["new Date()", "export const f = () => new Date();\n"],
+    ["Date() without new", "export const f = () => Date();\n"],
+    ["Date(x) without new", "export const f = (ms: number) => Date(ms);\n"],
+    ["new globalThis.Date()", "export const f = () => new globalThis.Date();\n"],
+    ["globalThis.Date.now()", "export const f = () => globalThis.Date.now();\n"],
+    ["format() with no date", 'export const f = () => new Intl.DateTimeFormat("en").format();\n'],
+    [
+      "formatToParts() with no date",
+      'export const f = () => new Intl.DateTimeFormat("en").formatToParts();\n',
+    ],
+  ];
+  it.each(
+    ["shared", "domain"].flatMap((layer) =>
+      readsTheClock.map(([what, code]): [string, string, string] => [layer, what, code]),
+    ),
+  )("rejects reading the clock in %s: %s", async (layer, _, code) => {
+    expect(await lint(layer, code)).toContain("no-restricted-syntax");
   });
 
   it("rejects a jsx-a11y violation in render", async () => {
@@ -414,6 +447,14 @@ describe("eslint", () => {
       ".test.ts",
     ],
     ["new Date(x) in domain", "domain", "export const f = (ms: number) => new Date(ms);\n", ".ts"],
+    ["new Date(x) in shared", "shared", "export const f = (ms: number) => new Date(ms);\n", ".ts"],
+    [
+      "format(x) in shared",
+      "shared",
+      'export const f = (d: Date) => new Intl.DateTimeFormat("en").format(d);\n',
+      ".ts",
+    ],
+    ["Date.now() in pipeline", "pipeline", "export const f = () => Date.now();\n", ".ts"],
     ["preact in render", "render", 'import { h } from "preact";\nexport const f = h;\n', ".ts"],
   ])("allows %s", async (_, layer, code, extension) => {
     expect(await lint(layer, code, extension)).toEqual([]);
@@ -424,25 +465,99 @@ describe("dependency-cruiser", () => {
   const depcruise = createRequire(import.meta.url)(
     join(root, ".dependency-cruiser.cjs"),
   ) as IConfiguration;
-  const files: Record<string, string> = {
-    "app/client/imports-render.ts": 'import "../render/view.ts";\n',
-    "app/client/imports-preact.ts": 'import { h } from "preact";\nexport const f = h;\n',
-    "app/pipeline/imports-domain.ts": 'import "../domain/pure.ts";\n',
-    "app/render/imports-pipeline.ts": 'import "../pipeline/job.ts";\n',
-    "app/domain/imports-node.ts":
+  /** [file, code, the rule it breaks] */
+  const violations: [string, string, string][] = [
+    [
+      "app/shared/cycle-a.ts",
+      'import { b } from "./cycle-b.ts";\nexport const a = () => b;\n',
+      "no-circular",
+    ],
+    ["app/render/imports-missing.ts", 'import "./missing.ts";\n', "not-to-unresolvable"],
+    ["app/domain/imports-render.ts", 'import "../render/view.ts";\n', "domain-is-pure"],
+    [
+      "app/domain/imports-zod.ts",
+      'import type { z } from "zod";\nexport type S = z.ZodString;\n',
+      "domain-is-pure",
+    ],
+    [
+      "app/domain/imports-node.ts",
       'import { readFileSync } from "node:fs";\nexport const f = readFileSync;\n',
-    "app/shared/cycle-a.ts": 'import { b } from "./cycle-b.ts";\nexport const a = () => b;\n',
+      "domain-no-node-core",
+    ],
+    ["app/shared/imports-domain.ts", 'import "../domain/pure.ts";\n', "shared-imports-nothing"],
+    ["app/shared/imports-preact.ts", 'import "preact";\n', "shared-imports-nothing"],
+    [
+      "app/client/imports-render.ts",
+      'import "../render/view.ts";\n',
+      "client-only-shared-and-domain",
+    ],
+    ["app/client/imports-preact.ts", 'import "preact";\n', "client-only-shared-and-domain"],
+    ["app/client/imports-package.ts", 'import "fast-check";\n', "client-only-shared-and-domain"],
+    [
+      "app/domain/imports-schemas.ts",
+      'import { Listings } from "../shared/listings.ts";\nexport const f = Listings;\n',
+      "schemas-only-as-types-in-the-browser",
+    ],
+    [
+      "app/client/imports-schemas.ts",
+      'import { Listings } from "../shared/listings.ts";\nexport const f = Listings;\n',
+      "schemas-only-as-types-in-the-browser",
+    ],
+    ["app/shared/imports-zod.ts", 'import "zod";\n', "schemas-only-as-types-in-the-browser"],
+    [
+      "app/pipeline/imports-domain.ts",
+      'import "../domain/pure.ts";\n',
+      "pipeline-render-share-only-shared",
+    ],
+    [
+      "app/render/imports-pipeline.ts",
+      'import "../pipeline/job.ts";\n',
+      "render-no-pipeline-or-client",
+    ],
+    ["app/render/imports-e2e.ts", 'import "../e2e/page.ts";\n', "nothing-imports-pipeline-or-e2e"],
+    [
+      "app/render/imports-pipeline.ts",
+      'import "../pipeline/job.ts";\n',
+      "nothing-imports-pipeline-or-e2e",
+    ],
+    [
+      "app/pipeline/imports-fixture.ts",
+      'import "../fixture/build.ts";\n',
+      "fixture-only-in-tests-and-dev",
+    ],
+    ["app/pipeline/imports-preact.ts", 'import "preact";\n', "preact-only-in-render"],
+  ];
+  /** Files no rule should flag: import targets, and imports the rules allow. */
+  const allowed: Record<string, string> = {
     "app/shared/cycle-b.ts": 'import { a } from "./cycle-a.ts";\nexport const b = () => a;\n',
+    "app/shared/listings.ts":
+      'import { z } from "zod";\nexport const Listings = z.object({});\nexport type Listings = z.infer<typeof Listings>;\n',
     "app/render/view.ts": "export const view = 1;\n",
+    "app/render/imports-preact-and-schemas.ts":
+      'import "preact";\nimport { Listings } from "../shared/listings.ts";\nexport const f = Listings;\n',
     "app/domain/pure.ts": "export const pure = 1;\n",
+    "app/domain/imports-schema-types.ts":
+      'import type { Listings } from "../shared/listings.ts";\nexport type L = Listings;\n',
+    "app/client/imports-shared-and-domain.ts":
+      'import type { Listings } from "../shared/listings.ts";\nimport "../shared/cycle-b.ts";\nimport "../domain/pure.ts";\nexport type L = Listings;\n',
     "app/pipeline/job.ts": "export const job = 1;\n",
+    "app/pipeline/imports-schemas.ts":
+      'import { Listings } from "../shared/listings.ts";\nexport const f = Listings;\n',
+    "app/e2e/page.ts": "export const page = 1;\n",
+    "app/fixture/build.ts":
+      'import type { Listings } from "../shared/listings.ts";\nexport type L = Listings;\n',
+    "app/render/imports-fixture.test.ts": 'import "../fixture/build.ts";\n',
   };
   let base = "";
   let result: ICruiseResult | undefined;
 
   beforeAll(async () => {
     base = realpathSync(mkdtempSync(join(tmpdir(), "guardrails-")));
-    for (const [path, code] of Object.entries(files)) {
+    const files: [string, string][] = [
+      ...violations.map(([path, code]): [string, string] => [path, code]),
+      ...Object.entries(allowed),
+    ];
+    for (const [path, code] of files) {
       mkdirSync(dirname(join(base, path)), { recursive: true });
       writeFileSync(join(base, path), code);
     }
@@ -465,26 +580,28 @@ describe("dependency-cruiser", () => {
       .filter((violation) => violation.from === from)
       .map((violation) => violation.rule.name);
 
-  it.each([
-    ["app/client/imports-render.ts", "client-no-render"],
-    ["app/client/imports-preact.ts", "client-no-preact"],
-    ["app/pipeline/imports-domain.ts", "pipeline-render-share-only-shared"],
-    ["app/render/imports-pipeline.ts", "render-no-pipeline-or-client"],
-    ["app/domain/imports-node.ts", "domain-no-node-core"],
-    ["app/shared/cycle-a.ts", "no-circular"],
-  ])("%s violates %s", (from, rule) => {
+  it.each(violations.map(([path, , rule]) => [path, rule]))("%s violates %s", (from, rule) => {
     expect(rulesFrom(from)).toContain(rule);
   });
 
-  it("resolves every import, so each violation is the layer rule's", () => {
-    expect(result?.summary.violations.map((violation) => violation.rule.name)).not.toContain(
-      "not-to-unresolvable",
-    );
+  it("has a planted violation for every forbidden rule", () => {
+    const tested = new Set(violations.map(([, , rule]) => rule));
+    expect(
+      (depcruise.forbidden ?? [])
+        .map((rule) => rule.name ?? "(unnamed)")
+        .filter((name) => !tested.has(name)),
+    ).toEqual([]);
   });
 
-  it("lets the import targets stand", () => {
+  it("resolves every other import, so each violation is the layer rule's", () => {
     expect(
-      ["app/render/view.ts", "app/domain/pure.ts", "app/pipeline/job.ts"].flatMap(rulesFrom),
-    ).toEqual([]);
+      (result?.summary.violations ?? [])
+        .filter((violation) => violation.rule.name === "not-to-unresolvable")
+        .map((violation) => violation.from),
+    ).toEqual(["app/render/imports-missing.ts"]);
+  });
+
+  it("lets the allowed imports stand", () => {
+    expect(Object.keys(allowed).flatMap(rulesFrom)).toEqual([]);
   });
 });

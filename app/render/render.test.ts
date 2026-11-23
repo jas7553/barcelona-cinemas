@@ -1,8 +1,8 @@
 import { expect, it } from "vitest";
 import { renderHome } from "./render.tsx";
 
-it("renders the heading with the Madrid day", () => {
-  expect(renderHome(new Date("2026-06-30T22:30:00Z"))).toBe(
-    "<h1>Barcelona this week, from 2026-07-01</h1>",
+it("renders the heading with the site's today", () => {
+  expect(renderHome(new Date("2026-07-01T06:30:00+02:00"))).toBe(
+    "<h1>Barcelona This Week, from 2026-07-01</h1>",
   );
 });

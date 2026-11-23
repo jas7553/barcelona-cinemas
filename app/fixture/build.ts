@@ -1,6 +1,5 @@
-import { cinemaDay } from "../domain/madrid-date.ts";
 import type { Cinema, Film, Listings, Showing } from "../shared/listings.ts";
-import { addDays, madridIso } from "../shared/madrid.ts";
+import { addDays, cinemaDay, madridIso } from "../shared/madrid.ts";
 
 const MINUTE = 60_000;
 
@@ -278,6 +277,19 @@ function films(year: number): FilmSpec[] {
         { cinema: "maquinista", days: range(0, 8), times: ["17:15"] },
         { cinema: "diagonal-mar", days: EVERY_DAY, times: ["16:30"], version: "dubbed" },
       ],
+    },
+    {
+      id: "900009",
+      title: "The Winter Ferry",
+      tmdb_id: 900009,
+      imdb_id: "tt9000009",
+      year: year - 1,
+      runtime_minutes: 101,
+      genres: ["Drama"],
+      directors: ["Signe Halvorsen"],
+      synopsis: "The last ferry of the season leaves one passenger behind on purpose.",
+      poster_path: "/fixtureWinterFerry.jpg",
+      runs: [],
     },
   ];
 }
