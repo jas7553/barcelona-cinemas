@@ -51,7 +51,7 @@ export const Cinema = z
     /** Bounded to greater Barcelona, which catches swapped coordinates. */
     lat: z.number().min(41.2).max(41.6),
     lng: z.number().min(1.9).max(2.4),
-    place_id: z.string().regex(/^ChIJ[\w-]{23,}$/, "Google place ID"),
+    place_id: z.string().regex(/^[\w-]{20,}$/, "Google place ID (opaque)"),
     website_url: z.httpUrl(),
     /**
      * `full`: a source lists the whole programme, so `published_through` is exact. `english_only`:
