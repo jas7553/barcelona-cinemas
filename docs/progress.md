@@ -21,9 +21,29 @@ The orchestrator's state for the `drive-slice` loop (plan §8). Newest entries a
 1. **Ended films (slice 1 schema; decide by slice 3).** The brief says "Every film and every cinema has its own address that keeps working". The legacy site kept ended films for 30 days. The `v2` schema now allows a film with no showings, so either answer fits without a schema change. Still open: how long an ended film stays in the document (the pipeline, slice 3) and what its page says (slice 7). **Recommendation:** keep ended films for 30 days, as today. The film page then shows the film details and one plain line, "No longer showing in Barcelona.", with a link home. After 30 days the address 301s home rather than 404ing.
 2. **Which title a film shows (slice 3).** Every language is now listed, so a film's `title` could be TMDb's English title or the title the cinema listed (often Spanish or Catalan). **Recommendation:** TMDb's English title, falling back to the listed title for unmatched films. The site is in English, and the old site did the same. No `original_title` field until a page needs one.
 
+3. **Real recordings for ECB, Mooby and TMDb (slice 2 parity; needed by slice 3's evals).** The englishcinemabarcelona and Mooby URLs and the TMDb key live in `.env`/SSM, which this session may not read, so slice 2's parity fixtures for those come from the Python tests' inline pages and payloads; Verdi and SensaCine are recorded live (public, hard-coded URLs). **Recommendation:** slice 2 ships `npm run record` (reads your env, writes `app/pipeline/fixtures/recorded/`); you run it once before slice 3, and the slice 3 eval sets are built from it. Not blocking slice 2.
+
 ## Slice log
 
 (Each slice adds its task breakdown, decisions made without escalation, rejected review findings, and plan changes here.)
+
+### Slice 2: Port the pipeline
+
+Branch `slice/2-pipeline`. Library code under `app/pipeline/`; no Lambda wiring, cache key or schema output (slice 3), so "esbuild via SAM" moves to slice 3 or 4, whichever ships the first TS Lambda.
+
+**Approach.** Parity is checked against **goldens**: a Python script (`tests/parity/golden.py`, deleted in slice 9) replays recorded HTTP through the legacy code with a frozen clock and writes its output as JSON; Vitest replays the same recordings through the TS port and compares, via a projection both sides share. Goldens are committed, so the TS tests don't need Python. Behavior slice 3 replaces (English-only filtering, `language="vo"`, the 7-day window) is ported as a separate, named step per provider so slice 3 can delete it without touching the parsers. Recorded HTTP is a `manifest.json` of `{method, url, status, contentType, file}` with credentials stripped from URLs.
+
+**Tasks**
+
+| # | Task | Role | Runs |
+|---|---|---|---|
+| T1 | Parity inputs + goldens: extract the Python tests' inline pages and TMDb payloads into recorded fixtures; record Verdi (cartellera, a few film pages, their seat pages) and SensaCine (a subset of theatres × 2 days) live; `tests/parity/golden.py`. Accept: rerun gives byte-identical goldens; no secrets in fixtures; pytest still green. | Mechanical builder | parallel with T2 |
+| T2 | Pipeline foundation: internal types, zod for scraped input, injectable fetcher (live + replay from manifest), timeouts and retryable-error classification, registry and alias lookup from `cinemas.json`, common normalizers, `npm run record`; `cheerio` added. Accept: unit tests; `npm run check`. | Subtle builder | parallel with T1 |
+| T3a | englishcinemabarcelona + Mooby providers. Accept: golden parity + ported Python test cases. | Mechanical builder | after T1, T2; parallel |
+| T3b | Verdi (incl. room lookups) + SensaCine providers. Accept: golden parity + ported Python test cases. | Mechanical builder | after T1, T2; parallel |
+| T4 | Reconciliation (title, then imdb stage; showing dedup) + TMDb enrichment (search, ranking, details, TTL reuse, namesake clashes). Accept: golden parity + ported Python test cases. | Subtle builder | after T1, T2; parallel |
+| T5 | Collection: providers in parallel, one retry, snapshot fallback ≤24 h without past showings, partial-failure threshold, end-to-end parity; `npm run refresh:local` prints a summary (no S3). | Subtle builder | after T3, T4 |
+| T6 | Verify, review, `slice-done`, PR. | Orchestrator | last |
 
 ### Slice 1: TypeScript foundation + guardrails
 
