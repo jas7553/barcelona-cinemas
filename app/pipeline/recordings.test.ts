@@ -36,6 +36,14 @@ describe("stripCredentials", () => {
     ).toBe("https://api.themoviedb.org/3/search/movie?query=Alien");
   });
 
+  it("drops every credential param, whatever its case", () => {
+    expect(
+      stripCredentials(
+        "https://a.test/p?apikey=1&TOKEN=2&access_token=3&key=4&Api_Key=5&page=2&keyword=x",
+      ),
+    ).toBe("https://a.test/p?page=2&keyword=x");
+  });
+
   it("leaves a URL without credentials byte for byte", () => {
     const url = "https://www.sensacine.com/_/showtimes/theater-E0608/d-2026-11-24/?q=a%20b";
     expect(stripCredentials(url)).toBe(url);

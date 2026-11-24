@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { addDays, cinemaDay, MADRID_TZ, madridIso, madridWallClock } from "./madrid.ts";
+import {
+  addDays,
+  cinemaDay,
+  isCalendarDay,
+  MADRID_TZ,
+  madridIso,
+  madridWallClock,
+} from "./madrid.ts";
 
 it("names a valid IANA zone", () => {
   expect(() => new Intl.DateTimeFormat("en", { timeZone: MADRID_TZ })).not.toThrow();
@@ -25,6 +32,14 @@ describe("madridIso", () => {
   it("throws for an impossible date", () => {
     expect(() => madridIso("2026-02-30", "12:00")).toThrow(RangeError);
   });
+});
+
+it("isCalendarDay takes real YYYY-MM-DD days only", () => {
+  expect(isCalendarDay("2028-02-29")).toBe(true);
+  expect(isCalendarDay("2026-02-29")).toBe(false);
+  expect(isCalendarDay("2026-04-31")).toBe(false);
+  expect(isCalendarDay("2026-4-01")).toBe(false);
+  expect(isCalendarDay("2026-04-01T00:00")).toBe(false);
 });
 
 it("addDays crosses months, years and DST changes", () => {

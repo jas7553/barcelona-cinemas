@@ -2,7 +2,7 @@
  * Which TMDb search result a listed title is. Precision first: a wrong match is worse than none,
  * since an unmatched film is still listed under its own title.
  */
-import { addDays } from "../shared/madrid.ts";
+import { addDays, isCalendarDay } from "../shared/madrid.ts";
 import { normalizeTitle } from "./reconcile.ts";
 import type { Detail, SearchResult } from "./tmdb-schema.ts";
 
@@ -21,9 +21,7 @@ export const MAX_DETAIL_PROBES = 3;
 /** `YYYY-MM-DD` from the start of a TMDb date, or `undefined`. */
 function releaseDay(value: string | undefined): string | undefined {
   const day = value?.slice(0, 10);
-  if (day === undefined || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return undefined;
-  // Rejects impossible dates like 2026-02-30, which `Date` would roll over.
-  return new Date(`${day}T00:00:00Z`).toISOString().startsWith(day) ? day : undefined;
+  return day !== undefined && isCalendarDay(day) ? day : undefined;
 }
 
 function releasedWithin(value: string | undefined, today: string, daysBefore: number): boolean {

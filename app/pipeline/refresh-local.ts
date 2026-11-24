@@ -12,6 +12,7 @@ import { parseArgs } from "node:util";
 import { CollectionError, realTimer, type ProviderReport, type Timer } from "./collect.ts";
 import { liveFetcher } from "./http.ts";
 import type { Logger, LogFields } from "./log.ts";
+import { countShowings } from "./reconcile.ts";
 import { replayFetcher } from "./recordings.ts";
 import { collectAndEnrich, type Refreshed } from "./refresh.ts";
 import { loadRegistry } from "./registry.ts";
@@ -116,7 +117,7 @@ try {
   console.log(
     `reconcile: ${stats.raw_movie_count} films in, ${stats.collection_merged_count} merged in collection, ` +
       `${stats.post_enrichment_merged_count} after enrichment: ${films.length} films, ` +
-      `${films.reduce((sum, film) => sum + film.showings.length, 0)} showings`,
+      `${countShowings(films)} showings`,
   );
   console.log(tmdbLine(refreshed));
   if (values.out !== undefined) {

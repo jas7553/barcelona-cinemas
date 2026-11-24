@@ -74,5 +74,7 @@ export interface ProviderContext extends PipelineContext {
 
 export interface Provider {
   readonly name: string;
+  /** Its URLs are secrets: logs name neither them nor their host. */
+  readonly secretUrls?: boolean;
   fetch(ctx: ProviderContext): Promise<ProviderResult>;
 }

@@ -2,9 +2,11 @@
  * Collection: every provider fetched in parallel, each retried once on a transient failure or an
  * empty result, and a provider that still has nothing standing in with its last good snapshot.
  */
-import { FetchError, HttpError, isRetryable, NotConfiguredError } from "./errors.ts";
+import { errorMessage, FetchError, HttpError, isRetryable, NotConfiguredError } from "./errors.ts";
 import type { LogFields } from "./log.ts";
+import { countShowings } from "./reconcile.ts";
 import type { Provider, ProviderContext, ProviderResult, ScrapedFilm } from "./types.ts";
+import { validateFilms } from "./validate.ts";
 
 /** A provider's last good films, as the refresh that fetched them stored them. */
 export interface ProviderSnapshot {
@@ -101,29 +103,27 @@ export interface CollectOptions {
   timer?: Timer;
 }
 
-const countShowings = (films: readonly ScrapedFilm[]): number =>
-  films.reduce((sum, film) => sum + film.showings.length, 0);
-
-function errorFields(error: unknown): Omit<Failure, "outcome"> {
+function errorFields(error: unknown, { secretUrls = false }: Provider): Omit<Failure, "outcome"> {
   const fields = {
     exception_type: error instanceof Error ? error.name : typeof error,
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessage(error, secretUrls),
   };
+  const host = (url: string) => (secretUrls ? {} : { host: new URL(url).hostname });
   if (error instanceof HttpError) {
-    return { ...fields, http_status: error.status, host: new URL(error.url).hostname };
+    return { ...fields, http_status: error.status, ...host(error.url) };
   }
-  if (error instanceof FetchError) return { ...fields, host: new URL(error.url).hostname };
+  if (error instanceof FetchError) return { ...fields, ...host(error.url) };
   return fields;
 }
 
 const BODY_HEAD_CHARS = 300;
 
 /** What tells a blocked host (a bot-challenge page) from an honestly empty programme. */
-function entryFields({ entry }: ProviderResult): LogFields {
+function entryFields({ entry }: ProviderResult, { secretUrls = false }: Provider): LogFields {
   if (entry === undefined) return {};
   return {
     http_status: entry.status,
-    host: new URL(entry.url).hostname,
+    ...(!secretUrls && { host: new URL(entry.url).hostname }),
     content_type: entry.contentType,
     body_bytes: new TextEncoder().encode(entry.text).length,
     body_head: entry.text
@@ -161,7 +161,7 @@ async function fetchWithRetry(
     try {
       result = await provider.fetch(ctx);
     } catch (error) {
-      const details = errorFields(error);
+      const details = errorFields(error, provider);
       const fields = { ...attemptFields(), ...details };
       let outcome: Failure["outcome"] | undefined;
       if (error instanceof NotConfiguredError) outcome = "not_configured";
@@ -183,7 +183,7 @@ async function fetchWithRetry(
       ...attemptFields(),
       reason: "zero_result",
       retry_delay_ms: retry.delayMs,
-      ...entryFields(result),
+      ...entryFields(result, provider),
     });
     await timer.sleep(retry.delayMs);
   }
@@ -248,11 +248,11 @@ async function collectOne(
   const base = { provider: provider.name, attempts: fetched.attempts, duration_ms };
 
   if (fetched.ok) {
-    const { films } = fetched.result;
+    const films = validateFilms(fetched.result.films, provider.name, ctx.log);
     if (films.length === 0) {
       ctx.log.warn("provider_zero_result", {
         provider: provider.name,
-        ...entryFields(fetched.result),
+        ...entryFields(fetched.result, provider),
       });
     }
     ctx.log.info("provider_collection_summary", {

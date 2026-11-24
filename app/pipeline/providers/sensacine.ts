@@ -21,7 +21,10 @@ const SENSACINE = "sensacine";
 const BASE_URL = "https://www.sensacine.com";
 const TIMEOUT_MS = 15_000;
 
-/** One page per cinema per day, over a hundred in all: enough at once to not wait on a slow one. */
+/**
+ * One page per cinema per day, over a hundred in all. A few at a time: enough to stop one slow page
+ * holding up the rest, few enough to stay a polite client.
+ */
 const PAGE_WORKERS = 4;
 
 /** Registry key to SensaCine theatre id. Cinemas not listed there have no entry. */

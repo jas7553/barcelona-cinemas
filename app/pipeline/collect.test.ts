@@ -462,6 +462,72 @@ describe("collect: snapshot fallback", () => {
 });
 
 describe("collect: the run as a whole", () => {
+  it.each([
+    ["an error status", new HttpError(403, "https://feed.private.test/s3cret/films"), "HTTP 403"],
+    [
+      "no response",
+      new FetchError("timeout", "https://feed.private.test/s3cret/films"),
+      "timed out",
+    ],
+  ])("logs %s from a source with secret URLs without its URL", async (_, error, message) => {
+    const feed = { ...provider("english_cinema_bcn", [error]), secretUrls: true };
+
+    const { providers, find } = await run([feed, healthy()]);
+
+    const logged = JSON.stringify([providers, find("provider_retry"), find("collection_failure")]);
+    expect(logged).not.toContain("feed.private.test");
+    expect(logged).not.toContain("s3cret");
+    expect(providers[0]?.failure).toMatchObject({ outcome: "retry_failed", error: message });
+  });
+
+  it("logs a zero-result entry page from a source with secret URLs without its host", async () => {
+    const empty: ProviderResult = {
+      films: [],
+      entry: {
+        url: "https://feed.private.test/s3cret/films",
+        status: 200,
+        contentType: "text/html",
+        text: "<html></html>",
+      },
+    };
+    const feed = { ...provider("english_cinema_bcn", [empty]), secretUrls: true };
+
+    const { find } = await run([feed, healthy()]);
+
+    const logged = JSON.stringify([find("provider_retry"), find("provider_zero_result")]);
+    expect(find("provider_zero_result")).toEqual([
+      expect.objectContaining({ provider: "english_cinema_bcn", http_status: 200 }),
+    ]);
+    expect(logged).not.toContain("feed.private.test");
+  });
+
+  it("validates each provider's films before they are used or stored", async () => {
+    const bad: ScrapedFilm = {
+      title: "Hamnet",
+      imdb_id: "imdb-1",
+      showings: [
+        {
+          cinema: "Verdi",
+          starts_at: "2026-03-28T18:00+01:00",
+          language: "vo",
+          booking_url: "null",
+        },
+      ],
+    };
+    const want = { title: "Hamnet", showings: [film("Hamnet").showings[0]] };
+
+    const { films, snapshots: stored, find } = await run([provider("sensacine", [[bad]])]);
+
+    expect(films).toEqual([want]);
+    expect(stored["sensacine"]?.films).toEqual([want]);
+    expect(find("provider_output_discarded")).toEqual([
+      expect.objectContaining({
+        provider: "sensacine",
+        discarded: { "booking_url: not an http(s) URL": 1, "imdb_id: not an IMDb title id": 1 },
+      }),
+    ]);
+  });
+
   it("keeps provider order whichever answers first", async () => {
     let release: (() => void) | undefined;
     const gate = new Promise<void>((resolve) => {

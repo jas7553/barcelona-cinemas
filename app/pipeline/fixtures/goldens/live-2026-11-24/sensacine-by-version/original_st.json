@@ -1,0 +1,300 @@
+[
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222734",
+        "cinema": "Verdi",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "16:00"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222841",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "16:00"
+      }
+    ],
+    "synopsis": null,
+    "title": "Diarios de Ozu",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222713",
+        "cinema": "Verdi",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "18:20"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222714",
+        "cinema": "Verdi",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "21:20"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222788",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "18:20"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222789",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "21:20"
+      }
+    ],
+    "synopsis": null,
+    "title": "Los Juegos del Hambre: Amanecer en la cosecha",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222729",
+        "cinema": "Verdi",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "22:30"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222784",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "22:30"
+      }
+    ],
+    "synopsis": null,
+    "title": "Adolescencia, sexo y muerte en Campamento Miasma",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222700",
+        "cinema": "Verdi",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "16:00"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222701",
+        "cinema": "Verdi",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "18:10"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222731",
+        "cinema": "Verdi",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "20:25"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222732",
+        "cinema": "Verdi",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "22:35"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222830",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "11:30"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222739",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "16:00"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222740",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "18:10"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222786",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "20:25"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222785",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "22:35"
+      }
+    ],
+    "synopsis": null,
+    "title": "Wild Horse Nine",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222843",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "20:30"
+      }
+    ],
+    "synopsis": null,
+    "title": "Fatherland",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222829",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "11:30"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "audio_lang": "en",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222812",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "18:15"
+      }
+    ],
+    "synopsis": null,
+    "title": "Canaletto y el arte de Venecia",
+    "tmdb_id": null,
+    "year": null
+  }
+]

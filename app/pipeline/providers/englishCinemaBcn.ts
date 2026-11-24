@@ -3,7 +3,7 @@
  * chips by cinema. Every showing it lists is in English, so there is no legacy filter to split off.
  */
 import { load } from "cheerio";
-import { madridWallClock } from "../../shared/madrid.ts";
+import { addDays, isCalendarDay, madridWallClock } from "../../shared/madrid.ts";
 import { NotConfiguredError } from "../errors.ts";
 import { getOk } from "../http.ts";
 import { normalizePremiumFormat, scrapedFilm } from "../normalize.ts";
@@ -24,14 +24,11 @@ const MONTHS: ReadonlyMap<string, number> = new Map(
 /** A listing more than this many days in the past is next year's. */
 const ROLLOVER_DAYS = 8;
 
-function validDate(year: number, month: number, day: number): Date | undefined {
-  const date = new Date(Date.UTC(year, month - 1, day));
-  const real =
-    date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
-  return real ? date : undefined;
+function calendarDay(year: number, month: number, day: number): string | undefined {
+  const pad = (value: number): string => String(value).padStart(2, "0");
+  const date = `${year}-${pad(month)}-${pad(day)}`;
+  return isCalendarDay(date) ? date : undefined;
 }
-
-const iso = (date: Date): string => date.toISOString().slice(0, 10);
 
 /**
  * A chip's `data-showtime-label`, e.g. "Sun 13 Sept 20:45", as Madrid `date` and `time`. The year
@@ -51,12 +48,11 @@ export function parseShowtimeLabel(
   if (month === undefined || !/^\d+$/.test(dayText)) return undefined;
   const day = Number(dayText);
   const year = Number(today.slice(0, 4));
-  const todayDate = new Date(`${today}T00:00:00Z`);
-  const candidate = validDate(year, month, day);
+  const candidate = calendarDay(year, month, day);
   if (candidate === undefined) return undefined;
-  const daysPast = (todayDate.getTime() - candidate.getTime()) / 86_400_000;
-  const resolved = daysPast > ROLLOVER_DAYS ? validDate(year + 1, month, day) : candidate;
-  return resolved === undefined ? undefined : { date: iso(resolved), time };
+  const resolved =
+    candidate < addDays(today, -ROLLOVER_DAYS) ? calendarDay(year + 1, month, day) : candidate;
+  return resolved === undefined ? undefined : { date: resolved, time };
 }
 
 export interface EnglishCinemaBcnOptions {
@@ -67,6 +63,7 @@ export interface EnglishCinemaBcnOptions {
 export function englishCinemaBcnProvider(options: EnglishCinemaBcnOptions): Provider {
   return {
     name: ENGLISH_CINEMA_BCN,
+    secretUrls: true,
     async fetch({ fetcher, now, registry, log }) {
       if (options.feedUrl === undefined)
         throw new NotConfiguredError("LISTINGS_FEED_URL is not set");

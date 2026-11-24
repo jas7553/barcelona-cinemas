@@ -34,11 +34,21 @@ const Shop = z.looseObject({
   events: z.array(z.unknown()).optional().catch(undefined),
 });
 
+/**
+ * A language label: absent is blank, and any value that isn't a string (`null` too) is written out,
+ * so it reads as a language that isn't English.
+ */
+const languageLabel = z
+  .unknown()
+  .transform((value) =>
+    value === undefined ? "" : typeof value === "string" ? value : JSON.stringify(value),
+  );
+
 const Event = z.looseObject({
   name: text,
   imdbid: text,
-  language: text,
-  subtitles_lang: text,
+  language: languageLabel,
+  subtitles_lang: languageLabel,
   performances: z.array(z.unknown()).optional().catch(undefined),
 });
 
@@ -79,8 +89,8 @@ function bookingTemplate(
 
 /**
  * Fills the three `%s` left to right by replacement, not formatting: a pre-encoded "%20" elsewhere
- * in the template must not break the fetch. Each value is substituted into the string so far, as in
- * the Python port, so a `%s` inside a value would take the next one's place.
+ * in the template must not break the fetch. Each value is substituted into the string so far, so a
+ * `%s` inside a value would take the next one's place.
  */
 export function fillTemplate(template: string, values: readonly string[]): string {
   return values.reduce((url, value) => url.replace("%s", () => value), template);
@@ -137,7 +147,7 @@ export function parseShops(
     for (const rawEvent of shop.events ?? []) {
       const event = Event.safeParse(rawEvent);
       if (!event.success) continue;
-      const { name, performances, language = "", subtitles_lang: subtitles = "" } = event.data;
+      const { name, performances, language, subtitles_lang: subtitles } = event.data;
       if (!name?.trim() || !performances || performances.length === 0) continue;
 
       const audio_lang = normalizeAudioLang(language);
@@ -184,6 +194,7 @@ export interface SecondaryOptions {
 export function secondaryProvider(options: SecondaryOptions): Provider {
   return {
     name: SECONDARY,
+    secretUrls: true,
     async fetch({ fetcher, registry, log }) {
       if (options.listingsUrl === undefined) {
         throw new NotConfiguredError("SECONDARY_LISTINGS_URL is not set");

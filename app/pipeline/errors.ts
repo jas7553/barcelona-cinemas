@@ -26,6 +26,18 @@ export class FetchError extends Error {
   }
 }
 
+/**
+ * `error`'s message. With `hideUrl`, an `HttpError` or `FetchError` says what happened without the
+ * URL it names: some sources' URLs are secrets.
+ */
+export function errorMessage(error: unknown, hideUrl = false): string {
+  if (hideUrl && error instanceof HttpError) return `HTTP ${error.status}`;
+  if (hideUrl && error instanceof FetchError) {
+    return error.kind === "timeout" ? "timed out" : "network error";
+  }
+  return error instanceof Error ? error.message : String(error);
+}
+
 /** A provider's entry page answered but too many of the requests behind it did not. */
 export class PartialFetchError extends Error {
   override readonly name = "PartialFetchError";

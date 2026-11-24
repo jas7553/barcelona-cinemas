@@ -1,7 +1,8 @@
 /** Every live source the pipeline reads, and `npm run record`'s run through them. */
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
+import { errorMessage } from "./errors.ts";
 import { liveFetcher, type Fetcher } from "./http.ts";
 import type { Logger } from "./log.ts";
 import { englishCinemaBcnProvider } from "./providers/englishCinemaBcn.ts";
@@ -10,7 +11,7 @@ import { sensacineProvider, type SensacineOptions } from "./providers/sensacine.
 import { verdiProvider, type VerdiOptions } from "./providers/verdi.ts";
 import { recordingFetcher } from "./recordings.ts";
 import type { CinemaRegistry } from "./registry.ts";
-import { enrich } from "./tmdb.ts";
+import { enrichIfKeyed } from "./tmdb.ts";
 import type { PipelineContext, Provider, ScrapedFilm } from "./types.ts";
 
 /** Values kept out of the repo. Absent when unset: each source decides whether it can run without. */
@@ -57,7 +58,7 @@ export interface LiveSources {
   ) => Promise<unknown>;
 }
 
-/** Providers and enrichment register here as they're ported. */
+/** Every provider, and enrichment. */
 export const liveSources: LiveSources = {
   providers: [
     (config) => englishCinemaBcnProvider({ feedUrl: config.listingsFeedUrl }),
@@ -65,14 +66,20 @@ export const liveSources: LiveSources = {
     (config) => verdiProvider(config.verdi),
     (config) => sensacineProvider(config.sensacine),
   ],
-  enrich: async (films, ctx, { tmdbApiKey }) => {
-    if (tmdbApiKey === undefined) {
-      ctx.log.warn("tmdb_enrichment_skipped", { reason: "no TMDB_API_KEY" });
-      return films;
-    }
-    return enrich(films, ctx, { apiKey: tmdbApiKey });
-  },
+  enrich: async (films, ctx, { tmdbApiKey }) =>
+    (await enrichIfKeyed(films, ctx, { apiKey: tmdbApiKey })).films,
 };
+
+/** What a recording stores in place of each secret URL. */
+const STAND_INS: Readonly<Record<"listingsFeedUrl" | "secondaryListingsUrl", string>> = {
+  listingsFeedUrl: "https://listings-feed.example.test/feed",
+  secondaryListingsUrl: "https://secondary-listings.example.test/listings",
+};
+
+const SECRET_URLS: readonly (keyof typeof STAND_INS)[] = [
+  "listingsFeedUrl",
+  "secondaryListingsUrl",
+];
 
 export interface RecordOptions {
   outDir: string;
@@ -83,29 +90,37 @@ export interface RecordOptions {
 }
 
 /**
- * Runs `sources` from a cold start through a recorder and writes the recording to `outDir`. A
- * source that fails is logged and the rest still run; returns the names of those that failed.
+ * Runs `sources` from a cold start through a recorder and writes the recording to `outDir`, with a
+ * `case.json` that replays it: the instant, and the secret URLs as the stand-ins stored in their
+ * place. A source that fails is logged and the rest still run; returns the names of those that
+ * failed.
  */
 export async function recordSources(
   sources: LiveSources,
   config: SourceConfig,
   { outDir, now, registry, log, fetcher = liveFetcher() }: RecordOptions,
 ): Promise<string[]> {
-  const recorder = recordingFetcher(fetcher);
+  const secrets = SECRET_URLS.flatMap((key) => {
+    const secret = config[key];
+    return secret === undefined ? [] : [{ key, secret, standIn: STAND_INS[key] }];
+  });
+  const recorder = recordingFetcher(fetcher, secrets);
   const ctx: PipelineContext = { fetcher: recorder.fetcher, now, registry, log };
   const failed: string[] = [];
   const films: ScrapedFilm[] = [];
   for (const build of sources.providers) {
     let name = "(unbuilt provider)";
+    let secretUrls = false;
     try {
       const provider = build(config);
       name = provider.name;
+      secretUrls = provider.secretUrls ?? false;
       const result = await provider.fetch({ ...ctx, previousFilms: [] });
       films.push(...result.films);
       log.info("record_provider", { provider: name, film_count: result.films.length });
     } catch (error) {
       failed.push(name);
-      log.error("record_provider_failed", { provider: name, error: String(error) });
+      log.error("record_provider_failed", { provider: name, error: errorText(error, secretUrls) });
     }
   }
   if (sources.enrich) {
@@ -113,11 +128,23 @@ export async function recordSources(
       await sources.enrich(films, ctx, config);
     } catch (error) {
       failed.push("enrich");
-      log.error("record_enrich_failed", { error: String(error) });
+      log.error("record_enrich_failed", { error: errorText(error, true) });
     }
   }
   recorder.save(outDir);
+  const replayConfig = Object.fromEntries(
+    secrets.map(({ key, secret }) => [key, recorder.stored(secret)]),
+  );
+  writeFileSync(
+    join(outDir, "case.json"),
+    `${JSON.stringify({ now: now.toISOString(), config: replayConfig }, null, 2)}\n`,
+  );
   return failed;
+}
+
+/** As `String(error)` puts it, without the URL of a source whose URLs are secret. */
+function errorText(error: unknown, hideUrl: boolean): string {
+  return error instanceof Error ? `${error.name}: ${errorMessage(error, hideUrl)}` : String(error);
 }
 
 const ReplayCase = z.looseObject({

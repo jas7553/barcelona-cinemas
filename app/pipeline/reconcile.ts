@@ -87,7 +87,7 @@ export function reconcile<F extends ScrapedFilm>(
   return merged;
 }
 
-function countShowings(films: readonly ScrapedFilm[]): number {
+export function countShowings(films: readonly ScrapedFilm[]): number {
   return films.reduce((sum, film) => sum + film.showings.length, 0);
 }
 

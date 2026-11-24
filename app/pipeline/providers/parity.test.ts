@@ -9,11 +9,12 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { HttpError, PartialFetchError } from "../errors.ts";
-import type { Fetcher } from "../http.ts";
+import type { Fetcher, FetchResponse } from "../http.ts";
 import type { Logger } from "../log.ts";
 import { replayFetcher, UnrecordedRequestError } from "../recordings.ts";
 import { parseRegistry } from "../registry.ts";
 import { reconcile } from "../reconcile.ts";
+import { readReplayCase, type SourceConfig } from "../sources.ts";
 import { canonicalPython, toCanonicalPython } from "../testing/python.ts";
 import type { Provider, ScrapedFilm } from "../types.ts";
 import { englishCinemaBcnProvider } from "./englishCinemaBcn.ts";
@@ -25,19 +26,8 @@ import { verdiProvider } from "./verdi.ts";
 const FIXTURES = fileURLToPath(new URL("../fixtures/", import.meta.url));
 const registry = parseRegistry(JSON.parse(readFileSync(join(FIXTURES, "cinemas.json"), "utf8")));
 
-const Case = z.looseObject({
-  now: z.string(),
-  config: z
-    .looseObject({
-      listingsFeedUrl: z.string().optional(),
-      secondaryListingsUrl: z.string().optional(),
-    })
-    .optional(),
-  sensacine: z.object({ ids: z.record(z.string(), z.string()), daysAhead: z.number() }).optional(),
-  verdi: z.object({ slugs: z.array(z.string()) }).optional(),
-  salaMap: z.record(z.string(), z.string()).optional(),
-});
-type Case = z.infer<typeof Case>;
+/** The cached sala map a Verdi case seeds the provider with; the rest of `case.json` is `readReplayCase`'s. */
+const SalaMap = z.looseObject({ salaMap: z.record(z.string(), z.string()).optional() });
 
 const Golden = z.object({
   result: z.array(z.unknown()).nullable(),
@@ -53,16 +43,16 @@ type Kind = (typeof PROVIDER_KINDS)[number];
 /** Recordings other modules' parity tests own. */
 const OTHER_KINDS = ["reconcile", "tmdb", "tmdb-rank"];
 
-function build(kind: Kind, spec: Case): Provider {
+function build(kind: Kind, config: SourceConfig): Provider {
   switch (kind) {
     case "english_cinema_bcn":
-      return englishCinemaBcnProvider({ feedUrl: spec.config?.listingsFeedUrl });
+      return englishCinemaBcnProvider({ feedUrl: config.listingsFeedUrl });
     case "secondary":
-      return secondaryProvider({ listingsUrl: spec.config?.secondaryListingsUrl });
+      return secondaryProvider({ listingsUrl: config.secondaryListingsUrl });
     case "sensacine":
-      return sensacineProvider(spec.sensacine);
+      return sensacineProvider(config.sensacine);
     case "verdi":
-      return verdiProvider(spec.verdi);
+      return verdiProvider(config.verdi);
   }
 }
 
@@ -96,8 +86,13 @@ interface Run {
   events: unknown[];
 }
 
-async function run(kind: Kind, dir: string): Promise<Run> {
-  const spec = Case.parse(readJson(join(dir, "case.json")));
+async function run(
+  kind: Kind,
+  dir: string,
+  rewrite: (response: FetchResponse) => FetchResponse = (response) => response,
+): Promise<Run> {
+  const { now, config } = readReplayCase(dir);
+  const { salaMap = {} } = SalaMap.parse(readJson(join(dir, "case.json")));
   const replay = replayFetcher(dir);
   const requests: string[] = [];
   const gaps: string[] = [];
@@ -105,7 +100,7 @@ async function run(kind: Kind, dir: string): Promise<Run> {
     async get(url, options) {
       requests.push(url);
       try {
-        return await replay.get(url, options);
+        return rewrite(await replay.get(url, options));
       } catch (error) {
         if (error instanceof UnrecordedRequestError) gaps.push(url);
         throw error;
@@ -119,17 +114,58 @@ async function run(kind: Kind, dir: string): Promise<Run> {
   };
   const log: Logger = { info: record, warn: record, error: record };
   try {
-    const result = await build(kind, spec).fetch({
+    const result = await build(kind, config).fetch({
       fetcher,
-      now: new Date(spec.now),
+      now,
       registry,
       log,
-      previousFilms: previousFilmsFor(spec.salaMap ?? {}),
+      previousFilms: previousFilmsFor(salaMap),
     });
     return { films: result.films, error: undefined, requests, gaps, events };
   } catch (error) {
     return { films: undefined, error, requests, gaps, events };
   }
+}
+
+const SENSACINE_PAGES = "https://www.sensacine.com/_/showtimes/";
+
+const SensacinePage = z.looseObject({ results: z.array(z.unknown()) });
+const ByVersion = z.looseObject({ showtimes: z.record(z.string(), z.unknown()) });
+
+/** The version keys with at least one showtime on any of the recording's SensaCine pages. */
+function sensacineVersions(dir: string): string[] {
+  const manifest = z
+    .array(z.looseObject({ url: z.string(), file: z.string() }))
+    .parse(readJson(join(dir, "manifest.json")));
+  const versions = new Set<string>();
+  for (const { url, file } of manifest) {
+    if (!url.startsWith(SENSACINE_PAGES)) continue;
+    for (const result of SensacinePage.safeParse(readJson(join(dir, file))).data?.results ?? []) {
+      for (const [key, value] of Object.entries(
+        ByVersion.safeParse(result).data?.showtimes ?? {},
+      )) {
+        if (Array.isArray(value) && value.length > 0) versions.add(key);
+      }
+    }
+  }
+  return [...versions].sort();
+}
+
+/** A SensaCine page with each film's `version` showtimes filed under `original` and no others. */
+function versionAsOriginal(response: FetchResponse, version: string): FetchResponse {
+  if (!response.url.startsWith(SENSACINE_PAGES)) return response;
+  const page = SensacinePage.safeParse(JSON.parse(response.text));
+  if (!page.success) return response;
+  const results = page.data.results.map((result) => {
+    const entry = ByVersion.safeParse(result);
+    if (!entry.success) return result;
+    const { showtimes } = entry.data;
+    return {
+      ...entry.data,
+      showtimes: Object.hasOwn(showtimes, version) ? { original: showtimes[version] } : {},
+    };
+  });
+  return { ...response, text: JSON.stringify({ ...page.data, results }) };
 }
 
 const canonical = (films: readonly ScrapedFilm[]): unknown[] => films.map(toCanonicalPython);
@@ -226,6 +262,28 @@ describe("parity with Python: the live recording", () => {
       const [verdi, sensacine] = await Promise.all([run("verdi", dir), run("sensacine", dir)]);
       const films = reconcile([...(verdi.films ?? []), ...(sensacine.films ?? [])]);
       expect(canonical(films)).toEqual(canonicalGolden(golden("reconciled")));
+    });
+
+    // The recording's showtimes are filed under other version keys, so each key in turn is
+    // replayed as `original` to put real payloads (templates, seat links, tags) through both.
+    const byVersion = join(FIXTURES, "goldens", set, "sensacine-by-version");
+    const versions = readdirSync(byVersion)
+      .map((file) => file.replace(/\.json$/, ""))
+      .sort();
+
+    it("has a by-version golden for every version key with showtimes", () => {
+      expect(versions).toEqual(sensacineVersions(dir));
+    });
+
+    it.each(versions)("sensacine, the %s showtimes read as original", async (version) => {
+      const outcome = await run("sensacine", dir, (response) =>
+        versionAsOriginal(response, version),
+      );
+      expect(outcome.error).toBeUndefined();
+      expect(outcome.gaps).toEqual([]);
+      const want = canonicalGolden(readJson(join(byVersion, `${version}.json`)));
+      expect(want).not.toEqual([]);
+      expect(canonical(outcome.films ?? [])).toEqual(want);
     });
   });
 });

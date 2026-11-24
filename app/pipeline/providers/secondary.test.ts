@@ -69,6 +69,12 @@ describe("parseShops", () => {
     expect(films[2]?.showings[0]?.audio_lang).toBe("other");
   });
 
+  it("reads a language given as null as one that isn't English", () => {
+    const [film] = parse({ 1: aribau([{ ...event("", ""), language: null }]) });
+    expect(film?.showings[0]?.audio_lang).toBe("other");
+    expect(legacyEnglishOnly(film ? [film] : [])).toEqual([]);
+  });
+
   it("books by the template only when it has three slots and the shop has a code", () => {
     const url = (shop: object) =>
       parse({ 1: aribau([event("English", "")], shop) })[0]?.showings[0]?.booking_url;

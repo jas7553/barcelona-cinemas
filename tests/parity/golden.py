@@ -26,6 +26,8 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import requests
+
 if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
@@ -112,9 +114,18 @@ def _make_provider(name: str, case: dict[str, Any]) -> Any:
     ]()
 
 
-def fetch_provider(name: str, directory: Path, case: dict[str, Any], cinemas: dict[str, Any]) -> dict[str, Any]:
-    """One provider's fetch over one recording: its movies or the error it raised, the requests made, the events."""
-    recording = Recording(directory)
+def fetch_provider(
+    name: str,
+    directory: Path,
+    case: dict[str, Any],
+    cinemas: dict[str, Any],
+    recording: Recording | None = None,
+) -> dict[str, Any]:
+    """
+    One provider's fetch over one recording (`directory`'s, unless `recording`
+    serves it): its movies or the error it raised, the requests made, the events.
+    """
+    recording = recording or Recording(directory)
     events = EventLog()
     movies: list[Any] | None = None
     error: dict[str, str] | None = None
@@ -222,6 +233,51 @@ def _inline_goldens(cinemas: dict[str, Any]) -> Iterator[tuple[str, Any]]:
     yield "inline/tmdb-matches.json", tmdb_matches
 
 
+SENSACINE_PAGES = "https://www.sensacine.com/_/showtimes/"
+
+
+def sensacine_versions(directory: Path) -> list[str]:
+    """The version keys with at least one showtime on any of the recording's SensaCine pages."""
+    versions: set[str] = set()
+    for entry in read_json(directory / "manifest.json"):
+        if not entry["url"].startswith(SENSACINE_PAGES):
+            continue
+        for result in read_json(directory / entry["file"]).get("results") or []:
+            versions.update(key for key, showtimes in (result.get("showtimes") or {}).items() if showtimes)
+    return sorted(versions)
+
+
+def version_as_original(payload: Any, version: str) -> Any:
+    """A SensaCine page with each film's `version` showtimes filed under `original` and no others."""
+    if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
+        return payload
+    results = []
+    for result in payload["results"]:
+        if isinstance(result, dict) and isinstance(result.get("showtimes"), dict):
+            showtimes = result["showtimes"]
+            result = {**result, "showtimes": {"original": showtimes[version]} if version in showtimes else {}}
+        results.append(result)
+    return {**payload, "results": results}
+
+
+class VersionAsOriginal(Recording):
+    """
+    A recording whose SensaCine pages read as if `version` were `original`, the
+    only key the provider reads, so every version's showtimes go through it.
+    """
+
+    def __init__(self, directory: Path, version: str) -> None:
+        super().__init__(directory)
+        self.version = version
+
+    def _respond(self, url: str) -> requests.Response:
+        response = super()._respond(url)
+        if url.startswith(SENSACINE_PAGES):
+            payload = version_as_original(json.loads(response.content), self.version)
+            response._content = json.dumps(payload).encode()
+        return response
+
+
 def _live_goldens(cinemas: dict[str, Any]) -> Iterator[tuple[str, Any]]:
     for set_dir in sorted(RECORDED.glob("live-*")):
         case = read_json(set_dir / "case.json")
@@ -236,6 +292,11 @@ def _live_goldens(cinemas: dict[str, Any]) -> Iterator[tuple[str, Any]]:
             yield f"{name}/{provider}.json", fetched["result"]
         collected, _ = reconcile_movies([*per_provider["verdi"], *per_provider["sensacine"]], "collection")
         yield f"{name}/reconciled.json", collected
+        for version in sensacine_versions(set_dir):
+            fetched = fetch_provider("sensacine", set_dir, case, cinemas, VersionAsOriginal(set_dir, version))
+            if fetched["error"]:
+                raise RuntimeError(f"{name}: sensacine as {version} failed: {fetched['error']}")
+            yield f"{name}/sensacine-by-version/{version}.json", fetched["result"]
 
 
 def generate(out_root: Path) -> None:

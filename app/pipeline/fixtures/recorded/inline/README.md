@@ -32,7 +32,9 @@ Live sets (`../live-<date>/`, from `tests/parity/record.py`) use the same manife
 format; their `case.json` has `now`, `sensacine.{ids,daysAhead}` and `verdi.slugs`
 (the film pages the provider is narrowed to; the cartellera body is stored whole).
 Their goldens are plain arrays: `verdi.json`, `sensacine.json`, `reconciled.json`
-(`reconcile(verdi + sensacine, stage="collection")`).
+(`reconcile(verdi + sensacine, stage="collection")`), and `sensacine-by-version/<key>.json`:
+the SensaCine fetch with each page's `<key>` showtimes filed under `original` and the other
+versions removed, one file per version key that has showtimes.
 
 ## Cases and the Python tests they come from
 

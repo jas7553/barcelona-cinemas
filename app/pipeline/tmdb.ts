@@ -252,7 +252,7 @@ async function lookUp(
   return { film: enriched, enriched: true, failed: false };
 }
 
-/** An offset-less instant is UTC, as the Python pipeline wrote them. */
+/** An offset-less instant is read as UTC. */
 function parseInstant(value: string): number {
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
   const zoned = /(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(value);
@@ -359,4 +359,17 @@ export async function enrich(
 
   ctx.log.info("tmdb_enrichment_summary", { movie_count: films.length, ...stats });
   return { films: enriched, stats };
+}
+
+/** `enrich` when there's an API key; without one, `films` as they are, and a warning. */
+export async function enrichIfKeyed(
+  films: readonly ScrapedFilm[],
+  ctx: PipelineContext,
+  { apiKey, ...options }: Omit<EnrichOptions, "apiKey"> & { apiKey: string | undefined },
+): Promise<{ films: readonly EnrichedFilm[]; stats?: EnrichmentStats }> {
+  if (apiKey === undefined) {
+    ctx.log.warn("tmdb_enrichment_skipped", { reason: "no TMDB_API_KEY" });
+    return { films };
+  }
+  return enrich(films, ctx, { ...options, apiKey });
 }

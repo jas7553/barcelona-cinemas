@@ -19,14 +19,14 @@ import {
   type RetryPolicy,
   type Timer,
 } from "./collect.ts";
-import { reconcile } from "./reconcile.ts";
+import { countShowings, reconcile } from "./reconcile.ts";
 import {
-  enrich,
+  enrichIfKeyed,
   type EnrichedFilm,
   type EnrichmentStats,
   type PreviousEnrichment,
 } from "./tmdb.ts";
-import type { PipelineContext, Provider, ScrapedFilm } from "./types.ts";
+import type { PipelineContext, Provider } from "./types.ts";
 
 export interface RefreshInput {
   providers: readonly Provider[];
@@ -65,9 +65,6 @@ export interface Refreshed {
   enriched: PreviousEnrichment[];
 }
 
-const countShowings = (films: readonly ScrapedFilm[]): number =>
-  films.reduce((sum, film) => sum + film.showings.length, 0);
-
 /** Throws `CollectionError` when no provider gave fresh films; see `collect`. */
 export async function collectAndEnrich(
   ctx: PipelineContext,
@@ -100,16 +97,10 @@ export async function collectAndEnrich(
     showtime_count: countShowings(collected),
   });
 
-  let enriched: EnrichedFilm[] = collected;
-  let enrichment: EnrichmentStats | undefined;
-  if (tmdbApiKey === undefined) {
-    ctx.log.warn("tmdb_enrichment_skipped", { reason: "no TMDb API key" });
-  } else {
-    ({ films: enriched, stats: enrichment } = await enrich(collected, ctx, {
-      apiKey: tmdbApiKey,
-      previous: previousEnrichment,
-    }));
-  }
+  const { films: enriched, stats: enrichment } = await enrichIfKeyed(collected, ctx, {
+    apiKey: tmdbApiKey,
+    previous: previousEnrichment,
+  });
   const films = reconcile(enriched, { stage: "post_enrichment", log: ctx.log });
 
   return {

@@ -1,18 +1,25 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { HttpError } from "./errors.ts";
 import { getOk } from "./http.ts";
 import type { Logger } from "./log.ts";
 import { replayFetcher } from "./recordings.ts";
 import { parseRegistry } from "./registry.ts";
-import { recordSources, sourceConfigFromEnv, type LiveSources } from "./sources.ts";
+import {
+  readReplayCase,
+  recordSources,
+  sourceConfigFromEnv,
+  type LiveSources,
+  type SourceConfig,
+} from "./sources.ts";
 import type { Provider, ProviderContext, ProviderResult } from "./types.ts";
 
 describe("sourceConfigFromEnv", () => {
-  it("reads the Python pipeline's variable names and lists the unset ones", () => {
+  it("reads each source's variable and lists the unset ones", () => {
     expect(
       sourceConfigFromEnv({
         LISTINGS_FEED_URL: " https://feed.test/ ",
@@ -33,6 +40,12 @@ describe("recordSources", () => {
   beforeAll(async () => {
     server = createServer((req, res) => {
       res.setHeader("content-type", "text/html; charset=utf-8");
+      if (req.url === SECRET_PATH) {
+        // The feed links its films absolutely and root-relatively, and names itself.
+        res.end(`<link rel="canonical" href="${base}${SECRET_PATH}">
+          <a href="${base}/m/1">1</a> <a href="/m/2">2</a>`);
+        return;
+      }
       res.end(`<h1>${req.url ?? ""}</h1>`);
     });
     await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
@@ -93,6 +106,74 @@ describe("recordSources", () => {
     await expect(
       replayFetcher(outDir).get(`${base}/tmdb?query=<h1>/film/1</h1>`, { timeoutMs: 1 }),
     ).resolves.toMatchObject({ status: 200 });
+  });
+
+  const SECRET_PATH = "/s3cret-feed-token/films";
+
+  /** Reads the feed at the configured URL, then every film page it links to. */
+  const feedProvider = (config: SourceConfig): Provider => ({
+    name: "feed",
+    secretUrls: true,
+    async fetch(ctx) {
+      const feed = await getOk(ctx.fetcher, config.listingsFeedUrl ?? "", { timeoutMs: 2000 });
+      const films = [];
+      for (const [, href = ""] of feed.text.matchAll(/<a href="([^"]+)"/g)) {
+        const page = await getOk(ctx.fetcher, new URL(href, feed.url).href, { timeoutMs: 2000 });
+        films.push({ title: page.text, showings: [] });
+      }
+      return { films };
+    },
+  });
+
+  it("stores secret URLs as stand-ins, and replays with them", async () => {
+    const outDir = mkdtempSync(join(tmpdir(), "record-"));
+    const secret = `${base}${SECRET_PATH}`;
+
+    const failed = await recordSources(
+      { providers: [feedProvider] },
+      { listingsFeedUrl: secret },
+      { outDir, now, registry, log: log() },
+    );
+
+    expect(failed).toEqual([]);
+    const host = new URL(base).host;
+    for (const file of readdirSync(outDir)) {
+      const written = `${file}\n${readFileSync(join(outDir, file), "utf8")}`;
+      expect(written).not.toContain(secret);
+      expect(written).not.toContain("s3cret-feed-token");
+      expect(written).not.toContain(host);
+    }
+    const { config } = readReplayCase(outDir);
+    expect(config.listingsFeedUrl).toMatch(/^https:\/\/listings-feed\.example\.test\//);
+    const replayed = await feedProvider(config).fetch({
+      fetcher: replayFetcher(outDir),
+      now,
+      registry,
+      log: log(),
+      previousFilms: [],
+    });
+    expect(replayed.films.map(({ title }) => title)).toEqual(["<h1>/m/1</h1>", "<h1>/m/2</h1>"]);
+  });
+
+  it("logs a secret source's failure without its URL", async () => {
+    const logger = log();
+    const secret = "https://feed.private.test/s3cret-feed-token/films";
+    const failing: Provider = {
+      name: "feed",
+      secretUrls: true,
+      fetch: () => Promise.reject(new HttpError(403, secret)),
+    };
+
+    await recordSources(
+      { providers: [() => failing] },
+      { listingsFeedUrl: secret },
+      { outDir: mkdtempSync(join(tmpdir(), "record-")), now, registry, log: logger },
+    );
+
+    expect(logger.error).toHaveBeenCalledWith("record_provider_failed", {
+      provider: "feed",
+      error: "HttpError: HTTP 403",
+    });
   });
 
   it("records the rest when a source fails", async () => {
