@@ -1,0 +1,163 @@
+[
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/adolescencia-sexo-y-muerte-en-campamento-miasma",
+    "status": 200,
+    "contentType": "text/html; charset=UTF-8",
+    "file": "verdi/adolescencia-sexo-y-muerte-en-campamento-miasma.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/canaletto-y-el-arte-de-venecia",
+    "status": 200,
+    "contentType": "text/html; charset=UTF-8",
+    "file": "verdi/canaletto-y-el-arte-de-venecia.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/cartellera",
+    "status": 200,
+    "contentType": "text/html; charset=UTF-8",
+    "file": "verdi/cartellera.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/diarios-de-ozu",
+    "status": 200,
+    "contentType": "text/html; charset=UTF-8",
+    "file": "verdi/diarios-de-ozu.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/f-espectador-cartas-de-estado",
+    "status": 200,
+    "contentType": "text/html; charset=UTF-8",
+    "file": "verdi/f-espectador-cartas-de-estado.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/fatherland",
+    "status": 200,
+    "contentType": "text/html; charset=UTF-8",
+    "file": "verdi/fatherland.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/222803/",
+    "status": 200,
+    "contentType": "text/html; charset=ISO-8859-1",
+    "file": "admit-one/seats-222803.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/222808/",
+    "status": 200,
+    "contentType": "text/html; charset=ISO-8859-1",
+    "file": "admit-one/seats-222808.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/222812/",
+    "status": 200,
+    "contentType": "text/html; charset=ISO-8859-1",
+    "file": "admit-one/seats-222812.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/222829/",
+    "status": 200,
+    "contentType": "text/html; charset=ISO-8859-1",
+    "file": "admit-one/seats-222829.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/222843/",
+    "status": 200,
+    "contentType": "text/html; charset=ISO-8859-1",
+    "file": "admit-one/seats-222843.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/222846/",
+    "status": 200,
+    "contentType": "text/html; charset=ISO-8859-1",
+    "file": "admit-one/seats-222846.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/222847/",
+    "status": 200,
+    "contentType": "text/html; charset=ISO-8859-1",
+    "file": "admit-one/seats-222847.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0091/d-2026-11-24/",
+    "status": 200,
+    "contentType": "application/json",
+    "file": "sensacine/theater-E0091-d-2026-11-24.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0091/d-2026-11-25/",
+    "status": 200,
+    "contentType": "application/json",
+    "file": "sensacine/theater-E0091-d-2026-11-25.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0136/d-2026-11-24/",
+    "status": 200,
+    "contentType": "application/json",
+    "file": "sensacine/theater-E0136-d-2026-11-24.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0136/d-2026-11-25/",
+    "status": 200,
+    "contentType": "application/json",
+    "file": "sensacine/theater-E0136-d-2026-11-25.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0608/d-2026-11-24/",
+    "status": 200,
+    "contentType": "application/json",
+    "file": "sensacine/theater-E0608-d-2026-11-24.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0608/d-2026-11-25/",
+    "status": 200,
+    "contentType": "application/json",
+    "file": "sensacine/theater-E0608-d-2026-11-25.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0682/d-2026-11-24/",
+    "status": 200,
+    "contentType": "application/json",
+    "file": "sensacine/theater-E0682-d-2026-11-24.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0682/d-2026-11-25/",
+    "status": 200,
+    "contentType": "application/json",
+    "file": "sensacine/theater-E0682-d-2026-11-25.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0808/d-2026-11-24/",
+    "status": 200,
+    "contentType": "application/json",
+    "file": "sensacine/theater-E0808-d-2026-11-24.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0808/d-2026-11-25/",
+    "status": 200,
+    "contentType": "application/json",
+    "file": "sensacine/theater-E0808-d-2026-11-25.json"
+  }
+]

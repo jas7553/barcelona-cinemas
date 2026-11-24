@@ -1,0 +1,12 @@
+{
+  "description": "Shop payload in window.shops: English audio or subtitles only (with the accent quirk: 'Inglés' does not count); audio/subtitle normalisation; booking URL from the shop template by replacing three %s in order (also when the template holds %20); no URL when the template has no shop_url or not exactly three %s; unknown shops and junk entries skipped; one film in three shops merged by imdb_id.",
+  "source": [
+    "tests/test_secondary_provider.py::test_fetch_parses_english_audio_and_english_subtitles",
+    "tests/test_secondary_provider.py::test_fetch_builds_english_booking_url_from_shop_template",
+    "tests/test_secondary_provider.py::test_fetch_skips_non_english_entries"
+  ],
+  "now": "2026-03-28T10:00:00+01:00",
+  "config": {
+    "secondaryListingsUrl": "https://secondary.example.test/listings"
+  }
+}

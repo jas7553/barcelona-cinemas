@@ -1,0 +1,96 @@
+{
+  "error": null,
+  "events": [],
+  "requests": [
+    "https://listings.example.test/films",
+    "https://listings.example.test/m/dune-part-three/in-english-in-barcelona",
+    "https://listings.example.test/m/ghost-film",
+    "https://listings.example.test/m/project-hail-mary/in-english-in-barcelona"
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-03-28",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        },
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-03-28",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        },
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-03-29",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "premium_format": "imax",
+          "time": "20:30"
+        },
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "cinema": "CinDiag",
+          "date": "2026-03-28",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "premium_format": "imax",
+          "time": "21:00"
+        },
+        {
+          "address": "Ronda del General Mitre, 38-44",
+          "cinema": "Sarrià",
+          "date": "2026-03-30",
+          "language": "vo",
+          "neighborhood": "Sarrià-Sant Gervasi",
+          "time": "19:15"
+        }
+      ],
+      "synopsis": null,
+      "title": "Project Hail Mary",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "cinema": "CinDiag",
+          "date": "2026-03-31",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "time": "17:45"
+        },
+        {
+          "address": "Carrer de Béjar, 53",
+          "cinema": "Zumzeig",
+          "date": "2026-03-31",
+          "language": "vo",
+          "neighborhood": "Hostafrancs",
+          "time": "22:30"
+        }
+      ],
+      "synopsis": null,
+      "title": "Dune: Part Three",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

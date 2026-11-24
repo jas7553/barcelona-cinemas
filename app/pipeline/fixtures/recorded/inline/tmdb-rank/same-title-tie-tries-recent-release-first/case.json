@@ -1,0 +1,37 @@
+{
+  "description": "No year: the 2026 release is the first-run candidate; the TV movie is dropped.",
+  "source": [
+    "tests/test_enricher.py::test_same_title_tie_tries_a_recent_release_first_without_a_year"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "today": "2026-10-20",
+  "title": "Sense and Sensibility",
+  "results": [
+    {
+      "id": 4584,
+      "title": "Sense and Sensibility",
+      "release_date": "1995-12-13",
+      "genre_ids": [
+        18,
+        10749
+      ]
+    },
+    {
+      "id": 1503762,
+      "title": "Sense and Sensibility",
+      "release_date": "2026-09-18",
+      "genre_ids": [
+        18,
+        10749
+      ]
+    },
+    {
+      "id": 1,
+      "title": "Sense and Sensibility",
+      "release_date": "1971-09-01",
+      "genre_ids": [
+        10770
+      ]
+    }
+  ]
+}

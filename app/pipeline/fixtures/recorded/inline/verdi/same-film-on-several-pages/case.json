@@ -1,0 +1,7 @@
+{
+  "description": "Four film pages carry the same film (one answers 500): the copies merge into one movie, identical showtimes collapse.",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_skips_a_film_whose_page_fails_and_reports_it"
+  ],
+  "now": "2026-06-28T10:00:00+02:00"
+}

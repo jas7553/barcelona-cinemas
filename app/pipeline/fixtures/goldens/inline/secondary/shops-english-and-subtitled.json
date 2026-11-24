@@ -1,0 +1,133 @@
+{
+  "error": null,
+  "events": [],
+  "requests": [
+    "https://secondary.example.test/listings"
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt12042730",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer d'Aribau, 8-10",
+          "audio_lang": "en",
+          "booking_url": "https://example-aribau.tickets.test/?p=tickets&perfCode=187518&language=ENG&theatre=BAL-ARIBAU",
+          "cinema": "Aribau",
+          "date": "2026-03-29",
+          "language": "vo",
+          "neighborhood": "Eixample",
+          "subtitle_lang": "es",
+          "time": "18:30"
+        },
+        {
+          "address": "Carrer d'Aribau, 8-10",
+          "audio_lang": "en",
+          "cinema": "Aribau",
+          "date": "2026-03-29",
+          "language": "vo",
+          "neighborhood": "Eixample",
+          "subtitle_lang": "es",
+          "time": "21:00"
+        },
+        {
+          "address": "Rambla de Prat, 16",
+          "audio_lang": "en",
+          "cinema": "Bosque",
+          "date": "2026-03-30",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "subtitle_lang": "es",
+          "time": "20:00"
+        },
+        {
+          "address": "Carrer de Balmes, 422-424",
+          "audio_lang": "en",
+          "booking_url": "https://example-balmes.tickets.test/?p=tickets&title=Hail%20Mary&perfCode=187700&language=ENG&theatre=BAL-BALMES",
+          "cinema": "Balmes",
+          "date": "2026-03-31",
+          "language": "vo",
+          "neighborhood": "Sarrià-Sant Gervasi",
+          "subtitle_lang": "es",
+          "time": "17:30"
+        }
+      ],
+      "synopsis": null,
+      "title": "Project Hail Mary",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt7654321",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer d'Aribau, 8-10",
+          "audio_lang": "other",
+          "cinema": "Aribau",
+          "date": "2026-03-30",
+          "language": "vo",
+          "neighborhood": "Eixample",
+          "subtitle_lang": "en",
+          "time": "21:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Other Language Film",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer d'Aribau, 8-10",
+          "audio_lang": "other",
+          "booking_url": "https://example-aribau.tickets.test/?p=tickets&perfCode=187530&language=ENG&theatre=BAL-ARIBAU",
+          "cinema": "Aribau",
+          "date": "2026-03-31",
+          "language": "vo",
+          "neighborhood": "Eixample",
+          "subtitle_lang": "en",
+          "time": "19:30"
+        }
+      ],
+      "synopsis": null,
+      "title": "Catalan Audio English Subs",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt5555555",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Gran Via de les Corts Catalanes, 385",
+          "audio_lang": "en",
+          "cinema": "Arenas",
+          "date": "2026-04-01",
+          "language": "vo",
+          "neighborhood": "Eixample",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Arenas Film",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

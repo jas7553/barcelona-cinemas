@@ -1,0 +1,177 @@
+[
+  {
+    "genres": null,
+    "imdb_id": "tt37304295",
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Torrijos, 49",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222843/",
+        "cinema": "VP",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "20:30"
+      }
+    ],
+    "synopsis": null,
+    "title": "Fatherland",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": "tt32888226",
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Torrijos, 49",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222846/",
+        "cinema": "VP",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "11:30"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222847/",
+        "cinema": "Verdi",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "20:30"
+      }
+    ],
+    "synopsis": null,
+    "title": "F. Espectador: Cartas de Estado",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": "tt7829440",
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Torrijos, 49",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222829/",
+        "cinema": "VP",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "11:30"
+      },
+      {
+        "address": "Carrer de Verdi, 32",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222812/",
+        "cinema": "Verdi",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "18:15"
+      }
+    ],
+    "synopsis": null,
+    "title": "Canaletto y el arte de Venecia",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": "tt35298123",
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Torrijos, 49",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222729/",
+        "cinema": "VP",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "22:30"
+      },
+      {
+        "address": "Carrer de Torrijos, 49",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222784/",
+        "cinema": "VP",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "22:30"
+      },
+      {
+        "address": "Carrer de Torrijos, 49",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222808/",
+        "cinema": "VP",
+        "date": "2026-11-26",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "22:30"
+      }
+    ],
+    "synopsis": null,
+    "title": "Adolescencia, sexo y muerte en Campamento Miasma",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": "tt18259698",
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Torrijos, 49",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222734/",
+        "cinema": "VP",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "16:00"
+      },
+      {
+        "address": "Carrer de Torrijos, 49",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222841/",
+        "cinema": "VP",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "16:00"
+      },
+      {
+        "address": "Carrer de Torrijos, 49",
+        "booking_url": "https://verdibcn.admit-one.eu/seats/222803/",
+        "cinema": "VP",
+        "date": "2026-11-26",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "subtitle_lang": "es",
+        "time": "16:00"
+      }
+    ],
+    "synopsis": null,
+    "title": "Diarios de Ozu",
+    "tmdb_id": null,
+    "year": null
+  }
+]

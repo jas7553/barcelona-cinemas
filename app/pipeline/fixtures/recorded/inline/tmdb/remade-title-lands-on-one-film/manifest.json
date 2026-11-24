@@ -1,0 +1,65 @@
+[
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/search/movie?language=en-US&query=Sense+and+Sensibility",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "01-api-themoviedb-org-3-search-movie-language-en-US-query-Sense-and-Sensibility.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/search/movie?language=en-US&query=Sentido+y+sensibilidad",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "02-api-themoviedb-org-3-search-movie-language-en-US-query-Sentido-y-sensibilidad.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/search/movie?language=es-ES&query=Sentido+y+sensibilidad",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "03-api-themoviedb-org-3-search-movie-language-es-ES-query-Sentido-y-sensibilidad.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/1503762?language=en-US&append_to_response=release_dates",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "04-api-themoviedb-org-3-movie-1503762-language-en-US-append-to-response-release-dat.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/4584?language=en-US&append_to_response=release_dates",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "05-api-themoviedb-org-3-movie-4584-language-en-US-append-to-response-release-dates.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/1503762/videos?language=en-US",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "06-api-themoviedb-org-3-movie-1503762-videos-language-en-US.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/1503762/credits?language=en-US",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "07-api-themoviedb-org-3-movie-1503762-credits-language-en-US.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/4584/videos?language=en-US",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "08-api-themoviedb-org-3-movie-4584-videos-language-en-US.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/4584/credits?language=en-US",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "09-api-themoviedb-org-3-movie-4584-credits-language-en-US.json"
+  }
+]

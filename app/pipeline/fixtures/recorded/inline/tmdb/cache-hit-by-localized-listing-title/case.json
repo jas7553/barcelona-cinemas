@@ -1,0 +1,46 @@
+{
+  "description": "The cache is keyed by the listed (Spanish) title, so a localized listing hits it after enrichment.",
+  "source": [
+    "tests/test_enricher.py::test_cache_hit_when_scraper_title_matches_cached_scraper_title"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Encuentros en la tercera fase",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-23",
+          "time": "18:00"
+        }
+      ]
+    }
+  ],
+  "cached": [
+    {
+      "title": "Encuentros en la tercera fase",
+      "tmdb_id": 42,
+      "imdb_id": "tt0075860",
+      "year": null,
+      "poster_url": null,
+      "synopsis": "A UFO story.",
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [],
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "tmdb_match_version": 4,
+      "english_title": "Close Encounters of the Third Kind"
+    }
+  ]
+}

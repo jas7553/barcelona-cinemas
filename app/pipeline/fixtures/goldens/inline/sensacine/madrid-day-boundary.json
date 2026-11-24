@@ -1,0 +1,46 @@
+{
+  "error": null,
+  "events": [],
+  "requests": [
+    "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-07-15/",
+    "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-07-16/"
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-51716",
+          "cinema": "CinDiag",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "subtitle_lang": "es",
+          "time": "16:00"
+        },
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-51718",
+          "cinema": "CinDiag",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "premium_format": "imax",
+          "subtitle_lang": "es",
+          "time": "21:10"
+        }
+      ],
+      "synopsis": null,
+      "title": "Supergirl",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

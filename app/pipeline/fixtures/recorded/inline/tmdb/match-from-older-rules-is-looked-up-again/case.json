@@ -1,0 +1,45 @@
+{
+  "description": "A cached match with a fresh enriched_at but no tmdb_match_version (read as 1, older than the current rules) is looked up again.",
+  "source": [
+    "tests/test_enricher.py::test_a_match_from_older_rules_is_looked_up_again"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Sense and Sensibility",
+      "tmdb_id": null,
+      "imdb_id": "tt0114388",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ],
+  "cached": [
+    {
+      "title": "Sense and Sensibility",
+      "tmdb_id": 4584,
+      "imdb_id": "tt0114388",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [],
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "english_title": "Sense and Sensibility"
+    }
+  ]
+}

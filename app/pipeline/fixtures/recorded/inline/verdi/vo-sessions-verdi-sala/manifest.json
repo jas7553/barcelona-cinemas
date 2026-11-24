@@ -1,0 +1,37 @@
+[
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/cartellera",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "01-barcelona-cines-verdi-com-cartellera.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/obsession",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "02-barcelona-cines-verdi-com-obsession.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/toy-story-5",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "03-barcelona-cines-verdi-com-toy-story-5.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/100001/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "04-verdibcn-admit-one-eu-seats-100001.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/100002/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "05-verdibcn-admit-one-eu-seats-100002.html"
+  }
+]

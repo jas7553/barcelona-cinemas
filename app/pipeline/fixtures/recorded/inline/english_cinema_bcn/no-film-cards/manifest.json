@@ -1,0 +1,9 @@
+[
+  {
+    "method": "GET",
+    "url": "https://listings.example.test/films",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "01-listings-example-test-films.html"
+  }
+]

@@ -1,0 +1,90 @@
+{
+  "description": "Identical showtimes across copies collapse; the language field is canonicalised (absent reads as vo, dub stays distinct) and merged showtimes sort by date, time, cinema, language.",
+  "source": [
+    "tests/test_reconcile.py::test_reconcile_dedups_identical_showtimes_across_copies",
+    "tests/test_reconcile.py::test_dedup_showtimes_preserves_first_seen_order"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Dune",
+      "tmdb_id": null,
+      "imdb_id": "tt1",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "20:00",
+          "language": "vo"
+        },
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "language": "dub"
+        },
+        {
+          "cinema": "Malda",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "Dune",
+      "tmdb_id": null,
+      "imdb_id": "tt1",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "20:00"
+        },
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "language": "vo"
+        },
+        {
+          "cinema": "Malda",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "language": "vo"
+        },
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "language": "dub"
+        }
+      ]
+    }
+  ]
+}

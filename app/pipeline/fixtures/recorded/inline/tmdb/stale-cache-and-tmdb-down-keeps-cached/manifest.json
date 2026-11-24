@@ -1,0 +1,9 @@
+[
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/search/movie?language=en-US&query=Dune%3A+Part+Two",
+    "status": 503,
+    "contentType": "application/json; charset=utf-8",
+    "file": "01-api-themoviedb-org-3-search-movie-language-en-US-query-Dune-3A-Part-Two.json"
+  }
+]

@@ -1,0 +1,57 @@
+{
+  "events": [
+    {
+      "cross_title_merge_count": 0,
+      "cross_title_merges": [],
+      "event": "reconcile_summary",
+      "movies_in": 4,
+      "movies_merged": 2,
+      "movies_out": 2,
+      "showtimes_deduped": 1,
+      "showtimes_in": 3,
+      "showtimes_out": 2,
+      "stage": "collection"
+    }
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "time": "18:00"
+        },
+        {
+          "address": "A",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "time": "20:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "  dune ",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [],
+      "synopsis": null,
+      "title": "Oppenheimer",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

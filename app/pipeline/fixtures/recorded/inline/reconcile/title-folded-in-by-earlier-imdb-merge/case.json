@@ -1,0 +1,70 @@
+{
+  "description": "Verdi's Spanish title joins the English copy on imdb_id; SensaCine's id-less Spanish copy must follow, in any provider order.",
+  "source": [
+    "tests/test_reconcile.py::test_reconcile_matches_a_title_folded_in_by_an_earlier_imdb_merge"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "The Social Reckoning",
+      "tmdb_id": null,
+      "imdb_id": "tt37510326",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Balmes",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-11-10",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "El precio de la red",
+      "tmdb_id": null,
+      "imdb_id": "tt37510326",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-11-10",
+          "time": "20:00"
+        }
+      ]
+    },
+    {
+      "title": "El precio de la red",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "RenFlo",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-11-10",
+          "time": "22:00"
+        }
+      ]
+    }
+  ],
+  "stage": "collection"
+}

@@ -1,0 +1,10 @@
+{
+  "description": "Shop with blank label and name is still found through its slug or code alias.",
+  "source": [
+    "tests/test_secondary_provider.py::test_fetch_maps_slug_and_code_aliases_without_branded_names"
+  ],
+  "now": "2026-03-28T10:00:00+01:00",
+  "config": {
+    "secondaryListingsUrl": "https://secondary.example.test/listings"
+  }
+}

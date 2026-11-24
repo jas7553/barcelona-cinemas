@@ -1,0 +1,106 @@
+{
+  "description": "The Sense and Sensibility split. Four provider copies (one mis-tagged with the 1995 imdb_id, one Spanish title) collapse to three at collection, enrich to the 2026 film, and reconcile into one film with every showtime and the booking link.",
+  "source": [
+    "tests/test_enricher.py::test_every_provider_copy_of_a_remade_title_lands_on_one_film"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Sense and Sensibility",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Balmes",
+          "neighborhood": "",
+          "address": "",
+          "date": "2026-10-22",
+          "time": "18:00"
+        },
+        {
+          "cinema": "RenFlo",
+          "neighborhood": "",
+          "address": "",
+          "date": "2026-10-23",
+          "time": "18:00",
+          "booking_url": "https://pillalas"
+        }
+      ]
+    },
+    {
+      "title": "Sense and Sensibility",
+      "tmdb_id": null,
+      "imdb_id": "tt0114388",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Balmes",
+          "neighborhood": "",
+          "address": "",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "Sense and Sensibility",
+      "tmdb_id": null,
+      "imdb_id": "tt13609648",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Balmes",
+          "neighborhood": "",
+          "address": "",
+          "date": "2026-10-23",
+          "time": "16:00"
+        }
+      ]
+    },
+    {
+      "title": "Sentido y sensibilidad",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Balmes",
+          "neighborhood": "",
+          "address": "",
+          "date": "2026-10-22",
+          "time": "18:00"
+        },
+        {
+          "cinema": "RenFlo",
+          "neighborhood": "",
+          "address": "",
+          "date": "2026-10-23",
+          "time": "18:00",
+          "booking_url": "https://pillalas"
+        }
+      ]
+    }
+  ],
+  "reconcileFirst": true
+}

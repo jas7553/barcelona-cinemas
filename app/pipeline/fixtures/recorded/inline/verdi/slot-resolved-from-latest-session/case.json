@@ -1,0 +1,7 @@
+{
+  "description": "A session that has already started gets an 'expired' seat page with no sala, so the slot is resolved from its latest session (only seat 450003 is requested) and every date inherits VP.",
+  "source": [
+    "tests/test_verdi_provider.py::test_a_slot_is_resolved_from_its_latest_session_not_one_that_has_started"
+  ],
+  "now": "2026-06-28T10:00:00+02:00"
+}

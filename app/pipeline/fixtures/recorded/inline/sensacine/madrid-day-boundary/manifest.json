@@ -1,0 +1,16 @@
+[
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-07-15/",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "01-www-sensacine-com-showtimes-theater-E0381-d-2026-07-15.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-07-16/",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "02-www-sensacine-com-showtimes-theater-E0381-d-2026-07-16.json"
+  }
+]

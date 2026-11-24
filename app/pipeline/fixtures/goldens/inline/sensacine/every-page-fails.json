@@ -1,0 +1,20 @@
+{
+  "error": {
+    "message": "sensacine lost 2 of 2 pages",
+    "type": "PartialFetchError"
+  },
+  "events": [
+    {
+      "event": "provider_partial_failure",
+      "failed_count": 2,
+      "kind": "pages",
+      "provider": "sensacine",
+      "total_count": 2
+    }
+  ],
+  "requests": [
+    "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-06-29/",
+    "https://www.sensacine.com/_/showtimes/theater-E0682/d-2026-06-29/"
+  ],
+  "result": null
+}

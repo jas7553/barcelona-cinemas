@@ -1,0 +1,63 @@
+{
+  "error": null,
+  "events": [],
+  "requests": [
+    "https://listings.example.test/films",
+    "https://listings.example.test/m/year-end-film"
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-12-28",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "time": "20:00"
+        },
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2027-01-05",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        },
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-12-20",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        },
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2027-12-19",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        },
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2027-09-13",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "time": "20:45"
+        }
+      ],
+      "synopsis": null,
+      "title": "Year End Film",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

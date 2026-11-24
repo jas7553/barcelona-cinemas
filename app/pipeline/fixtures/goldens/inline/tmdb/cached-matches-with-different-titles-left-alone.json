@@ -1,0 +1,128 @@
+{
+  "collected": null,
+  "enriched": [
+    {
+      "english_title": "Fargo",
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-22",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Fargo",
+      "tmdb_id": 275,
+      "tmdb_match_version": 4,
+      "year": null
+    },
+    {
+      "english_title": "Rocky",
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-22",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Rocky",
+      "tmdb_id": 1366,
+      "tmdb_match_version": 4,
+      "year": null
+    }
+  ],
+  "events": [
+    {
+      "event": "tmdb_enrichment_summary",
+      "movie_count": 2,
+      "tmdb_cache_hit_count": 2,
+      "tmdb_enriched_count": 0,
+      "tmdb_failure_count": 0,
+      "tmdb_reenriched_count": 0
+    },
+    {
+      "cross_title_merge_count": 0,
+      "cross_title_merges": [],
+      "event": "reconcile_summary",
+      "movies_in": 2,
+      "movies_merged": 0,
+      "movies_out": 2,
+      "showtimes_deduped": 0,
+      "showtimes_in": 2,
+      "showtimes_out": 2,
+      "stage": "post_enrichment"
+    }
+  ],
+  "reconciled": [
+    {
+      "english_title": "Fargo",
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-22",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Fargo",
+      "tmdb_id": 275,
+      "tmdb_match_version": 4,
+      "year": null
+    },
+    {
+      "english_title": "Rocky",
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-22",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Rocky",
+      "tmdb_id": 1366,
+      "tmdb_match_version": 4,
+      "year": null
+    }
+  ],
+  "requests": [],
+  "stats": {
+    "tmdb_cache_hit_count": 2,
+    "tmdb_enriched_count": 0,
+    "tmdb_failure_count": 0,
+    "tmdb_reenriched_count": 0
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "description": "The reconcile_summary event at the collection stage: movies and showtimes in/out, none cross-title.",
+  "source": [
+    "tests/test_reconcile.py::test_reconcile_summary_accounts_for_merged_movies_and_showtimes",
+    "tests/test_reconcile.py::test_reconcile_summary_ignores_same_title_merges_as_routine"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Dune",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        },
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "20:00"
+        }
+      ]
+    },
+    {
+      "title": "Dune",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "Oppenheimer",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "  dune ",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    }
+  ],
+  "stage": "collection"
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/cartellera",
+    "status": 503,
+    "contentType": "text/html; charset=utf-8",
+    "file": "01-barcelona-cines-verdi-com-cartellera.html"
+  }
+]

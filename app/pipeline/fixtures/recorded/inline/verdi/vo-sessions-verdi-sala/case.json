@@ -1,0 +1,10 @@
+{
+  "description": "Cartellera with two films; one page has JSON-LD (title + IMDb id), two V.O. sessions and one dubbed (dropped); the other has no JSON-LD (film skipped). Numeric sala resolves to Verdi; subtitle language comes from 'V.O. SUB. CASTELLÀ'; one seat lookup per time slot.",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_returns_vo_movie_with_booking_url",
+    "tests/test_verdi_provider.py::test_resolve_cinema_key_returns_verdi_for_numeric_sala",
+    "tests/test_verdi_provider.py::test_is_vo_true_for_vo_prefix",
+    "tests/test_verdi_provider.py::test_is_vo_false_for_dubbed"
+  ],
+  "now": "2026-06-28T10:00:00+02:00"
+}

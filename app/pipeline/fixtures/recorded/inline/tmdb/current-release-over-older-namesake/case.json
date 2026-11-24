@@ -1,0 +1,29 @@
+{
+  "description": "Two films share a title and the listing gives no year: the recent one is probed first and, being in its Spanish first run with a feature runtime, wins over the older film TMDb lists first.",
+  "source": [
+    "tests/test_enricher.py::test_enrich_matches_the_current_release_over_an_older_namesake"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Sense and Sensibility",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ]
+}

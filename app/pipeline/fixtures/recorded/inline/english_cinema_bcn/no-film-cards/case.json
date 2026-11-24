@@ -1,0 +1,10 @@
+{
+  "description": "A feed page with no film cards (a maintenance or bot-challenge page) raises instead of returning nothing.",
+  "source": [
+    "tests/test_listings_provider.py::test_fetch_ignores_unknown_cinemas (the empty-result neighbour)"
+  ],
+  "now": "2026-03-28T10:00:00+01:00",
+  "config": {
+    "listingsFeedUrl": "https://listings.example.test/films"
+  }
+}

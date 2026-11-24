@@ -1,0 +1,50 @@
+{
+  "description": "A copy with an imdb_id and a title-only copy of the same film merge; imdb_id is coalesced, showtimes unioned.",
+  "source": [
+    "tests/test_reconcile.py::test_reconcile_merges_imdb_and_titleonly_copies_and_unions_showtimes",
+    "tests/test_reconcile.py::test_same_movie_falls_back_to_title_when_one_side_lacks_imdb"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Dune",
+      "tmdb_id": null,
+      "imdb_id": "tt1",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "dune",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Malda",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "20:00"
+        }
+      ]
+    }
+  ]
+}

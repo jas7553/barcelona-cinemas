@@ -1,0 +1,28 @@
+{
+  "events": [],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt1",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "booking_url": "https://first",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "premium_format": "imax",
+          "subtitle_lang": "es",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Dune",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

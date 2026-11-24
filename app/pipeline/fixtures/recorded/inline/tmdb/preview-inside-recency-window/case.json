@@ -1,0 +1,29 @@
+{
+  "description": "Of three same-titled films, the 1986 classic, an announced 2027 film and a preview 31 days out (2026-11-20, inside the 90-day window): only the preview is probed as a first-run candidate.",
+  "source": [
+    "tests/test_enricher.py::test_recency_window_admits_a_preview_but_not_an_announced_film"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Highlander",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ]
+}

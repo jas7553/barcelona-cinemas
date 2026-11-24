@@ -1,0 +1,43 @@
+{
+  "description": "A cached 'Wuthering Heights' is not reused for the listing '\"Wuthering Heights\"'; the exact quoted title is looked up (edge quotes are stripped when comparing titles).",
+  "source": [
+    "tests/test_enricher.py::test_cache_reuse_does_not_cross_exact_title_variants"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "\"Wuthering Heights\"",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-23",
+          "time": "18:00"
+        }
+      ]
+    }
+  ],
+  "cached": [
+    {
+      "title": "Wuthering Heights",
+      "tmdb_id": 25095,
+      "imdb_id": "tt0104181",
+      "year": null,
+      "poster_url": null,
+      "synopsis": "Older adaptation",
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    }
+  ]
+}

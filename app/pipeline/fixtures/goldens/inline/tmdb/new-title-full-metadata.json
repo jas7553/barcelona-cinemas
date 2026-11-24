@@ -1,0 +1,119 @@
+{
+  "collected": null,
+  "enriched": [
+    {
+      "backdrop_url": "https://image.tmdb.org/t/p/w1280/backdrop.jpg",
+      "cast": [
+        "A One",
+        "B Two",
+        "C Three",
+        "D Four",
+        "E Five"
+      ],
+      "director": "Denis Villeneuve, Second Director",
+      "english_title": "Dune: Part Two",
+      "enriched_at": "2026-10-20T08:00:00+00:00",
+      "genres": [
+        "Science Fiction",
+        "Adventure"
+      ],
+      "imdb_id": "tt15239678",
+      "original_lang": "en",
+      "poster_url": "https://image.tmdb.org/t/p/w342/poster.jpg",
+      "rating": 8.5,
+      "runtime_mins": 166,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-22",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": "A hero's journey continues.",
+      "tagline": "Long live the fighters.",
+      "title": "Dune: Part Two",
+      "tmdb_id": 42,
+      "tmdb_match_version": 4,
+      "trailer_url": "https://www.youtube.com/watch?v=official1",
+      "vote_count": 12345,
+      "year": 2024
+    }
+  ],
+  "events": [
+    {
+      "event": "tmdb_enrichment_summary",
+      "movie_count": 1,
+      "tmdb_cache_hit_count": 0,
+      "tmdb_enriched_count": 1,
+      "tmdb_failure_count": 0,
+      "tmdb_reenriched_count": 0
+    },
+    {
+      "cross_title_merge_count": 0,
+      "cross_title_merges": [],
+      "event": "reconcile_summary",
+      "movies_in": 1,
+      "movies_merged": 0,
+      "movies_out": 1,
+      "showtimes_deduped": 0,
+      "showtimes_in": 1,
+      "showtimes_out": 1,
+      "stage": "post_enrichment"
+    }
+  ],
+  "reconciled": [
+    {
+      "backdrop_url": "https://image.tmdb.org/t/p/w1280/backdrop.jpg",
+      "cast": [
+        "A One",
+        "B Two",
+        "C Three",
+        "D Four",
+        "E Five"
+      ],
+      "director": "Denis Villeneuve, Second Director",
+      "english_title": "Dune: Part Two",
+      "enriched_at": "2026-10-20T08:00:00+00:00",
+      "genres": [
+        "Science Fiction",
+        "Adventure"
+      ],
+      "imdb_id": "tt15239678",
+      "original_lang": "en",
+      "poster_url": "https://image.tmdb.org/t/p/w342/poster.jpg",
+      "rating": 8.5,
+      "runtime_mins": 166,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-22",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": "A hero's journey continues.",
+      "tagline": "Long live the fighters.",
+      "title": "Dune: Part Two",
+      "tmdb_id": 42,
+      "tmdb_match_version": 4,
+      "trailer_url": "https://www.youtube.com/watch?v=official1",
+      "vote_count": 12345,
+      "year": 2024
+    }
+  ],
+  "requests": [
+    "https://api.themoviedb.org/3/search/movie?language=en-US&query=Dune%3A+Part+Two",
+    "https://api.themoviedb.org/3/movie/42?language=en-US&append_to_response=release_dates",
+    "https://api.themoviedb.org/3/movie/42/videos?language=en-US",
+    "https://api.themoviedb.org/3/movie/42/credits?language=en-US"
+  ],
+  "stats": {
+    "tmdb_cache_hit_count": 0,
+    "tmdb_enriched_count": 1,
+    "tmdb_failure_count": 0,
+    "tmdb_reenriched_count": 0
+  }
+}

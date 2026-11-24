@@ -1,0 +1,28 @@
+{
+  "results": [
+    {
+      "site": "YouTube",
+      "type": "Trailer",
+      "official": false,
+      "key": "unofficial1"
+    },
+    {
+      "site": "Vimeo",
+      "type": "Trailer",
+      "official": true,
+      "key": "vimeo1"
+    },
+    {
+      "site": "YouTube",
+      "type": "Teaser",
+      "official": true,
+      "key": "teaser1"
+    },
+    {
+      "site": "YouTube",
+      "type": "Trailer",
+      "official": true,
+      "key": "official1"
+    }
+  ]
+}

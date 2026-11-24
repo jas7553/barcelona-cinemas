@@ -1,0 +1,30 @@
+[
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-06-29/",
+    "status": 503,
+    "contentType": "application/json; charset=utf-8",
+    "file": "01-www-sensacine-com-showtimes-theater-E0381-d-2026-06-29.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-06-30/",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "02-www-sensacine-com-showtimes-theater-E0381-d-2026-06-30.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0682/d-2026-06-29/",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "03-www-sensacine-com-showtimes-theater-E0682-d-2026-06-29.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://www.sensacine.com/_/showtimes/theater-E0682/d-2026-06-30/",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "04-www-sensacine-com-showtimes-theater-E0682-d-2026-06-30.json"
+  }
+]

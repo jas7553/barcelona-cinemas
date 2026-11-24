@@ -1,0 +1,82 @@
+{
+  "collected": null,
+  "enriched": [
+    {
+      "english_title": "Close Encounters of the Third Kind",
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "genres": null,
+      "imdb_id": "tt0075860",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-23",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": "A UFO story.",
+      "title": "Encuentros en la tercera fase",
+      "tmdb_id": 42,
+      "tmdb_match_version": 4,
+      "year": null
+    }
+  ],
+  "events": [
+    {
+      "event": "tmdb_enrichment_summary",
+      "movie_count": 1,
+      "tmdb_cache_hit_count": 1,
+      "tmdb_enriched_count": 0,
+      "tmdb_failure_count": 0,
+      "tmdb_reenriched_count": 0
+    },
+    {
+      "cross_title_merge_count": 0,
+      "cross_title_merges": [],
+      "event": "reconcile_summary",
+      "movies_in": 1,
+      "movies_merged": 0,
+      "movies_out": 1,
+      "showtimes_deduped": 0,
+      "showtimes_in": 1,
+      "showtimes_out": 1,
+      "stage": "post_enrichment"
+    }
+  ],
+  "reconciled": [
+    {
+      "english_title": "Close Encounters of the Third Kind",
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "genres": null,
+      "imdb_id": "tt0075860",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-23",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": "A UFO story.",
+      "title": "Encuentros en la tercera fase",
+      "tmdb_id": 42,
+      "tmdb_match_version": 4,
+      "year": null
+    }
+  ],
+  "requests": [],
+  "stats": {
+    "tmdb_cache_hit_count": 1,
+    "tmdb_enriched_count": 0,
+    "tmdb_failure_count": 0,
+    "tmdb_reenriched_count": 0
+  }
+}

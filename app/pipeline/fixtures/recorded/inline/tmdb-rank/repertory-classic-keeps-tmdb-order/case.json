@@ -1,0 +1,21 @@
+{
+  "description": "No recent namesake: TMDb's popularity order stands.",
+  "source": [
+    "tests/test_enricher.py::test_repertory_classic_keeps_tmdb_order_without_a_recent_namesake"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "today": "2026-10-20",
+  "title": "Carrie",
+  "results": [
+    {
+      "id": 7340,
+      "title": "Carrie",
+      "release_date": "1976-11-03"
+    },
+    {
+      "id": 133805,
+      "title": "Carrie",
+      "release_date": "2013-10-16"
+    }
+  ]
+}

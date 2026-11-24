@@ -1,0 +1,10 @@
+{
+  "description": "A page with no window.shops blob raises.",
+  "source": [
+    "tests/test_secondary_provider.py::test_extract_shops_payload_raises_for_missing_blob"
+  ],
+  "now": "2026-03-28T10:00:00+01:00",
+  "config": {
+    "secondaryListingsUrl": "https://secondary.example.test/listings"
+  }
+}

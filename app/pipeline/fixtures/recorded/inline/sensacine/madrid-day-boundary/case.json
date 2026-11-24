@@ -1,0 +1,13 @@
+{
+  "description": "22:30 UTC in July is already the next day in Madrid: the pages asked for start on the Madrid date.",
+  "source": [
+    "tests/test_sensacine_provider.py::TestFetchDates::test_picks_madrid_day_when_utc_still_on_previous_day"
+  ],
+  "now": "2026-07-14T22:30:00+00:00",
+  "sensacine": {
+    "ids": {
+      "CinDiag": "E0381"
+    },
+    "daysAhead": 2
+  }
+}

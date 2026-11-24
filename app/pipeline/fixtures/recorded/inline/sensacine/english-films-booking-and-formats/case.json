@@ -1,0 +1,22 @@
+{
+  "description": "Two theatres over two days. English-only filter (unknown language kept); 'default' ticketing provider preferred over relay, relay as fallback; a default admit-one template that can't be filled is skipped; Mooby's template filled with ENG and the theatre code (Balmes); subtitle and premium-format tags; junk entries; the same film merged across theatres and days.",
+  "source": [
+    "tests/test_sensacine_provider.py::test_fetch_returns_english_films_only",
+    "tests/test_sensacine_provider.py::test_fetch_sets_booking_url_from_default_provider",
+    "tests/test_sensacine_provider.py::test_fetch_sets_subtitle_lang_from_tags",
+    "tests/test_sensacine_provider.py::test_fetch_sets_premium_format_from_tags",
+    "tests/test_sensacine_provider.py::test_fetch_sets_audio_lang_english_for_english_film",
+    "tests/test_sensacine_provider.py::test_fetch_uses_relay_url_when_no_default",
+    "tests/test_sensacine_provider.py::test_fetch_fills_the_mooby_template_with_that_cinemas_theatre",
+    "tests/test_sensacine_provider.py::test_fetch_dedupes_same_movie_across_dates",
+    "tests/test_sensacine_provider.py::TestHelpers::test_booking_url_skips_a_template_it_cannot_fill"
+  ],
+  "now": "2026-06-29T10:00:00+02:00",
+  "sensacine": {
+    "ids": {
+      "CinDiag": "E0381",
+      "Balmes": "E0808"
+    },
+    "daysAhead": 2
+  }
+}

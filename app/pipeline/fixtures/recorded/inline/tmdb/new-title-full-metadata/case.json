@@ -1,0 +1,31 @@
+{
+  "description": "A new title: search, detail, videos (official YouTube trailer preferred over the first; a Vimeo one ignored) and credits (two directors joined, cast capped at five). English title and original language set.",
+  "source": [
+    "tests/test_enricher.py::test_fetches_tmdb_for_new_title",
+    "tests/test_enricher.py::test_fetches_director_and_cast_from_credits",
+    "tests/test_enricher.py::test_an_english_title_that_matches_is_searched_once"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Dune: Part Two",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ]
+}

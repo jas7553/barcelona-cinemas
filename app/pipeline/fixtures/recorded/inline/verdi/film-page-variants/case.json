@@ -1,0 +1,10 @@
+{
+  "description": "Film pages in the shapes seen: sameAs as a list of URLs, sameAs absent (no imdb_id), a JSON-LD array root (film skipped), no JSON-LD (skipped), only dubbed sessions (skipped), and one page answering 500 (counted as a failed film page, 1 of 6).",
+  "source": [
+    "tests/test_verdi_provider.py::test_extract_film_meta_handles_same_as_as_list",
+    "tests/test_verdi_provider.py::test_extract_film_meta_tolerates_json_ld_array_root",
+    "tests/test_verdi_provider.py::test_extract_film_meta_returns_none_when_no_ldjson",
+    "tests/test_verdi_provider.py::test_fetch_skips_a_film_whose_page_fails_and_reports_it"
+  ],
+  "now": "2026-06-28T10:00:00+02:00"
+}

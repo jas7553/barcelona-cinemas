@@ -1,0 +1,30 @@
+[
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/search/movie?language=en-US&query=The+Miracle+Worker",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "01-api-themoviedb-org-3-search-movie-language-en-US-query-The-Miracle-Worker.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/1162?language=en-US&append_to_response=release_dates",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "02-api-themoviedb-org-3-movie-1162-language-en-US-append-to-response-release-dates.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/1162/videos?language=en-US",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "03-api-themoviedb-org-3-movie-1162-videos-language-en-US.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/1162/credits?language=en-US",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "04-api-themoviedb-org-3-movie-1162-credits-language-en-US.json"
+  }
+]

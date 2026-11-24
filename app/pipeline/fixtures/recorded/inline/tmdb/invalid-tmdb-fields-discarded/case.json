@@ -1,0 +1,31 @@
+{
+  "description": "A detail payload with malformed fields (bad imdb id, poster path, overview type, rating type, negative runtime, junk genres, no vote_count or original_language) degrades each to null.",
+  "source": [
+    "tests/test_enricher.py::test_invalid_tmdb_fields_are_safely_discarded",
+    "tests/test_enricher.py::test_vote_count_absent_when_tmdb_omits_it",
+    "tests/test_enricher.py::test_original_lang_absent_yields_none"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Dune: Part Two",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ]
+}

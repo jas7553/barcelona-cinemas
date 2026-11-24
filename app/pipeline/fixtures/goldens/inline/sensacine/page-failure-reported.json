@@ -1,0 +1,79 @@
+{
+  "error": null,
+  "events": [
+    {
+      "event": "provider_partial_failure",
+      "failed_count": 1,
+      "kind": "pages",
+      "provider": "sensacine",
+      "total_count": 4
+    }
+  ],
+  "requests": [
+    "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-06-29/",
+    "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-06-30/",
+    "https://www.sensacine.com/_/showtimes/theater-E0682/d-2026-06-29/",
+    "https://www.sensacine.com/_/showtimes/theater-E0682/d-2026-06-30/"
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-51716",
+          "cinema": "CinDiag",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "subtitle_lang": "es",
+          "time": "16:00"
+        },
+        {
+          "address": "Carrer del Pi, 5",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-51716",
+          "cinema": "Malda",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Gothic Quarter",
+          "subtitle_lang": "es",
+          "time": "16:00"
+        },
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-51718",
+          "cinema": "CinDiag",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "premium_format": "imax",
+          "subtitle_lang": "es",
+          "time": "21:10"
+        },
+        {
+          "address": "Carrer del Pi, 5",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-51718",
+          "cinema": "Malda",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Gothic Quarter",
+          "premium_format": "imax",
+          "subtitle_lang": "es",
+          "time": "21:10"
+        }
+      ],
+      "synopsis": null,
+      "title": "Supergirl",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

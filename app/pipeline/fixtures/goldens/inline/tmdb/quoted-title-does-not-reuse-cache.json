@@ -1,0 +1,111 @@
+{
+  "collected": null,
+  "enriched": [
+    {
+      "backdrop_url": null,
+      "cast": [
+        "Timothée Chalamet",
+        "Zendaya",
+        "Rebecca Ferguson"
+      ],
+      "director": "Denis Villeneuve",
+      "enriched_at": "2026-10-20T08:00:00+00:00",
+      "genres": [
+        "Drama"
+      ],
+      "imdb_id": "tt32897959",
+      "original_lang": null,
+      "poster_url": "https://image.tmdb.org/t/p/w342/poster.jpg",
+      "rating": 6.4,
+      "runtime_mins": 136,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-23",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": "New adaptation",
+      "tagline": null,
+      "title": "\"Wuthering Heights\"",
+      "tmdb_id": 1316092,
+      "tmdb_match_version": 4,
+      "trailer_url": null,
+      "vote_count": null,
+      "year": null
+    }
+  ],
+  "events": [
+    {
+      "event": "tmdb_enrichment_summary",
+      "movie_count": 1,
+      "tmdb_cache_hit_count": 0,
+      "tmdb_enriched_count": 1,
+      "tmdb_failure_count": 0,
+      "tmdb_reenriched_count": 0
+    },
+    {
+      "cross_title_merge_count": 0,
+      "cross_title_merges": [],
+      "event": "reconcile_summary",
+      "movies_in": 1,
+      "movies_merged": 0,
+      "movies_out": 1,
+      "showtimes_deduped": 0,
+      "showtimes_in": 1,
+      "showtimes_out": 1,
+      "stage": "post_enrichment"
+    }
+  ],
+  "reconciled": [
+    {
+      "backdrop_url": null,
+      "cast": [
+        "Timothée Chalamet",
+        "Zendaya",
+        "Rebecca Ferguson"
+      ],
+      "director": "Denis Villeneuve",
+      "enriched_at": "2026-10-20T08:00:00+00:00",
+      "genres": [
+        "Drama"
+      ],
+      "imdb_id": "tt32897959",
+      "original_lang": null,
+      "poster_url": "https://image.tmdb.org/t/p/w342/poster.jpg",
+      "rating": 6.4,
+      "runtime_mins": 136,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-23",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": "New adaptation",
+      "tagline": null,
+      "title": "\"Wuthering Heights\"",
+      "tmdb_id": 1316092,
+      "tmdb_match_version": 4,
+      "trailer_url": null,
+      "vote_count": null,
+      "year": null
+    }
+  ],
+  "requests": [
+    "https://api.themoviedb.org/3/search/movie?language=en-US&query=%22Wuthering+Heights%22",
+    "https://api.themoviedb.org/3/movie/1316092?language=en-US&append_to_response=release_dates",
+    "https://api.themoviedb.org/3/movie/1316092/videos?language=en-US",
+    "https://api.themoviedb.org/3/movie/1316092/credits?language=en-US"
+  ],
+  "stats": {
+    "tmdb_cache_hit_count": 0,
+    "tmdb_enriched_count": 1,
+    "tmdb_failure_count": 0,
+    "tmdb_reenriched_count": 0
+  }
+}

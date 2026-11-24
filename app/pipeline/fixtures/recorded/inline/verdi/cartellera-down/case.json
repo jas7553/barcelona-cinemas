@@ -1,0 +1,7 @@
+{
+  "description": "The cartellera answering 503 propagates as an error (a provider failure, not an empty result).",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_raises_when_cartellera_fetch_fails"
+  ],
+  "now": "2026-06-28T10:00:00+02:00"
+}

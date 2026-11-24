@@ -1,0 +1,173 @@
+{
+  "events": [],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt-booking_url-rich-first",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "booking_url": "https://book",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "booking_url rich-first",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt-booking_url-plain-first",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "booking_url": "https://book",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "booking_url plain-first",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt-subtitle_lang-rich-first",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "subtitle_lang": "es",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "subtitle_lang rich-first",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt-subtitle_lang-plain-first",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "subtitle_lang": "es",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "subtitle_lang plain-first",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt-audio_lang-rich-first",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "audio_lang": "en",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "audio_lang rich-first",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt-audio_lang-plain-first",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "audio_lang": "en",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "audio_lang plain-first",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt-premium_format-rich-first",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "premium_format": "imax",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "premium_format rich-first",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt-premium_format-plain-first",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "premium_format": "imax",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "premium_format plain-first",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+[
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/cartellera",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "01-barcelona-cines-verdi-com-cartellera.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/obsession",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "02-barcelona-cines-verdi-com-obsession.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/310001/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "03-verdibcn-admit-one-eu-seats-310001.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/310002/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "04-verdibcn-admit-one-eu-seats-310002.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/310003/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "05-verdibcn-admit-one-eu-seats-310003.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/310004/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "06-verdibcn-admit-one-eu-seats-310004.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/310005/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "07-verdibcn-admit-one-eu-seats-310005.html"
+  }
+]

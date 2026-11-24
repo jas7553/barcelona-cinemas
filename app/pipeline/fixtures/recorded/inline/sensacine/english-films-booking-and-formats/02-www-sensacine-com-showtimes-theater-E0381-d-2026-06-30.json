@@ -1,0 +1,88 @@
+{
+  "error": false,
+  "results": [
+    {
+      "movie": {
+        "title": "Supergirl",
+        "internalId": 266720,
+        "languages": [
+          "ENGLISH"
+        ],
+        "poster": null
+      },
+      "showtimes": {
+        "dubbed": [],
+        "original": [
+          {
+            "startsAt": "2026-06-30T16:00:00",
+            "tags": [
+              "Localization.Subtitle.Spanish"
+            ],
+            "data": {
+              "ticketing": [
+                {
+                  "provider": "default",
+                  "urls": [
+                    "https://www.cinesa.es/compra/butacas/?showtimeId=012-52000"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "local": []
+      }
+    },
+    {
+      "movie": {
+        "title": "Template Film",
+        "internalId": 1,
+        "languages": [
+          "ENGLISH"
+        ],
+        "poster": null
+      },
+      "showtimes": {
+        "dubbed": [],
+        "original": [
+          {
+            "startsAt": "2026-06-30T18:00:00",
+            "tags": [],
+            "data": {
+              "ticketing": [
+                {
+                  "provider": "relay",
+                  "urls": [
+                    "https://relay.mvtx.us/ticketing/tpl"
+                  ]
+                },
+                {
+                  "provider": "default",
+                  "urls": [
+                    "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=188474&language=%s&theatre=%s"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "startsAt": "2026-06-30T20:00:00",
+            "tags": [],
+            "data": {
+              "ticketing": [
+                {
+                  "provider": "default",
+                  "urls": [
+                    "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=188474&language=%s&theatre=%s"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "local": []
+      }
+    }
+  ],
+  "nextDate": null
+}

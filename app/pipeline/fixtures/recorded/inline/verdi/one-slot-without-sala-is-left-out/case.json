@@ -1,0 +1,7 @@
+{
+  "description": "Five time slots, one seat page names no sala: the showtime is dropped and reported (1 of 5, within the limit).",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_leaves_out_a_showtime_without_a_sala_and_reports_it"
+  ],
+  "now": "2026-06-28T10:00:00+02:00"
+}
