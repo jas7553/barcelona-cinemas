@@ -24,7 +24,6 @@ The orchestrator's state for the `drive-slice` loop (plan §8). Newest entries a
 
 - **Ended films (2026-11-24; slices 3 and 7).** Kept in the document for 30 days after their last showing. The film page shows the film's details and "No longer showing in Barcelona." with a link home. After 30 days the address 301s home.
 - **Film title (2026-11-24; slice 3).** TMDb's English title, falling back to the listed title for unmatched films. No `original_title` field.
-
 - **Real recordings (2026-11-24; slice 3).** `app/pipeline/fixtures/recorded/live-2026-11-24-2303/` holds a full live run: all four sources and TMDb, 101 films, 659 responses, 22 MB. It's untracked so far: slice 3 decides what to commit (likely trimmed, or kept outside git) when it builds the eval sets from it.
 
 ## Slice log
