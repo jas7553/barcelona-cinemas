@@ -1,6 +1,10 @@
 /** Every live source the pipeline reads, and `npm run record`'s run through them. */
 import { liveFetcher, type Fetcher } from "./http.ts";
 import type { Logger } from "./log.ts";
+import { englishCinemaBcnProvider } from "./providers/englishCinemaBcn.ts";
+import { secondaryProvider } from "./providers/secondary.ts";
+import { sensacineProvider } from "./providers/sensacine.ts";
+import { verdiProvider } from "./providers/verdi.ts";
 import { recordingFetcher } from "./recordings.ts";
 import type { CinemaRegistry } from "./registry.ts";
 import type { PipelineContext, Provider, ScrapedFilm } from "./types.ts";
@@ -47,7 +51,14 @@ export interface LiveSources {
 }
 
 /** Providers and enrichment register here as they're ported. */
-export const liveSources: LiveSources = { providers: [] };
+export const liveSources: LiveSources = {
+  providers: [
+    (config) => englishCinemaBcnProvider({ feedUrl: config.listingsFeedUrl }),
+    (config) => secondaryProvider({ listingsUrl: config.secondaryListingsUrl }),
+    () => verdiProvider(),
+    () => sensacineProvider(),
+  ],
+};
 
 export interface RecordOptions {
   outDir: string;

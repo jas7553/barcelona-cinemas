@@ -60,6 +60,12 @@ export function showingStart(date: string, time: string): string | undefined {
   }
 }
 
+/**
+ * Admit One's code for its English seat picker, as its own language switcher sets it; "en" or a
+ * missing value falls back to the cinema's Catalan default.
+ */
+export const ADMIT_ONE_ENGLISH = "ENG";
+
 /** A film with only what a provider knows; enrichment adds the rest. */
 export function scrapedFilm(
   title: string,
