@@ -501,6 +501,26 @@ describe("collect: the run as a whole", () => {
     expect(logged).not.toContain("feed.private.test");
   });
 
+  it("logs no body from a source with secret URLs, which can name its URL", async () => {
+    const empty: ProviderResult = {
+      films: [],
+      entry: {
+        url: "https://feed.private.test/s3cret/films",
+        status: 200,
+        contentType: "text/html",
+        text: '<link rel="canonical" href="https://feed.private.test/s3cret/films">',
+      },
+    };
+    const feed = { ...provider("english_cinema_bcn", [empty]), secretUrls: true };
+
+    const { find } = await run([feed, healthy()]);
+
+    const events = [...find("provider_retry"), ...find("provider_zero_result")];
+    expect(events).toHaveLength(2);
+    for (const event of events) expect(event).not.toHaveProperty("body_head");
+    expect(JSON.stringify(events)).not.toMatch(/feed\.private\.test|s3cret/);
+  });
+
   it("validates each provider's films before they are used or stored", async () => {
     const bad: ScrapedFilm = {
       title: "Hamnet",

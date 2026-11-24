@@ -118,20 +118,25 @@ function errorFields(error: unknown, { secretUrls = false }: Provider): Omit<Fai
 
 const BODY_HEAD_CHARS = 300;
 
-/** What tells a blocked host (a bot-challenge page) from an honestly empty programme. */
+/**
+ * What tells a blocked host (a bot-challenge page) from an honestly empty programme. A secret
+ * source's body can name its URL, so it goes by its size alone.
+ */
 function entryFields({ entry }: ProviderResult, { secretUrls = false }: Provider): LogFields {
   if (entry === undefined) return {};
   return {
     http_status: entry.status,
-    ...(!secretUrls && { host: new URL(entry.url).hostname }),
     content_type: entry.contentType,
     body_bytes: new TextEncoder().encode(entry.text).length,
-    body_head: entry.text
-      .slice(0, BODY_HEAD_CHARS * 2)
-      .split(/\s+/)
-      .filter(Boolean)
-      .join(" ")
-      .slice(0, BODY_HEAD_CHARS),
+    ...(!secretUrls && {
+      host: new URL(entry.url).hostname,
+      body_head: entry.text
+        .slice(0, BODY_HEAD_CHARS * 2)
+        .split(/\s+/)
+        .filter(Boolean)
+        .join(" ")
+        .slice(0, BODY_HEAD_CHARS),
+    }),
   };
 }
 

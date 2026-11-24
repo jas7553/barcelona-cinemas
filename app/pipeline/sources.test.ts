@@ -1,13 +1,15 @@
-import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { HttpError } from "./errors.ts";
-import { getOk } from "./http.ts";
+import { getOk, type Fetcher } from "./http.ts";
 import type { Logger } from "./log.ts";
 import { replayFetcher } from "./recordings.ts";
+import { englishCinemaBcnProvider } from "./providers/englishCinemaBcn.ts";
+import { testRegistry } from "./providers/testFetcher.ts";
 import { parseRegistry } from "./registry.ts";
 import {
   readReplayCase,
@@ -201,5 +203,95 @@ describe("recordSources", () => {
       error: "Error: markup changed",
     });
     expect(JSON.parse(readFileSync(join(outDir, "manifest.json"), "utf8"))).toHaveLength(2);
+  });
+
+  describe("with a feed that redirects", () => {
+    const QUERY_VALUE = "Q7xSecretFeedId";
+    const SECRET = `http://feed-host.test/catalog?id=${QUERY_VALUE}`;
+    const FINAL = `https://www.feed-host.test/catalog?id=${QUERY_VALUE}`;
+    const pages: Readonly<Record<string, { url: string; text: string }>> = {
+      [SECRET]: {
+        url: FINAL,
+        text: '<a class="film-card" data-title="Alien" href="/m/alien"></a>',
+      },
+      "https://www.feed-host.test/m/alien": {
+        url: "https://www.feed-host.test/m/alien",
+        text: `<div class="cinema-block"><h3 class="cinema-block-name">Verdi</h3>
+          <a class="showtime-chip" data-showtime-label="Sun 29 Mar 18:00"></a></div>`,
+      },
+    };
+    const fetcher: Fetcher = {
+      get: (url) => {
+        const page = pages[url];
+        return page
+          ? Promise.resolve({ ...page, status: 200, contentType: "text/html" })
+          : Promise.reject(new Error(`offline: ${url}`));
+      },
+    };
+    const feedSources: LiveSources = {
+      providers: [(config) => englishCinemaBcnProvider({ feedUrl: config.listingsFeedUrl })],
+    };
+    const recordFeed = (outDir: string) =>
+      recordSources(
+        feedSources,
+        { listingsFeedUrl: SECRET },
+        { outDir, now, registry: testRegistry, log: log(), fetcher },
+      );
+
+    function expectClean(dir: string): void {
+      for (const file of readdirSync(dir)) {
+        const written = `${file}\n${readFileSync(join(dir, file), "utf8")}`.toLowerCase();
+        expect(written).not.toContain("feed-host");
+        expect(written).not.toContain(QUERY_VALUE.toLowerCase());
+      }
+    }
+
+    it("records the film pages it links to under the stand-in, and replays them", async () => {
+      const outDir = mkdtempSync(join(tmpdir(), "record-"));
+
+      expect(await recordFeed(outDir)).toEqual([]);
+
+      expectClean(outDir);
+      const live = await englishCinemaBcnProvider({ feedUrl: SECRET }).fetch({
+        fetcher,
+        now,
+        registry: testRegistry,
+        log: log(),
+        previousFilms: [],
+      });
+      const { config, now: replayNow } = readReplayCase(outDir);
+      const replayed = await englishCinemaBcnProvider({ feedUrl: config.listingsFeedUrl }).fetch({
+        fetcher: replayFetcher(outDir),
+        now: replayNow,
+        registry: testRegistry,
+        log: log(),
+        previousFilms: [],
+      });
+      expect(live.films).toHaveLength(1);
+      expect(replayed.films).toEqual(live.films);
+    });
+
+    it("keeps what an earlier case.json held beside the config it replaces", async () => {
+      const outDir = mkdtempSync(join(tmpdir(), "record-"));
+      const verdi = { slugs: ["/alien"] };
+      writeFileSync(
+        join(outDir, "case.json"),
+        JSON.stringify({
+          now: "2020-01-01T00:00:00Z",
+          verdi,
+          config: { secondaryListingsUrl: "x" },
+        }),
+      );
+
+      await recordFeed(outDir);
+
+      expectClean(outDir);
+      expect(JSON.parse(readFileSync(join(outDir, "case.json"), "utf8"))).toEqual({
+        now: now.toISOString(),
+        verdi,
+        config: { listingsFeedUrl: "https://listings-feed.example.test/feed" },
+      });
+      expect(readReplayCase(outDir).config.verdi).toEqual(verdi);
+    });
   });
 });

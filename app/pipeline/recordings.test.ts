@@ -192,3 +192,144 @@ describe("recordingFetcher", () => {
     }
   });
 });
+
+describe("recordingFetcher with a secret URL", () => {
+  const QUERY_VALUE = "Q7xSecretFeedId";
+  const SECRET = `https://feed-host.test/catalog?id=${QUERY_VALUE}`;
+  const STAND_IN = "https://listings-feed.example.test/feed";
+
+  /** Records `requests` against `pages` (by URL: final URL and body) with `secret` stood in. */
+  async function record(
+    secret: string,
+    pages: Readonly<Record<string, { url?: string; text: string }>>,
+    requests: readonly string[] = Object.keys(pages),
+  ) {
+    const recorder = recordingFetcher(
+      {
+        get: (url) => {
+          const page = pages[url];
+          return page
+            ? Promise.resolve({
+                url: page.url ?? url,
+                status: 200,
+                contentType: "text/html",
+                ...page,
+              })
+            : Promise.reject(new Error("offline"));
+        },
+      },
+      [{ secret, standIn: STAND_IN }],
+    );
+    for (const url of requests) await recorder.fetcher.get(url, options);
+    const dir = join(tempDir(), "out");
+    recorder.save(dir, { "case.json": { config: { listingsFeedUrl: recorder.stored(secret) } } });
+    const manifest = JSON.parse(readFileSync(join(dir, "manifest.json"), "utf8")) as {
+      url: string;
+      finalUrl?: string;
+      file: string;
+    }[];
+    const body = (i: number) => readFileSync(join(dir, manifest[i]?.file ?? ""), "utf8");
+    return { dir, manifest, body, stored: recorder.stored(secret) };
+  }
+
+  function expectClean(dir: string): void {
+    for (const file of readdirSync(dir)) {
+      const written = `${file}\n${readFileSync(join(dir, file), "utf8")}`.toLowerCase();
+      expect(written).not.toContain("feed-host");
+      expect(written).not.toContain(QUERY_VALUE.toLowerCase());
+    }
+  }
+
+  it("stands in for a secret in the query string, and replays under the stand-in", async () => {
+    const { dir, manifest, stored } = await record(SECRET, { [SECRET]: { text: "<p>hi</p>" } });
+
+    expect(stored).toBe(STAND_IN);
+    expect(manifest[0]?.url).toBe(STAND_IN);
+    expect(JSON.parse(readFileSync(join(dir, "case.json"), "utf8"))).toEqual({
+      config: { listingsFeedUrl: STAND_IN },
+    });
+    expectClean(dir);
+    await expect(replayFetcher(dir).get(STAND_IN, options)).resolves.toMatchObject({
+      url: STAND_IN,
+      text: "<p>hi</p>",
+    });
+  });
+
+  it.each([
+    ["http to https", `http://feed-host.test/catalog?id=${QUERY_VALUE}`, SECRET],
+    ["the host to www", SECRET, `https://www.feed-host.test/catalog?id=${QUERY_VALUE}`],
+  ])("stands in for a secret redirected from %s", async (_, secret, finalUrl) => {
+    const { dir, manifest } = await record(secret, { [secret]: { url: finalUrl, text: "" } });
+
+    expect(manifest[0]).toMatchObject({ url: STAND_IN });
+    expect(manifest[0]).not.toHaveProperty("finalUrl");
+    expectClean(dir);
+  });
+
+  it("stands in for a secret given in upper case and with its default port", async () => {
+    const secret = `https://FEED-HOST.test:443/catalog?id=${QUERY_VALUE}`;
+    const { dir, manifest, stored } = await record(secret, { [secret]: { text: "" } });
+
+    expect([stored, manifest[0]?.url]).toEqual([STAND_IN, STAND_IN]);
+    expectClean(dir);
+  });
+
+  it.each([
+    [
+      "JSON-escaped",
+      String.raw`{"self":"https:\/\/feed-host.test\/catalog?id=${QUERY_VALUE}","film":"https:\/\/feed-host.test\/m\/1"}`,
+      String.raw`{"self":"https:\/\/listings-feed.example.test\/feed","film":"https:\/\/listings-feed.example.test\/m\/1"}`,
+    ],
+    [
+      "protocol-relative",
+      `<a href="//feed-host.test/m/1">1</a> <img src="//FEED-HOST.test/a.png">`,
+      `<a href="//listings-feed.example.test/m/1">1</a> <img src="//listings-feed.example.test/a.png">`,
+    ],
+    [
+      "www",
+      `<link rel="canonical" href="https://www.feed-host.test/catalog?id=${QUERY_VALUE}"> <a href="http://www.feed-host.test/m/1?page=2">1</a> info@www.feed-host.test`,
+      `<link rel="canonical" href="https://listings-feed.example.test/feed"> <a href="https://listings-feed.example.test/m/1?page=2">1</a> info@listings-feed.example.test`,
+    ],
+  ])("moves %s links on the secret's host in a body to the stand-in", async (_, text, want) => {
+    const { dir, body } = await record(SECRET, { [SECRET]: { text } });
+
+    expect(body(0)).toBe(want);
+    expectClean(dir);
+  });
+
+  it("drops a query holding the secret's from another page on its host", async () => {
+    const page = `https://feed-host.test/m/1?ref=${QUERY_VALUE}`;
+    const { dir, manifest } = await record(SECRET, { [page]: { text: "" } });
+
+    expect(manifest[0]?.url).toBe("https://listings-feed.example.test/m/1");
+    expectClean(dir);
+  });
+
+  it("writes nothing, and throws, when a secret survives the rewriting", async () => {
+    const dir = join(tempDir(), "out");
+    const recorder = recordingFetcher(
+      {
+        get: (url) =>
+          Promise.resolve({
+            url,
+            status: 200,
+            contentType: "text/html",
+            text: `<script>feedId = "${QUERY_VALUE}"</script>`,
+          }),
+      },
+      [{ secret: SECRET, standIn: STAND_IN }],
+    );
+    await recorder.fetcher.get(SECRET, options);
+
+    let error = "";
+    try {
+      recorder.save(dir);
+    } catch (e) {
+      error = String(e);
+    }
+
+    expect(error).toMatch(/recording not written: 0001-listings-feed\.example\.test\.html holds/);
+    expect(error.toLowerCase()).not.toMatch(/feed-host|q7xsecretfeedid/);
+    expect(() => readdirSync(dir)).toThrow(/ENOENT/);
+  });
+});

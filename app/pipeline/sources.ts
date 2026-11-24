@@ -1,5 +1,5 @@
 /** Every live source the pipeline reads, and `npm run record`'s run through them. */
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { errorMessage } from "./errors.ts";
@@ -92,8 +92,8 @@ export interface RecordOptions {
 /**
  * Runs `sources` from a cold start through a recorder and writes the recording to `outDir`, with a
  * `case.json` that replays it: the instant, and the secret URLs as the stand-ins stored in their
- * place. A source that fails is logged and the rest still run; returns the names of those that
- * failed.
+ * place, over whatever else an earlier `case.json` there held. A source that fails is logged and
+ * the rest still run; returns the names of those that failed.
  */
 export async function recordSources(
   sources: LiveSources,
@@ -131,14 +131,16 @@ export async function recordSources(
       log.error("record_enrich_failed", { error: errorText(error, true) });
     }
   }
-  recorder.save(outDir);
+  const casePath = join(outDir, "case.json");
+  const previousCase = existsSync(casePath)
+    ? z.record(z.string(), z.unknown()).parse(JSON.parse(readFileSync(casePath, "utf8")))
+    : {};
   const replayConfig = Object.fromEntries(
     secrets.map(({ key, secret }) => [key, recorder.stored(secret)]),
   );
-  writeFileSync(
-    join(outDir, "case.json"),
-    `${JSON.stringify({ now: now.toISOString(), config: replayConfig }, null, 2)}\n`,
-  );
+  recorder.save(outDir, {
+    "case.json": { ...previousCase, now: now.toISOString(), config: replayConfig },
+  });
   return failed;
 }
 

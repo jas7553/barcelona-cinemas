@@ -97,28 +97,143 @@ function extension(contentType: string): string {
   return ".txt";
 }
 
-/** A secret URL, and the URL whose origin and path a recording stores in place of its own. */
+/** A secret URL, and the URL a recording stores in its place. */
 export interface StandIn {
   secret: string;
   standIn: string;
 }
 
+/** Shorter query values and path segments are too common to be telling. */
+const MIN_TOKEN_CHARS = 4;
+
+/** Where a URL in a body ends: at a quote, angle bracket, whitespace or a backslash not before `/`. */
+const URL_CHARS = String.raw`(?:\\/|[^\s"'<>\\])*`;
+
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function decoded(text: string): string {
+  try {
+    return decodeURIComponent(text);
+  } catch {
+    return text;
+  }
+}
+
+interface Secret {
+  /** Its hostname with and without `www.`. */
+  hosts: ReadonlySet<string>;
+  pathAndQuery: string;
+  standIn: URL;
+  /** Lower case: the host, the URL, and its query values and path segments. */
+  needles: readonly string[];
+  /** Its host in an absolute or protocol-relative URL, plain or JSON-escaped, and bare. */
+  inUrl: RegExp;
+  bare: RegExp;
+  /** The stand-in as a whole URL or host, which may share words with the secret. */
+  standInText: RegExp;
+}
+
+function secretOf({ secret, standIn }: StandIn): Secret {
+  const url = new URL(secret);
+  const bareHost = url.hostname.replace(/^www\./, "");
+  const host = String.raw`(?:www\.)?${escapeRegExp(bareHost)}(?![\w-])`;
+  const to = new URL(standIn);
+  const standInUrl = to.href.slice(to.protocol.length);
+  const tokens = [
+    ...url.pathname.split("/"),
+    ...url.search
+      .slice(1)
+      .split("&")
+      .map((param) => param.slice(param.indexOf("=") + 1)),
+  ].flatMap((token) => [token, decoded(token.replaceAll("+", " "))]);
+  return {
+    hosts: new Set([bareHost, `www.${bareHost}`]),
+    pathAndQuery: `${url.pathname}${url.search}`,
+    standIn: to,
+    needles: [
+      ...new Set(
+        [bareHost, url.href, ...tokens.filter((token) => token.length >= MIN_TOKEN_CHARS)].map(
+          (needle) => needle.toLowerCase(),
+        ),
+      ),
+    ],
+    inUrl: new RegExp(
+      String.raw`(?:https?:)?(?:\/\/|\\\/\\\/)${host}(?::\d+)?(?:(?:\/|\\\/|\?|#)${URL_CHARS})?`,
+      "gi",
+    ),
+    bare: new RegExp(String.raw`(?<![\w-])${host}`, "gi"),
+    standInText: new RegExp(
+      [standInUrl, standInUrl.replaceAll("/", "\\/")]
+        .map((text) => String.raw`${escapeRegExp(text)}(?![^\s"'<>?#\\])`)
+        .concat(escapeRegExp(to.hostname))
+        .join("|"),
+      "gi",
+    ),
+  };
+}
+
 /**
- * Rewrites each secret URL's origin and path, as a prefix, to its stand-in's, and then its origin
- * alone, so other pages on the secret host keep their paths.
+ * `url` as a recording stores it. On a secret's host (with or without `www.`, any scheme or
+ * port), the secret itself becomes its stand-in, and any other page moves to the stand-in's
+ * origin, dropping its query if that held a credential or one of the secret's query values.
  */
-function redactor(standIns: readonly StandIn[]): (text: string) => string {
-  const pairs = standIns
-    .flatMap(({ secret, standIn }): [string, string][] => {
-      const from = new URL(secret);
-      const to = new URL(standIn);
-      const origins: [string, string] = [from.origin, to.origin];
-      // At the host's root, the path as a prefix would rewrite every page's path.
-      if (from.pathname === "/") return [origins];
-      return [[`${from.origin}${from.pathname}`, `${to.origin}${to.pathname}`], origins];
-    })
-    .sort(([a], [b]) => b.length - a.length);
-  return (text) => pairs.reduce((out, [from, to]) => out.replaceAll(from, to), text);
+function storedUrl(secrets: readonly Secret[], url: string): string {
+  const parsed = new URL(url);
+  const secret = secrets.find(({ hosts }) => hosts.has(parsed.hostname));
+  if (secret === undefined) return stripCredentials(url);
+  if (`${parsed.pathname}${parsed.search}` === secret.pathAndQuery) return secret.standIn.href;
+  const query = `${parsed.search}\n${decoded(parsed.search)}`.toLowerCase();
+  const keepQuery =
+    ![...parsed.searchParams.keys()].some(isCredential) &&
+    !secret.needles.some((needle) => query.includes(needle));
+  const stored = new URL(secret.standIn.origin);
+  stored.pathname = parsed.pathname;
+  if (keepQuery) stored.search = parsed.search;
+  return stored.href;
+}
+
+/** Moves each secret host's URLs in `text` to the stand-in, keeping each URL's form. */
+function storedBody(secrets: readonly Secret[], text: string): string {
+  return secrets.reduce(
+    (out, secret) =>
+      out
+        .replace(secret.inUrl, (match) => {
+          const escaped = match.includes("\\/");
+          const plain = escaped ? match.replaceAll("\\/", "/") : match;
+          const relative = plain.startsWith("//");
+          let stored: string;
+          try {
+            stored = storedUrl(secrets, relative ? `https:${plain}` : plain);
+          } catch {
+            return match;
+          }
+          const form = relative ? stored.slice(stored.indexOf("//")) : stored;
+          return escaped ? form.replaceAll("/", "\\/") : form;
+        })
+        .replace(secret.bare, secret.standIn.hostname),
+    text,
+  );
+}
+
+/** What of a secret `text` still holds, ignoring the stand-ins, named without the secret. */
+function leak(secrets: readonly Secret[], text: string): string | undefined {
+  const rest = secrets.reduce(
+    (out, { standInText }) => out.replace(standInText, " "),
+    text.toLowerCase(),
+  );
+  for (const secret of secrets) {
+    const index = secret.needles.findIndex((needle) => rest.includes(needle));
+    if (index !== -1) return `part ${index + 1} of the secret behind ${secret.standIn.hostname}`;
+  }
+  return undefined;
+}
+
+/** Every string in a JSON value, keys aside. */
+function strings(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.flatMap(strings);
+  if (typeof value === "object" && value !== null) return Object.values(value).flatMap(strings);
+  return [];
 }
 
 export interface Recorder {
@@ -126,8 +241,11 @@ export interface Recorder {
   fetcher: Fetcher;
   /** `url` as the recording stores it: what replaying it should ask for. */
   stored(url: string): string;
-  /** Writes what was kept so far to `dir`, in the order the responses arrived. */
-  save(dir: string): void;
+  /**
+   * Writes what was kept so far to `dir`, in the order the responses arrived, beside `documents`
+   * (JSON, by file name). Writes nothing, and throws, if any of it still holds a secret.
+   */
+  save(dir: string, documents?: Readonly<Record<string, unknown>>): void;
 }
 
 /**
@@ -135,8 +253,8 @@ export interface Recorder {
  * replaces its secret URL in what is written: URLs, file names and bodies.
  */
 export function recordingFetcher(inner: Fetcher, standIns: readonly StandIn[] = []): Recorder {
-  const redact = redactor(standIns);
-  const stored = (url: string): string => redact(stripCredentials(url));
+  const secrets = standIns.map(secretOf);
+  const stored = (url: string): string => storedUrl(secrets, url);
   const kept: { url: string; response: FetchResponse }[] = [];
   return {
     stored,
@@ -147,13 +265,13 @@ export function recordingFetcher(inner: Fetcher, standIns: readonly StandIn[] = 
         return response;
       },
     },
-    save(dir) {
-      mkdirSync(dir, { recursive: true });
+    save(dir, documents = {}) {
+      const files = new Map<string, string>();
       const manifest = kept.map(({ url: request, response }, i): ManifestEntry => {
         const url = stored(request);
         const finalUrl = stored(response.url);
         const file = `${String(i + 1).padStart(4, "0")}-${new URL(url).hostname}${extension(response.contentType)}`;
-        writeFileSync(join(dir, file), redact(response.text));
+        files.set(file, storedBody(secrets, response.text));
         return {
           method: "GET",
           url,
@@ -163,7 +281,24 @@ export function recordingFetcher(inner: Fetcher, standIns: readonly StandIn[] = 
           ...(finalUrl !== url && { finalUrl }),
         };
       });
-      writeFileSync(join(dir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+      const checked: [string, string[]][] = [...files].map(([name, text]) => [name, [name, text]]);
+      checked.push(["manifest.json", strings(manifest)]);
+      for (const [name, value] of Object.entries(documents)) {
+        checked.push([name, [name, ...strings(value)]]);
+      }
+      for (const [name, texts] of checked) {
+        const found = leak(secrets, texts.join("\n"));
+        if (found !== undefined) {
+          throw new Error(`recording not written: ${name} holds ${found}`);
+        }
+      }
+      mkdirSync(dir, { recursive: true });
+      for (const [name, text] of files) writeFileSync(join(dir, name), text);
+      const json = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
+      writeFileSync(join(dir, "manifest.json"), json(manifest));
+      for (const [name, value] of Object.entries(documents)) {
+        writeFileSync(join(dir, name), json(value));
+      }
     },
   };
 }
