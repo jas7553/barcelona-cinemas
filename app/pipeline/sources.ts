@@ -3,6 +3,7 @@ import { liveFetcher, type Fetcher } from "./http.ts";
 import type { Logger } from "./log.ts";
 import { recordingFetcher } from "./recordings.ts";
 import type { CinemaRegistry } from "./registry.ts";
+import { enrich } from "./tmdb.ts";
 import type { PipelineContext, Provider, ScrapedFilm } from "./types.ts";
 
 /** Values kept out of the repo. Absent when unset: each source decides whether it can run without. */
@@ -47,7 +48,16 @@ export interface LiveSources {
 }
 
 /** Providers and enrichment register here as they're ported. */
-export const liveSources: LiveSources = { providers: [] };
+export const liveSources: LiveSources = {
+  providers: [],
+  enrich: async (films, ctx, { tmdbApiKey }) => {
+    if (tmdbApiKey === undefined) {
+      ctx.log.warn("tmdb_enrichment_skipped", { reason: "no TMDB_API_KEY" });
+      return films;
+    }
+    return enrich(films, ctx, { apiKey: tmdbApiKey });
+  },
+};
 
 export interface RecordOptions {
   outDir: string;

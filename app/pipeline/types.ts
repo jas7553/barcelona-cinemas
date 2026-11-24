@@ -40,6 +40,8 @@ export interface ScrapedFilm {
   /** As the source lists it. */
   title: string;
   imdb_id?: string;
+  /** Release year, when the source gives one: it picks between same-title films on TMDb. */
+  year?: number;
   showings: ScrapedShowing[];
 }
 
