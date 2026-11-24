@@ -1,10 +1,13 @@
 /** Every live source the pipeline reads, and `npm run record`'s run through them. */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { z } from "zod";
 import { liveFetcher, type Fetcher } from "./http.ts";
 import type { Logger } from "./log.ts";
 import { englishCinemaBcnProvider } from "./providers/englishCinemaBcn.ts";
 import { secondaryProvider } from "./providers/secondary.ts";
-import { sensacineProvider } from "./providers/sensacine.ts";
-import { verdiProvider } from "./providers/verdi.ts";
+import { sensacineProvider, type SensacineOptions } from "./providers/sensacine.ts";
+import { verdiProvider, type VerdiOptions } from "./providers/verdi.ts";
 import { recordingFetcher } from "./recordings.ts";
 import type { CinemaRegistry } from "./registry.ts";
 import { enrich } from "./tmdb.ts";
@@ -15,6 +18,9 @@ export interface SourceConfig {
   listingsFeedUrl?: string;
   secondaryListingsUrl?: string;
   tmdbApiKey?: string;
+  /** Narrows the public sources to the pages a recording holds. */
+  verdi?: VerdiOptions;
+  sensacine?: SensacineOptions;
 }
 
 /** `missing` names the variables unset or blank. */
@@ -56,8 +62,8 @@ export const liveSources: LiveSources = {
   providers: [
     (config) => englishCinemaBcnProvider({ feedUrl: config.listingsFeedUrl }),
     (config) => secondaryProvider({ listingsUrl: config.secondaryListingsUrl }),
-    () => verdiProvider(),
-    () => sensacineProvider(),
+    (config) => verdiProvider(config.verdi),
+    (config) => sensacineProvider(config.sensacine),
   ],
   enrich: async (films, ctx, { tmdbApiKey }) => {
     if (tmdbApiKey === undefined) {
@@ -112,4 +118,42 @@ export async function recordSources(
   }
   recorder.save(outDir);
   return failed;
+}
+
+const ReplayCase = z.looseObject({
+  now: z.iso.datetime({ offset: true }),
+  config: z
+    .looseObject({
+      listingsFeedUrl: z.string().optional(),
+      secondaryListingsUrl: z.string().optional(),
+    })
+    .optional(),
+  verdi: z.object({ slugs: z.array(z.string()) }).optional(),
+  sensacine: z
+    .object({ ids: z.record(z.string(), z.string()), daysAhead: z.int().positive() })
+    .optional(),
+});
+
+/**
+ * A recording's `case.json`: the instant it stands for, and the config and narrowing its sources
+ * were recorded with.
+ */
+export function readReplayCase(dir: string): { now: Date; config: SourceConfig } {
+  const {
+    now,
+    config = {},
+    verdi,
+    sensacine,
+  } = ReplayCase.parse(JSON.parse(readFileSync(join(dir, "case.json"), "utf8")));
+  return {
+    now: new Date(now),
+    config: {
+      ...(config.listingsFeedUrl !== undefined && { listingsFeedUrl: config.listingsFeedUrl }),
+      ...(config.secondaryListingsUrl !== undefined && {
+        secondaryListingsUrl: config.secondaryListingsUrl,
+      }),
+      ...(verdi && { verdi }),
+      ...(sensacine && { sensacine }),
+    },
+  };
 }

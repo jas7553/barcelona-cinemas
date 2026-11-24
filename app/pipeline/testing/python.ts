@@ -1,5 +1,5 @@
 /**
- * Test only: the legacy Python `Movie` dicts of the reconcile and TMDb goldens, to and from
+ * Test only: the legacy Python `Movie` dicts of the provider, reconcile and TMDb goldens, to and from
  * `EnrichedFilm`. Both sides are compared in one canonical form, which differs from Python's in
  * three ways, each because the field has no TypeScript counterpart:
  *

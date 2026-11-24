@@ -4,6 +4,7 @@
  */
 import { load } from "cheerio";
 import { madridWallClock } from "../../shared/madrid.ts";
+import { NotConfiguredError } from "../errors.ts";
 import { getOk } from "../http.ts";
 import { normalizePremiumFormat, scrapedFilm } from "../normalize.ts";
 import { buildCinemaAliasLookup, normalizeAlias } from "../registry.ts";
@@ -67,7 +68,8 @@ export function englishCinemaBcnProvider(options: EnglishCinemaBcnOptions): Prov
   return {
     name: ENGLISH_CINEMA_BCN,
     async fetch({ fetcher, now, registry, log }) {
-      if (options.feedUrl === undefined) throw new Error("LISTINGS_FEED_URL is not set");
+      if (options.feedUrl === undefined)
+        throw new NotConfiguredError("LISTINGS_FEED_URL is not set");
       const feed = await getOk(fetcher, options.feedUrl, { timeoutMs: TIMEOUT_MS });
       const $feed = load(feed.text);
       const cards = $feed("a.film-card").toArray();

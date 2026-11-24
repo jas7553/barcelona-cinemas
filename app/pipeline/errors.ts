@@ -67,3 +67,8 @@ export function isRetryable(error: unknown): boolean {
   }
   return false;
 }
+
+/** A provider whose source needs config the run doesn't have. */
+export class NotConfiguredError extends Error {
+  override readonly name = "NotConfiguredError";
+}

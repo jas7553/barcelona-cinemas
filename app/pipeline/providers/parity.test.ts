@@ -13,7 +13,8 @@ import type { Fetcher } from "../http.ts";
 import type { Logger } from "../log.ts";
 import { replayFetcher, UnrecordedRequestError } from "../recordings.ts";
 import { parseRegistry } from "../registry.ts";
-import { pythonReconcile, toPythonFilms } from "../testing/python-shape.ts";
+import { reconcile } from "../reconcile.ts";
+import { canonicalPython, toCanonicalPython } from "../testing/python.ts";
 import type { Provider, ScrapedFilm } from "../types.ts";
 import { englishCinemaBcnProvider } from "./englishCinemaBcn.ts";
 import { secondaryProvider } from "./secondary.ts";
@@ -131,15 +132,13 @@ async function run(kind: Kind, dir: string): Promise<Run> {
   }
 }
 
-/** What Python returned: every provider but the catalog site's reconciled its own movies. */
-function asPython(kind: Kind, films: ScrapedFilm[]): unknown {
-  const movies = toPythonFilms(films, registry);
-  return kind === "english_cinema_bcn" ? movies : pythonReconcile(movies);
-}
+const canonical = (films: readonly ScrapedFilm[]): unknown[] => films.map(toCanonicalPython);
+const canonicalGolden = (movies: unknown): unknown[] =>
+  z.array(z.unknown()).parse(movies).map(canonicalPython);
 
 const sorted = (urls: readonly string[]): string[] => [...urls].sort();
 
-function expectGolden(kind: Kind, outcome: Run, golden: z.infer<typeof Golden>): void {
+function expectGolden(outcome: Run, golden: z.infer<typeof Golden>): void {
   expect(outcome.gaps).toEqual([]);
   expect(sorted(outcome.requests)).toEqual(golden.requests);
   expect(outcome.events).toEqual(golden.events);
@@ -154,7 +153,7 @@ function expectGolden(kind: Kind, outcome: Run, golden: z.infer<typeof Golden>):
     return;
   }
   expect(outcome.error).toBeUndefined();
-  expect(asPython(kind, outcome.films ?? [])).toEqual(golden.result);
+  expect(canonical(outcome.films ?? [])).toEqual(canonicalGolden(golden.result));
 }
 
 describe("every recording is covered", () => {
@@ -189,7 +188,7 @@ for (const kind of PROVIDER_KINDS) {
       const golden = Golden.parse(
         readJson(join(FIXTURES, "goldens", "inline", kind, `${name}.json`)),
       );
-      expectGolden(kind, await run(kind, join(recorded, name)), golden);
+      expectGolden(await run(kind, join(recorded, name)), golden);
     });
   });
 }
@@ -210,7 +209,7 @@ describe("parity with Python: the live recording", () => {
       const outcome = await run("verdi", dir);
       expect(outcome.error).toBeUndefined();
       expect(outcome.gaps).toEqual([]);
-      expect(asPython("verdi", outcome.films ?? [])).toEqual(golden("verdi"));
+      expect(canonical(outcome.films ?? [])).toEqual(canonicalGolden(golden("verdi")));
     });
 
     // The legacy code reads only showtimes["original"], and the API now files them under
@@ -220,17 +219,13 @@ describe("parity with Python: the live recording", () => {
       expect(outcome.error).toBeUndefined();
       expect(outcome.gaps).toEqual([]);
       expect(golden("sensacine")).toEqual([]);
-      expect(asPython("sensacine", outcome.films ?? [])).toEqual([]);
+      expect(canonical(outcome.films ?? [])).toEqual([]);
     });
 
     it("reconciling both is the golden's reconciled set", async () => {
       const [verdi, sensacine] = await Promise.all([run("verdi", dir), run("sensacine", dir)]);
-      const films = [
-        ...toPythonFilms(verdi.films ?? [], registry),
-        ...toPythonFilms(sensacine.films ?? [], registry),
-      ];
-      // `verdi` is already reconciled by `asPython`'s stand-in; the live golden reconciles it again.
-      expect(pythonReconcile(films)).toEqual(golden("reconciled"));
+      const films = reconcile([...(verdi.films ?? []), ...(sensacine.films ?? [])]);
+      expect(canonical(films)).toEqual(canonicalGolden(golden("reconciled")));
     });
   });
 });

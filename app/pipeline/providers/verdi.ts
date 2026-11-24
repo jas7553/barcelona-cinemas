@@ -12,6 +12,7 @@ import { z } from "zod";
 import { getOk } from "../http.ts";
 import { normalizeSubtitleLang, scrapedFilm } from "../normalize.ts";
 import { reportPartialFailure } from "../errors.ts";
+import { reconcile } from "../reconcile.ts";
 import type { Provider, ScrapedFilm, ScrapedShowing } from "../types.ts";
 import { buildShowing, mapPool } from "./support.ts";
 
@@ -250,7 +251,7 @@ export function verdiProvider({ slugs: onlySlugs }: VerdiOptions = {}): Provider
         failed: unresolved,
         total: films.reduce((sum, film) => sum + film.sessions.length, 0),
       });
-      return { films: out, entry: cartellera };
+      return { films: reconcile(out), entry: cartellera };
     },
   };
 }

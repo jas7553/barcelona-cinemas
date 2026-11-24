@@ -3,6 +3,7 @@
  * performances, with a ticket-URL template per cinema.
  */
 import { z } from "zod";
+import { NotConfiguredError } from "../errors.ts";
 import { getOk } from "../http.ts";
 import type { Logger } from "../log.ts";
 import {
@@ -11,6 +12,7 @@ import {
   normalizeSubtitleLang,
   scrapedFilm,
 } from "../normalize.ts";
+import { reconcile } from "../reconcile.ts";
 import { buildCinemaAliasLookup, normalizeAlias, type CinemaRegistry } from "../registry.ts";
 import type { Provider, ScrapedFilm, ScrapedShowing } from "../types.ts";
 import { buildShowing, ProviderParseError } from "./support.ts";
@@ -183,11 +185,13 @@ export function secondaryProvider(options: SecondaryOptions): Provider {
   return {
     name: SECONDARY,
     async fetch({ fetcher, registry, log }) {
-      if (options.listingsUrl === undefined) throw new Error("SECONDARY_LISTINGS_URL is not set");
+      if (options.listingsUrl === undefined) {
+        throw new NotConfiguredError("SECONDARY_LISTINGS_URL is not set");
+      }
       const page = await getOk(fetcher, options.listingsUrl, { timeoutMs: TIMEOUT_MS });
       const shops = extractShops(page.text);
       const films = parseShops(shops, registry, log);
-      return { films: legacyEnglishOnly(films), entry: page };
+      return { films: reconcile(legacyEnglishOnly(films)), entry: page };
     },
   };
 }

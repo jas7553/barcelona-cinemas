@@ -13,7 +13,7 @@ import {
   previousFromPython,
   scrapedFromPython,
   toCanonicalPython,
-} from "./testing/python-enriched.ts";
+} from "./testing/python.ts";
 import { enrich, TMDB_MATCH_VERSION, type EnrichedFilm, type PreviousEnrichment } from "./tmdb.ts";
 import type { PipelineContext, ScrapedFilm } from "./types.ts";
 

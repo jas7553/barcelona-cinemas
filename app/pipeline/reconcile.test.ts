@@ -8,7 +8,7 @@ import {
   sameFilm,
   type ReconcileStage,
 } from "./reconcile.ts";
-import { canonicalPython, filmFromPython, toCanonicalPython } from "./testing/python-enriched.ts";
+import { canonicalPython, filmFromPython, toCanonicalPython } from "./testing/python.ts";
 import type { ScrapedFilm, ScrapedShowing } from "./types.ts";
 
 const FIXTURES = new URL("./fixtures/", import.meta.url);

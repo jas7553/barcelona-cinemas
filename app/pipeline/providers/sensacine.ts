@@ -12,6 +12,7 @@ import {
   scrapedFilm,
 } from "../normalize.ts";
 import { reportPartialFailure } from "../errors.ts";
+import { reconcile } from "../reconcile.ts";
 import type { AudioLang, Provider, ScrapedFilm, ScrapedShowing } from "../types.ts";
 import { buildShowing, mapPool } from "./support.ts";
 
@@ -245,7 +246,7 @@ export function sensacineProvider({
         failed: results.filter((films) => films === undefined).length,
         total: pages.length,
       });
-      return { films: legacyEnglishOnly(results.flatMap((films) => films ?? [])) };
+      return { films: reconcile(legacyEnglishOnly(results.flatMap((films) => films ?? []))) };
     },
   };
 }

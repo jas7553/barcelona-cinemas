@@ -195,17 +195,23 @@ describe("sensacineProvider", () => {
   });
 
   it("keeps the rest and reports the pages it lost", async () => {
+    const onDay = (date: string): string =>
+      JSON.stringify({
+        results: [entry("Film", ["ENGLISH"], { original: [showtime(`${date}T16:00:00`)] })],
+      });
     const { fetcher } = stubFetcher({
-      [url("E1", "2026-03-28")]: english,
-      [url("E1", "2026-03-29")]: english,
-      [url("E1", "2026-03-30")]: english,
+      [url("E1", "2026-03-28")]: onDay("2026-03-28"),
+      [url("E1", "2026-03-29")]: onDay("2026-03-29"),
+      [url("E1", "2026-03-30")]: onDay("2026-03-30"),
       [url("E1", "2026-03-31")]: { status: 500 },
     });
     const { log, events } = recordingLogger();
     const { films } = await sensacineProvider({ ids: { Verdi: "E1" }, daysAhead: 4 }).fetch(
       context(fetcher, { log }),
     );
-    expect(films).toHaveLength(3);
+    expect(films.map(({ showings }) => showings.map(({ starts_at }) => starts_at))).toEqual([
+      ["2026-03-28T16:00+01:00", "2026-03-29T16:00+02:00", "2026-03-30T16:00+02:00"],
+    ]);
     expect(events.find(({ event }) => event === "provider_partial_failure")?.fields).toEqual({
       provider: "sensacine",
       kind: "pages",
