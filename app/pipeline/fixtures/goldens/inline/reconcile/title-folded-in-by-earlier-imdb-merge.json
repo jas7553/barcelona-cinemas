@@ -1,0 +1,55 @@
+{
+  "events": [
+    {
+      "cross_title_merge_count": 2,
+      "cross_title_merges": [
+        "The Social Reckoning ← El precio de la red",
+        "The Social Reckoning ← El precio de la red"
+      ],
+      "event": "reconcile_summary",
+      "movies_in": 3,
+      "movies_merged": 2,
+      "movies_out": 1,
+      "showtimes_deduped": 0,
+      "showtimes_in": 3,
+      "showtimes_out": 3,
+      "stage": "collection"
+    }
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt37510326",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "cinema": "Balmes",
+          "date": "2026-11-10",
+          "neighborhood": "N",
+          "time": "18:00"
+        },
+        {
+          "address": "A",
+          "cinema": "Verdi",
+          "date": "2026-11-10",
+          "neighborhood": "N",
+          "time": "20:00"
+        },
+        {
+          "address": "A",
+          "cinema": "RenFlo",
+          "date": "2026-11-10",
+          "neighborhood": "N",
+          "time": "22:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "The Social Reckoning",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

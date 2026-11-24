@@ -1,0 +1,11 @@
+{
+  "error": {
+    "message": "Could not find film listing cards on page",
+    "type": "RuntimeError"
+  },
+  "events": [],
+  "requests": [
+    "https://listings.example.test/films"
+  ],
+  "result": null
+}

@@ -1,0 +1,95 @@
+{
+  "description": "The Cinesa overlap: one copy carries the IMAX badge, the other the booking link and subtitle; both survive, in either order.",
+  "source": [
+    "tests/test_reconcile.py::test_dedup_showtimes_merges_disjoint_info_fields"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Supergirl",
+      "tmdb_id": null,
+      "imdb_id": "tt9",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "CinDiag",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "21:40",
+          "premium_format": "imax"
+        }
+      ]
+    },
+    {
+      "title": "Supergirl",
+      "tmdb_id": null,
+      "imdb_id": "tt9",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "CinDiag",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "21:40",
+          "booking_url": "https://book",
+          "subtitle_lang": "es"
+        }
+      ]
+    },
+    {
+      "title": "Supergirl 2",
+      "tmdb_id": null,
+      "imdb_id": "tt10",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "CinDiag",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "21:40",
+          "booking_url": "https://book",
+          "subtitle_lang": "es"
+        }
+      ]
+    },
+    {
+      "title": "Supergirl 2",
+      "tmdb_id": null,
+      "imdb_id": "tt10",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "CinDiag",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "21:40",
+          "premium_format": "imax"
+        }
+      ]
+    }
+  ]
+}

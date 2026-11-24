@@ -1,0 +1,32 @@
+{
+  "id": 1380868,
+  "imdb_id": "tt15239678",
+  "title": "Her",
+  "poster_path": "/poster.jpg",
+  "backdrop_path": "/backdrop.jpg",
+  "overview": "A hero's journey continues.",
+  "tagline": "Long live the fighters.",
+  "vote_average": 8.5,
+  "vote_count": 12345,
+  "runtime": 166,
+  "genres": [
+    {
+      "id": 878,
+      "name": "Science Fiction"
+    },
+    {
+      "id": 12,
+      "name": "Adventure"
+    }
+  ],
+  "original_language": "en",
+  "release_date": "2025-12-24",
+  "release_dates": {
+    "results": [
+      {
+        "iso_3166_1": "US",
+        "release_dates": []
+      }
+    ]
+  }
+}

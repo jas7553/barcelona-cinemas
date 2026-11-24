@@ -1,0 +1,10 @@
+{
+  "description": "A film detail page that answers 500 fails the whole fetch (no per-film tolerance in this provider).",
+  "source": [
+    "tests/test_listings_provider.py::test_fetch_returns_movie_with_title_from_catalog (error path)"
+  ],
+  "now": "2026-03-28T10:00:00+01:00",
+  "config": {
+    "listingsFeedUrl": "https://listings.example.test/films"
+  }
+}

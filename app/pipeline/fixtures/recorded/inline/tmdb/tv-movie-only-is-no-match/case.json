@@ -1,0 +1,29 @@
+{
+  "description": "The only result is a TV movie: after the es-ES search finds nothing either, the movie is left unenriched.",
+  "source": [
+    "tests/test_enricher.py::test_tv_movies_never_match"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "The Miracle Worker",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ]
+}

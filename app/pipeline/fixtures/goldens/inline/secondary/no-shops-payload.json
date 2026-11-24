@@ -1,0 +1,11 @@
+{
+  "error": {
+    "message": "Could not find window.shops payload on listings page",
+    "type": "RuntimeError"
+  },
+  "events": [],
+  "requests": [
+    "https://secondary.example.test/listings"
+  ],
+  "result": null
+}

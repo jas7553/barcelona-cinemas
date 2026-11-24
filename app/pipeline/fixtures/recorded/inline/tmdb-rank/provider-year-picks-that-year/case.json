@@ -1,0 +1,38 @@
+{
+  "description": "Year 1995 puts the 1995 film first.",
+  "source": [
+    "tests/test_enricher.py::test_provider_year_picks_the_film_from_that_year"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "today": "2026-10-20",
+  "title": "Sense and Sensibility",
+  "results": [
+    {
+      "id": 4584,
+      "title": "Sense and Sensibility",
+      "release_date": "1995-12-13",
+      "genre_ids": [
+        18,
+        10749
+      ]
+    },
+    {
+      "id": 1503762,
+      "title": "Sense and Sensibility",
+      "release_date": "2026-09-18",
+      "genre_ids": [
+        18,
+        10749
+      ]
+    },
+    {
+      "id": 1,
+      "title": "Sense and Sensibility",
+      "release_date": "1971-09-01",
+      "genre_ids": [
+        10770
+      ]
+    }
+  ],
+  "year": 1995
+}

@@ -1,0 +1,28 @@
+{
+  "description": "A TV movie is dropped even when it ranks first.",
+  "source": [
+    "tests/test_enricher.py::test_tv_movies_never_match"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "today": "2026-10-20",
+  "title": "The Miracle Worker",
+  "results": [
+    {
+      "id": 1163,
+      "title": "The Miracle Worker",
+      "release_date": "2000-10-29",
+      "genre_ids": [
+        18,
+        10770
+      ]
+    },
+    {
+      "id": 1162,
+      "title": "The Miracle Worker",
+      "release_date": "1962-05-23",
+      "genre_ids": [
+        18
+      ]
+    }
+  ]
+}

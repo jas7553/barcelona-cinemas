@@ -1,0 +1,8 @@
+{
+  "description": "A letter sala with the V.Park suffix resolves to Verdi Park (VP), not Verdi.",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_assigns_vp_cinema_key_for_letter_sala",
+    "tests/test_verdi_provider.py::test_resolve_cinema_key_returns_vp_for_letter_sala"
+  ],
+  "now": "2026-06-28T10:00:00+02:00"
+}

@@ -1,0 +1,33 @@
+{
+  "error": null,
+  "events": [],
+  "requests": [
+    "https://barcelona.cines-verdi.com/cartellera",
+    "https://barcelona.cines-verdi.com/obsession"
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt12345678",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Torrijos, 49",
+          "booking_url": "https://verdibcn.admit-one.eu/seats/700001/",
+          "cinema": "VP",
+          "date": "2026-06-28",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "subtitle_lang": "es",
+          "time": "20:30"
+        }
+      ],
+      "synopsis": null,
+      "title": "Obsession",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "description": "Merging keeps the longest title and takes the first non-null of every field, including english_title, enriched_at, tmdb_match_version and a zero vote_count; fields absent from both stay absent.",
+  "source": [
+    "tests/test_reconcile.py::test_reconcile_picks_longest_title",
+    "tests/test_reconcile.py::test_reconcile_coalesces_first_non_null_field",
+    "tests/test_reconcile.py::test_merge_pair_coalesces_english_title",
+    "tests/test_reconcile.py::test_merge_pair_english_title_absent_when_neither_side_has_it",
+    "tests/test_reconcile.py::test_merge_pair_preserves_enriched_at",
+    "tests/test_reconcile.py::test_merge_pair_preserves_tmdb_match_version",
+    "tests/test_reconcile.py::test_merge_pair_preserves_zero_vote_count"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Dune",
+      "tmdb_id": null,
+      "imdb_id": "tt1",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "Dune: Part One",
+      "tmdb_id": null,
+      "imdb_id": "tt1",
+      "year": 2021,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "Encuentros en la tercera fase",
+      "tmdb_id": null,
+      "imdb_id": "tt0075860",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [],
+      "english_title": "Close Encounters of the Third Kind"
+    },
+    {
+      "title": "Encuentros en la tercera fase",
+      "tmdb_id": null,
+      "imdb_id": "tt0075860",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "Rated Zero",
+      "tmdb_id": null,
+      "imdb_id": "tt3",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": 0.0,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [],
+      "vote_count": 0,
+      "enriched_at": "2026-07-23T10:00:00+00:00",
+      "tmdb_match_version": 2
+    },
+    {
+      "title": "Rated Zero Extended",
+      "tmdb_id": 3,
+      "imdb_id": "tt3",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": 7.0,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [],
+      "vote_count": 50,
+      "director": "D",
+      "cast": [
+        "A"
+      ],
+      "backdrop_url": "b",
+      "trailer_url": "t",
+      "tagline": "g",
+      "original_lang": "en"
+    },
+    {
+      "title": "Plain",
+      "tmdb_id": null,
+      "imdb_id": "tt4",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "Plain",
+      "tmdb_id": null,
+      "imdb_id": "tt4",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "description": "A Spanish cinema release 9 months ago is not a first run; one three days ahead is; non-ES and non-cinema (type 4) releases never are.",
+  "source": [
+    "tests/test_enricher.py::test_a_recent_namesake_long_out_in_spain_is_not_a_first_run"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "today": "2026-10-20",
+  "details": [
+    {
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "ES",
+            "release_dates": [
+              {
+                "release_date": "2025-01-29T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "ES",
+            "release_dates": [
+              {
+                "release_date": "2026-10-23T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "release_date": "2026-10-23T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "ES",
+            "release_dates": [
+              {
+                "release_date": "2026-10-23T00:00:00.000Z",
+                "type": 4
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {}
+  ]
+}

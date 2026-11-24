@@ -1,0 +1,26 @@
+{
+  "description": "A release 31 days ahead is a first-run candidate; one 8 months ahead is not.",
+  "source": [
+    "tests/test_enricher.py::test_recency_window_admits_a_preview_but_not_an_announced_film"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "today": "2026-10-20",
+  "title": "Highlander",
+  "results": [
+    {
+      "id": 8009,
+      "title": "Highlander",
+      "release_date": "1986-03-07"
+    },
+    {
+      "id": 2,
+      "title": "Highlander",
+      "release_date": "2027-06-01"
+    },
+    {
+      "id": 3,
+      "title": "Highlander",
+      "release_date": "2026-11-20"
+    }
+  ]
+}

@@ -1,0 +1,337 @@
+{
+  "description": "A duplicate showtime carrying booking_url, subtitle_lang, audio_lang or premium_format contributes it whichever copy came first (each film is one field, both orders).",
+  "source": [
+    "tests/test_reconcile.py::test_dedup_showtimes_info_field_wins_regardless_of_order"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "booking_url rich-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-booking_url-rich-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "booking_url": "https://book"
+        }
+      ]
+    },
+    {
+      "title": "booking_url rich-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-booking_url-rich-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "booking_url plain-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-booking_url-plain-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "booking_url plain-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-booking_url-plain-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "booking_url": "https://book"
+        }
+      ]
+    },
+    {
+      "title": "subtitle_lang rich-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-subtitle_lang-rich-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "subtitle_lang": "es"
+        }
+      ]
+    },
+    {
+      "title": "subtitle_lang rich-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-subtitle_lang-rich-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "subtitle_lang plain-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-subtitle_lang-plain-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "subtitle_lang plain-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-subtitle_lang-plain-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "subtitle_lang": "es"
+        }
+      ]
+    },
+    {
+      "title": "audio_lang rich-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-audio_lang-rich-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "audio_lang": "en"
+        }
+      ]
+    },
+    {
+      "title": "audio_lang rich-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-audio_lang-rich-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "audio_lang plain-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-audio_lang-plain-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "audio_lang plain-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-audio_lang-plain-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "audio_lang": "en"
+        }
+      ]
+    },
+    {
+      "title": "premium_format rich-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-premium_format-rich-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "premium_format": "imax"
+        }
+      ]
+    },
+    {
+      "title": "premium_format rich-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-premium_format-rich-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "premium_format plain-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-premium_format-plain-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "premium_format plain-first",
+      "tmdb_id": null,
+      "imdb_id": "tt-premium_format-plain-first",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "premium_format": "imax"
+        }
+      ]
+    }
+  ]
+}

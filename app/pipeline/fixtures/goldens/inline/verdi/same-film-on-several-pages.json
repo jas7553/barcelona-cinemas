@@ -1,0 +1,47 @@
+{
+  "error": null,
+  "events": [
+    {
+      "event": "provider_partial_failure",
+      "failed_count": 1,
+      "kind": "film pages",
+      "provider": "verdi",
+      "total_count": 4
+    }
+  ],
+  "requests": [
+    "https://barcelona.cines-verdi.com/cartellera",
+    "https://barcelona.cines-verdi.com/four",
+    "https://barcelona.cines-verdi.com/obsession",
+    "https://barcelona.cines-verdi.com/three",
+    "https://barcelona.cines-verdi.com/two",
+    "https://verdibcn.admit-one.eu/seats/320001/",
+    "https://verdibcn.admit-one.eu/seats/320002/",
+    "https://verdibcn.admit-one.eu/seats/320003/"
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt12345678",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "booking_url": "https://verdibcn.admit-one.eu/seats/320001/",
+          "cinema": "Verdi",
+          "date": "2026-06-28",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "subtitle_lang": "es",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Obsession",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

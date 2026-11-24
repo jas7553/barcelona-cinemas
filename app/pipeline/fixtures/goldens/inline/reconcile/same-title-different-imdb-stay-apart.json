@@ -1,0 +1,53 @@
+{
+  "events": [],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt0013442",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [],
+      "synopsis": null,
+      "title": "Nosferatu",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt5040012",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [],
+      "synopsis": null,
+      "title": "Nosferatu",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [],
+      "synopsis": null,
+      "title": "Dune",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [],
+      "synopsis": null,
+      "title": "Oppenheimer",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

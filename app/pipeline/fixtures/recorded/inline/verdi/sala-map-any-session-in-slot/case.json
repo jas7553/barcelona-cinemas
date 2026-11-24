@@ -1,0 +1,10 @@
+{
+  "description": "Only a later date's session is cached; the whole 20:30 slot takes its sala and no seat page is requested.",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_uses_cached_sala_from_any_session_in_the_slot"
+  ],
+  "now": "2026-06-28T10:00:00+02:00",
+  "salaMap": {
+    "800002": "VP"
+  }
+}

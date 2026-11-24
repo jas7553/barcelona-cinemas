@@ -1,0 +1,34 @@
+{
+  "description": "An imdb_id match collapsing two differently-titled copies is named in the post_enrichment summary.",
+  "source": [
+    "tests/test_reconcile.py::test_reconcile_summary_names_films_merged_across_different_titles"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Dune: Part Two",
+      "tmdb_id": null,
+      "imdb_id": "tt15239678",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "Dune Part 2",
+      "tmdb_id": null,
+      "imdb_id": "tt15239678",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    }
+  ],
+  "stage": "post_enrichment"
+}

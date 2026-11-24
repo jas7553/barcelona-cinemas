@@ -1,0 +1,14 @@
+{
+  "description": "Both pages answer 503: past the failure limit the fetch raises PartialFetchError.",
+  "source": [
+    "tests/test_sensacine_provider.py::test_fetch_fails_when_every_page_fails"
+  ],
+  "now": "2026-06-29T10:00:00+02:00",
+  "sensacine": {
+    "ids": {
+      "CinDiag": "E0381",
+      "Malda": "E0682"
+    },
+    "daysAhead": 1
+  }
+}

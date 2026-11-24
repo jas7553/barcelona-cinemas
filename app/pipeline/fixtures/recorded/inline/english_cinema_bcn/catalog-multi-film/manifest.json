@@ -1,0 +1,30 @@
+[
+  {
+    "method": "GET",
+    "url": "https://listings.example.test/films",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "01-listings-example-test-films.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://listings.example.test/m/project-hail-mary/in-english-in-barcelona",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "02-listings-example-test-m-project-hail-mary-in-english-in-barcelona.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://listings.example.test/m/dune-part-three/in-english-in-barcelona",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "03-listings-example-test-m-dune-part-three-in-english-in-barcelona.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://listings.example.test/m/ghost-film",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "04-listings-example-test-m-ghost-film.html"
+  }
+]

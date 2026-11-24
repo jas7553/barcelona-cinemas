@@ -1,0 +1,27 @@
+{
+  "id": 1309083,
+  "imdb_id": "tt15239678",
+  "title": "Dolly",
+  "poster_path": "/poster.jpg",
+  "backdrop_path": "/backdrop.jpg",
+  "overview": "A hero's journey continues.",
+  "tagline": "Long live the fighters.",
+  "vote_average": 8.5,
+  "vote_count": 12345,
+  "runtime": 83,
+  "genres": [
+    {
+      "id": 878,
+      "name": "Science Fiction"
+    },
+    {
+      "id": 12,
+      "name": "Adventure"
+    }
+  ],
+  "original_language": "en",
+  "release_date": "2026-04-03",
+  "release_dates": {
+    "results": []
+  }
+}

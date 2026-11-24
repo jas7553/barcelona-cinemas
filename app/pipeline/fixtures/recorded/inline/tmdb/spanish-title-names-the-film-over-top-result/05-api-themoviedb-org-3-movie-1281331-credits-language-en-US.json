@@ -1,0 +1,26 @@
+{
+  "cast": [
+    {
+      "name": "Timothée Chalamet",
+      "order": 0
+    },
+    {
+      "name": "Zendaya",
+      "order": 1
+    },
+    {
+      "name": "Rebecca Ferguson",
+      "order": 2
+    }
+  ],
+  "crew": [
+    {
+      "name": "Denis Villeneuve",
+      "job": "Director"
+    },
+    {
+      "name": "Hans Zimmer",
+      "job": "Original Music Composer"
+    }
+  ]
+}

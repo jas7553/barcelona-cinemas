@@ -1,0 +1,14 @@
+{
+  "description": "Catalog of film cards (relative and absolute hrefs, a card with no title, one with no href), each film's detail page grouped by cinema block: alias names (Verdi, Cinemes Verdi, Cin Diag, Mooby Gran Sarrià), an unknown cinema, a duplicated chip, IMAX among several tags, a film with only unknown cinemas (dropped).",
+  "source": [
+    "tests/test_listings_provider.py::test_fetch_returns_movie_with_title_from_catalog",
+    "tests/test_listings_provider.py::test_fetch_returns_correct_showtime",
+    "tests/test_listings_provider.py::test_fetch_maps_alias_cinema_names_and_sets_vo_language",
+    "tests/test_listings_provider.py::test_premium_format",
+    "tests/test_listings_provider.py::test_redesigned_site_names_resolve_to_registry_keys"
+  ],
+  "now": "2026-03-28T10:00:00+01:00",
+  "config": {
+    "listingsFeedUrl": "https://listings.example.test/films"
+  }
+}

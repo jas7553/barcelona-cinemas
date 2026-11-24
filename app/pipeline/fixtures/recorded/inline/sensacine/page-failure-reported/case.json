@@ -1,0 +1,14 @@
+{
+  "description": "Four pages, one answers 503: the rest are kept and the failure reported (1 of 4, within the limit).",
+  "source": [
+    "tests/test_sensacine_provider.py::test_fetch_keeps_the_rest_when_a_few_pages_fail_and_reports_them"
+  ],
+  "now": "2026-06-29T10:00:00+02:00",
+  "sensacine": {
+    "ids": {
+      "CinDiag": "E0381",
+      "Malda": "E0682"
+    },
+    "daysAhead": 2
+  }
+}

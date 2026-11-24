@@ -1,0 +1,576 @@
+[
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189172&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "15:50"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189852&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "17:00"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189174&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "18:00"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189173&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "19:00"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189851&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "20:10"
+      },
+      {
+        "address": "Carrer d'Aribau, 8-10",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=70200&language=ENG&theatre=BAL-ARIBAU",
+        "cinema": "Aribau",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Eixample",
+        "time": "20:30"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=141995&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "21:05"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189175&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "21:20"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189176&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "15:50"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189882&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "17:00"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189178&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "18:00"
+      },
+      {
+        "address": "Carrer d'Aribau, 8-10",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=69876&language=ENG&theatre=BAL-ARIBAU",
+        "cinema": "Aribau",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Eixample",
+        "time": "18:10"
+      },
+      {
+        "address": "Carrer d'Aribau, 8-10",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=70230&language=ENG&theatre=BAL-ARIBAU",
+        "cinema": "Aribau",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Eixample",
+        "time": "18:25"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189177&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "19:00"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189881&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "20:10"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=141997&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "21:05"
+      },
+      {
+        "address": "Carrer d'Aribau, 8-10",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=69877&language=ENG&theatre=BAL-ARIBAU",
+        "cinema": "Aribau",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Eixample",
+        "time": "21:20"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189179&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "21:20"
+      },
+      {
+        "address": "Carrer d'Aribau, 8-10",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=70231&language=ENG&theatre=BAL-ARIBAU",
+        "cinema": "Aribau",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Eixample",
+        "time": "21:25"
+      }
+    ],
+    "synopsis": null,
+    "title": "Los Juegos del Hambre: Amanecer en la cosecha",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189876&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "15:45"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189861&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "20:50"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189907&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "15:45"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189891&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "20:50"
+      }
+    ],
+    "synopsis": null,
+    "title": "Wicker",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189862&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "15:55"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189863&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "18:25"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189892&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "15:55"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189893&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "18:25"
+      }
+    ],
+    "synopsis": null,
+    "title": "Scrooge y los fantasmas de la Navidad",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189870&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "16:00"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189868&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "19:10"
+      },
+      {
+        "address": "Carrer d'Aribau, 8-10",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=70188&language=ENG&theatre=BAL-ARIBAU",
+        "cinema": "Aribau",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Eixample",
+        "time": "21:00"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142494&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "21:30"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189869&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "21:40"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189900&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "16:00"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189898&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "19:10"
+      },
+      {
+        "address": "Carrer d'Aribau, 8-10",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=70140&language=ENG&theatre=BAL-ARIBAU",
+        "cinema": "Aribau",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Eixample",
+        "time": "21:30"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189899&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "21:40"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142523&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "21:40"
+      }
+    ],
+    "synopsis": null,
+    "title": "Wild Horse Nine",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189856&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "16:05"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189855&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "21:00"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189886&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "16:05"
+      }
+    ],
+    "synopsis": null,
+    "title": "Sentido y sensibilidad",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189860&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "16:10"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189859&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "18:55"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142489&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "20:45"
+      },
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189858&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "21:40"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142517&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "20:45"
+      }
+    ],
+    "synopsis": null,
+    "title": "Wildwood",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer de Balmes, 422-424",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=189908&language=ENG&theatre=BAL-BALMES",
+        "cinema": "Balmes",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Sarrià-Sant Gervasi",
+        "time": "16:00"
+      }
+    ],
+    "synopsis": null,
+    "title": "El gato con sombrero",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142508&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "18:50"
+      }
+    ],
+    "synopsis": null,
+    "title": "La invitación",
+    "tmdb_id": null,
+    "year": null
+  }
+]

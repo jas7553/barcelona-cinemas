@@ -1,0 +1,59 @@
+{
+  "description": "Same title with two different imdb_ids are two films; distinct titles are separate films.",
+  "source": [
+    "tests/test_reconcile.py::test_reconcile_keeps_same_title_copies_with_different_imdb_ids_apart",
+    "tests/test_reconcile.py::test_reconcile_keeps_distinct_films_separate",
+    "tests/test_reconcile.py::test_same_movie_different_imdb_never_matches_even_with_same_title"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Nosferatu",
+      "tmdb_id": null,
+      "imdb_id": "tt0013442",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "Nosferatu",
+      "tmdb_id": null,
+      "imdb_id": "tt5040012",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "Dune",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "Oppenheimer",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    }
+  ]
+}

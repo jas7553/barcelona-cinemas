@@ -1,0 +1,14 @@
+{
+  "page": 1,
+  "results": [
+    {
+      "id": 1163,
+      "title": "The Miracle Worker",
+      "release_date": "2000-10-29",
+      "genre_ids": [
+        18,
+        10770
+      ]
+    }
+  ]
+}

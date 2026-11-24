@@ -1,0 +1,81 @@
+{
+  "description": "Two cached films with different English titles are both cache hits; nothing is requested.",
+  "source": [
+    "tests/test_enricher.py::test_cached_matches_with_different_titles_are_left_alone"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Fargo",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    },
+    {
+      "title": "Rocky",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ],
+  "cached": [
+    {
+      "title": "Fargo",
+      "tmdb_id": 275,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [],
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "tmdb_match_version": 4,
+      "english_title": "Fargo"
+    },
+    {
+      "title": "Rocky",
+      "tmdb_id": 1366,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [],
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "tmdb_match_version": 4,
+      "english_title": "Rocky"
+    }
+  ]
+}

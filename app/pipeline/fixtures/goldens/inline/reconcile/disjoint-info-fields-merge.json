@@ -1,0 +1,51 @@
+{
+  "events": [],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt9",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "booking_url": "https://book",
+          "cinema": "CinDiag",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "premium_format": "imax",
+          "subtitle_lang": "es",
+          "time": "21:40"
+        }
+      ],
+      "synopsis": null,
+      "title": "Supergirl",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt10",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "booking_url": "https://book",
+          "cinema": "CinDiag",
+          "date": "2026-06-14",
+          "neighborhood": "N",
+          "premium_format": "imax",
+          "subtitle_lang": "es",
+          "time": "21:40"
+        }
+      ],
+      "synopsis": null,
+      "title": "Supergirl 2",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

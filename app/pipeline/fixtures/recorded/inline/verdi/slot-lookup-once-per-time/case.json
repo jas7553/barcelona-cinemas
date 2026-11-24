@@ -1,0 +1,7 @@
+{
+  "description": "Three sessions at 20:30 on three days cost one seat lookup, asked of the latest session.",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_deduplicates_same_time_slot_sala_lookup"
+  ],
+  "now": "2026-06-28T10:00:00+02:00"
+}

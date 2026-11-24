@@ -1,0 +1,116 @@
+{
+  "error": false,
+  "results": [
+    {
+      "movie": {
+        "title": "Digger",
+        "internalId": 1234,
+        "languages": [
+          "ENGLISH"
+        ],
+        "poster": null
+      },
+      "showtimes": {
+        "dubbed": [],
+        "original": [
+          {
+            "startsAt": "2026-06-29T16:00:00",
+            "tags": [],
+            "data": {
+              "ticketing": [
+                {
+                  "provider": "default",
+                  "urls": [
+                    "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=188474&language=%s&theatre=%s"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "startsAt": "2026-06-29T19:00:00",
+            "tags": [
+              "Format.Projection.Imax"
+            ],
+            "data": {
+              "ticketing": [
+                {
+                  "provider": "relay",
+                  "urls": [
+                    "https://relay.mvtx.us/ticketing/digger"
+                  ]
+                },
+                {
+                  "provider": "default",
+                  "urls": [
+                    "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=188474&language=%s&theatre=%s"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "local": []
+      }
+    },
+    {
+      "movie": {
+        "title": "Supergirl",
+        "internalId": 266720,
+        "languages": [
+          "ENGLISH"
+        ],
+        "poster": null
+      },
+      "showtimes": {
+        "dubbed": [],
+        "original": [
+          {
+            "startsAt": "2026-06-29T16:00:00",
+            "tags": [
+              "Localization.Version.Original",
+              "Localization.Subtitle.Spanish",
+              "Format.Projection.Digital"
+            ],
+            "data": {
+              "ticketing": [
+                {
+                  "provider": "relay",
+                  "urls": [
+                    "https://relay.mvtx.us/ticketing/dbz?code=Vose"
+                  ]
+                },
+                {
+                  "provider": "default",
+                  "urls": [
+                    "https://www.cinesa.es/compra/butacas/?showtimeId=012-51716"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "startsAt": "2026-06-29T21:10:00",
+            "tags": [
+              "Localization.Version.Original",
+              "Localization.Subtitle.Spanish",
+              "Format.Projection.Imax"
+            ],
+            "data": {
+              "ticketing": [
+                {
+                  "provider": "default",
+                  "urls": [
+                    "https://www.cinesa.es/compra/butacas/?showtimeId=012-51718"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "local": []
+      }
+    }
+  ],
+  "nextDate": null
+}

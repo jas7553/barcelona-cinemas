@@ -1,0 +1,10 @@
+{
+  "description": "A cached map that lacks this session still triggers the lookup.",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_falls_back_to_lookup_for_sessions_absent_from_cache"
+  ],
+  "now": "2026-06-28T10:00:00+02:00",
+  "salaMap": {
+    "111111": "VP"
+  }
+}

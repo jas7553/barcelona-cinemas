@@ -1,0 +1,11 @@
+{
+  "description": "A session already in the cached sala map costs no seat request: its VP assignment is reused.",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_skips_network_when_session_is_in_cached_sala_map",
+    "tests/test_verdi_provider.py::test_cached_sala_map_extracts_session_ids_from_booking_urls"
+  ],
+  "now": "2026-06-28T10:00:00+02:00",
+  "salaMap": {
+    "700001": "VP"
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "events": [],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt1",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "A",
+          "cinema": "Malda",
+          "date": "2026-06-14",
+          "language": "vo",
+          "neighborhood": "N",
+          "time": "18:00"
+        },
+        {
+          "address": "A",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "language": "dub",
+          "neighborhood": "N",
+          "time": "18:00"
+        },
+        {
+          "address": "A",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "language": "vo",
+          "neighborhood": "N",
+          "time": "18:00"
+        },
+        {
+          "address": "A",
+          "cinema": "Verdi",
+          "date": "2026-06-14",
+          "language": "vo",
+          "neighborhood": "N",
+          "time": "20:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Dune",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

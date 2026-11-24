@@ -1,0 +1,71 @@
+{
+  "error": null,
+  "events": [
+    {
+      "event": "provider_partial_failure",
+      "failed_count": 1,
+      "kind": "film pages",
+      "provider": "verdi",
+      "total_count": 6
+    }
+  ],
+  "requests": [
+    "https://barcelona.cines-verdi.com/array-root",
+    "https://barcelona.cines-verdi.com/broken-page",
+    "https://barcelona.cines-verdi.com/cartellera",
+    "https://barcelona.cines-verdi.com/dubbed-only",
+    "https://barcelona.cines-verdi.com/no-ld-json",
+    "https://barcelona.cines-verdi.com/no-same-as",
+    "https://barcelona.cines-verdi.com/same-as-list",
+    "https://verdibcn.admit-one.eu/seats/500001/",
+    "https://verdibcn.admit-one.eu/seats/500002/"
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt12345678",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "booking_url": "https://verdibcn.admit-one.eu/seats/500001/",
+          "cinema": "Verdi",
+          "date": "2026-06-28",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "subtitle_lang": "es",
+          "time": "18:30"
+        }
+      ],
+      "synopsis": null,
+      "title": "Obsession",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Torrijos, 49",
+          "booking_url": "https://verdibcn.admit-one.eu/seats/500002/",
+          "cinema": "VP",
+          "date": "2026-06-28",
+          "language": "vo",
+          "neighborhood": "Gràcia",
+          "subtitle_lang": "es",
+          "time": "20:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Quiet Film",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

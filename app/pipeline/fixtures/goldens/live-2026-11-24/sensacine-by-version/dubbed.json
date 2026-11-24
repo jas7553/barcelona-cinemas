@@ -1,0 +1,227 @@
+[
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Carrer d'Aribau, 8-10",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=70198&language=ENG&theatre=BAL-ARIBAU",
+        "cinema": "Aribau",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Eixample",
+        "time": "16:00"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142496&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "16:00"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142493&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "18:30"
+      },
+      {
+        "address": "Carrer d'Aribau, 8-10",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=70205&language=ENG&theatre=BAL-ARIBAU",
+        "cinema": "Aribau",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Eixample",
+        "time": "18:45"
+      },
+      {
+        "address": "Carrer d'Aribau, 8-10",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-aribau.admit-one.eu/?p=tickets&perfCode=70147&language=ENG&theatre=BAL-ARIBAU",
+        "cinema": "Aribau",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Eixample",
+        "time": "16:00"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142525&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "16:00"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142522&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "19:10"
+      }
+    ],
+    "synopsis": null,
+    "title": "Wild Horse Nine",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142491&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "15:55"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142488&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "19:05"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142520&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "15:55"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=141996&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "17:45"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142514&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "20:15"
+      }
+    ],
+    "synopsis": null,
+    "title": "Los Juegos del Hambre: Amanecer en la cosecha",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142485&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "15:55"
+      },
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142511&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "15:55"
+      }
+    ],
+    "synopsis": null,
+    "title": "Wildwood",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142504&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-24",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "18:50"
+      }
+    ],
+    "synopsis": null,
+    "title": "La invitación",
+    "tmdb_id": null,
+    "year": null
+  },
+  {
+    "genres": null,
+    "imdb_id": null,
+    "poster_url": null,
+    "rating": null,
+    "runtime_mins": null,
+    "showtimes": [
+      {
+        "address": "Rambla de Prat, 16",
+        "audio_lang": "en",
+        "booking_url": "https://moobycinemas-bosque.admit-one.eu/?p=tickets&perfCode=142515&language=ENG&theatre=BAL-BOSQUE",
+        "cinema": "Bosque",
+        "date": "2026-11-25",
+        "language": "vo",
+        "neighborhood": "Gràcia",
+        "time": "18:20"
+      }
+    ],
+    "synopsis": null,
+    "title": "El gato con sombrero",
+    "tmdb_id": null,
+    "year": null
+  }
+]

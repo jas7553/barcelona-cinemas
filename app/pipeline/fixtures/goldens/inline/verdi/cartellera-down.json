@@ -1,0 +1,11 @@
+{
+  "error": {
+    "message": "503 Server Error: Error for url: https://barcelona.cines-verdi.com/cartellera",
+    "type": "HTTPError"
+  },
+  "events": [],
+  "requests": [
+    "https://barcelona.cines-verdi.com/cartellera"
+  ],
+  "result": null
+}

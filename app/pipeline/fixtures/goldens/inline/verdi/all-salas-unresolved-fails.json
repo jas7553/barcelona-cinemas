@@ -1,0 +1,21 @@
+{
+  "error": {
+    "message": "verdi lost 1 of 1 showtimes without a sala",
+    "type": "PartialFetchError"
+  },
+  "events": [
+    {
+      "event": "provider_partial_failure",
+      "failed_count": 1,
+      "kind": "showtimes without a sala",
+      "provider": "verdi",
+      "total_count": 1
+    }
+  ],
+  "requests": [
+    "https://barcelona.cines-verdi.com/cartellera",
+    "https://barcelona.cines-verdi.com/obsession",
+    "https://verdibcn.admit-one.eu/seats/300001/"
+  ],
+  "result": null
+}

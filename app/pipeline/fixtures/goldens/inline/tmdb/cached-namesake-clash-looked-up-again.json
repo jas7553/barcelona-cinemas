@@ -1,0 +1,165 @@
+{
+  "collected": null,
+  "enriched": [
+    {
+      "backdrop_url": "https://image.tmdb.org/t/p/w1280/backdrop.jpg",
+      "cast": [
+        "Timothée Chalamet",
+        "Zendaya",
+        "Rebecca Ferguson"
+      ],
+      "director": "Denis Villeneuve",
+      "english_title": "Sense and Sensibility",
+      "enriched_at": "2026-10-20T08:00:00+00:00",
+      "genres": [
+        "Science Fiction",
+        "Adventure"
+      ],
+      "imdb_id": "tt13609648",
+      "original_lang": "en",
+      "poster_url": "https://image.tmdb.org/t/p/w342/poster.jpg",
+      "rating": 8.5,
+      "runtime_mins": 166,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-22",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": "A hero's journey continues.",
+      "tagline": "Long live the fighters.",
+      "title": "Sense and Sensibility",
+      "tmdb_id": 1503762,
+      "tmdb_match_version": 4,
+      "trailer_url": null,
+      "vote_count": 12345,
+      "year": 2026
+    },
+    {
+      "backdrop_url": "https://image.tmdb.org/t/p/w1280/backdrop.jpg",
+      "cast": [
+        "Timothée Chalamet",
+        "Zendaya",
+        "Rebecca Ferguson"
+      ],
+      "director": "Denis Villeneuve",
+      "english_title": "Sense and Sensibility",
+      "enriched_at": "2026-10-20T08:00:00+00:00",
+      "genres": [
+        "Science Fiction",
+        "Adventure"
+      ],
+      "imdb_id": "tt13609648",
+      "original_lang": "en",
+      "poster_url": "https://image.tmdb.org/t/p/w342/poster.jpg",
+      "rating": 8.5,
+      "runtime_mins": 166,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-23",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": "A hero's journey continues.",
+      "tagline": "Long live the fighters.",
+      "title": "Sentido y sensibilidad",
+      "tmdb_id": 1503762,
+      "tmdb_match_version": 4,
+      "trailer_url": null,
+      "vote_count": 12345,
+      "year": 2026
+    }
+  ],
+  "events": [
+    {
+      "event": "tmdb_enrichment_summary",
+      "movie_count": 2,
+      "tmdb_cache_hit_count": 0,
+      "tmdb_enriched_count": 2,
+      "tmdb_failure_count": 0,
+      "tmdb_reenriched_count": 1
+    },
+    {
+      "cross_title_merge_count": 1,
+      "cross_title_merges": [
+        "Sense and Sensibility ← Sentido y sensibilidad"
+      ],
+      "event": "reconcile_summary",
+      "movies_in": 2,
+      "movies_merged": 1,
+      "movies_out": 1,
+      "showtimes_deduped": 0,
+      "showtimes_in": 2,
+      "showtimes_out": 2,
+      "stage": "post_enrichment"
+    }
+  ],
+  "reconciled": [
+    {
+      "backdrop_url": "https://image.tmdb.org/t/p/w1280/backdrop.jpg",
+      "cast": [
+        "Timothée Chalamet",
+        "Zendaya",
+        "Rebecca Ferguson"
+      ],
+      "director": "Denis Villeneuve",
+      "english_title": "Sense and Sensibility",
+      "enriched_at": "2026-10-20T08:00:00+00:00",
+      "genres": [
+        "Science Fiction",
+        "Adventure"
+      ],
+      "imdb_id": "tt13609648",
+      "original_lang": "en",
+      "poster_url": "https://image.tmdb.org/t/p/w342/poster.jpg",
+      "rating": 8.5,
+      "runtime_mins": 166,
+      "showtimes": [
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-22",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        },
+        {
+          "address": "Carrer de Verdi, 32",
+          "cinema": "Verdi",
+          "date": "2026-10-23",
+          "neighborhood": "Gràcia",
+          "time": "18:00"
+        }
+      ],
+      "synopsis": "A hero's journey continues.",
+      "tagline": "Long live the fighters.",
+      "title": "Sentido y sensibilidad",
+      "tmdb_id": 1503762,
+      "tmdb_match_version": 4,
+      "vote_count": 12345,
+      "year": 2026
+    }
+  ],
+  "requests": [
+    "https://api.themoviedb.org/3/search/movie?language=en-US&query=Sentido+y+sensibilidad",
+    "https://api.themoviedb.org/3/search/movie?language=es-ES&query=Sentido+y+sensibilidad",
+    "https://api.themoviedb.org/3/movie/1503762?language=en-US&append_to_response=release_dates",
+    "https://api.themoviedb.org/3/movie/1503762/videos?language=en-US",
+    "https://api.themoviedb.org/3/movie/1503762/credits?language=en-US",
+    "https://api.themoviedb.org/3/search/movie?language=en-US&query=Sense+and+Sensibility",
+    "https://api.themoviedb.org/3/movie/1503762?language=en-US&append_to_response=release_dates",
+    "https://api.themoviedb.org/3/movie/1503762/videos?language=en-US",
+    "https://api.themoviedb.org/3/movie/1503762/credits?language=en-US"
+  ],
+  "stats": {
+    "tmdb_cache_hit_count": 0,
+    "tmdb_enriched_count": 2,
+    "tmdb_failure_count": 0,
+    "tmdb_reenriched_count": 1
+  }
+}

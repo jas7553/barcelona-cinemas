@@ -1,0 +1,11 @@
+{
+  "error": {
+    "message": "Could not decode shops payload",
+    "type": "RuntimeError"
+  },
+  "events": [],
+  "requests": [
+    "https://secondary.example.test/listings"
+  ],
+  "result": null
+}

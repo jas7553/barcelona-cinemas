@@ -1,0 +1,65 @@
+[
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/cartellera",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "01-barcelona-cines-verdi-com-cartellera.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/same-as-list",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "02-barcelona-cines-verdi-com-same-as-list.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/no-same-as",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "03-barcelona-cines-verdi-com-no-same-as.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/array-root",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "04-barcelona-cines-verdi-com-array-root.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/no-ld-json",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "05-barcelona-cines-verdi-com-no-ld-json.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/dubbed-only",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "06-barcelona-cines-verdi-com-dubbed-only.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://barcelona.cines-verdi.com/broken-page",
+    "status": 500,
+    "contentType": "text/html; charset=utf-8",
+    "file": "07-barcelona-cines-verdi-com-broken-page.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/500001/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "08-verdibcn-admit-one-eu-seats-500001.html"
+  },
+  {
+    "method": "GET",
+    "url": "https://verdibcn.admit-one.eu/seats/500002/",
+    "status": 200,
+    "contentType": "text/html; charset=utf-8",
+    "file": "09-verdibcn-admit-one-eu-seats-500002.html"
+  }
+]

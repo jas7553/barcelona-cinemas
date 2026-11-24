@@ -1,0 +1,32 @@
+{
+  "events": [
+    {
+      "cross_title_merge_count": 1,
+      "cross_title_merges": [
+        "Dune: Part Two ← Dune Part 2"
+      ],
+      "event": "reconcile_summary",
+      "movies_in": 2,
+      "movies_merged": 1,
+      "movies_out": 1,
+      "showtimes_deduped": 0,
+      "showtimes_in": 0,
+      "showtimes_out": 0,
+      "stage": "post_enrichment"
+    }
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt15239678",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [],
+      "synopsis": null,
+      "title": "Dune: Part Two",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

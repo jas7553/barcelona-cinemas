@@ -1,0 +1,37 @@
+{
+  "id": 152601,
+  "imdb_id": "tt15239678",
+  "title": "Her",
+  "poster_path": "/poster.jpg",
+  "backdrop_path": "/backdrop.jpg",
+  "overview": "A hero's journey continues.",
+  "tagline": "Long live the fighters.",
+  "vote_average": 8.5,
+  "vote_count": 12345,
+  "runtime": 126,
+  "genres": [
+    {
+      "id": 878,
+      "name": "Science Fiction"
+    },
+    {
+      "id": 12,
+      "name": "Adventure"
+    }
+  ],
+  "original_language": "en",
+  "release_date": "2013-12-18",
+  "release_dates": {
+    "results": [
+      {
+        "iso_3166_1": "ES",
+        "release_dates": [
+          {
+            "release_date": "2014-03-07T00:00:00.000Z",
+            "type": 3
+          }
+        ]
+      }
+    ]
+  }
+}

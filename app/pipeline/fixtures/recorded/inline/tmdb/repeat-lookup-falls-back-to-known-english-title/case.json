@@ -1,0 +1,46 @@
+{
+  "description": "A listed title that names no film exactly, in English or Spanish, falls back to the English title the earlier match gave (searched third).",
+  "source": [
+    "tests/test_enricher.py::test_a_repeat_lookup_falls_back_to_the_known_english_title"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Verity. La sombra de un engaño",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ],
+  "cached": [
+    {
+      "title": "Verity. La sombra de un engaño",
+      "tmdb_id": 1283515,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [],
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "tmdb_match_version": 3,
+      "english_title": "Verity"
+    }
+  ]
+}

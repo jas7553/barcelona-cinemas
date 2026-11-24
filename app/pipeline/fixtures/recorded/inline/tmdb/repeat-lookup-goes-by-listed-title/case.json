@@ -1,0 +1,46 @@
+{
+  "description": "'Sospecha' was once guessed to be 'Sofia's Suspicion'. The repeat lookup searches the listed title (en then es-ES), finds Hitchcock's film, and never searches the earlier guess.",
+  "source": [
+    "tests/test_enricher.py::test_a_repeat_lookup_goes_by_the_listed_title_not_the_earlier_guess"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Sospecha",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ],
+  "cached": [
+    {
+      "title": "Sospecha",
+      "tmdb_id": 1520850,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [],
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "tmdb_match_version": 3,
+      "english_title": "Sofia's Suspicion"
+    }
+  ]
+}

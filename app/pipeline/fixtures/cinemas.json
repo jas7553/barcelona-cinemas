@@ -1,0 +1,293 @@
+{
+  "Verdi": {
+    "id": "verdi",
+    "name": "Cines Verdi",
+    "short_name": "Verdi",
+    "address": "Carrer de Verdi, 32",
+    "neighborhood": "Gràcia",
+    "website_url": "https://barcelona.cines-verdi.com",
+    "maps_url": "https://maps.google.com/?q=Cines+Verdi,+Carrer+de+Verdi+32,+Barcelona",
+    "lat": 41.4040,
+    "lng": 2.1569,
+    "aliases": {
+      "english_cinema_bcn": ["Verdi", "Cinemes Verdi"]
+    }
+  },
+  "VP": {
+    "id": "verdi-park",
+    "name": "Verdi Park",
+    "short_name": "Verdi Park",
+    "address": "Carrer de Torrijos, 49",
+    "neighborhood": "Gràcia",
+    "website_url": "https://barcelona.cines-verdi.com",
+    "maps_url": "https://maps.google.com/?q=Verdi+Park,+Carrer+de+Torrijos+49,+Barcelona",
+    "lat": 41.4045,
+    "lng": 2.1575,
+    "aliases": {
+      "english_cinema_bcn": ["VP"]
+    }
+  },
+  "Malda": {
+    "id": "malda",
+    "name": "Cinema Maldà",
+    "short_name": "Maldà",
+    "address": "Carrer del Pi, 5",
+    "neighborhood": "Gothic Quarter",
+    "website_url": "https://www.cinemamalda.com",
+    "maps_url": "https://maps.google.com/?q=Cinema+Maldà,+Carrer+del+Pi+5,+Barcelona",
+    "lat": 41.3832,
+    "lng": 2.1739,
+    "aliases": {
+      "english_cinema_bcn": ["Malda"]
+    }
+  },
+  "FdC": {
+    "id": "filmoteca",
+    "name": "Filmoteca de Catalunya",
+    "short_name": "Filmoteca",
+    "address": "Plaça de Salvador Seguí, 1-9",
+    "neighborhood": "El Raval",
+    "website_url": "https://www.filmoteca.cat/web/en/",
+    "maps_url": "https://maps.google.com/?q=Filmoteca+de+Catalunya,+Plaça+de+Salvador+Seguí+1,+Barcelona",
+    "lat": 41.3797,
+    "lng": 2.1686,
+    "aliases": {
+      "english_cinema_bcn": ["FdC"]
+    }
+  },
+  "CinDiag": {
+    "id": "diagonal",
+    "name": "Cinesa Diagonal",
+    "short_name": "Diagonal",
+    "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+    "neighborhood": "Les Corts",
+    "website_url": "https://www.cinesa.es/cines/diagonal/",
+    "maps_url": "https://maps.google.com/?q=Cinesa+Diagonal,+Carrer+de+Santa+Fe+de+Nou+Mèxic,+Barcelona",
+    "lat": 41.3938,
+    "lng": 2.1364,
+    "aliases": {
+      "english_cinema_bcn": ["Cin Diag", "Cinesa Diagonal"]
+    }
+  },
+  "CinDigMar": {
+    "id": "diagonal-mar",
+    "name": "Cinesa Diagonal Mar",
+    "short_name": "Diagonal Mar",
+    "address": "Avinguda Diagonal, 3",
+    "neighborhood": "Diagonal Mar",
+    "website_url": "https://www.cinesa.es/cines/diagonal-mar/",
+    "maps_url": "https://maps.google.com/?q=Cinesa+Diagonal+Mar,+Avinguda+Diagonal+3,+Barcelona",
+    "lat": 41.4102,
+    "lng": 2.2166,
+    "aliases": {
+      "english_cinema_bcn": ["CinDigMar", "Cinesa Diagonal Mar"]
+    }
+  },
+  "SOM": {
+    "id": "som-multiespai",
+    "name": "Cinesa SOM Multiespai",
+    "short_name": "SOM",
+    "address": "Avinguda de Rio de Janeiro, 42",
+    "neighborhood": "Porta",
+    "website_url": "https://www.cinesa.es/cines/som-multiespai/",
+    "maps_url": "https://maps.google.com/?q=Cinesa+SOM+Multiespai,+Avinguda+de+Rio+de+Janeiro+42,+Barcelona",
+    "lat": 41.4350,
+    "lng": 2.1807,
+    "aliases": {
+      "english_cinema_bcn": ["Cinesa SOM", "SOM", "Cinesa SOM Multiespai"]
+    }
+  },
+  "Glòries": {
+    "id": "glories",
+    "name": "Mooby Glòries",
+    "short_name": "Glòries",
+    "address": "Avinguda Diagonal, 208",
+    "neighborhood": "Poble-Nou",
+    "website_url": "https://www.moobycinemas.com/glories?setLang=en",
+    "maps_url": "https://maps.google.com/?q=Glòries+Multicines,+Avinguda+Diagonal+208,+Barcelona",
+    "lat": 41.4054,
+    "lng": 2.1929,
+    "aliases": {
+      "secondary": ["GLORIES", "GLÒRIES", "/glories", "BAL-GLORIAS"]
+    }
+  },
+  "Aribau": {
+    "id": "aribau",
+    "name": "Mooby Aribau",
+    "short_name": "Aribau",
+    "address": "Carrer d'Aribau, 8-10",
+    "neighborhood": "Eixample",
+    "website_url": "https://www.moobycinemas.com/aribau?setLang=en",
+    "maps_url": "https://maps.google.com/?q=Aribau+Multicines,+Carrer+d'Aribau+8,+Barcelona",
+    "lat": 41.3861,
+    "lng": 2.1626,
+    "aliases": {
+      "secondary": ["ARIBAU", "/aribau", "BAL-ARIBAU"]
+    }
+  },
+  "Arenas": {
+    "id": "arenas",
+    "name": "Mooby Arenas",
+    "short_name": "Arenas",
+    "address": "Gran Via de les Corts Catalanes, 385",
+    "neighborhood": "Eixample",
+    "website_url": "https://www.moobycinemas.com/arenas?setLang=en",
+    "maps_url": "https://maps.google.com/?q=Mooby+Arenas,+Gran+Via+de+les+Corts+Catalanes+385,+Barcelona",
+    "lat": 41.3763,
+    "lng": 2.1493,
+    "aliases": {
+      "secondary": ["ARENAS", "/arenas", "BAL-ARENAS"],
+      "english_cinema_bcn": ["Arenas de Barcelona Multicines"]
+    }
+  },
+  "Balmes": {
+    "id": "balmes",
+    "name": "Mooby Balmes",
+    "short_name": "Balmes",
+    "address": "Carrer de Balmes, 422-424",
+    "neighborhood": "Sarrià-Sant Gervasi",
+    "website_url": "https://www.moobycinemas.com/balmes?setLang=en",
+    "maps_url": "https://maps.google.com/?q=Mooby+Balmes,+Carrer+de+Balmes+422,+Barcelona",
+    "lat": 41.4072,
+    "lng": 2.1386,
+    "aliases": {
+      "secondary": ["BALMES", "/balmes", "BAL-BALMES"]
+    }
+  },
+  "Bosque": {
+    "id": "bosque",
+    "name": "Mooby Bosque",
+    "short_name": "Bosque",
+    "address": "Rambla de Prat, 16",
+    "neighborhood": "Gràcia",
+    "website_url": "https://www.moobycinemas.com/bosque?setLang=en",
+    "maps_url": "https://maps.google.com/?q=Mooby+Bosque,+Rambla+de+Prat+16,+Barcelona",
+    "lat": 41.4015,
+    "lng": 2.1516,
+    "aliases": {
+      "secondary": ["BOSQUE", "/bosque", "BAL-BOSQUE"]
+    }
+  },
+  "Girona": {
+    "id": "girona",
+    "name": "Cinemes Girona",
+    "short_name": "Girona",
+    "address": "Carrer de Girona, 175",
+    "neighborhood": "Dreta de l'Eixample",
+    "website_url": "https://www.cinemesgirona.cat",
+    "maps_url": "https://maps.google.com/?q=Cinemes+Girona,+Carrer+de+Girona+175,+Barcelona",
+    "lat": 41.3996,
+    "lng": 2.1646,
+    "aliases": {
+      "english_cinema_bcn": ["Girona", "Cinemes Girona"]
+    }
+  },
+  "RenFlo": {
+    "id": "renoir-floridablanca",
+    "name": "Renoir Floridablanca",
+    "short_name": "Renoir",
+    "address": "Carrer de Floridablanca, 135",
+    "neighborhood": "Sant Antoni",
+    "website_url": "https://www.cinesrenoir.com/cine/renoir-floridablanca/cartelera/",
+    "maps_url": "https://maps.google.com/?q=Renoir+Floridablanca,+Carrer+de+Floridablanca+135,+Barcelona",
+    "lat": 41.3819,
+    "lng": 2.1623,
+    "aliases": {
+      "english_cinema_bcn": ["RenFlo", "Renoir Floridablanca"]
+    }
+  },
+  "EspaiTexas": {
+    "id": "espai-texas",
+    "name": "Espai Texas",
+    "short_name": "Texas",
+    "address": "Carrer de Bailèn, 205",
+    "neighborhood": "Vila de Gràcia",
+    "website_url": "https://espaitexas.cat/",
+    "maps_url": "https://maps.google.com/?q=Espai+Texas,+Carrer+de+Bailèn+205,+Barcelona",
+    "lat": 41.4020,
+    "lng": 2.1636,
+    "aliases": {
+      "english_cinema_bcn": ["EspaiTex", "Espai Texas"]
+    }
+  },
+  "Maquinista": {
+    "id": "maquinista",
+    "name": "Yelmo Westfield La Maquinista",
+    "short_name": "Maquinista",
+    "address": "Passeig de Potosí, 2",
+    "neighborhood": "Bon Pastor",
+    "website_url": "https://www.yelmocines.es/en/cartelera/barcelona/westfield-la-maquinista",
+    "maps_url": "https://maps.google.com/?q=Yelmo+Westfield+La+Maquinista,+Passeig+de+Potosí+2,+Barcelona",
+    "lat": 41.4408,
+    "lng": 2.1983,
+    "aliases": {
+      "english_cinema_bcn": ["Maquinista", "Yelmo Westfield La Maquinista"]
+    }
+  },
+  "Filmax": {
+    "id": "filmax-granvia",
+    "name": "Cines Filmax Gran Vía",
+    "short_name": "Filmax",
+    "address": "Avinguda de la Granvia de l'Hospitalet, 75",
+    "neighborhood": "L'Hospitalet de Llobregat",
+    "website_url": "https://cinesfilmax.com",
+    "maps_url": "https://maps.google.com/?q=Cines+Filmax+Gran+Via,+Avinguda+de+la+Granvia+75,+L'Hospitalet+de+Llobregat",
+    "lat": 41.3583,
+    "lng": 2.1284,
+    "aliases": {
+      "english_cinema_bcn": ["Filmax", "Cines Filmax Gran Vía"]
+    }
+  },
+  "Sarrià": {
+    "id": "sarria",
+    "name": "Mooby Sarrià",
+    "short_name": "Sarrià",
+    "address": "Ronda del General Mitre, 38-44",
+    "neighborhood": "Sarrià-Sant Gervasi",
+    "website_url": "https://www.moobycinemas.com/sarria?setLang=en",
+    "maps_url": "https://maps.google.com/?q=Mooby+Sarri%C3%A0,+Ronda+del+General+Mitre+38,+Barcelona",
+    "lat": 41.3945,
+    "lng": 2.1336,
+    "aliases": {
+      "secondary": ["SARRIA", "SARRIÀ", "/sarria", "BAL-SARRIA"],
+      "english_cinema_bcn": ["Gr.Sarrià", "Gr. Sarrià", "Gran Sarrià", "Sarrià", "Mooby Gran Sarrià"]
+    }
+  },
+  "Zumzeig": {
+    "id": "zumzeig",
+    "name": "Zumzeig Cinecooperativa",
+    "short_name": "Zumzeig",
+    "address": "Carrer de Béjar, 53",
+    "neighborhood": "Hostafrancs",
+    "website_url": "https://zumzeigcine.coop",
+    "maps_url": "https://maps.google.com/?q=Zumzeig+Cinecooperativa,+Carrer+de+Béjar+53,+Barcelona",
+    "lat": 41.3773,
+    "lng": 2.1450,
+    "aliases": {
+      "english_cinema_bcn": ["Zumzeig", "Zumzeig Cinema"]
+    }
+  },
+  "Phenomena": {
+    "id": "phenomena",
+    "name": "Sala Phenomena Experience",
+    "short_name": "Phenomena",
+    "address": "Carrer de Sant Antoni Maria Claret, 168",
+    "neighborhood": "Sagrada Família",
+    "website_url": "https://phenomena-experience.com",
+    "maps_url": "https://maps.google.com/?q=Sala+Phenomena+Experience,+Carrer+de+Sant+Antoni+Maria+Claret+168,+Barcelona",
+    "lat": 41.4091,
+    "lng": 2.1718
+  },
+  "Méliès": {
+    "id": "melies",
+    "name": "Cinemes Méliès",
+    "short_name": "Méliès",
+    "address": "Carrer de Villarroel, 102",
+    "neighborhood": "Eixample",
+    "website_url": "https://www.meliescinemes.com",
+    "maps_url": "https://maps.google.com/?q=Cinemes+Méliès,+Carrer+de+Villarroel+102,+Barcelona",
+    "lat": 41.3852,
+    "lng": 2.1570,
+    "aliases": {}
+  }
+}

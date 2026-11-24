@@ -1,0 +1,12 @@
+{
+  "description": "Date labels near New Year: Jan dates seen in late December roll to next year, the 8-day boundary, September spelled 'Sept', and labels that are skipped (impossible Feb 29, unknown month, garbled).",
+  "source": [
+    "tests/test_listings_provider.py::test_parse_showtime_label_standard",
+    "tests/test_listings_provider.py::test_parse_showtime_label_next_year_rollover",
+    "tests/test_listings_provider.py::test_parse_showtime_label_invalid_returns_empty"
+  ],
+  "now": "2026-12-28T10:00:00+01:00",
+  "config": {
+    "listingsFeedUrl": "https://listings.example.test/films"
+  }
+}

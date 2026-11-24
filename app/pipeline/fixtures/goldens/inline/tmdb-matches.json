@@ -1,0 +1,282 @@
+{
+  "cache-hit-by-localized-listing-title": [
+    {
+      "english_title": "Close Encounters of the Third Kind",
+      "imdb_id": "tt0075860",
+      "title": "Encuentros en la tercera fase",
+      "tmdb_id": 42,
+      "year": null
+    }
+  ],
+  "cached-matches-with-different-titles-left-alone": [
+    {
+      "english_title": "Fargo",
+      "imdb_id": null,
+      "title": "Fargo",
+      "tmdb_id": 275,
+      "year": null
+    },
+    {
+      "english_title": "Rocky",
+      "imdb_id": null,
+      "title": "Rocky",
+      "tmdb_id": 1366,
+      "year": null
+    }
+  ],
+  "cached-namesake-clash-looked-up-again": [
+    {
+      "english_title": "Sense and Sensibility",
+      "imdb_id": "tt13609648",
+      "title": "Sense and Sensibility",
+      "tmdb_id": 1503762,
+      "year": 2026
+    },
+    {
+      "english_title": "Sense and Sensibility",
+      "imdb_id": "tt13609648",
+      "title": "Sentido y sensibilidad",
+      "tmdb_id": 1503762,
+      "year": 2026
+    }
+  ],
+  "credits-failure-is-non-fatal": [
+    {
+      "english_title": "Dune: Part Two",
+      "imdb_id": "tt15239678",
+      "title": "Dune: Part Two",
+      "tmdb_id": 42,
+      "year": 2024
+    }
+  ],
+  "current-release-over-older-namesake": [
+    {
+      "english_title": "Sense and Sensibility",
+      "imdb_id": "tt13609648",
+      "title": "Sense and Sensibility",
+      "tmdb_id": 1503762,
+      "year": 2026
+    }
+  ],
+  "english-title-listing-reuses-cached-film": [
+    {
+      "english_title": "Sense and Sensibility",
+      "imdb_id": "tt13609648",
+      "title": "Sentido y sensibilidad",
+      "tmdb_id": 1503762,
+      "year": null
+    }
+  ],
+  "exact-title-over-popularity": [
+    {
+      "english_title": "Alien",
+      "imdb_id": "tt0078748",
+      "title": "Alien",
+      "tmdb_id": 2,
+      "year": 1979
+    }
+  ],
+  "fresh-cache-hit-makes-no-requests": [
+    {
+      "english_title": null,
+      "imdb_id": "tt15239678",
+      "title": "Dune: Part Two",
+      "tmdb_id": 42,
+      "year": null
+    }
+  ],
+  "invalid-tmdb-fields-discarded": [
+    {
+      "english_title": null,
+      "imdb_id": null,
+      "title": "Dune: Part Two",
+      "tmdb_id": 42,
+      "year": null
+    }
+  ],
+  "lone-short-still-matches": [
+    {
+      "english_title": "Short Film",
+      "imdb_id": "tt15239678",
+      "title": "Short Film",
+      "tmdb_id": 5,
+      "year": 2020
+    }
+  ],
+  "match-from-older-rules-is-looked-up-again": [
+    {
+      "english_title": "Sense and Sensibility",
+      "imdb_id": "tt15239678",
+      "title": "Sense and Sensibility",
+      "tmdb_id": 42,
+      "year": 1995
+    }
+  ],
+  "new-film-without-spanish-release-keeps-tmdb-rank": [
+    {
+      "english_title": "Dolly",
+      "imdb_id": "tt15239678",
+      "title": "Dolly",
+      "tmdb_id": 1309083,
+      "year": 2026
+    }
+  ],
+  "new-title-full-metadata": [
+    {
+      "english_title": "Dune: Part Two",
+      "imdb_id": "tt15239678",
+      "title": "Dune: Part Two",
+      "tmdb_id": 42,
+      "year": 2024
+    }
+  ],
+  "no-exact-title-top-result-stands-in": [
+    {
+      "english_title": "Sense and Sensibility",
+      "imdb_id": "tt13609648",
+      "title": "Sentido y sensibilidad",
+      "tmdb_id": 1503762,
+      "year": 2026
+    }
+  ],
+  "preview-inside-recency-window": [
+    {
+      "english_title": "Highlander",
+      "imdb_id": "tt0000003",
+      "title": "Highlander",
+      "tmdb_id": 3,
+      "year": 2026
+    }
+  ],
+  "provider-year-picks-that-film": [
+    {
+      "english_title": "Sense and Sensibility",
+      "imdb_id": "tt0114388",
+      "title": "Sense and Sensibility",
+      "tmdb_id": 4584,
+      "year": 1995
+    }
+  ],
+  "quoted-title-does-not-reuse-cache": [
+    {
+      "english_title": null,
+      "imdb_id": "tt32897959",
+      "title": "\"Wuthering Heights\"",
+      "tmdb_id": 1316092,
+      "year": null
+    }
+  ],
+  "remade-title-lands-on-one-film": [
+    {
+      "english_title": "Sense and Sensibility",
+      "imdb_id": "tt13609648",
+      "title": "Sense and Sensibility",
+      "tmdb_id": 1503762,
+      "year": 2026
+    },
+    {
+      "english_title": "Sense and Sensibility",
+      "imdb_id": "tt13609648",
+      "title": "Sense and Sensibility",
+      "tmdb_id": 1503762,
+      "year": 2026
+    },
+    {
+      "english_title": "Sense and Sensibility",
+      "imdb_id": "tt13609648",
+      "title": "Sentido y sensibilidad",
+      "tmdb_id": 1503762,
+      "year": 2026
+    }
+  ],
+  "repeat-lookup-falls-back-to-known-english-title": [
+    {
+      "english_title": "Verity",
+      "imdb_id": "tt1283515",
+      "title": "Verity. La sombra de un engaño",
+      "tmdb_id": 1283515,
+      "year": 2026
+    }
+  ],
+  "repeat-lookup-goes-by-listed-title": [
+    {
+      "english_title": "Suspicion",
+      "imdb_id": "tt0034248",
+      "title": "Sospecha",
+      "tmdb_id": 11462,
+      "year": 1941
+    }
+  ],
+  "repertory-classic-over-namesake-never-released-in-spain": [
+    {
+      "english_title": "Her",
+      "imdb_id": "tt15239678",
+      "title": "Her",
+      "tmdb_id": 152601,
+      "year": 2013
+    }
+  ],
+  "search-failure-leaves-movie-bare": [
+    {
+      "english_title": null,
+      "imdb_id": null,
+      "title": "Unknown Film",
+      "tmdb_id": null,
+      "year": null
+    }
+  ],
+  "short-loses-same-title-tie-to-feature": [
+    {
+      "english_title": "Stranger Than Paradise",
+      "imdb_id": "tt15239678",
+      "title": "Stranger Than Paradise",
+      "tmdb_id": 469,
+      "year": 1984
+    }
+  ],
+  "spanish-title-keeps-listed-title-sets-english-title": [
+    {
+      "english_title": "Close Encounters of the Third Kind",
+      "imdb_id": "tt0075860",
+      "title": "Encuentros en la tercera fase",
+      "tmdb_id": 42,
+      "year": 1977
+    }
+  ],
+  "spanish-title-names-the-film-over-top-result": [
+    {
+      "english_title": "The Social Reckoning",
+      "imdb_id": "tt37510326",
+      "title": "El precio de la red",
+      "tmdb_id": 1281331,
+      "year": 2026
+    }
+  ],
+  "stale-cache-and-tmdb-down-keeps-cached": [
+    {
+      "english_title": null,
+      "imdb_id": "tt15239678",
+      "title": "Dune: Part Two",
+      "tmdb_id": 42,
+      "year": null
+    }
+  ],
+  "tv-movie-only-is-no-match": [
+    {
+      "english_title": null,
+      "imdb_id": null,
+      "title": "The Miracle Worker",
+      "tmdb_id": null,
+      "year": null
+    }
+  ],
+  "tv-movie-skipped-for-the-film": [
+    {
+      "english_title": "The Miracle Worker",
+      "imdb_id": "tt0056241",
+      "title": "The Miracle Worker",
+      "tmdb_id": 1162,
+      "year": 1962
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/search/movie?language=en-US&query=Dune%3A+Part+Two",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "01-api-themoviedb-org-3-search-movie-language-en-US-query-Dune-3A-Part-Two.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/42?language=en-US&append_to_response=release_dates",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "02-api-themoviedb-org-3-movie-42-language-en-US-append-to-response-release-dates.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/42/videos?language=en-US",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "03-api-themoviedb-org-3-movie-42-videos-language-en-US.json"
+  },
+  {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/42/credits?language=en-US",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "file": "04-api-themoviedb-org-3-movie-42-credits-language-en-US.json"
+  }
+]

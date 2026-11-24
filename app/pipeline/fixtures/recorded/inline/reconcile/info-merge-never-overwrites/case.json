@@ -1,0 +1,53 @@
+{
+  "description": "The first-seen copy stays the base: a present booking_url is kept, only gaps are filled.",
+  "source": [
+    "tests/test_reconcile.py::test_dedup_showtimes_merge_never_overwrites_a_present_value"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Dune",
+      "tmdb_id": null,
+      "imdb_id": "tt1",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "booking_url": "https://first",
+          "subtitle_lang": "es"
+        }
+      ]
+    },
+    {
+      "title": "Dune",
+      "tmdb_id": null,
+      "imdb_id": "tt1",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "N",
+          "address": "A",
+          "date": "2026-06-14",
+          "time": "18:00",
+          "booking_url": "https://second",
+          "premium_format": "imax"
+        }
+      ]
+    }
+  ]
+}

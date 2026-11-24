@@ -1,0 +1,205 @@
+{
+  "error": null,
+  "events": [],
+  "requests": [
+    "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-06-29/",
+    "https://www.sensacine.com/_/showtimes/theater-E0381/d-2026-06-30/",
+    "https://www.sensacine.com/_/showtimes/theater-E0808/d-2026-06-29/",
+    "https://www.sensacine.com/_/showtimes/theater-E0808/d-2026-06-30/"
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Balmes, 422-424",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-51716",
+          "cinema": "Balmes",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Sarrià-Sant Gervasi",
+          "subtitle_lang": "es",
+          "time": "16:00"
+        },
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-51716",
+          "cinema": "CinDiag",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "subtitle_lang": "es",
+          "time": "16:00"
+        },
+        {
+          "address": "Carrer de Balmes, 422-424",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-51718",
+          "cinema": "Balmes",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Sarrià-Sant Gervasi",
+          "premium_format": "imax",
+          "subtitle_lang": "es",
+          "time": "21:10"
+        },
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-51718",
+          "cinema": "CinDiag",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "premium_format": "imax",
+          "subtitle_lang": "es",
+          "time": "21:10"
+        },
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "booking_url": "https://www.cinesa.es/compra/butacas/?showtimeId=012-52000",
+          "cinema": "CinDiag",
+          "date": "2026-06-30",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "subtitle_lang": "es",
+          "time": "16:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Supergirl",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "booking_url": "https://relay.mvtx.us/ticketing/xyz",
+          "cinema": "CinDiag",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "subtitle_lang": "ca",
+          "time": "20:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Mystery Film",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "cinema": "CinDiag",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "premium_format": "imax",
+          "subtitle_lang": "en",
+          "time": "22:30"
+        },
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "cinema": "CinDiag",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "subtitle_lang": "ca",
+          "time": "23:30"
+        }
+      ],
+      "synopsis": null,
+      "title": "Sloppy Times",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "booking_url": "https://relay.mvtx.us/ticketing/tpl",
+          "cinema": "CinDiag",
+          "date": "2026-06-30",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "time": "18:00"
+        },
+        {
+          "address": "Carrer de Santa Fe de Nou Mèxic, s/n",
+          "audio_lang": "en",
+          "cinema": "CinDiag",
+          "date": "2026-06-30",
+          "language": "vo",
+          "neighborhood": "Les Corts",
+          "time": "20:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Template Film",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": null,
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer de Balmes, 422-424",
+          "audio_lang": "en",
+          "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=188474&language=ENG&theatre=BAL-BALMES",
+          "cinema": "Balmes",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Sarrià-Sant Gervasi",
+          "time": "16:00"
+        },
+        {
+          "address": "Carrer de Balmes, 422-424",
+          "audio_lang": "en",
+          "booking_url": "https://moobycinemas-balmes.admit-one.eu/?p=tickets&perfCode=188474&language=ENG&theatre=BAL-BALMES",
+          "cinema": "Balmes",
+          "date": "2026-06-29",
+          "language": "vo",
+          "neighborhood": "Sarrià-Sant Gervasi",
+          "premium_format": "imax",
+          "time": "19:00"
+        }
+      ],
+      "synopsis": null,
+      "title": "Digger",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

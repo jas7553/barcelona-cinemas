@@ -1,0 +1,46 @@
+{
+  "description": "Casefolding, whitespace collapsing and edge punctuation/quotes make these one film.",
+  "source": [
+    "tests/test_reconcile.py::test_normalize_title_casefolds_and_collapses_whitespace",
+    "tests/test_reconcile.py::test_normalize_title_strips_edge_punctuation_and_quotes"
+  ],
+  "now": "2026-06-14T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "  The   DUNE  ",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "“The Dune”!",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    },
+    {
+      "title": "the dune",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": []
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "description": "The only seat page names no sala: past the failure limit the whole fetch raises PartialFetchError.",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_skips_showtime_when_sala_lookup_fails"
+  ],
+  "now": "2026-06-28T10:00:00+02:00"
+}

@@ -1,0 +1,46 @@
+{
+  "description": "A provider listing the English title finds the film another provider listed under its Spanish title, through the cached english_title; no requests.",
+  "source": [
+    "tests/test_enricher.py::test_a_listing_under_the_english_title_reuses_the_cached_film"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Sense and Sensibility",
+      "tmdb_id": null,
+      "imdb_id": "tt0114388",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ],
+  "cached": [
+    {
+      "title": "Sentido y sensibilidad",
+      "tmdb_id": 1503762,
+      "imdb_id": "tt13609648",
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [],
+      "enriched_at": "2026-10-20T07:00:00+00:00",
+      "tmdb_match_version": 4,
+      "english_title": "Sense and Sensibility"
+    }
+  ]
+}

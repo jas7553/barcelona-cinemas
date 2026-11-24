@@ -1,0 +1,25 @@
+{
+  "description": "Live recording of the public sources: Verdi cartellera + film and admit-one seat pages, SensaCine theatre pages. The providers are narrowed to the recorded slugs/theatres/days.",
+  "source": "tests/parity/record.py",
+  "recordedAt": "2026-11-24T07:51:01+01:00",
+  "now": "2026-11-24T10:00:00+01:00",
+  "sensacine": {
+    "ids": {
+      "Balmes": "E0808",
+      "Aribau": "E0091",
+      "Bosque": "E0136",
+      "Verdi": "E0608",
+      "Malda": "E0682"
+    },
+    "daysAhead": 2
+  },
+  "verdi": {
+    "slugs": [
+      "/fatherland",
+      "/f-espectador-cartas-de-estado",
+      "/canaletto-y-el-arte-de-venecia",
+      "/adolescencia-sexo-y-muerte-en-campamento-miasma",
+      "/diarios-de-ozu"
+    ]
+  }
+}

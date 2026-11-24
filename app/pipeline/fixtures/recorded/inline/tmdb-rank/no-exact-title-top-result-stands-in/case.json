@@ -1,0 +1,21 @@
+{
+  "description": "A Spanish title that matches nothing exactly: the top result is the single candidate.",
+  "source": [
+    "tests/test_enricher.py::test_without_an_exact_title_the_top_result_stands_in"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "today": "2026-10-20",
+  "title": "Sentido y sensibilidad",
+  "results": [
+    {
+      "id": 1503762,
+      "title": "Sense and Sensibility",
+      "release_date": "2026-09-18"
+    },
+    {
+      "id": 4584,
+      "title": "Sense and Sensibility",
+      "release_date": "1995-12-13"
+    }
+  ]
+}

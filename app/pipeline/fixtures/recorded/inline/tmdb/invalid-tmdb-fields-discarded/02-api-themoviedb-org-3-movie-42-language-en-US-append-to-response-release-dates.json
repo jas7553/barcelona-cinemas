@@ -1,0 +1,21 @@
+{
+  "id": 42,
+  "imdb_id": "not-an-imdb-id",
+  "poster_path": "not-a-poster-path",
+  "overview": [
+    "not",
+    "a",
+    "string"
+  ],
+  "vote_average": "8.5",
+  "runtime": -10,
+  "genres": [
+    {
+      "name": "Science Fiction"
+    },
+    {
+      "name": ""
+    },
+    "bad-entry"
+  ]
+}

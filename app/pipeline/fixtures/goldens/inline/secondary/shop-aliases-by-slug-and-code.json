@@ -1,0 +1,31 @@
+{
+  "error": null,
+  "events": [],
+  "requests": [
+    "https://secondary.example.test/listings"
+  ],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt12042730",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [
+        {
+          "address": "Carrer d'Aribau, 8-10",
+          "audio_lang": "en",
+          "cinema": "Aribau",
+          "date": "2026-03-29",
+          "language": "vo",
+          "neighborhood": "Eixample",
+          "time": "18:30"
+        }
+      ],
+      "synopsis": null,
+      "title": "Project Hail Mary",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

@@ -7,3 +7,4 @@
 !/.prettierrc.json
 !/stylelint.config.mjs
 node_modules
+/app/pipeline/fixtures

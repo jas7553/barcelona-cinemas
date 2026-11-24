@@ -37,6 +37,13 @@ export function madridIso(date: string, time: string): string {
   throw new RangeError(`${date} ${time} is not a Madrid wall-clock time`);
 }
 
+/** Whether `date` is a `YYYY-MM-DD` day the calendar has: 2026-02-30 is not. */
+export function isCalendarDay(date: string): boolean {
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(date) && new Date(`${date}T00:00:00Z`).toISOString().startsWith(date)
+  );
+}
+
 /** `YYYY-MM-DD` plus `days` calendar days. */
 export function addDays(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`);

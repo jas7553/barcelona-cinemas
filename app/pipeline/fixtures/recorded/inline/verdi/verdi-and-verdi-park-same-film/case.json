@@ -1,0 +1,8 @@
+{
+  "description": "One film screening in both venues at different times: each slot's seat page decides Verdi or VP.",
+  "source": [
+    "tests/test_verdi_provider.py::test_fetch_returns_vo_movie_with_booking_url",
+    "tests/test_verdi_provider.py::test_fetch_assigns_vp_cinema_key_for_letter_sala"
+  ],
+  "now": "2026-06-28T10:00:00+02:00"
+}

@@ -1,0 +1,65 @@
+{
+  "events": [],
+  "result": [
+    {
+      "genres": null,
+      "imdb_id": "tt1",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [],
+      "synopsis": null,
+      "title": "Dune: Part One",
+      "tmdb_id": null,
+      "year": 2021
+    },
+    {
+      "english_title": "Close Encounters of the Third Kind",
+      "genres": null,
+      "imdb_id": "tt0075860",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [],
+      "synopsis": null,
+      "title": "Encuentros en la tercera fase",
+      "tmdb_id": null,
+      "year": null
+    },
+    {
+      "backdrop_url": "b",
+      "cast": [
+        "A"
+      ],
+      "director": "D",
+      "enriched_at": "2026-07-23T10:00:00+00:00",
+      "genres": null,
+      "imdb_id": "tt3",
+      "original_lang": "en",
+      "poster_url": null,
+      "rating": 0.0,
+      "runtime_mins": null,
+      "showtimes": [],
+      "synopsis": null,
+      "tagline": "g",
+      "title": "Rated Zero Extended",
+      "tmdb_id": 3,
+      "tmdb_match_version": 2,
+      "trailer_url": "t",
+      "vote_count": 0,
+      "year": null
+    },
+    {
+      "genres": null,
+      "imdb_id": "tt4",
+      "poster_url": null,
+      "rating": null,
+      "runtime_mins": null,
+      "showtimes": [],
+      "synopsis": null,
+      "title": "Plain",
+      "tmdb_id": null,
+      "year": null
+    }
+  ]
+}

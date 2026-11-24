@@ -1,0 +1,29 @@
+{
+  "description": "A Spanish listing whose title matches nothing exactly, in either language: TMDb's top result stands in.",
+  "source": [
+    "tests/test_enricher.py::test_without_an_exact_title_the_top_result_stands_in"
+  ],
+  "now": "2026-10-20T10:00:00+02:00",
+  "movies": [
+    {
+      "title": "Sentido y sensibilidad",
+      "tmdb_id": null,
+      "imdb_id": null,
+      "year": null,
+      "poster_url": null,
+      "synopsis": null,
+      "rating": null,
+      "runtime_mins": null,
+      "genres": null,
+      "showtimes": [
+        {
+          "cinema": "Verdi",
+          "neighborhood": "Gràcia",
+          "address": "Carrer de Verdi, 32",
+          "date": "2026-10-22",
+          "time": "18:00"
+        }
+      ]
+    }
+  ]
+}
