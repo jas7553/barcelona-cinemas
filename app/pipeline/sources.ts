@@ -7,6 +7,7 @@ import { sensacineProvider } from "./providers/sensacine.ts";
 import { verdiProvider } from "./providers/verdi.ts";
 import { recordingFetcher } from "./recordings.ts";
 import type { CinemaRegistry } from "./registry.ts";
+import { enrich } from "./tmdb.ts";
 import type { PipelineContext, Provider, ScrapedFilm } from "./types.ts";
 
 /** Values kept out of the repo. Absent when unset: each source decides whether it can run without. */
@@ -58,6 +59,13 @@ export const liveSources: LiveSources = {
     () => verdiProvider(),
     () => sensacineProvider(),
   ],
+  enrich: async (films, ctx, { tmdbApiKey }) => {
+    if (tmdbApiKey === undefined) {
+      ctx.log.warn("tmdb_enrichment_skipped", { reason: "no TMDB_API_KEY" });
+      return films;
+    }
+    return enrich(films, ctx, { apiKey: tmdbApiKey });
+  },
 };
 
 export interface RecordOptions {
