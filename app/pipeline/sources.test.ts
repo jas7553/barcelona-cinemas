@@ -178,6 +178,19 @@ describe("recordSources", () => {
     });
   });
 
+  it("refuses a directory holding other files, before fetching anything", async () => {
+    const outDir = mkdtempSync(join(tmpdir(), "record-"));
+    writeFileSync(join(outDir, "README.md"), "mine");
+    const fetchSpy = vi.fn<Provider["fetch"]>();
+    const sources: LiveSources = { providers: [() => ({ name: "spy", fetch: fetchSpy })] };
+
+    await expect(recordSources(sources, {}, { outDir, now, registry, log: log() })).rejects.toThrow(
+      "isn't empty",
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(readdirSync(outDir)).toEqual(["README.md"]);
+  });
+
   it("records the rest when a source fails", async () => {
     const outDir = mkdtempSync(join(tmpdir(), "record-"));
     const logger = log();

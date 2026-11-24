@@ -24,8 +24,8 @@
     "format:check": "prettier --check app eslint.app.config.js .dependency-cruiser.cjs knip.json stylelint.config.mjs",
     "test": "vitest run --config app/vitest.config.ts",
     "fixture": "tsx app/fixture/write.ts",
-    "record": "tsx app/pipeline/record.ts",
-    "refresh:local": "tsx app/pipeline/refresh-local.ts",
+    "record": "tsx --env-file-if-exists=.env app/pipeline/record.ts",
+    "refresh:local": "tsx --env-file-if-exists=.env app/pipeline/refresh-local.ts",
     "e2e": "playwright test -c app/e2e/playwright.config.ts",
     "shots": "playwright test -c app/e2e/tools.config.ts --project=shots",
     "budgets": "playwright test -c app/e2e/tools.config.ts --project=budgets"

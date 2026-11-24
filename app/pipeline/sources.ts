@@ -1,5 +1,5 @@
 /** Every live source the pipeline reads, and `npm run record`'s run through them. */
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { errorMessage } from "./errors.ts";
@@ -93,13 +93,22 @@ export interface RecordOptions {
  * Runs `sources` from a cold start through a recorder and writes the recording to `outDir`, with a
  * `case.json` that replays it: the instant, and the secret URLs as the stand-ins stored in their
  * place, over whatever else an earlier `case.json` there held. A source that fails is logged and
- * the rest still run; returns the names of those that failed.
+ * the rest still run; returns the names of those that failed. Refuses, before fetching anything, an
+ * `outDir` holding anything but a `case.json`, so a recording never lands among other files.
  */
 export async function recordSources(
   sources: LiveSources,
   config: SourceConfig,
   { outDir, now, registry, log, fetcher = liveFetcher() }: RecordOptions,
 ): Promise<string[]> {
+  const strays = existsSync(outDir)
+    ? readdirSync(outDir).filter((name) => name !== "case.json")
+    : [];
+  if (strays.length > 0) {
+    throw new Error(
+      `${outDir} isn't empty (${String(strays.length)} entries); record into a new directory`,
+    );
+  }
   const secrets = SECRET_URLS.flatMap((key) => {
     const secret = config[key];
     return secret === undefined ? [] : [{ key, secret, standIn: STAND_INS[key] }];
