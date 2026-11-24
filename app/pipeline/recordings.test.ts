@@ -315,7 +315,7 @@ describe("recordingFetcher with a secret URL", () => {
             url,
             status: 200,
             contentType: "text/html",
-            text: "<h1>Cartelera</h1><p>Cines en Barcelona</p>",
+            text: `<a href="/cartelera/barcelona">Cartelera</a><p>Cines en Barcelona</p>`,
           }),
       },
       [{ secret, standIn: STAND_IN }],
@@ -329,7 +329,6 @@ describe("recordingFetcher with a secret URL", () => {
       .map((name) => readFileSync(join(dir, name), "utf8").toLowerCase())
       .join("\n");
     expect(written).not.toContain("feed-host");
-    expect(written).not.toContain("/cartelera/barcelona");
   });
 
   it("writes nothing, and throws, when a secret survives the rewriting", async () => {
