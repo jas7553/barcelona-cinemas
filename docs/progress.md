@@ -7,7 +7,7 @@ The orchestrator's state for the `drive-slice` loop (plan §8). Newest entries a
 | Slice | Track | Status | PR |
 |---|---|---|---|
 | 1 TypeScript foundation + guardrails | — | done | #186 |
-| 2 Port the pipeline | data | in review | #187 |
+| 2 Port the pipeline | data | done | #187 |
 | 3 Extend the data | data | not started | |
 | 4 Renderer and infrastructure | UI | not started | |
 | 5 Visual foundation | UI | not started | |
