@@ -305,6 +305,33 @@ describe("recordingFetcher with a secret URL", () => {
     expectClean(dir);
   });
 
+  it("lets the site's pages repeat a plain word from the secret's path", async () => {
+    const secret = "https://feed-host.test/cartelera/barcelona";
+    const dir = join(tempDir(), "out");
+    const recorder = recordingFetcher(
+      {
+        get: (url) =>
+          Promise.resolve({
+            url,
+            status: 200,
+            contentType: "text/html",
+            text: "<h1>Cartelera</h1><p>Cines en Barcelona</p>",
+          }),
+      },
+      [{ secret, standIn: STAND_IN }],
+    );
+    await recorder.fetcher.get(secret, options);
+
+    recorder.save(dir);
+
+    expect(readdirSync(dir)).toContain("manifest.json");
+    const written = readdirSync(dir)
+      .map((name) => readFileSync(join(dir, name), "utf8").toLowerCase())
+      .join("\n");
+    expect(written).not.toContain("feed-host");
+    expect(written).not.toContain("/cartelera/barcelona");
+  });
+
   it("writes nothing, and throws, when a secret survives the rewriting", async () => {
     const dir = join(tempDir(), "out");
     const recorder = recordingFetcher(

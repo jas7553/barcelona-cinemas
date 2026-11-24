@@ -103,8 +103,12 @@ export interface StandIn {
   standIn: string;
 }
 
-/** Shorter query values and path segments are too common to be telling. */
-const MIN_TOKEN_CHARS = 4;
+/**
+ * Whether a path segment or query value is telling on its own: an id or key, not a word like
+ * "cartelera" that the site's own pages repeat. The whole path and query are needles regardless.
+ */
+const isTokenLike = (token: string): boolean =>
+  token.length >= 4 && (/\d/.test(token) || token.length >= 16);
 
 /** Where a URL in a body ends: at a quote, angle bracket, whitespace or a backslash not before `/`. */
 const URL_CHARS = String.raw`(?:\\/|[^\s"'<>\\])*`;
@@ -124,7 +128,7 @@ interface Secret {
   hosts: ReadonlySet<string>;
   pathAndQuery: string;
   standIn: URL;
-  /** Lower case: the host, the URL, and its query values and path segments. */
+  /** Lower case: the host, the URL, its path and query, and those of their parts that look like ids. */
   needles: readonly string[];
   /** Its host in an absolute or protocol-relative URL, plain or JSON-escaped, and bare. */
   inUrl: RegExp;
@@ -152,9 +156,12 @@ function secretOf({ secret, standIn }: StandIn): Secret {
     standIn: to,
     needles: [
       ...new Set(
-        [bareHost, url.href, ...tokens.filter((token) => token.length >= MIN_TOKEN_CHARS)].map(
-          (needle) => needle.toLowerCase(),
-        ),
+        [
+          bareHost,
+          url.href,
+          ...[url.pathname, url.search.slice(1)].filter((part) => part.length > 1),
+          ...tokens.filter(isTokenLike),
+        ].map((needle) => needle.toLowerCase()),
       ),
     ],
     inUrl: new RegExp(
