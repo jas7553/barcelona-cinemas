@@ -18,12 +18,14 @@ The orchestrator's state for the `drive-slice` loop (plan §8). Newest entries a
 
 ## Open questions
 
-1. **Real recordings for ECB, Mooby and TMDb (slice 2 parity; needed by slice 3's evals).** The englishcinemabarcelona and Mooby URLs and the TMDb key live in `.env`/SSM, which this session may not read, so slice 2's parity fixtures for those come from the Python tests' inline pages and payloads; Verdi and SensaCine are recorded live (public, hard-coded URLs). **Recommendation:** slice 2 ships `npm run record` (reads your env, writes `app/pipeline/fixtures/recorded/`); you run it once before slice 3, and the slice 3 eval sets are built from it. If it refuses to save (its backstop rejects any output still containing a piece of a secret URL, including path words over 3 letters), tell the slice 3 session the error; it names the file, not the secret. Not blocking.
+(none)
 
 ## Decided
 
 - **Ended films (2026-11-24; slices 3 and 7).** Kept in the document for 30 days after their last showing. The film page shows the film's details and "No longer showing in Barcelona." with a link home. After 30 days the address 301s home.
 - **Film title (2026-11-24; slice 3).** TMDb's English title, falling back to the listed title for unmatched films. No `original_title` field.
+
+- **Real recordings (2026-11-24; slice 3).** `app/pipeline/fixtures/recorded/live-2026-11-24-2303/` holds a full live run: all four sources and TMDb, 101 films, 659 responses, 22 MB. It's untracked so far: slice 3 decides what to commit (likely trimmed, or kept outside git) when it builds the eval sets from it.
 
 ## Slice log
 
